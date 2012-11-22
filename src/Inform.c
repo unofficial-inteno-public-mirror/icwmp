@@ -20,8 +20,6 @@ Author contact information:
 #include <string.h>
 #include "soapH.h"
 #include "cwmp.h"
-#include "dm.h"
-#include "dm_rpc.h"
 #include <uci.h>
 #include "backupSession.h"
 #include "external.h"

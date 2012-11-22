@@ -17,8 +17,6 @@ Author contact information:
 #include <pthread.h>
 #include "cwmp.h"
 #include "backupSession.h"
-#include "dm.h"
-#include "dm_rpc.h"
 
 struct rpc_acs *cwmp_add_session_rpc_acs_getRPCMethods (struct session *session);
 struct rpc_acs *cwmp_add_session_rpc_acs_transferComplete (struct session *session);
