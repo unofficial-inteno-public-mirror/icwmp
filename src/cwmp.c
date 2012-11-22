@@ -20,6 +20,7 @@ Author contact information:
 #include "cwmp.h"
 #include "backupSession.h"
 
+
 #define CWMP_DAEMON_MULTITHREAD  1/* TODO KMD need for debug*/
 
 struct cwmp         	cwmp_main;
@@ -30,7 +31,7 @@ static bool				thread_sync_wait		= TRUE;
 struct rpc_acs *cwmp_add_session_rpc_acs_inform (struct session *session);
 struct rpc_cpe  *cwmp_soap_receive_rpc_cpe (struct cwmp *cwmp,struct session *session);
 struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_idx, char *command_key);
-struct paramater_container *cwmp_add_parameter_container (struct cwmp *cwmp, struct event_container *event_container, char *name);
+struct paramater_container *cwmp_add_parameter_container (struct cwmp *cwmp, struct event_container *event_container, char *name, char *value, char *type);
 void backup_session_move_inform_to_inform_send ();
 void backup_session_move_inform_to_inform_queue ();
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container);
@@ -39,8 +40,6 @@ void *thread_event_periodic (void *v);
 void *thread_connection_request_listener (void *v);
 void *thread_cwmp_rpc_cpe_scheduleInform (void *v);
 void *thread_cwmp_rpc_cpe_download (void *v);
-void *thread_kernel_api_cwmp_value_change_parameters (void *v);
-void *thread_lib_api_cwmp_value_change_parameters (void *v);
 
 struct rpc_acs *cwmp_add_session_rpc_acs (struct session *session)
 {
@@ -221,7 +220,7 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
     while (1)
     {
         session->error = CWMP_OK;
-        __list_for_each(ilist, &(session->head_rpc_acs))
+        list_for_each(ilist, &(session->head_rpc_acs))
         {
             rpc_acs = list_entry (ilist, struct rpc_acs, list);
             if (!(error = rpc_acs->method_data_init (cwmp, session, rpc_acs)))
@@ -436,7 +435,7 @@ int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *sessi
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
         return CWMP_OK;
     }
-    __list_for_each(ilist, &(session->head_event_container))
+    list_for_each(ilist, &(session->head_event_container))
     {
         event_container_old = list_entry (ilist, struct event_container, list);
         event_container_new = cwmp_add_event_container (cwmp, event_container_old->idx, event_container_old->event.CommandKey);
@@ -445,19 +444,19 @@ int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *sessi
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        __list_for_each(jlist, &(event_container_old->head_paramater_container))
+        list_for_each(jlist, &(event_container_old->head_paramater_container))
         {
             paramater_container_old = list_entry(jlist,struct paramater_container, list);
-            paramater_container_new = cwmp_add_parameter_container (cwmp,event_container_new, paramater_container_old->paramater.Name);
+            paramater_container_new = cwmp_add_parameter_container (cwmp,event_container_new, paramater_container_old->paramater.Name, paramater_container_old->paramater.Value, paramater_container_old->paramater.Type);
         }
         cwmp_save_event_container (cwmp,event_container_new);
     }
     session_queue = list_entry(cwmp->head_event_container,struct session, head_event_container);
-    __list_for_each(ilist, &(session->head_rpc_acs))
+    list_for_each(ilist, &(session->head_rpc_acs))
     {
         rpc_acs = list_entry(ilist, struct rpc_acs, list);
         dup     = FALSE;
-        __list_for_each(jlist, &(session_queue->head_rpc_acs))
+        list_for_each(jlist, &(session_queue->head_rpc_acs))
         {
             queue_rpc_acs = list_entry(jlist, struct rpc_acs, list);
             if (queue_rpc_acs->type == rpc_acs->type &&
@@ -503,7 +502,7 @@ int cwmp_session_destructor (struct cwmp *cwmp, struct session *session)
         list_del (&(session_end_func->list));
         free (session_end_func);
     }
-    if (session->list.next != LIST_POISON1 && session->list.prev != LIST_POISON2)
+    if (session->list.next != NULL && session->list.prev != NULL) /* KMD Modified for freecwmp integration*/
     {
         list_del (&(session->list));
     }
@@ -540,7 +539,7 @@ int add_session_end_func (struct session *session, int (*func)(struct cwmp *cwmp
     struct session_end_func     *session_end_func;
     struct list_head            *ilist;
 
-    __list_for_each(ilist,&(session->head_session_end_func))
+    list_for_each(ilist,&(session->head_session_end_func))
     {
         session_end_func = list_entry(ilist, struct session_end_func, list);
         if ((session_end_func->func==func) &&
@@ -569,7 +568,7 @@ int run_session_end_func (struct cwmp *cwmp, struct list_head *head_func)
     struct list_head            *ilist;
     struct session_end_func     *session_end_func;
     int                         error = CWMP_OK;
-    __list_for_each(ilist,head_func)
+    list_for_each(ilist,head_func)
     {
         session_end_func = list_entry(ilist, struct session_end_func, list);
         error = session_end_func->func(cwmp,session_end_func->input);
@@ -594,6 +593,12 @@ int cwmp_apply_acs_changes (struct cwmp *cwmp)
     return CWMP_OK;
 }
 
+void *thread_uloop_run (void *v)
+{
+	uloop_run();
+	return NULL;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -604,19 +609,13 @@ int main(int argc, char **argv)
     pthread_t                       connection_request_thread;
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
-    pthread_t                       kernel_value_change_thread;
-    pthread_t                       lib_value_change_thread;
+    pthread_t                       ubus_thread;
 
     if (error = cwmp_init(argc, argv, cwmp))
     {
         return error;
     }
     CWMP_LOG(INFO,"STARTING CWMP");
-
-    if (error = load_dm_list(UCI_DM_XML_FILE_LIST))
-    {
-        return error;
-    }
 
     if (error = cwmp_load_saved_session(cwmp, NULL, ALL))
     {
@@ -632,6 +631,11 @@ int main(int argc, char **argv)
     cwmp_schedule_session(cwmp);
 
 #else
+    error = pthread_create(&ubus_thread, NULL, &thread_uloop_run, NULL);
+    if (error<0)
+	{
+		CWMP_LOG(ERROR,"Error when creating the ubus thread!");
+	}
     error = pthread_create(&session_scheduler_thread, NULL, &cwmp_schedule_session, (void *)cwmp);
     if (error<0)
     {
@@ -660,23 +664,14 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
-    error = pthread_create(&kernel_value_change_thread, NULL, &thread_kernel_api_cwmp_value_change_parameters, NULL);
-    if (error<0)
-    {
-        CWMP_LOG(ERROR,"Error when creating the kernel value change thread!");
-    }
-    error = pthread_create(&lib_value_change_thread, NULL, &thread_lib_api_cwmp_value_change_parameters, NULL);
-    if (error<0)
-    {
-        CWMP_LOG(ERROR,"Error when creating the lib/cli value change thread!");
-    }
+
+    pthread_join(ubus_thread, NULL);
     pthread_join(session_scheduler_thread, NULL);
     pthread_join(periodic_event_thread, NULL);
     pthread_join(connection_request_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
-    pthread_join(kernel_value_change_thread, NULL);
-    pthread_join(lib_value_change_thread, NULL);
+
 #endif
 
     CWMP_LOG(INFO,"EXIT CWMP");

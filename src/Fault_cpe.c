@@ -17,7 +17,6 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 
 #define FAULT_CPE_TYPE_CLIENT   0
 #define FAULT_CPE_TYPE_SERVER   1

@@ -17,11 +17,7 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
-#include "dm.h"
-#include "dm_rpc.h"
-
-LIST_HEAD(list_dm_del_handler);
+#include "external.h"
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe (struct session *session);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_deleteObject (struct session *session);
@@ -31,10 +27,8 @@ int cwmp_rpc_cpe_deleteObject_response(struct cwmp *cwmp, struct session *sessio
 int cwmp_rpc_cpe_deleteObject_end(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_session_rpc_cpe_destructor (struct cwmp *cwmp, struct session *session, struct rpc_cpe *rpc_cpe);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_Fault (struct session *session, int idx);
-int cwmp_dm_deleteObject(struct cwmp *cwmp, struct dm_set_handler *dm_set_handler, char *path);
-int dm_run_queue_cmd_handler_at_end_session (struct cwmp *cwmp, struct dm_set_handler *dm_set_handler);
-int cwmp_reboot(struct cwmp *cwmp,void *v);
-int dm_cwmp_config_reload (struct cwmp *cwmp, void *v );
+
+extern struct FAULT_CPE FAULT_CPE_ARRAY [FAULT_CPE_ARRAY_SIZE];
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe_deleteObject (struct session *session)
 {
@@ -72,73 +66,53 @@ int cwmp_rpc_cpe_deleteObject_response_data_init(struct cwmp *cwmp, struct sessi
     struct _cwmp1__DeleteObject         *p_soap_cwmp1__DeleteObject;
     struct _cwmp1__DeleteObjectResponse *p_soap_cwmp1__DeleteObjectResponse;
     struct dm_set_handler               *dm_del_handler;
-    char                                buf[128];
-    int                                 error;
-    int                                 InstanceNumber;
-
-    dm_del_handler = calloc(1,sizeof(struct dm_set_handler));
-
-    if (dm_del_handler == NULL)
-    {
-        return FAULT_CPE_INTERNAL_ERROR_IDX;
-    }
-
-    list_add_tail(&(dm_del_handler->list),&(list_dm_del_handler));
-
-    INIT_LIST_HEAD (&(dm_del_handler->cmd_list));
-    INIT_LIST_HEAD (&(dm_del_handler->cancel_list));
-    INIT_LIST_HEAD (&(dm_del_handler->service_list));
+    char                                *status=NULL, *fault=NULL, buf[128];
+    int                                 i,error;
 
     p_soap_cwmp1__DeleteObject          = (struct _cwmp1__DeleteObject*)this->method_data;
     p_soap_cwmp1__DeleteObjectResponse  = (struct _cwmp1__DeleteObjectResponse*)this->method_response_data;
 
-    error = cwmp_dm_deleteObject(cwmp, dm_del_handler, p_soap_cwmp1__DeleteObject->ObjectName);
+	if (external_object_action("delete", p_soap_cwmp1__DeleteObject->ObjectName))
+	{
+		if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
+	}
+	external_fetch_delObjectResp(&status, &fault);
+	if (fault && fault[0]=='9')
+	{
+		error = FAULT_CPE_INTERNAL_ERROR_IDX;
+		for (i=1; i<FAULT_CPE_ARRAY_SIZE; i++)
+		{
+			if (strcmp(fault, FAULT_CPE_ARRAY[i].CODE)==0)
+			{
+				error = i;
+				break;
+			}
+		}
+		free(fault);
+		if (cwmp_add_session_rpc_cpe_Fault(session,error)==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
 
-    if (error != FAULT_CPE_NO_FAULT_IDX)
-    {
-        dm_free_dm_set_handler_queues(dm_del_handler);
-        if (dm_del_handler!=NULL)
-        {
-            list_del(&(dm_del_handler->list));
-            free(dm_del_handler);
-        }
-        if (cwmp_add_session_rpc_cpe_Fault(session,error)==NULL)
-        {
-            return CWMP_GEN_ERR;
-        }
-        return CWMP_FAULT_CPE;
-    }
+	}
+	if (status==NULL)
+	{
+		if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
+	}
+	p_soap_cwmp1__DeleteObjectResponse->Status = atoi(status);
 
-    CWMP_LOG(INFO,"RUN uci commit"); /* TODO to be removed*/
-    sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,p_soap_cwmp1__DeleteObject->ParameterKey);
-    uci_set_value (buf);
-    uci_commit_value();
-
-    dm_run_queue_cmd_handler(dm_del_handler,FALSE);
-
-    p_soap_cwmp1__DeleteObjectResponse->Status = _cwmp1__DeleteObjectResponse_Status__0;
-
-    if (dm_del_handler->reboot_required==TRUE)
-    {
-        CWMP_LOG(INFO,"Add reboot at the end of the session");
-        add_session_end_func(session,cwmp_reboot,NULL,TRUE);
-        p_soap_cwmp1__DeleteObjectResponse->Status = _cwmp1__DeleteObjectResponse_Status__1;
-    }
-
-    if (dm_del_handler->cmd_list.next!=&(dm_del_handler->cmd_list))
-    {
-        add_session_end_func(session,dm_run_queue_cmd_handler_at_end_session,dm_del_handler,FALSE);
-        p_soap_cwmp1__DeleteObjectResponse->Status = _cwmp1__DeleteObjectResponse_Status__1;
-        return CWMP_OK;
-    }
-
-    dm_free_dm_set_handler_queues(dm_del_handler);
-
-    if (dm_del_handler!=NULL)
-    {
-        list_del(&(dm_del_handler->list));
-        free(dm_del_handler);
-    }
+	sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,p_soap_cwmp1__DeleteObject->ParameterKey);
+	uci_set_value (buf);
+	uci_commit_value();
 
     return CWMP_OK;
 }

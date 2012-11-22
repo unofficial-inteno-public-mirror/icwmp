@@ -22,7 +22,6 @@ Author contact information:
 #include <string.h>
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 #include "backupSession.h"
 
 #if LIBCURL_VERSION_NUM < 0x070907
@@ -288,7 +287,7 @@ int cwmp_rpc_cpe_download (struct cwmp *cwmp, struct session *session, struct rp
     	pthread_mutex_lock (&mutex_download);
 
     	scheduled_time = time(NULL) + p_soap_cwmp1__Download->DelaySeconds;
-    	__list_for_each(ilist,&(list_download))
+    	list_for_each(ilist,&(list_download))
     	{
     	    download = list_entry(ilist,struct download, list);
     	    if (download->scheduled_time == scheduled_time)

@@ -21,7 +21,6 @@ Author contact information:
 #include <string.h>
 #include <regex.h>
 #include <sys/stat.h>
-#include "list.h"
 #include "soapH.h"
 #include "cwmp.h"
 #include <uci.h>
@@ -52,66 +51,6 @@ void show_version()
 #else
     fprintf(stdout, "\nVersion: %s revision %s\n\n",CWMP_VERSION,CWMP_REVISION);
 #endif
-}
-
-int load_dm_list(char *cmd)
-{
-    struct  uci_ptr             ptr;
-    struct  uci_context         *c = uci_alloc_context();
-    char                        *s,*t;
-    int                         error;
-    struct uci_element          *e;
-
-    if (!c)
-    {
-        CWMP_LOG(ERROR, "Out of memory");
-        return CWMP_GEN_ERR;
-    }
-
-    s = strdup(cmd);
-    t = s;
-    if (uci_lookup_ptr(c, &ptr, s, TRUE) != UCI_OK)
-    {
-        CWMP_LOG(ERROR, "Invalid uci command path: %s",cmd);
-        free(t);
-        uci_free_context(c);
-        return CWMP_GEN_ERR;
-    }
-
-    if(ptr.o == NULL)
-    {
-        CWMP_LOG(ERROR,"NO DATA MODEL XML FILES TO BE LOADED");
-        free(t);
-        uci_free_context(c);
-        return CWMP_GEN_ERR;
-    }
-
-    if(ptr.o->type == UCI_TYPE_LIST)
-    {
-        uci_foreach_element(&ptr.o->v.list, e)
-        {
-            if((e != NULL)&&(e->name))
-            {
-                CWMP_LOG(INFO,"LOADING DATA MODEL FILE %s",e->name);
-                if((error = dm_xml_init_tree(e->name)) != CWMP_OK)
-                {
-                    CWMP_LOG(ERROR,"LOADING DATA MODEL FILE '%s' FAILED",e->name);
-                    free(t);
-                    uci_free_context(c);
-                    return error;
-                }
-            }
-            else
-            {
-                free(t);
-                uci_free_context(c);
-                return CWMP_GEN_ERR;
-            }
-        }
-    }
-    free(t);
-    uci_free_context(c);
-    return CWMP_OK;
 }
 
 int uci_get_list_value(char *cmd, struct list_head *list)
@@ -191,9 +130,9 @@ int uci_get_value_common(char *cmd,char **value,bool state)
     }
     if (state)
     {
-        strcpy(state_path,"/var/state");
+        /*strcpy(state_path,"/var/state");
         uci_add_history_path(c, c->savedir);
-        uci_set_savedir(c, state_path);
+        uci_set_savedir(c, state_path);*/ /* KMD TODO to check for DHCP*/
     }
     s = strdup(cmd);
     t = s;
@@ -252,9 +191,9 @@ static int uci_action_value_common(char *cmd, uci_config_action action)
 
     if (action == CMD_SET_STATE)
     {
-        strcpy(state_path,"/var/state");
+        /*strcpy(state_path,"/var/state");
         uci_add_history_path(c, c->savedir);
-        uci_set_savedir(c, state_path);
+        uci_set_savedir(c, state_path);*/ /* KMD TODO to check for DHCP*/
     }
 
     if (uci_lookup_ptr(c, &ptr, s, TRUE) != UCI_OK)
@@ -909,6 +848,24 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+
+    if((error = uci_get_value(UCI_CPE_UBUS_SOCKET_PATH,&value)) == CWMP_OK)
+	{
+		if(value != NULL)
+		{
+			if (conf->ubus_socket!=NULL)
+			{
+				free(conf->ubus_socket);
+			}
+			conf->ubus_socket = value;
+			value = NULL;
+		}
+	}
+	else
+	{
+		return error;
+	}
+
     if((error = uci_get_value(UCI_LOG_SEVERITY_PATH,&value)) == CWMP_OK)
     {
         if(value != NULL)

@@ -19,7 +19,6 @@ Author contact information:
 #include <signal.h>
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 
 LIST_HEAD(list_schedule_inform);
 static pthread_mutex_t      mutex_schedule_inform;
@@ -143,7 +142,7 @@ int cwmp_rpc_cpe_scheduleInform (struct cwmp *cwmp, struct session *session, str
     pthread_mutex_lock (&mutex_schedule_inform);
     p = (struct _cwmp1__ScheduleInform *) this->method_data;
     scheduled_time = time(NULL) + p->DelaySeconds;
-    __list_for_each(ilist,&(list_schedule_inform))
+    list_for_each(ilist,&(list_schedule_inform))
     {
         schedule_inform = list_entry(ilist,struct schedule_inform, list);
         if (schedule_inform->scheduled_time == scheduled_time)

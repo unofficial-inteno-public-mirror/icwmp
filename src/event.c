@@ -30,6 +30,8 @@ void backup_session_insert_parameter(char *name, char *value, char *parent,char 
 int cwmp_scheduleInform_remove_all();
 int cwmp_scheduledDownload_remove_all();
 
+extern struct cwmp cwmp_main;
+
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_0BOOTSTRAP]                      = {"0 BOOTSTRAP",                       EVENT_TYPE_SINGLE,  EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
@@ -65,7 +67,7 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
         backup_session_insert_rpc("Inform",NULL,RPC_QUEUE);
         backup_session_insert_event(pEventStruct->EventCode, pEventStruct->CommandKey, event_container->id, RPC_QUEUE);
 
-        __list_for_each(ilist,&(event_container->head_paramater_container))
+        list_for_each(ilist,&(event_container->head_paramater_container))
         {
             paramater_container         = list_entry(ilist, struct paramater_container, list);
             ptr_ParameterValueStruct    = &(paramater_container->paramater);
@@ -92,7 +94,7 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_i
         cwmp->head_event_container = &(session->head_event_container);
     }
     session = list_entry (cwmp->head_event_container, struct session,head_event_container);
-    __list_for_each(ilist, cwmp->head_event_container)
+    list_for_each(ilist, cwmp->head_event_container)
     {
         event_container = list_entry (ilist, struct event_container, list);
         if (event_container->idx==event_idx &&
@@ -128,20 +130,32 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_i
 struct paramater_container *cwmp_add_parameter_container
     (struct cwmp *cwmp,
      struct event_container *event_container,
-     char *name)
+     char *name,
+     char *value,
+     char *type)
 {
     struct paramater_container          *paramater_container;
     struct cwmp1__ParameterValueStruct  *ptr_ParameterValueStruct;
     struct list_head                    *ilist;
     struct session                      *session;
 
-    __list_for_each(ilist,&(event_container->head_paramater_container))
+    list_for_each(ilist,&(event_container->head_paramater_container))
     {
         paramater_container         = list_entry(ilist, struct paramater_container, list);
         ptr_ParameterValueStruct    = &(paramater_container->paramater);
         if(strcmp(ptr_ParameterValueStruct->Name,name)==0)
         {
-            return paramater_container;
+        	if (value)
+        	{
+				free(ptr_ParameterValueStruct->Value);
+				ptr_ParameterValueStruct->Value = strdup(value);
+        	}
+        	if (type)
+			{
+				free(ptr_ParameterValueStruct->Type);
+				ptr_ParameterValueStruct->Type = strdup(type);
+			}
+        	return paramater_container;
         }
     }
     paramater_container = calloc (1, sizeof(struct paramater_container));
@@ -150,10 +164,55 @@ struct paramater_container *cwmp_add_parameter_container
         return NULL;
     }
     paramater_container->paramater.Name  = strdup(name);
+    if (value) ptr_ParameterValueStruct->Value = strdup(value);
+    if (type) ptr_ParameterValueStruct->Type = strdup(type);
     list_add_tail(&(paramater_container->list), &(event_container->head_paramater_container));
     session = list_entry (cwmp->head_event_container, struct session,head_event_container);
     session->parameter_size++;
     return paramater_container;
+}
+
+void cwmp_add_notification (char *name, char *value, char *type)
+{
+	struct handler_ParameterValueStruct *handler_ParameterValueStruct;
+	char *notification = NULL;
+	struct event_container   *event_container;
+	struct cwmp   *cwmp = &cwmp_main;
+
+	external_get_action_data("notification", name, &notification);
+	if (!notification || notification[0]=='0')
+	{
+		free(notification);
+		return;
+	}
+
+	pthread_mutex_lock (&(cwmp->mutex_session_queue));
+	pthread_mutex_lock (&(cwmp->api_value_change.mutex));
+	handler_ParameterValueStruct = calloc(1, sizeof(struct handler_ParameterValueStruct));
+	handler_ParameterValueStruct->ParameterValueStruct = calloc (1, sizeof(struct cwmp1__ParameterValueStruct));
+	handler_ParameterValueStruct->ParameterValueStruct->Name = strdup(name);
+	if (value) handler_ParameterValueStruct->ParameterValueStruct->Value = strdup(value);
+	if (type) handler_ParameterValueStruct->ParameterValueStruct->Type = strdup(type);
+	else if (value)	handler_ParameterValueStruct->ParameterValueStruct->Type = strdup("xsd:string");
+	list_add_tail(&(handler_ParameterValueStruct->list), &(cwmp->api_value_change.parameter_list));
+	pthread_mutex_unlock (&(cwmp->api_value_change.mutex));
+	if (notification[0]=='2')
+	{
+		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
+		if (event_container == NULL)
+		{
+			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+			free(notification);
+			return;
+		}
+		cwmp_save_event_container (cwmp,event_container);
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		pthread_cond_signal(&(cwmp->threshold_session_send));
+		free(notification);
+		return;
+	}
+	free(notification);
+	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 }
 
 int cwmp_root_cause_event_boot (struct cwmp *cwmp)
@@ -265,7 +324,7 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        paramater_container = cwmp_add_parameter_container (cwmp,event_container, "InternetGatewayDevice.ManagementServer.URL");
+        paramater_container = cwmp_add_parameter_container (cwmp,event_container, "InternetGatewayDevice.ManagementServer.URL", NULL, NULL);
         cwmp_save_event_container (cwmp,event_container);
         save_acs_bkp_config (cwmp);
         cwmp_scheduleInform_remove_all();
@@ -350,7 +409,7 @@ int cwmp_root_cause_event_iccu_value_change (struct cwmp *cwmp)
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        cwmp_add_parameter_container (cwmp, event_container, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL");
+        cwmp_add_parameter_container (cwmp, event_container, "InternetGatewayDevice.ManagementServer.ConnectionRequestURL", NULL, NULL);
         cwmp_save_event_container (cwmp,event_container);
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
     }
@@ -373,14 +432,16 @@ int cwmp_root_cause_event_api_value_change(struct cwmp *cwmp, struct session *se
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        __list_for_each(ilist,&(cwmp->api_value_change.parameter_list))
+        list_for_each(ilist,&(cwmp->api_value_change.parameter_list))
         {
             struct handler_ParameterValueStruct         *handler_ParameterValueStruct;
             handler_ParameterValueStruct    = list_entry(ilist,struct handler_ParameterValueStruct,list);
-            cwmp_add_parameter_container (cwmp, event_container, handler_ParameterValueStruct->ParameterValueStruct->Name);
+            cwmp_add_parameter_container (cwmp, event_container, handler_ParameterValueStruct->ParameterValueStruct->Name, handler_ParameterValueStruct->ParameterValueStruct->Value, handler_ParameterValueStruct->ParameterValueStruct->Type);
             ilist = ilist->prev;
             list_del(&(handler_ParameterValueStruct->list));
             free (handler_ParameterValueStruct->ParameterValueStruct->Name);
+            free (handler_ParameterValueStruct->ParameterValueStruct->Type);
+            free (handler_ParameterValueStruct->ParameterValueStruct->Value);
             free (handler_ParameterValueStruct->ParameterValueStruct);
             free (handler_ParameterValueStruct);
         }

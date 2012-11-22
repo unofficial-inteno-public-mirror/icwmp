@@ -17,7 +17,6 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 #include "backupSession.h"
 
 int cwmp_rpc_acs_transferComplete_data_init (struct cwmp *cwmp, struct session *session, struct rpc_acs *this);

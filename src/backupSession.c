@@ -21,7 +21,6 @@ Author contact information:
 #include <expat.h>
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 #include "backupSession.h"
 
 static int backup_session_insert (char *element, char *value, char *parent, char *parent_name, struct attribute *attrs, int level);
@@ -61,6 +60,22 @@ static struct _cwmp1__TransferComplete      *p_soap_cwmp1__TransferComplete;
 static enum backup_loading                  init_option;
 static struct download          			*download_request = NULL;
 extern int									count_download_queue;
+
+long int get_xml_file_size(FILE *pFile)
+{
+    long int size;
+
+    if(pFile!=NULL)
+    {
+        fseek (pFile, 0, SEEK_END);
+
+        size = ftell (pFile);
+        rewind(pFile);
+        return size;
+    }
+    return 0;
+}
+
 
 void start_bkp_hndl(void *data, const char *el, const char **attr)
 {
@@ -169,7 +184,7 @@ void start_bkp_hndl(void *data, const char *el, const char **attr)
                     scheduled_time = atol(attr[i + 1]);
                 }
             }
-            __list_for_each(ilist,&(list_schedule_inform))
+            list_for_each(ilist,&(list_schedule_inform))
             {
                 schedule_inform = list_entry(ilist,struct schedule_inform, list);
                 if (schedule_inform->scheduled_time > scheduled_time)
@@ -259,7 +274,7 @@ void end_bkp_hndl(void *data, const char *el)
         }
         if(strcmp(el,"download") == 0)
 		{
-			__list_for_each(ilist,&(list_download))
+			list_for_each(ilist,&(list_download))
 			{
 				idownload_request = list_entry(ilist,struct download,list);
 				if (idownload_request->scheduled_time > download_request->scheduled_time)
@@ -330,7 +345,7 @@ void end_bkp_hndl(void *data, const char *el)
             {
                 if(event_container_save != NULL)
                 {
-                    cwmp_add_parameter_container (save_cwmp,event_container_save, parameter_name);
+                    cwmp_add_parameter_container (save_cwmp,event_container_save, parameter_name, NULL, NULL);
                 }
             }
             if(parameter_name != NULL)

@@ -20,7 +20,7 @@ Author contact information:
 #include <pthread.h>
 
 #include "soapH.h"
-#include "list.h"
+#include <libubox/list.h>
 
 #define DEFAULT_LOG_FILE_SIZE                               10240
 #define DEFAULT_LOG_FILE_NAME                               "/var/log/cwmpd.log"
@@ -135,6 +135,7 @@ Author contact information:
 #define UCI_LOG_SEVERITY_PATH                               "cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH                                 "cwmp.cpe.userid"
 #define UCI_CPE_PASSWD_PATH                                 "cwmp.cpe.passwd"
+#define UCI_CPE_UBUS_SOCKET_PATH                            "cwmp.cpe.ubus_socket"
 #define UCI_CPE_PORT_PATH                                   "cwmp.cpe.port"
 #define UCI_NOTIFICATION_PASSIVE_PATH                       "cwmp.notification.passive"
 #define UCI_NOTIFICATION_ACTIVE_PATH                        "cwmp.notification.active"
@@ -160,10 +161,10 @@ Author contact information:
 
 #define ENCODING_STYLE_URL                                  "http://schemas.xmlsoap.org/soap/encoding/"
 
-typedef enum bool {
+enum cwmp_bool {
     FALSE,
     TRUE
-} bool;
+} ;
 
 
 typedef struct config {
@@ -173,6 +174,7 @@ typedef struct config {
     char                                *acs_passwd;
     char                                *cpe_userid;
     char                                *cpe_passwd;
+    char                                *ubus_socket;
     int                                 connection_request_port;
     int                                 period;
     bool                                periodic_enable;
@@ -339,6 +341,11 @@ typedef struct ACCESSLIST_CONST_STRUCT
     char                                *UCI_ACCESSLIST_PATH;
 } ACCESSLIST_CONST_STRUCT;
 
+typedef struct handler_ParameterValueStruct {
+    struct list_head                    list;
+    struct cwmp1__ParameterValueStruct  *ParameterValueStruct;
+} handler_ParameterValueStruct;
+
 #ifdef WITH_CWMP_DEBUG
 # ifndef CWMP_LOG
 #  define CWMP_LOG(SEV,MESSAGE,args...) puts_log(SEV,MESSAGE,##args);
@@ -346,3 +353,13 @@ typedef struct ACCESSLIST_CONST_STRUCT
 #else
 # define CWMP_LOG(SEV,MESSAGE,args...)
 #endif
+
+#ifdef WITH_DEV_DEBUG
+# ifndef DD
+#  define DD(SEV,MESSAGE,args...) puts_log(SEV,MESSAGE,##args);
+# endif
+#else
+# define DD(SEV,MESSAGE,args...)
+#endif
+
+#define FREE(x) free(x)

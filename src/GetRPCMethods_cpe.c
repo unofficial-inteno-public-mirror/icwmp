@@ -16,7 +16,6 @@ Author contact information:
 */
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe (struct session *session);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_getRPCMethods (struct session *session);

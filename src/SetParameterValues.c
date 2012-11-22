@@ -17,11 +17,8 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
-#include "dm.h"
-#include "dm_rpc.h"
+#include "external.h"
 
-LIST_HEAD(list_dm_set_handler);
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe (struct session *session);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_setParameterValues (struct session *session);
@@ -29,13 +26,14 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
 int cwmp_rpc_cpe_setParameterValues_response_data_init(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_setParameterValues_response(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_setParameterValues_end(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
-int cwmp_dm_setParameterValues(struct cwmp *cwmp, struct dm_set_handler *dm_set_handler, char *path, char *value);
 int dm_run_queue_cmd_handler_at_end_session (struct cwmp *cwmp, struct dm_set_handler *dm_set_handler);
 int cwmp_reboot(struct cwmp *cwmp,void *v);
 int dm_cwmp_config_reload (struct cwmp *cwmp, void *v );
 struct rpc_cpe *cwmp_add_session_rpc_cpe_Fault (struct session *session, int idx);
 int cwmp_session_rpc_cpe_destructor (struct cwmp *cwmp, struct session *session, struct rpc_cpe *rpc_cpe);
 static int check_duplicated_parameter_name (struct cwmp1__ParameterValueStruct **ptr_ParameterValueStruct, int size);
+extern struct FAULT_CPE FAULT_CPE_ARRAY [FAULT_CPE_ARRAY_SIZE];
+extern struct list_head external_list_parameter;
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe_setParameterValues (struct session *session)
 {
@@ -69,23 +67,11 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
     struct _cwmp1__SetParameterValuesResponse   *p_soap_cwmp1__SetParameterValuesResponse;
     struct cwmp1ParameterValueList              *ParameterList;
     struct cwmp1__ParameterValueStruct          **ptr_ParameterValueStruct,*ParameterValueStruct;
-    char                                        *parameter_key,buf[128];
+    struct list_head 							*list;
+    struct external_parameter					*external_parameter;
+    char                                        *parameter_key,buf[128],*status=NULL;
     int                                         i,n,size,error;
-    struct dm_set_handler                       *dm_set_handler;
     struct rpc_cpe                  			*rpc_cpe_fault;
-
-    dm_set_handler = calloc(1,sizeof(struct dm_set_handler));
-
-    if (dm_set_handler == NULL)
-    {
-        return FAULT_CPE_INTERNAL_ERROR_IDX;
-    }
-
-    list_add_tail(&(dm_set_handler->list),&(list_dm_set_handler));
-
-    INIT_LIST_HEAD (&(dm_set_handler->cmd_list));
-    INIT_LIST_HEAD (&(dm_set_handler->cancel_list));
-    INIT_LIST_HEAD (&(dm_set_handler->service_list));
 
     p_soap_cwmp1__SetParameterValues            = (struct _cwmp1__SetParameterValues *)this->method_data;
     p_soap_cwmp1__SetParameterValuesResponse    = (struct _cwmp1__SetParameterValuesResponse *)this->method_response_data;
@@ -107,66 +93,58 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
         ParameterValueStruct = *ptr_ParameterValueStruct;
         CWMP_LOG(INFO,"param[%d] Name = %s, Value = %s",i,ParameterValueStruct->Name,(strlen(ParameterValueStruct->Value)<1000)?ParameterValueStruct->Value:"(Unable to display big stings)");
 
-        error = cwmp_dm_setParameterValues(cwmp, dm_set_handler, ParameterValueStruct->Name, ParameterValueStruct->Value);
-
-        if (error != FAULT_CPE_NO_FAULT_IDX)
-        {
-            if (dm_set_handler->uci)
-            {
-                CWMP_LOG(INFO,"RUN uci revert"); /* TODO to be removed*/
-                uci_revert_value();
-            }
-            dm_run_queue_cancel_handler(dm_set_handler);
-            dm_free_dm_set_handler_queues(dm_set_handler);
-            if (dm_set_handler!=NULL)
-            {
-                list_del(&(dm_set_handler->list));
-                free(dm_set_handler);
-            }
-            if ((rpc_cpe_fault = cwmp_add_session_rpc_cpe_Fault(session,error))==NULL)
-            {
-                return CWMP_GEN_ERR;
-            }
-            cwmp_rpc_cpe_Fault_parameter_cause(rpc_cpe_fault,ParameterValueStruct->Name);
-            return CWMP_FAULT_CPE;
-        }
+        if (external_set_action_write("notification",ParameterValueStruct->Name, NULL))
+		{
+        	external_free_list_parameter();
+        	if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
+			{
+				return CWMP_GEN_ERR;
+			}
+			return CWMP_FAULT_CPE;
+		}
     }
+    if (external_set_action_execute("value"))
+	{
+    	external_free_list_parameter();
+    	if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
+	}
+    list_for_each(list,&external_list_parameter) {
+		external_parameter = list_entry(list, struct external_parameter, list);
+		if (external_parameter->fault_code &&
+				external_parameter->fault_code[0]=='9')
+		{
+			error = FAULT_CPE_INTERNAL_ERROR_IDX;
+			for (i=1; i<FAULT_CPE_ARRAY_SIZE; i++)
+			{
+				if (strcmp(external_parameter->fault_code, FAULT_CPE_ARRAY[i].CODE)==0)
+				{
+					error = i;
+					break;
+				}
+			}
+			if ((rpc_cpe_fault = cwmp_add_session_rpc_cpe_Fault(session,error))==NULL)
+			{
+				return CWMP_GEN_ERR;
+			}
+			cwmp_rpc_cpe_Fault_parameter_cause(rpc_cpe_fault,ParameterValueStruct->Name);
+			external_free_list_parameter();
+			return CWMP_FAULT_CPE;
+		}
+	}
 
-    dm_run_queue_cmd_handler(dm_set_handler,FALSE);
-    p_soap_cwmp1__SetParameterValuesResponse->Status = _cwmp1__SetParameterValuesResponse_Status__0;
-
-    CWMP_LOG(INFO,"RUN uci commit");
-	sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,parameter_key);
+    sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,parameter_key);
 	uci_set_value (buf);
 	uci_commit_value();
 
-    if (dm_set_handler->cwmp_reload==TRUE)
-    {
-        CWMP_LOG(INFO,"Add cwmp  config reload at the end of the session");
-        add_session_end_func(session,dm_cwmp_config_reload,NULL,FALSE);
-        p_soap_cwmp1__SetParameterValuesResponse->Status = _cwmp1__SetParameterValuesResponse_Status__1;
-    }
-    if (dm_set_handler->reboot_required==TRUE)
-    {
-        CWMP_LOG(INFO,"Add reboot at the end of the session");
-        add_session_end_func(session,cwmp_reboot,NULL,TRUE);
-        p_soap_cwmp1__SetParameterValuesResponse->Status = _cwmp1__SetParameterValuesResponse_Status__1;
-    }
-    if (dm_set_handler->cmd_list.next!=&(dm_set_handler->cmd_list) ||
-        (dm_set_handler->service_list.next!=&(dm_set_handler->service_list) && dm_set_handler->reboot_required==FALSE))
-    {
-        add_session_end_func(session,dm_run_queue_cmd_handler_at_end_session,dm_set_handler,FALSE);
-        p_soap_cwmp1__SetParameterValuesResponse->Status = _cwmp1__SetParameterValuesResponse_Status__1;
-        return CWMP_OK;
-    }
+	external_fetch_setParamValRespStatus(&status);
 
-    dm_free_dm_set_handler_queues(dm_set_handler);
+	p_soap_cwmp1__SetParameterValuesResponse->Status = atoi(status);
 
-    if (dm_set_handler!=NULL)
-    {
-        list_del(&(dm_set_handler->list));
-        free(dm_set_handler);
-    }
+	free(status);
 
     return CWMP_OK;
 }

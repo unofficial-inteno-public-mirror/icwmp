@@ -17,9 +17,7 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
-#include "dm.h"
-#include "dm_rpc.h"
+#include "external.h"
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe (struct session *session);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_getParameterNames (struct session *session);
@@ -27,12 +25,12 @@ int cwmp_rpc_cpe_getParameterNames (struct cwmp *cwmp, struct session *session, 
 int cwmp_rpc_cpe_getParameterNames_response_data_init(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_getParameterNames_response(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_getParameterNames_end(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
-int cwmp_dm_getParameterNames(struct cwmp *cwmp, char *path, struct list_head *list, int *n, enum xsd__boolean NextLevel);
 struct rpc_cpe *cwmp_add_session_rpc_cpe_Fault (struct session *session, int idx);
-static int free_list_getParameterNames(struct list_head *list);
 int cwmp_session_rpc_cpe_destructor (struct cwmp *cwmp, struct session *session, struct rpc_cpe *rpc_cpe);
 
 extern const struct CPE_METHOD_CONSTRUCTORS CPE_METHOD_CONSTRUCTORS_ARRAY [COUNT_RPC_CPE];
+extern struct FAULT_CPE FAULT_CPE_ARRAY [FAULT_CPE_ARRAY_SIZE];
+extern struct list_head external_list_parameter;
 
 struct rpc_cpe *cwmp_add_session_rpc_cpe_getParameterNames (struct session *session)
 {
@@ -66,27 +64,54 @@ int cwmp_rpc_cpe_getParameterNames (struct cwmp *cwmp, struct session *session, 
     struct _cwmp1__GetParameterNamesResponse    *p_soap_cwmp1__GetParameterNamesResponse;
     struct cwmp1ParameterInfoList               *ParameterList;
     struct cwmp1__ParameterInfoStruct           **ptrParameterInfoStruct;
+    struct cwmp1__ParameterInfoStruct           *ParameterInfoStruct;
+    struct external_parameter 					*external_parameter;
+    struct list_head 							*list;
     char                                        *ParameterPath;
-    enum xsd__boolean                           NextLevel;
-    int                                         i,size,error;
-    LIST_HEAD(list_ParameterInfoStruct);
+    char                                        NextLevel[2];
+    int                                         i,size=0,error;
 
     p_soap_cwmp1__GetParameterNames         = (struct _cwmp1__GetParameterNames *)this->method_data;
     p_soap_cwmp1__GetParameterNamesResponse = (struct _cwmp1__GetParameterNamesResponse *)this->method_response_data;
     ParameterPath                           = *(p_soap_cwmp1__GetParameterNames->ParameterPath);
-    NextLevel                               = p_soap_cwmp1__GetParameterNames->NextLevel;
+    sprintf(NextLevel,"%u",p_soap_cwmp1__GetParameterNames->NextLevel);
 
     CWMP_LOG(INFO,"ParameterPath = \"%s\"", ParameterPath);
-    error = cwmp_dm_getParameterNames(cwmp, ParameterPath, &list_ParameterInfoStruct, &size,NextLevel);
-    if (error != FAULT_CPE_NO_FAULT_IDX)
+    if (external_get_action("name", ParameterPath, NextLevel))
     {
-        free_list_getParameterNames(&list_ParameterInfoStruct);
-        if (cwmp_add_session_rpc_cpe_Fault(session,error)==NULL)
+	    external_free_list_parameter();
+        if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
         {
             return CWMP_GEN_ERR;
         }
         return CWMP_FAULT_CPE;
     }
+
+    list_for_each(list,&external_list_parameter) {
+    	external_parameter = list_entry(list, struct external_parameter, list);
+    	if (external_parameter->fault_code &&
+    			external_parameter->fault_code[0]=='9')
+    	{
+    		error = 0;
+    		for (i=1; i<FAULT_CPE_ARRAY_SIZE; i++)
+    		{
+    			if (strcmp(external_parameter->fault_code, FAULT_CPE_ARRAY[i].CODE)==0)
+    			{
+    				error = i;
+    				break;
+    			}
+    		}
+    		if(!error) error = FAULT_CPE_INTERNAL_ERROR_IDX;
+    		external_free_list_parameter();
+			if (cwmp_add_session_rpc_cpe_Fault(session,error)==NULL)
+			{
+				return CWMP_GEN_ERR;
+			}
+			return CWMP_FAULT_CPE;
+
+    	}
+    	size++;
+	}
 
     ParameterList               = calloc(1,sizeof(struct cwmp1ParameterInfoList));
     ptrParameterInfoStruct      = calloc(size,sizeof(struct cwmp1__ParameterInfoStruct *));
@@ -98,14 +123,18 @@ int cwmp_rpc_cpe_getParameterNames (struct cwmp *cwmp, struct session *session, 
     ParameterList->__size                                   = size;
     ParameterList->__ptrParameterInfoStruct                 = ptrParameterInfoStruct;
     p_soap_cwmp1__GetParameterNamesResponse->ParameterList  = ParameterList;
-    while(list_ParameterInfoStruct.next!=&list_ParameterInfoStruct)
-    {
-        struct handler_ParameterInfoStruct *handler_ParameterInfoStruct;
-        handler_ParameterInfoStruct     = list_entry(list_ParameterInfoStruct.next,struct handler_ParameterInfoStruct,list);
-        *ptrParameterInfoStruct         = handler_ParameterInfoStruct->ParameterInfoStruct;
+    while (external_list_parameter.next!=&external_list_parameter) {
+   		external_parameter = list_entry(external_list_parameter.next, struct external_parameter, list);
+        *ptrParameterInfoStruct         = calloc(1,sizeof(struct cwmp1__ParameterInfoStruct));
+        (*ptrParameterInfoStruct)->Name = external_parameter->name;
+        (*ptrParameterInfoStruct)->Writable = atoi(external_parameter->data);
         ptrParameterInfoStruct++;
-        list_del(list_ParameterInfoStruct.next);
-        free (handler_ParameterInfoStruct);
+
+        list_del(&external_parameter->list);
+		FREE(external_parameter->data);
+		FREE(external_parameter->type);
+		FREE(external_parameter->fault_code);
+		FREE(external_parameter);
     }
     return CWMP_OK;
 }
@@ -157,24 +186,3 @@ int cwmp_rpc_cpe_getParameterNames_end(struct cwmp *cwmp, struct session *sessio
     return CWMP_OK;
 }
 
-static int free_list_getParameterNames(struct list_head *list)
-{
-    struct handler_ParameterInfoStruct      *handler_ParameterInfoStruct;
-    struct cwmp1__ParameterInfoStruct       *ParameterInfoStruct;
-    while(list->next!=list)
-    {
-        handler_ParameterInfoStruct     = list_entry(list->next,struct handler_ParameterInfoStruct,list);
-        ParameterInfoStruct             = handler_ParameterInfoStruct->ParameterInfoStruct;
-        if (ParameterInfoStruct!=NULL)
-        {
-            if (ParameterInfoStruct->Name!=NULL)
-            {
-                free(ParameterInfoStruct->Name);
-            }
-            free(ParameterInfoStruct);
-        }
-        list_del(list->next);
-        free (handler_ParameterInfoStruct);
-    }
-    return CWMP_OK;
-}

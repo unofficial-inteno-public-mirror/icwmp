@@ -16,6 +16,7 @@ config 'cwmp' 'cpe'
 	option 'userid' 'cpeinteno'
 	option 'passwd' 'cpeinteno'
 	option 'port' '7547'
+	option ubus_socket /var/run/ubus.sock
 
 config 'cwmp' 'dm'
 	list 'xml' '/etc/cwmpd/dm/tr098.xml'

@@ -17,7 +17,6 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 
 int cwmp_rpc_acs_getRPCMethods_data_init (struct cwmp *cwmp, struct session *session, struct rpc_acs *this);
 int cwmp_rpc_acs_getRPCMethods_remote_call (struct cwmp *cwmp, struct session *session, struct rpc_acs *this);

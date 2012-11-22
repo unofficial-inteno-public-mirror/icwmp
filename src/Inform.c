@@ -19,12 +19,12 @@ Author contact information:
 #include <stdio.h>
 #include <string.h>
 #include "soapH.h"
-#include "list.h"
 #include "cwmp.h"
 #include "dm.h"
 #include "dm_rpc.h"
 #include <uci.h>
 #include "backupSession.h"
+#include "external.h"
 
 struct rpc_acs *cwmp_add_session_rpc_acs (struct session *session);
 struct rpc_acs *cwmp_add_session_rpc_acs_head (struct session *session);
@@ -39,13 +39,9 @@ int event_remove_all_event_container(struct session *session, int rem_from);
 
 void soap_serialize_cwmp1__Inform (struct soap *soap, const struct cwmp1__Inform *a);
 int soap_put_cwmp1__Inform (struct soap *soap, const struct cwmp1__Inform *a, const char *tag, const char *type);
-int free_list_getParameterValues(struct list_head *list);
 struct cwmp1__InformResponse *soap_get_cwmp1__InformResponse (struct soap *soap, struct cwmp1__InformResponse *p, const char *tag, const char *type);
 
-extern struct list_head     forced_inform_parameter_list;
-static int                  forced_inform_parameter_size=0;
-static LIST_HEAD(forced_inform_parameter_indice_list);
-extern char *TYPE_VALUES_ARRAY [COUNT_TYPE_VALUES];
+extern struct list_head external_list_parameter;
 
 struct rpc_acs *cwmp_add_session_rpc_acs_inform (struct session *session)
 {
@@ -82,8 +78,8 @@ int cwmp_rpc_acs_inform_data_init (struct cwmp *cwmp, struct session *session, s
     struct cwmp1__ParameterValueStruct  *ParameterValueStructForce, **ptr_ParameterValueStruct, *p,**pp;
     struct event_container              *event_container;
     struct paramater_container          *paramater_container;
-    struct forced_inform_parameter      *fip;
-    int                                 i, j, size, force_size = 0 , error;
+    struct external_parameter			*external_parameter;
+    int                                 i, j, size = 0, force_size = 0 , error;
     struct list_head                    *ilist,*jlist;
 
 
@@ -97,124 +93,128 @@ int cwmp_rpc_acs_inform_data_init (struct cwmp *cwmp, struct session *session, s
     {
         return CWMP_MEM_ERR;
     }
-    dm_get_deviceId_manufacturer(cwmp,&(DeviceIdStruct->Manufacturer));
-    dm_get_deviceId_oui(cwmp,&(DeviceIdStruct->OUI));
-    dm_get_deviceId_productClass(cwmp,&(DeviceIdStruct->ProductClass));
-    dm_get_deviceId_serialNumber(cwmp,&(DeviceIdStruct->SerialNumber));
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ManufacturerOUI", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ProductClass", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.SerialNumber", NULL)) return CWMP_GEN_ERR;
+    DeviceIdStruct->Manufacturer = strdup("Inteno");
+    if (external_get_action_execute()) return CWMP_GEN_ERR;
+    while (external_list_parameter.next!=&external_list_parameter) {
+        external_parameter = list_entry(external_list_parameter.next, struct external_parameter, list);
+        if(strcmp("InternetGatewayDevice.DeviceInfo.ManufacturerOUI", external_parameter->name)==0)
+        	DeviceIdStruct->OUI = external_parameter->data;
+        if(strcmp("InternetGatewayDevice.DeviceInfo.ProductClass", external_parameter->name)==0)
+        	DeviceIdStruct->ProductClass = external_parameter->data;
+        if(strcmp("InternetGatewayDevice.DeviceInfo.SerialNumber", external_parameter->name)==0)
+        	DeviceIdStruct->SerialNumber = external_parameter->data;
+        list_del(&external_parameter->list);
+        FREE(external_parameter->name);
+		FREE(external_parameter->type);
+        FREE(external_parameter->fault_code);
+        FREE(external_parameter);
+    }
+
     p_soap_cwmp1__Inform                = (struct cwmp1__Inform *) this->method_data;
     p_soap_cwmp1__Inform->DeviceId      = DeviceIdStruct;
     p_soap_cwmp1__Inform->CurrentTime   = time((time_t*)NULL);
     p_soap_cwmp1__Inform->RetryCount    = cwmp->retry_count_session;
     p_soap_cwmp1__Inform->MaxEnvelopesI = 1;
-     __list_for_each(ilist, &(forced_inform_parameter_list))
-    {
-        fip = list_entry (ilist, struct forced_inform_parameter,list);
-        if (strstr(fip->name,"{i}")==NULL)
-        {
-            force_size++;
-        }
-        else
-        {
-            int n = 0;
-            inform_dm_getParameterPaths_by_correspondence(cwmp,fip->name,&forced_inform_parameter_indice_list,&n);
-            force_size += n;
-        }
-    }
-    forced_inform_parameter_size        = force_size;
-    size                                = force_size + session->parameter_size;
-    p_soap_cwmp1__Inform->ParameterList = calloc(1,sizeof(struct cwmp1ParameterValueList));
-    ParameterValueStructForce           = calloc(force_size,sizeof(struct cwmp1__ParameterValueStruct));
-    ptr_ParameterValueStruct            = calloc(size,sizeof(struct cwmp1__ParameterValueStruct *));
+
+
     p_soap_cwmp1__Inform->Event         = calloc(1,sizeof(struct cwmp1EventList));
     pEventStruct                        = calloc(session->event_size,sizeof(struct cwmp1__EventStruct *));
-    if (p_soap_cwmp1__Inform->ParameterList == NULL ||
-        ParameterValueStructForce == NULL           ||
-        ptr_ParameterValueStruct == NULL            ||
-        p_soap_cwmp1__Inform->Event == NULL         ||
+    if (p_soap_cwmp1__Inform->Event == NULL ||
         pEventStruct==NULL)
     {
         return CWMP_MEM_ERR;
     }
-    p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct  = ptr_ParameterValueStruct;
-    p_soap_cwmp1__Inform->Event->__size                             = session->event_size;
-    p_soap_cwmp1__Inform->Event->__ptrEventStruct                   = pEventStruct;
-    i = 0;
-    __list_for_each(ilist, &(forced_inform_parameter_list))
-    {
-        fip = list_entry (ilist, struct forced_inform_parameter,list);
-        if (strstr(fip->name,"{i}")==NULL)
-        {
-            if (i!=0)
-            {
-                ParameterValueStructForce++;
-                ptr_ParameterValueStruct++;
-            }
-            i++;
-            ParameterValueStructForce->Name = strdup (fip->name);
-            ParameterValueStructForce->Type = TYPE_VALUES_ARRAY [fip->node->value_type];
-            if (error = get_node_paramater_value(fip->node,NULL,0,&(ParameterValueStructForce->Value)))
-            {
-                char t[1];
-                t[0] = 0;
-                ParameterValueStructForce->Value = strdup(t);
-            }
-            *ptr_ParameterValueStruct = ParameterValueStructForce;
-        }
-    }
-    __list_for_each(ilist, &(forced_inform_parameter_indice_list))
-    {
-        struct handler_ParameterValueStruct         *handler_ParameterValueStruct;
-        if (i!=0)
-        {
-            ParameterValueStructForce++;
-            ptr_ParameterValueStruct++;
-        }
-        i++;
-        handler_ParameterValueStruct        = list_entry(ilist,struct handler_ParameterValueStruct,list);
-        ParameterValueStructForce->Name     = handler_ParameterValueStruct->ParameterValueStruct->Name;
-        ParameterValueStructForce->Value    = handler_ParameterValueStruct->ParameterValueStruct->Value;
-        ParameterValueStructForce->Type     = handler_ParameterValueStruct->ParameterValueStruct->Type;
-        *ptr_ParameterValueStruct = ParameterValueStructForce;
-        ilist = ilist->prev;
-        list_del(&(handler_ParameterValueStruct->list));
-        free (handler_ParameterValueStruct->ParameterValueStruct);
-        free (handler_ParameterValueStruct);
-    }
-    pp  = p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct;
-    size    = 0;
-    error   = 1;
-    __list_for_each(ilist,&(session->head_event_container))
+
+    p_soap_cwmp1__Inform->Event->__size           = session->event_size;
+    p_soap_cwmp1__Inform->Event->__ptrEventStruct = pEventStruct;
+
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.Manufacturer", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ManufacturerOUI", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ProductClass", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.SerialNumber", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.HardwareVersion", NULL)) return CWMP_GEN_ERR;
+	if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.SoftwareVersion", NULL)) return CWMP_GEN_ERR;
+	if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ProvisioningCode", NULL)) return CWMP_GEN_ERR;
+	if (external_get_action_write("value","InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress", NULL)) return CWMP_GEN_ERR;
+    if (external_get_action_write("value","InternetGatewayDevice.ManagementServer.ConnectionRequestURL", NULL)) return CWMP_GEN_ERR;
+
+    if (external_simple("inform")) return CWMP_GEN_ERR;
+
+    list_for_each(ilist,&(session->head_event_container))
     {
         event_container = list_entry(ilist, struct event_container, list);
         *pEventStruct   = &(event_container->event);
-        pEventStruct ++;
+        if (ilist->next!=&(session->head_event_container))
+        	pEventStruct ++;
 
-        __list_for_each(jlist,&(event_container->head_paramater_container))
+        list_for_each(jlist,&(event_container->head_paramater_container))
         {
             paramater_container = list_entry(jlist, struct paramater_container, list);
-            for (j=0;j<(size+force_size);j++)
+            if (paramater_container->paramater.Value)
             {
-                p = *(pp+j);
-                if ((error = strcmp(paramater_container->paramater.Name,p->Name))==0)
-                {
-                    break;
-                }
+            	external_add_list_paramameter(paramater_container->paramater.Name, paramater_container->paramater.Value, paramater_container->paramater.Type, NULL);
             }
-            if (error==0)
-            {
-                continue;
-            }
-            if (i!=0)
-            {
-                ptr_ParameterValueStruct++;
-            }
-            i++;
-            inform_dm_get_value_by_path (cwmp, paramater_container->paramater.Name, &(paramater_container->paramater.Value), &(paramater_container->paramater.Type));
-            *ptr_ParameterValueStruct   = &(paramater_container->paramater);
-            size++;
+            else if (external_get_action_write("value",paramater_container->paramater.Name, NULL)) return CWMP_GEN_ERR;
         }
     }
-    p_soap_cwmp1__Inform->ParameterList->__size = size + force_size;
+
+    if (external_get_action_execute()) return CWMP_GEN_ERR;
+
+    list_for_each(ilist,&external_list_parameter) {
+    	size++;
+    }
+
+    p_soap_cwmp1__Inform->ParameterList = calloc(1,sizeof(struct cwmp1ParameterValueList));
+    ptr_ParameterValueStruct            = calloc(size,sizeof(struct cwmp1__ParameterValueStruct *));
+
+    if (p_soap_cwmp1__Inform->ParameterList == NULL ||
+		ptr_ParameterValueStruct == NULL)
+	{
+		return CWMP_MEM_ERR;
+	}
+
+    pp  = ptr_ParameterValueStruct;
+    size = 0;
+    while (external_list_parameter.next!=&external_list_parameter) {
+    	external_parameter = list_entry(external_list_parameter.next, struct external_parameter, list);
+    	error=-1;
+    	for (j=0;j<size;j++)
+		{
+			p = *(pp+j);
+			if ((error = strcmp(external_parameter->name,p->Name))==0)
+			{
+				break;
+			}
+		}
+		if (error!=0)
+		{
+			*ptr_ParameterValueStruct = calloc(1,sizeof(struct cwmp1__ParameterValueStruct));
+			(*ptr_ParameterValueStruct)->Name = external_parameter->name;
+			(*ptr_ParameterValueStruct)->Value = external_parameter->data;
+			(*ptr_ParameterValueStruct)->Type = external_parameter->type;
+			size++;
+		}
+		else
+		{
+			FREE(external_parameter->name);
+			FREE(external_parameter->data);
+			FREE(external_parameter->type);
+		}
+
+		list_del(&external_parameter->list);
+		FREE(external_parameter->fault_code);
+		FREE(external_parameter);
+		if (external_list_parameter.next!=&external_list_parameter)
+		{
+			ptr_ParameterValueStruct++;
+		}
+    }
+
+
+    p_soap_cwmp1__Inform->ParameterList->__size = size;
 
     return CWMP_OK;
 }
@@ -235,9 +235,7 @@ int cwmp_rpc_acs_inform_end (struct cwmp *cwmp, struct session *session, struct 
 {
     struct cwmp1__Inform                *p_soap_cwmp1__Inform;
     struct cwmp1__InformResponse        *p_soap_cwmp1__InformResponse;
-    int                                 force_size;
 
-    force_size              = forced_inform_parameter_size;
     p_soap_cwmp1__Inform    = (struct cwmp1__Inform *)this->method_data;
 
     if (p_soap_cwmp1__Inform!=NULL)
@@ -272,32 +270,19 @@ int cwmp_rpc_acs_inform_end (struct cwmp *cwmp, struct session *session, struct 
         }
         if (p_soap_cwmp1__Inform->ParameterList!=NULL)
         {
-            struct cwmp1__ParameterValueStruct  *ParameterValueStructForce,*p;
+            struct cwmp1__ParameterValueStruct  *p;
             int                                 i = 0;
             if (p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct!= NULL)
             {
-                if (force_size>0)
-                {
-                    ParameterValueStructForce   = *(p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct);
-                    p                           = ParameterValueStructForce;
-                    while (p!=NULL && i<force_size)
-                    {
-                        if (p->Name!=NULL)
-                        {
-                            free (p->Name);
-                        }
-                        if (p->Value!=NULL)
-                        {
-                            free (p->Value);
-                        }
-                        p++;
-                        i++;
-                    }
-                    if (ParameterValueStructForce!=NULL)
-                    {
-                        free (ParameterValueStructForce);
-                    }
-                }
+				p   = *(p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct);
+				while (p!=NULL && i<p_soap_cwmp1__Inform->ParameterList->__size)
+				{
+					FREE(p->Name);
+					FREE(p->Value);
+					FREE(p->Type);
+					p++;
+					i++;
+				}
                 free(p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct);
             }
             free (p_soap_cwmp1__Inform->ParameterList);
@@ -317,97 +302,3 @@ int cwmp_rpc_acs_inform_destructor (struct cwmp *cwmp, struct session *session, 
 /*
  * Get Device ID values
  */
-
-int dm_get_deviceId_manufacturer(struct cwmp *cwmp, char **value)
-{
-    *value = strdup("Inteno");
-    return CWMP_OK;
-}
-
-int inform_dm_get_value_by_path (struct cwmp *cwmp, char *path, char **value, char **type)
-{
-    int n,error;
-    LIST_HEAD(list_ParameterValueStruct);
-
-    *value  = NULL;
-    *type  = NULL;
-    error   = cwmp_dm_getParameterValues(cwmp, path, &list_ParameterValueStruct,&n);
-    if (error == FAULT_CPE_NO_FAULT_IDX)
-    {
-        struct handler_ParameterValueStruct *handler_ParameterValueStruct;
-        if (list_ParameterValueStruct.next!=&list_ParameterValueStruct)
-        {
-            handler_ParameterValueStruct    = list_entry(list_ParameterValueStruct.next,struct handler_ParameterValueStruct,list);
-            *value = strdup(handler_ParameterValueStruct->ParameterValueStruct->Value);
-            *type  = handler_ParameterValueStruct->ParameterValueStruct->Type;
-        }
-    }
-    if (*value==NULL)
-    {
-        char t[1];
-        t[0]    = 0;
-        *value  = strdup(t);
-    }
-    if (*type==NULL)
-    {
-        *type  = TYPE_VALUES_ARRAY[TYPE_VALUE_string_IDX];
-    }
-    free_list_getParameterValues(&list_ParameterValueStruct);
-    return CWMP_OK;
-}
-
-int dm_get_deviceId_oui(struct cwmp *cwmp, char **value)
-{
-    int  error;
-    char *type;
-    error = inform_dm_get_value_by_path (cwmp, "InternetGatewayDevice.DeviceInfo.ManufacturerOUI", value, &type);
-    return error;
-}
-
-int dm_get_deviceId_productClass(struct cwmp *cwmp, char **value)
-{
-    int error;
-    char *type;
-    error = inform_dm_get_value_by_path (cwmp, "InternetGatewayDevice.DeviceInfo.ProductClass", value, &type);
-    return error;
-}
-
-int dm_get_deviceId_serialNumber(struct cwmp *cwmp, char **value)
-{
-    int error;
-    char *type;
-    error = inform_dm_get_value_by_path (cwmp, "InternetGatewayDevice.DeviceInfo.SerialNumber", value, &type);
-    return error;
-}
-
-/*
- * End Get Device ID values
- */
-
-int inform_dm_getParameterPaths_by_correspondence(struct cwmp *cwmp, char *path, struct list_head *list, int *n)
-{
-
-    char                *prefix_path=NULL;
-    char                **argv;
-    struct sub_path     *sub_path;
-    int                 i,sub_path_size;
-
-    argv        = calloc (1,sizeof(char *));
-    sub_path    = calloc (DM_MAX_INDICE,sizeof(struct sub_path));
-    argv[0]     = path;
-    cwmp_dm_get_sub_indice_path(1,argv,&prefix_path,sub_path,&sub_path_size);
-    cwmp_dm_getParameterPaths_by_correspondence(cwmp,prefix_path,sub_path,sub_path_size,list,n,TRUE,FALSE,&i);
-    for (i=0;i<sub_path_size;i++)
-    {
-        if (sub_path[i].dm_indice.indice!=NULL)
-        {
-            free(sub_path[i].dm_indice.indice);
-        }
-    }
-    free(sub_path);
-    if (prefix_path!=NULL)
-    {
-        free(prefix_path);
-    }
-    free(argv);
-}

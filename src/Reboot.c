@@ -17,7 +17,6 @@ Author contact information:
 
 #include "soapH.h"
 #include "cwmp.h"
-#include "list.h"
 #include <sys/reboot.h>
 #include <unistd.h>
 
