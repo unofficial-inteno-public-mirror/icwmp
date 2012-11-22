@@ -33,7 +33,6 @@ endef
 define Package/cwmpd/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cwmpd $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cwmp_value_change $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) -m0644 $(PKG_BUILD_DIR)/config/cwmp $(1)/etc/config/
 	$(INSTALL_DIR) $(1)/etc/cwmpd/dm
@@ -48,14 +47,6 @@ define Package/cwmpd/install
 	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/defaults
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp/functions
 	$(CP) $(PKG_BUILD_DIR)/scripts/functions/* $(1)/usr/share/freecwmp/functions/
-endef
-
-define Build/InstallDev
-	$(INSTALL_DIR) $(1)/usr/include
-	$(CP) $(PKG_BUILD_DIR)/inc/cwmp_lib.h $(1)/usr/include
-	$(CP) $(PKG_BUILD_DIR)/inc/cwmp_kernel.h $(LINUX_DIR)/include/linux
-	$(INSTALL_DIR) $(1)/usr/lib
-	$(CP) $(PKG_BUILD_DIR)/libcwmp.so* $(1)/usr/lib
 endef
 
 define Package/cwmpd/postinst
