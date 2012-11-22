@@ -1,0 +1,25 @@
+config 'cwmp' 'acs'
+	option 'url' 'http://192.168.1.238:8080/openacs/acs'
+	option 'userid' 'inteno'
+	option 'passwd' 'inteno'
+	option 'periodic_inform_enable' 'true'
+	option 'periodic_inform_interval' '1800'
+	option 'ParameterKey' ''
+	option 'dhcp_discovery' 'disable'
+
+config 'cwmp' 'cpe'
+	option 'log_to_console' 'disable'
+	option 'log_to_file' 'enable'
+	option 'log_severity' 'INFO'
+	option 'log_file_name' '/var/log/cwmpd.log'
+	option 'log_max_size' '102400'
+	option 'userid' 'cpeinteno'
+	option 'passwd' 'cpeinteno'
+	option 'port' '7547'
+
+config 'cwmp' 'dm'
+	list 'xml' '/etc/cwmpd/dm/tr098.xml'
+
+config 'cwmp' 'notification'
+
+config 'cwmp' 'accesslist'

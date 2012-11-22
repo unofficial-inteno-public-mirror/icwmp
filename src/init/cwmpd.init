@@ -1,0 +1,123 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2012 Inteno
+
+START=99
+STOP=40
+
+EXTRA_HELP="        start [GetRPCMethods] Start cwmpd service and send GetRPCMethods"
+
+wait_connection_acs() {
+	default_acs="http://192.168.1.1:8080/openacs/acs"
+	acs_dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
+	url=`uci -q get cwmp.acs.url`
+	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
+		url=`uci -P /var/state -q get provisioning.iup.tr069url`
+	elif [ "_$url" != "_" ];then
+		url=`uci -q get cwmp.acs.url`
+	else
+		url=$default_acs
+	fi
+	
+	dest=`echo $url|sed 's/http:\/\///g'|cut -f1 -d \/|cut -f1 -d:`
+	port=`echo $url|sed 's/http:\/\///g'|cut -f1 -d \/|cut -f2 -d:`
+	
+	if [ "_$port" = "_" ];then
+		port=80
+	fi
+
+	i=0
+	result=1
+	until [ \( $result -eq 0 \) -o \( $i -eq 20 \) ];do
+	   echo -e -n "" | nc $dest $port
+	   result=$?
+	   if [ $result -eq 1 ];then
+	   	   i=`expr $i + 1`
+		   sleep 5
+	   fi
+	done
+}
+
+check_dhcp() {
+    i=0
+    dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
+	url=`uci -q get cwmp.acs.url`
+    if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ]
+    then
+        while [ $i -le 10 ]
+        do
+            acs_url=`uci -P /var/state -q get provisioning.iup.tr069url`
+            if [ "$acs_url" != "" ]
+            then
+                echo "The acs url discovery from dhcp server is successfully done."
+                break
+            else
+                echo "Waiting for discovery of acs url from dhcp server ..."
+                sleep 10
+            fi
+            i=`expr $i + 1`
+        done
+    fi
+}
+
+start_msg="Starting cwmpd ..."
+stop_msg="Stopping cwmpd ..."
+
+check_iccu() {
+	echo $start_msg
+	check_dhcp
+	wait_connection_acs
+	iccu_url=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url`
+	iccu_change_state=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_change_state`
+	if [ "_$1" = "_boot" ];then
+		opt=$opt"-b "
+	fi
+	if [ "_$1" = "_GetRPCMethods" ];then
+		opt=$opt"-g "
+	fi
+	if [ "$iccu_change_state" = "yes" ];then
+		opt=$opt"-c "
+	fi
+	[ -f /etc/config/cwmp ] && /usr/bin/cwmpd $opt &
+	rm -rf /etc/cwmpd/.iccu
+	uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url=$iccu_url
+	uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_change_state=no
+}
+
+boot() {
+    /etc/cwmpd/scripts/iccu_enable && rm /etc/cwmpd/scripts/iccu_enable
+    run=$(ps aux|grep /usr/bin/cwmpd|grep -v grep|grep -v rc.common)
+    if [ "$run" = "" ];then
+        check_iccu "boot"
+    else
+        echo "cwmpd is currently running ..."
+    fi
+}
+
+start() {
+    run=$(ps aux|grep /usr/bin/cwmpd|grep -v grep|grep -v rc.common)
+    if [ "$run" = "" ]
+    then
+        if [ "$1" = "GetRPCMethods" ];then
+			check_iccu "GetRPCMethods"
+        else
+            check_iccu
+        fi
+    else
+        echo "cwmpd is currently running ..."
+    fi
+}
+
+stop() {
+    echo $stop_msg
+    for pid in `ps aux|grep /usr/bin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
+    do
+        if [ "_$pid" != "_" ];then
+            /bin/kill -9 $pid 2> /dev/null
+        fi
+    done
+}
+
+restart() {
+    stop
+    start
+}

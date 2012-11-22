@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CWMP XML Schema v1.1
+
+  Notice:
+  The DSL Forum is a non-profit corporation organized to create guidelines
+  For DSL network system development and deployment.  This XML Schema has
+  been approved by members of the Forum.  This document is not binding on
+  the DSL Forum, any of its members, or any developer or service provider.
+  The document is subject to change, but only with approval of members of
+  the Forum.
+
+  Copyright 2004-2007 Digital Subscriber Line Forum.  All Rights Reserved.
+
+  DSL Forum XML Schemas may be copied, downloaded, stored on a server or
+  otherwise re-distributed in their entirety only. The text of this
+  notice must be included in all copies.
+
+  Notwithstanding anything to the contrary, the DSL Forum makes no
+  representation or warranty, expressed or implied, concerning this
+  publication, its contents or the completeness, accuracy, or applicability
+  of any information contained in this publication. No liability of any kind
+  shall be assumed by the DSL Forum as a result of reliance upon any
+  information contained in this publication.  The DSL Forum does not assume
+  any responsibility to update or correct any information in this
+  publication.
+
+  Summary:
+  XML Schema for TR-069 CPE WAN Management Protocol (CWMP) v1.1 RPC requests
+  and responses.
+
+  Version History:
+  November 2006: cwmp-1-0.xsd, extracted from TR-069 Amendment 1
+  November 2007: cwmp-1-1.xsd, extracted from TR-069 Amendment 2
+-->
+
+
+
+<definitions name="cwmp"
+ targetNamespace="urn:dslforum-org:cwmp-1-1"
+ xmlns:xs="http://www.w3.org/2001/XMLSchema"
+ xmlns:tns="urn:dslforum-org:cwmp-1-1"
+ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+ xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:tns="urn:dslforum-org:cwmp-1-1"
+ xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+ xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<import namespace="urn:dslforum-org:cwmp-1-1"
+           location="cwmp-1-1.xsd"/>
+
+<message name="InformI">
+<part name="DeviceId" type="tns:DeviceIdStruct"/>
+<part name="Event" type="tns:EventList"/>
+<part name="MaxEnvelopesI" type="xs:unsignedInt"/>
+<part name="CurrentTime" type="xs:dateTime"/>
+<part name="RetryCount" type="xs:unsignedInt"/>
+<part name="ParameterList" type="tns:ParameterValueList"/>
+</message>
+
+<message name="InformO">
+<part name="MaxEnvelopesO" type="xs:unsignedInt"/>
+</message>
+
+<portType name="cwmpPortType">
+ <operation name="Inform">
+  <documentation>Service definition of function GetRPCMethods</documentation>
+  <input message="tns:InformI"/>
+  <output message="tns:InformO"/>
+  </operation>
+</portType>
+
+
+
+<binding name="cwmpBinding" type="tns:cwmpPortType">
+ <SOAP:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+ <operation name="Inform">
+  <SOAP:operation style="rpc" soapAction=""/>
+  <input>
+   <SOAP:body use="encoded" namespace="urn:dslforum-org:cwmp-1-1" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+  </input>
+  <output>
+   <SOAP:body use="encoded" namespace="urn:dslforum-org:cwmp-1-1" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+  </output>
+ </operation>
+</binding>
+
+<service name="cwmpService">
+ <documentation>Metanoia cwmp service definition</documentation>
+ <port name="cwmpPort" binding="tns:cwmpBinding">
+  <SOAP:address location="http://192.168.2.30:8080/openacs/acs"/>
+ </port>
+</service>
+
+</definitions>
