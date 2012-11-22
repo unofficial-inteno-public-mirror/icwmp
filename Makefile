@@ -35,10 +35,7 @@ define Package/cwmpd/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cwmpd $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) -m0644 $(PKG_BUILD_DIR)/config/cwmp $(1)/etc/config/
-	$(INSTALL_DIR) $(1)/etc/cwmpd/dm
-	$(INSTALL_DATA) -m0644 $(PKG_BUILD_DIR)/dm/xml/* $(1)/etc/cwmpd/dm
 	$(INSTALL_DIR) $(1)/etc/cwmpd/scripts
-	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/dm/scripts/* $(1)/etc/cwmpd/scripts
 	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/iccu_enable $(1)/etc/cwmpd/scripts/iccu_enable
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/cwmpd.init $(1)/etc/init.d/cwmpd
