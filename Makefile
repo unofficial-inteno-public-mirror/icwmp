@@ -43,7 +43,7 @@ define Package/cwmpd/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(CP) $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
 	$(INSTALL_DIR) $(1)/usr/share
-	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/defaults
+	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/freecwmp/defaults
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp/functions
 	$(CP) $(PKG_BUILD_DIR)/scripts/functions/* $(1)/usr/share/freecwmp/functions/
 endef
