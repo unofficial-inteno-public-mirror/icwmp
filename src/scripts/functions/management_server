@@ -120,7 +120,7 @@ set_management_server_parameter_key() {
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
 case "$action" in
 	set_value)
-	local url=$1
+	local val=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
 	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 inform '{ "event": "value_change" }' &
 	;;
