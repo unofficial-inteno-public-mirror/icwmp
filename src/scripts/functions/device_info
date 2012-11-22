@@ -1,0 +1,556 @@
+#!/bin/sh
+# Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+
+get_device_info_manufacturer() {
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].manufacturer 2> /dev/null`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.Manufacturer"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.Manufacturer" "$val"
+}
+
+set_device_info_manufacturer() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.Manufacturer"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].manufacturer="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_oui() {
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].oui 2> /dev/null`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.ManufacturerOUI"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.ManufacturerOUI" "$val"
+}
+
+set_device_info_oui() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.ManufacturerOUI"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].oui="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_product_class() {
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].product_class 2> /dev/null`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.ProductClass"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.ProductClass" "$val"	
+}
+
+set_device_info_product_class() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.ProductClass"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].product_class="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_serial_number() {
+local val=""
+case "$action" in
+	get_value)
+	local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].serial_number 2> /dev/null`
+	;;
+	get_name)
+	local val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.SerialNumber"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.SerialNumber" "$val"
+}
+
+set_device_info_serial_number() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.SerialNumber"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].serial_number="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_hardware_version() {
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].hardware_version 2> /dev/null`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.HardwareVersion"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.HardwareVersion" "$val"
+}
+
+set_device_info_hardware_version() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.HardwareVersion"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].hardware_version="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_software_version() {
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].software_version 2> /dev/null`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.SoftwareVersion" "$val"
+}
+
+set_device_info_software_version() {
+local val=$1
+local parm="InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+case "$action" in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].software_version="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_device_info_uptime() {
+local val=""
+case "$action" in
+	get_value)
+	val=`cat /proc/uptime | awk -F "." '{ print $1 }'`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.UpTime"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.UpTime" "$val"
+}
+
+get_device_info_device_log() {
+local val=""
+case "$action" in
+	get_value)
+	if [ ${FLAGS_last} -eq ${FLAGS_TRUE} ]; then
+		val=`dmesg | tail -n1`
+	else
+		val=`dmesg | tail -n10`
+	fi
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.DeviceInfo.DeviceLog"
+	;;
+esac
+ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo.DeviceLog" "$val"
+}
+
+get_device_info() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_uptime
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.)
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_uptime
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	get_device_info_manufacturer
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	get_device_info_oui
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	get_device_info_product_class
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	get_device_info_serial_number
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	get_device_info_hardware_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	get_device_info_software_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.UpTime)
+	get_device_info_uptime
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.DeviceLog)
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_device_info_name() {
+case "$1" in
+	InternetGatewayDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo." "0"
+	if [ "$2" = "0" ]; then
+		get_device_info_manufacturer
+		get_device_info_oui
+		get_device_info_product_class
+		get_device_info_serial_number
+		get_device_info_hardware_version
+		get_device_info_software_version
+		get_device_info_uptime
+		get_device_info_device_log
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.)
+	ubus_freecwmp_output "InternetGatewayDevice.DeviceInfo." "0"
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_uptime
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_manufacturer
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_oui
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_product_class
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_serial_number
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_hardware_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_software_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.UpTime)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_uptime
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.DeviceLog)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_device_info_notification() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_uptime
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.)
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_uptime
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	get_device_info_manufacturer
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	get_device_info_oui
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	get_device_info_product_class
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	get_device_info_serial_number
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	get_device_info_hardware_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	get_device_info_software_version
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.UpTime)
+	get_device_info_uptime
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.DeviceLog)
+	get_device_info_device_log
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+set_device_info() {
+case "$1" in
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	set_device_info_manufacturer "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	set_device_info_oui "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	set_device_info_product_class "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	set_device_info_serial_number "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	set_device_info_hardware_version "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	set_device_info_software_version "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
+
+set_device_info_notification() {
+case "$1" in
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	set_device_info_manufacturer "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	set_device_info_oui "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	set_device_info_product_class "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	set_device_info_serial_number "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	set_device_info_hardware_version "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	set_device_info_software_version "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
+
+check_parameter_device_info_generic() {
+case "$1" in
+	InternetGatewayDevice.DeviceInfo.ModelName|\
+	InternetGatewayDevice.DeviceInfo.Description|\
+	InternetGatewayDevice.DeviceInfo.ModemFirmwareVersion|\
+	InternetGatewayDevice.DeviceInfo.EnabledOptions|\
+	InternetGatewayDevice.DeviceInfo.AdditionalHardwareVersion|\
+	InternetGatewayDevice.DeviceInfo.AdditionalSoftwareVersion|\
+	InternetGatewayDevice.DeviceInfo.SpecVersion|\
+	InternetGatewayDevice.DeviceInfo.ProvisioningCode|\
+	InternetGatewayDevice.DeviceInfo.FirstUseDate)
+	return 0
+	;;
+esac
+return 1
+}
+
+get_device_info_generic() {
+	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	freecwmp_get_parameter_value "val" "$1"
+	ubus_freecwmp_output "$1" "$val"
+	return $FAULT_CPE_NO_FAULT
+}
+
+get_device_info_generic_name() {
+	local val=""
+	case "$1" in
+	InternetGatewayDevice.DeviceInfo.ModelName|\
+	InternetGatewayDevice.DeviceInfo.Description|\
+	InternetGatewayDevice.DeviceInfo.ModemFirmwareVersion|\
+	InternetGatewayDevice.DeviceInfo.EnabledOptions|\
+	InternetGatewayDevice.DeviceInfo.AdditionalHardwareVersion|\
+	InternetGatewayDevice.DeviceInfo.AdditionalSoftwareVersion|\
+	InternetGatewayDevice.DeviceInfo.SpecVersion|\
+	InternetGatewayDevice.DeviceInfo.FirstUseDate)
+	val="0"
+	ubus_freecwmp_output "$1" "$val"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.DeviceInfo.ProvisioningCode)
+	val="1"
+	ubus_freecwmp_output "$1" "$val"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_device_info_generic_notification() {
+	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	local val
+	freecwmp_get_parameter_notification "val" "$1"
+	ubus_freecwmp_output "$1" "$val"
+	return $FAULT_CPE_NO_FAULT
+}
+
+set_device_info_generic() {
+	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	freecwmp_set_parameter_value "$1" "$2"
+	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	return $FAULT_CPE_NO_FAULT
+}
+
+set_device_info_generic_notification() {
+	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	freecwmp_set_parameter_notification "$1" "$2"
+	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	return $FAULT_CPE_NO_FAULT
+}

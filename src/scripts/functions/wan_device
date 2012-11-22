@@ -1,0 +1,512 @@
+#!/bin/sh
+# Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+
+get_wan_device_mng_status() {
+# TODO: Unconfigured ; Connecting ; Connected ; PendingDisconnect ; Disconneting ; Disconnected 
+local val=""
+local type="xsd:boolean"
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus"
+case "$action" in
+	get_value)
+	val="Connected"
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+ubus_freecwmp_output "$parm" "$val" "$type"
+}
+
+get_wan_device_mng_interface_ip() {
+local val=""
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress"
+case "$action" in
+	get_value)
+if [ -z "$default_wan_device_mng_interface_ip" ]; then
+	val=`network_get_ipaddr val mng`
+else
+	val=$default_wan_device_mng_interface_ip
+fi
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
+	ubus_freecwmp_output "$parm" "$val"
+else
+	freecwmp_output "$parm" "$val"
+fi
+}
+
+get_wan_device_mng_interface_mac() {
+local val=""
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress"
+case "$action" in
+	get_value)
+if [ -z "$default_wan_device_mng_interface_mac" ]; then
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.mng.macaddr`
+else
+	val=$default_wan_device_mng_interface_mac
+fi
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
+	ubus_freecwmp_output "$parm" "$val"
+else
+	freecwmp_output "$parm" "$val"
+fi
+}
+
+get_wan_device_wan_ppp_enable() {
+local val=""
+local type="xsd:boolean"
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable"
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.auto 2> /dev/null`
+if [ -z $val ]; then
+	val="1"
+fi
+	;;
+	get_name)
+	val="1"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+ubus_freecwmp_output "$parm" "$val" "$type"
+}
+
+set_wan_device_wan_ppp_enable() {
+local val=$1
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable"
+case $action in
+	set_value)
+	if [ "$val" -eq 0 ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.auto=0
+		ifdown wan &
+	elif [ "$val" -eq 1 ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.auto=1
+		ifup wan &
+	fi
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_wan_device_wan_ppp_username() {
+local val=""
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username"
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.username 2> /dev/null`
+	;;
+	get_name)
+	val="1"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+ubus_freecwmp_output "$parm" "$val"
+}
+
+set_wan_device_wan_ppp_username() {
+local val=$1
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username"
+case $action in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.username="$val"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_wan_device_wan_ppp_password() {
+local val=""
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password"
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.password 2> /dev/null`
+	;;
+	get_name)
+	val="1"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+ubus_freecwmp_output "$parm" "$val"
+}
+
+set_wan_device_wan_ppp_password() {
+local val=$1
+local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password"
+case $action in
+	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.password="$1"
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_wan_device() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus)
+	get_wan_device_mng_status
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress)
+	get_wan_device_mng_interface_ip
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress)
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
+	get_wan_device_wan_ppp_enable
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username)
+	get_wan_device_wan_ppp_username
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password)
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_wan_device_name() {
+case "$1" in
+	InternetGatewayDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice." "1"
+	if [ "$2" = "0" ]; then
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1." "1"
+	if [ "$2" = "0" ]; then
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "1"
+	if [ "$2" = "0" ]; then
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "1"
+	if [ "$2" = "0" ]; then
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "1"
+	if [ "$2" = "0" ]; then
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "1"
+	if [ "$2" = "0" ]; then
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
+	ubus_freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "1"
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_mng_status
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_mng_interface_ip
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_wan_ppp_enable
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_wan_ppp_username
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_wan_device_notification() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
+	get_wan_device_mng_status
+	get_wan_device_mng_interface_ip
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus)
+	get_wan_device_mng_status
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress)
+	get_wan_device_mng_interface_ip
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress)
+	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
+	get_wan_device_wan_ppp_enable
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username)
+	get_wan_device_wan_ppp_username
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password)
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+set_wan_device() {
+case "$1" in
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
+	set_wan_device_wan_ppp_enable "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username)
+	set_wan_device_wan_ppp_username "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password)
+	set_wan_device_wan_ppp_password "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+set_wan_device_notification() {
+case "$1" in
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
+	set_wan_device_wan_ppp_enable "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username)
+	set_wan_device_wan_ppp_username "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password)
+	set_wan_device_wan_ppp_password "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}

@@ -1,0 +1,440 @@
+#!/bin/sh
+# Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
+
+get_wlan_enable() {
+local num="$1"
+local type="xsd:boolean"
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get wireless.@wifi-device[$num].disabled 2> /dev/null`
+	let num=$num+1
+	if [ "$val" = "1" ]; then
+		val="0"
+	else
+		val="1"
+	fi
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val" "$type"
+	;;
+	get_name)
+	val="1"
+	let num=$num+1
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val"
+	;;
+	get_notification)
+	let num=$num+1
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable"
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val"
+	;;
+esac
+}
+
+set_wlan_enable() {
+local num="$1"
+local val="$2"
+local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable"
+case $action in
+	set_value)
+	if [ "$val" = "1" ]; then
+		val="0"
+	else
+		val="1"
+	fi
+	delay_command "wifi" "wifi" "45"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set wireless.@wifi-device[$num].disabled="$val"
+	;;
+	set_notification)
+	let num=$num+1
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_wlan_ssid() {
+local num="$1"
+local val=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get wireless.@wifi-iface[$num].ssid 2> /dev/null`
+let num=$num+1
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val"
+	;;
+	get_name)
+	val="1"
+	let num=$num+1
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val"
+	;;
+	get_notification)
+	let num=$num+1
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID"
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val"
+	;;
+esac
+
+}
+
+set_wlan_ssid() {
+local num="$1"
+local val="$2"
+local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID"
+case $action in
+	set_value)
+	delay_command "wifi" "wifi" "45"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set wireless.@wifi-iface[$num].ssid="$val"
+	;;
+	set_notification)
+	let num=$num+1
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+add_ip_interface() {
+	local i=0
+	local instance=0
+	while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`" != "" ] ;do
+		instance=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+		let i=$i+1
+	done
+	let instance=$instance+1
+	freecwmp_add_lan_device_ip_interface "$1$instance." "$instance"
+	ubus_freecwmp_output "$instance" "0"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
+
+get_ip_interface() {
+local i=0
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+do
+	if [ "$action" = "get_name" ];then
+			let i=$i+1
+			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
+			val="1"
+			ubus_freecwmp_output "$parm" "$val"
+	fi
+done
+}
+
+get_ip_interface_ip_address() {
+local val=""
+local i=0
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+do
+	let i=$i+1
+	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+	case "$action" in
+		get_value)
+		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.lan$indice.ipaddr 2> /dev/null`
+		ubus_freecwmp_output $parm"IPInterfaceIPAddress" "$val"
+		;;
+		get_name)
+		val="1"
+		ubus_freecwmp_output $parm"IPInterfaceIPAddress" "$val"
+		;;
+	esac
+done
+}
+
+set_ip_interface_ip_address() {
+	local i=0
+	local indice
+	local _parm="$1"
+	local ipaddr="$2"
+	_parm="${_parm%.*}."
+	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+	do
+		let i=$i+1
+	done
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance`
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.ipaddr=$ipaddr
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=static
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	return $FAULT_CPE_NO_FAULT
+}
+
+get_ip_interface_netmask() {
+local val=""
+local i=0
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+do
+	let i=$i+1
+	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+	case "$action" in
+		get_value)
+		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.lan$indice.netmask 2> /dev/null`
+		ubus_freecwmp_output $parm"IPInterfaceSubnetMask" "$val"
+		;;
+		get_name)
+		val="1"
+		ubus_freecwmp_output $parm"IPInterfaceSubnetMask" "$val"
+		;;
+	esac
+done
+}
+
+set_ip_interface_netmask() {
+	local i=0
+	local indice
+	local _parm="$1"
+	local netmask="$2"
+	_parm="${_parm%.*}."
+	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+	do
+		let i=$i+1
+	done
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance`
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.netmask=$netmask
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_ip_interface() {
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$1].instance`
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete freecwmp.@object[$1]
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete network.lan$indice
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
+
+add_lan_device() {
+case "$1" in
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.)
+	add_ip_interface $1
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_lan_device() {
+local _parm="$1"
+local i=0
+while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+do
+	let i=$i+1
+done
+if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+fi
+case "${_parm%.*.}." in
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.)
+	delete_ip_interface $i
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+}
+
+get_lan_device() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.*.IPInterface.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.*.IPInterface.*.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	get_wlan_enable 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_lan_device_name() {
+case "$1" in
+	InternetGatewayDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice." "1"
+	if [ "$2" = "0" ]; then
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1." "1"
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "1"
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "1"
+		get_wlan_enable 0
+		get_wlan_ssid 0
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.)
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1." "1"
+	if [ "$2" = "0" ]; then
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "1"
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "1"
+		get_wlan_enable 0
+		get_wlan_ssid 0
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.)
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "1"
+	if [ "$2" = "0" ]; then
+		ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "1"
+		get_wlan_enable 0
+		get_wlan_ssid 0
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "1"
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "1"
+	if [ "$2" = "0" ]; then
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
+	ubus_freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "1"
+	if [ "$2" = "0" ]; then
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wlan_enable 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_lan_device_notification() {
+case "$1" in
+	InternetGatewayDevice.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
+	get_wlan_enable 0
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	get_wlan_enable 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	get_wlan_ssid 0
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+set_lan_device() {
+case "$1" in
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	set_wlan_enable 0 "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	set_wlan_ssid 0 "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	*)
+	set_ip_interface_ip_address $1 $2
+	result1=$?
+	set_ip_interface_netmask $1 $2
+	result2=$?
+	if [ \( "$result1" != "$FAULT_CPE_NO_FAULT" \) -a \( "$result2" != "$FAULT_CPE_NO_FAULT" \) ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
+
+set_lan_device_notification() {
+case "$1" in
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	set_wlan_enable 0 "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	set_wlan_ssid 0 "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
+# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+}
