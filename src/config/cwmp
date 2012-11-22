@@ -16,11 +16,56 @@ config 'cwmp' 'cpe'
 	option 'userid' 'cpeinteno'
 	option 'passwd' 'cpeinteno'
 	option 'port' '7547'
-	option ubus_socket /var/run/ubus.sock
+	option 'ubus_socket' '/var/run/ubus.sock'
 
-config 'cwmp' 'dm'
-	list 'xml' '/etc/cwmpd/dm/tr098.xml'
-
-config 'cwmp' 'notification'
-
-config 'cwmp' 'accesslist'
+config scripts
+    # load OpenWrt generic network functions
+    list location /lib/functions/network.sh
+    # load freecwmp common functions
+    list location /usr/share/freecwmp/functions/common
+    # freecwmp specific functions
+    list location /usr/share/freecwmp/functions/device_info
+    list get_value_function get_device_info
+    list get_name_function get_device_info_name
+    list get_notification_function get_device_info_notification
+    list set_value_function set_device_info
+    list set_notification_function set_device_info_notification
+    list get_value_function get_device_info_generic
+    list get_name_function get_device_info_generic_name
+    list get_notification_function get_device_info_generic_notification
+    list set_value_function set_device_info_generic
+    list set_notification_function set_device_info_generic_notification
+    list location /usr/share/freecwmp/functions/lan_device
+    list get_value_function get_lan_device
+    list get_name_function get_lan_device_name
+    list get_notification_function get_lan_device_notification
+    list set_value_function set_lan_device
+    list set_notification_function set_lan_device_notification
+    list location /usr/share/freecwmp/functions/management_server
+    list get_value_function get_management_server
+    list get_name_function get_management_server_name
+    list get_notification_function get_management_server_notification
+    list set_value_function set_management_server
+    list set_notification_function set_management_server_notification
+    list get_value_function get_management_server_generic
+    list get_name_function get_management_server_generic_name
+    list get_notification_function get_management_server_generic_notification
+    list set_value_function set_management_server_generic
+    list set_notification_function set_management_server_generic_notification
+    list location /usr/share/freecwmp/functions/wan_device
+    list get_value_function get_wan_device
+    list get_name_function get_wan_device_name
+    list get_notification_function get_wan_device_notification
+    list set_value_function set_wan_device
+    list set_notification_function set_wan_device_notification
+    list location /usr/share/freecwmp/functions/misc
+    list get_value_function get_misc
+    list location /usr/share/freecwmp/functions/device_users
+    list get_value_function get_device_users
+    list set_value_function set_device_users
+    list location /usr/share/freecwmp/functions/device_hosts
+    list get_value_function get_device_hosts
+    list location /usr/share/freecwmp/functions/device_routing
+    list get_value_function get_device_routing
+    list add_object_function add_lan_device
+    list delete_object_function delete_lan_device

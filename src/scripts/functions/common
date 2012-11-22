@@ -157,7 +157,7 @@ freecwmp_config_cwmp() {
 			fi
 		elif [ "set" = "$2" ]; then
 			if [ "value" = "$3" ]; then
-				/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.$1.value=$5 2> /dev/null
+				/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.$1.value=$5 2> /dev/null
 			fi
 		elif [ "check" = "$2" ]; then
 			if [ "parameter" = "$3" ]; then
@@ -200,12 +200,12 @@ freecwmp_set_parameter_value() {
 	local _val="$2"
 	config_foreach freecwmp_config_cwmp "cwmp" "check" "parameter" "$_parm" "_section"
 	if [ ! "$_section" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.$_section.value=$_val 2> /dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.$_section.value=$_val 2> /dev/null
 	else
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
 			add freecwmp cwmp
-			set freecwmp.@cwmp[-1].parameter="$_parm"
-			set freecwmp.@cwmp[-1].value="$_val"
+			set cwmp.@cwmp[-1].parameter="$_parm"
+			set cwmp.@cwmp[-1].value="$_val"
 EOF
 	fi
 	config_foreach freecwmp_config_notifications "notifications" "get" "$_parm" "tmp"
@@ -236,17 +236,17 @@ freecwmp_get_parameter_notification() {
 freecwmp_set_parameter_notification() {
 	local _parm="$1"
 	local _val="$2"
-	local tmp=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@notifications[0] 2>/dev/null`
+	local tmp=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@notifications[0] 2>/dev/null`
 	if [ "$tmp" = "" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add freecwmp notifications 2>&1 >/dev/null
 	else
-		uci_remove_list_element "freecwmp.@notifications[0].passive" "$_parm" 2>/dev/null
-		uci_remove_list_element "freecwmp.@notifications[0].active" "$_parm" 2>/dev/null
+		uci_remove_list_element "cwmp.@notifications[0].passive" "$_parm" 2>/dev/null
+		uci_remove_list_element "cwmp.@notifications[0].active" "$_parm" 2>/dev/null
 	fi
 	if [ "$_val" -eq "1" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list freecwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "2" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list freecwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
 	fi
 }
 
@@ -262,12 +262,12 @@ freecwmp_set_parameter_tag() {
 	local _tag="$2"
 	config_foreach freecwmp_config_cwmp "cwmp" "check" "parameter" "$_parm" "_section"
 	if [ ! "$_section" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list freecwmp.$_section.tag=$_tag 2> /dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.$_section.tag=$_tag 2> /dev/null
 	else
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
 			add freecwmp cwmp
-			set freecwmp.@cwmp[-1].parameter="$_parm"
-			add_list freecwmp.@cwmp[-1].tag="$_tag"
+			set cwmp.@cwmp[-1].parameter="$_parm"
+			add_list cwmp.@cwmp[-1].tag="$_tag"
 EOF
 	fi
 }
@@ -318,8 +318,8 @@ freecwmp_set_parameter_fault() {
 	local _fault="$2"
 		/sbin/uci -P /var/state batch << EOF 2>&1 >/dev/null
 			add freecwmp fault
-			set freecwmp.@fault[-1].parameter="$_parm"
-			set freecwmp.@fault[-1].fault_code="$_fault"
+			set cwmp.@fault[-1].parameter="$_parm"
+			set cwmp.@fault[-1].fault_code="$_fault"
 EOF
 }
 
@@ -333,9 +333,9 @@ freecwmp_add_lan_device_ip_interface() {
 	fi
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
 			add freecwmp object
-			set freecwmp.@object[-1].parameter="$_parm"
-			set freecwmp.@object[-1].instance="$_instance"
-			set freecwmp.@object[-1].interface="lan$indice"
+			set cwmp.@object[-1].parameter="$_parm"
+			set cwmp.@object[-1].instance="$_instance"
+			set cwmp.@object[-1].interface="lan$indice"
 EOF
 let i=$indice-1
 /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice=interface

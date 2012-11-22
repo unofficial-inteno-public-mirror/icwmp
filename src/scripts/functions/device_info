@@ -5,7 +5,7 @@ get_device_info_manufacturer() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].manufacturer 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].manufacturer 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -22,7 +22,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.Manufacturer"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].manufacturer="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].manufacturer="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -34,7 +34,7 @@ get_device_info_oui() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].oui 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].oui 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -51,7 +51,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.ManufacturerOUI"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].oui="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].oui="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -63,7 +63,7 @@ get_device_info_product_class() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].product_class 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].product_class 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -80,7 +80,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.ProductClass"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].product_class="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].product_class="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -92,7 +92,7 @@ get_device_info_serial_number() {
 local val=""
 case "$action" in
 	get_value)
-	local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].serial_number 2> /dev/null`
+	local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].serial_number 2> /dev/null`
 	;;
 	get_name)
 	local val="0"
@@ -109,7 +109,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.SerialNumber"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].serial_number="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].serial_number="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -121,7 +121,7 @@ get_device_info_hardware_version() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].hardware_version 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].hardware_version 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -138,7 +138,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.HardwareVersion"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].hardware_version="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].hardware_version="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -150,7 +150,7 @@ get_device_info_software_version() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@device[0].software_version 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@device[0].software_version 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -167,7 +167,7 @@ local val=$1
 local parm="InternetGatewayDevice.DeviceInfo.SoftwareVersion"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@device[0].software_version="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@device[0].software_version="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"

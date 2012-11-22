@@ -92,8 +92,8 @@ esac
 add_ip_interface() {
 	local i=0
 	local instance=0
-	while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`" != "" ] ;do
-		instance=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+	while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`" != "" ] ;do
+		instance=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`
 		let i=$i+1
 	done
 	let instance=$instance+1
@@ -104,11 +104,11 @@ add_ip_interface() {
 
 get_ip_interface() {
 local i=0
-while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" ]
 do
 	if [ "$action" = "get_name" ];then
 			let i=$i+1
-			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
+			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`
 			val="1"
 			ubus_freecwmp_output "$parm" "$val"
 	fi
@@ -118,11 +118,11 @@ done
 get_ip_interface_ip_address() {
 local val=""
 local i=0
-while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" ]
 do
 	let i=$i+1
-	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
-	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`
 	case "$action" in
 		get_value)
 		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.lan$indice.ipaddr 2> /dev/null`
@@ -142,14 +142,14 @@ set_ip_interface_ip_address() {
 	local _parm="$1"
 	local ipaddr="$2"
 	_parm="${_parm%.*}."
-	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
 	do
 		let i=$i+1
 	done
-	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
 		return $FAULT_CPE_INVALID_PARAMETER_NAME
 	fi
-	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance`
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.ipaddr=$ipaddr
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=static
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
@@ -159,11 +159,11 @@ set_ip_interface_ip_address() {
 get_ip_interface_netmask() {
 local val=""
 local i=0
-while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" ]
+while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" ]
 do
 	let i=$i+1
-	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`
-	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance 2>/dev/null`
+	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`
 	case "$action" in
 		get_value)
 		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.lan$indice.netmask 2> /dev/null`
@@ -183,22 +183,22 @@ set_ip_interface_netmask() {
 	local _parm="$1"
 	local netmask="$2"
 	_parm="${_parm%.*}."
-	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+	while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
 	do
 		let i=$i+1
 	done
-	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
 		return $FAULT_CPE_INVALID_PARAMETER_NAME
 	fi
-	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].instance`
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance`
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.netmask=$netmask
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 	return $FAULT_CPE_NO_FAULT
 }
 
 delete_ip_interface() {
-	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$1].instance`
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete freecwmp.@object[$1]
+	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$1].instance`
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete cwmp.@object[$1]
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete network.lan$indice
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 }
@@ -216,11 +216,11 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 delete_lan_device() {
 local _parm="$1"
 local i=0
-while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
+while [ \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "$_parm" \) -a \( "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" \) ]
 do
 	let i=$i+1
 done
-if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
+if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" = "" ]; then
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 fi
 case "${_parm%.*.}." in

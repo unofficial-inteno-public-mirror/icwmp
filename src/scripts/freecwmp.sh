@@ -115,6 +115,9 @@ case "$1" in
 			__arg1="$3"
 		fi
 		;;
+	inform)
+		action="inform"
+		;;
 esac
 
 if [ -z "$action" ]; then
@@ -438,6 +441,21 @@ if [ "$action" = "delete_object" ]; then
         let fault_code=$fault_code+9000
         freecwmp_set_parameter_fault "$__arg1" "$fault_code"
     fi
+fi
+
+if [ "$action" = "inform" ]; then
+	action="get_value"
+	
+	get_device_info_manufacturer
+	get_device_info_oui
+	get_device_info_product_class
+	get_device_info_serial_number
+	get_device_info_hardware_version
+	get_device_info_software_version
+	get_device_info_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode"
+	get_wan_device_mng_interface_ip
+    get_management_server_connection_request_url
+	get_management_server_parameter_key
 fi
 
 if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then

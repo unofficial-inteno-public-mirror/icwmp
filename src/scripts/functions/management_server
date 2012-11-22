@@ -4,16 +4,12 @@
 get_management_server_url() {
 local tmp=${FLAGS_value}
 FLAGS_value=${FLAGS_TRUE}
-local scheme=`get_management_server_x_freecwmp_org__acs_scheme`
-local hostname=`get_management_server_x_freecwmp_org__acs_hostname`
-local port=`get_management_server_x_freecwmp_org__acs_port`
-local path=`get_management_server_x_freecwmp_org__acs_path`
 FLAGS_value=$tmp
-#local val=""
+local val=""
 local parm="InternetGatewayDevice.ManagementServer.URL"
 case "$action" in
 	get_value)
-	val=`echo $scheme://$hostname:$port$path`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.url`
 	;;
 	get_name)
 	val="0"
@@ -30,32 +26,7 @@ local parm="InternetGatewayDevice.ManagementServer.URL"
 case "$action" in
 	set_value)
 	local url=$1
-	local scheme
-	local hostname
-	local path
-	local port
-
-	scheme=`echo $url | awk -F "://" '{ print $1 }'`
-	hostname=`echo $url | awk -F "$scheme://" '{ print $2 }' | awk -F ":" '{ print $1 }' | awk -F "/" '{ print $1 }'`
-	port=`echo $url | awk -F "$scheme://$hostname:" '{ print $2 }' | awk -F '/' '{ print $1 }'`
-
-	if [ -z "$port" ]; then
-		port=80
-		path=`echo $url | awk -F "$scheme://$hostname" '{ print $2 }'`
-		echo 123 $path
-	else
-		path=`echo $url | awk -F "$scheme://$hostname:$port" '{ print $2 }'`
-	fi
-
-	if [ -z "$path" ]; then
-		path="/"
-	fi
-
-	set_management_server_x_freecwmp_org__acs_scheme $scheme
-	set_management_server_x_freecwmp_org__acs_hostname $hostname
-	set_management_server_x_freecwmp_org__acs_port $port
-	set_management_server_x_freecwmp_org__acs_path $path
-
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.url="$val"
 	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 inform '{ "event": "value_change" }' &
 	;;
 	set_notification)
@@ -70,7 +41,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].username 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.userid 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -87,7 +58,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].username="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.userid="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -100,7 +71,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].password 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.passwd 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -117,9 +88,44 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].password="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.passwd="$val"
 	;;
 	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_management_server_parameter_key() {
+local tmp=${FLAGS_value}
+FLAGS_value=${FLAGS_TRUE}
+FLAGS_value=$tmp
+local val=""
+local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.ParameterKey`
+	;;
+	get_name)
+	val="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+ubus_freecwmp_output "$parm" "$val"
+}
+
+set_management_server_parameter_key() {
+local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
+case "$action" in
+	set_value)
+	local url=$1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 inform '{ "event": "value_change" }' &
+	;;
+	set_notification)
+	local val=$1
 	freecwmp_set_parameter_notification "$parm" "$val"
 	;;
 esac
@@ -130,7 +136,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
 case "$action" in
 	get_value)
-freecwmp_get_parameter_value "val" "$parm"
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_enable`
 	;;
 	get_name)
 	val="1"
@@ -147,7 +153,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
 case "$action" in
 	set_value)
-	freecwmp_set_parameter_value "$parm" "$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.periodic_inform_enable="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -160,7 +166,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	get_value)
-freecwmp_get_parameter_value "val" "$parm"
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval`
 	;;
 	get_name)
 	val="1"
@@ -177,7 +183,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	set_value)
-	freecwmp_set_parameter_value "$parm" "$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -190,19 +196,7 @@ local val
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestURL"
 case "$action" in
 	get_value)
-	if [ -z "$default_management_server_connection_request_url" ]; then
-		local tmp=${FLAGS_value}
-		FLAGS_value=${FLAGS_TRUE}
-		local ip=`get_wan_device_mng_interface_ip`
-		local port=`get_management_server_x_freecwmp_org__connection_request_port`
-		FLAGS_value=$tmp
-
-		if [ -n "$ip" -a -n "$port" ]; then
-			val="http://$ip:$port/"
-		fi
-	else
-		val=$default_management_server_connection_request_url
-	fi
+	val=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url`
 	;;
 	get_name)
 	val="0"
@@ -219,7 +213,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@local[0].username 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.userid 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -236,7 +230,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@local[0].username="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.userid="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -249,7 +243,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@local[0].password 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.passwd 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -266,7 +260,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@local[0].password="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.passwd="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -281,7 +275,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].scheme 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].scheme 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -302,7 +296,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].scheme="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].scheme="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -315,7 +309,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].hostname 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].hostname 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -337,9 +331,9 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname"
 case "$action" in
 	set_value)
 	if [ -z "$default_management_server_acs_hostname" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].hostname="$val"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].hostname="$val"
 	else
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].hostname="$default_management_server_acs_hostname"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].hostname="$default_management_server_acs_hostname"
 	fi
 	;;
 	set_notification)
@@ -353,7 +347,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].port 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].port 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -374,7 +368,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].port="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].port="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -387,7 +381,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@acs[0].path 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].path 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -408,7 +402,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@acs[0].path="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].path="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -421,7 +415,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get freecwmp.@local[0].port 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@local[0].port 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -442,7 +436,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@local[0].port="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@local[0].port="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -461,11 +455,6 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
-	get_management_server_x_freecwmp_org__acs_scheme
-	get_management_server_x_freecwmp_org__acs_hostname
-	get_management_server_x_freecwmp_org__acs_port
-	get_management_server_x_freecwmp_org__acs_path
-	get_management_server_x_freecwmp_org__connection_request_port
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.)
@@ -477,11 +466,6 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
-	get_management_server_x_freecwmp_org__acs_scheme
-	get_management_server_x_freecwmp_org__acs_hostname
-	get_management_server_x_freecwmp_org__acs_port
-	get_management_server_x_freecwmp_org__acs_path
-	get_management_server_x_freecwmp_org__connection_request_port
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
@@ -516,24 +500,8 @@ case "$1" in
 	get_management_server_connection_request_password
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme)
-	get_management_server_x_freecwmp_org__acs_scheme
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname)
-	get_management_server_x_freecwmp_org__acs_hostname
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port)
-	get_management_server_x_freecwmp_org__acs_port
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path)
-	get_management_server_x_freecwmp_org__acs_path
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port)
-	get_management_server_x_freecwmp_org__connection_request_port
+	InternetGatewayDevice.ManagementServer.ParameterKey)
+	get_management_server_parameter_key
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -553,11 +521,6 @@ case "$1" in
 		get_management_server_connection_request_url
 		get_management_server_connection_request_username
 		get_management_server_connection_request_password
-		get_management_server_x_freecwmp_org__acs_scheme
-		get_management_server_x_freecwmp_org__acs_hostname
-		get_management_server_x_freecwmp_org__acs_port
-		get_management_server_x_freecwmp_org__acs_path
-		get_management_server_x_freecwmp_org__connection_request_port
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -571,11 +534,6 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
-	get_management_server_x_freecwmp_org__acs_scheme
-	get_management_server_x_freecwmp_org__acs_hostname
-	get_management_server_x_freecwmp_org__acs_port
-	get_management_server_x_freecwmp_org__acs_path
-	get_management_server_x_freecwmp_org__connection_request_port
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
@@ -634,39 +592,11 @@ case "$1" in
 	get_management_server_connection_request_password
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme)
+	InternetGatewayDevice.ManagementServer.ParameterKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_management_server_x_freecwmp_org__acs_scheme
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname)
-	if [ "$2" = "1" ]; then
-		return $FAULT_CPE_INVALID_ARGUMENTS
-	fi
-	get_management_server_x_freecwmp_org__acs_hostname
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port)
-	if [ "$2" = "1" ]; then
-		return $FAULT_CPE_INVALID_ARGUMENTS
-	fi
-	get_management_server_x_freecwmp_org__acs_port
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path)
-	if [ "$2" = "1" ]; then
-		return $FAULT_CPE_INVALID_ARGUMENTS
-	fi
-	get_management_server_x_freecwmp_org__acs_path
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port)
-	if [ "$2" = "1" ]; then
-		return $FAULT_CPE_INVALID_ARGUMENTS
-	fi
-	get_management_server_x_freecwmp_org__connection_request_port
+	get_management_server_parameter_key
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -684,11 +614,6 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
-	get_management_server_x_freecwmp_org__acs_scheme
-	get_management_server_x_freecwmp_org__acs_hostname
-	get_management_server_x_freecwmp_org__acs_port
-	get_management_server_x_freecwmp_org__acs_path
-	get_management_server_x_freecwmp_org__connection_request_port
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.)
@@ -700,11 +625,6 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
-	get_management_server_x_freecwmp_org__acs_scheme
-	get_management_server_x_freecwmp_org__acs_hostname
-	get_management_server_x_freecwmp_org__acs_port
-	get_management_server_x_freecwmp_org__acs_path
-	get_management_server_x_freecwmp_org__connection_request_port
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
@@ -739,24 +659,8 @@ case "$1" in
 	get_management_server_connection_request_password
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme)
-	get_management_server_x_freecwmp_org__acs_scheme
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname)
-	get_management_server_x_freecwmp_org__acs_hostname
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port)
-	get_management_server_x_freecwmp_org__acs_port
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path)
-	get_management_server_x_freecwmp_org__acs_path
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port)
-	get_management_server_x_freecwmp_org__connection_request_port
+	InternetGatewayDevice.ManagementServer.ParameterKey)
+	get_management_server_parameter_key
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -797,24 +701,8 @@ case "$1" in
 	set_management_server_connection_request_password "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme)
-	set_management_server_x_freecwmp_org__acs_scheme "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname)
-	set_management_server_x_freecwmp_org__acs_hostname "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port)
-	set_management_server_x_freecwmp_org__acs_port "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path)
-	set_management_server_x_freecwmp_org__acs_path "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port)
-	set_management_server_x_freecwmp_org__connection_request_port "$2"
+	InternetGatewayDevice.ManagementServer.ParameterKey)
+	set_management_server_parameter_key "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -856,24 +744,8 @@ case "$1" in
 	set_management_server_connection_request_password "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme)
-	set_management_server_x_freecwmp_org__acs_scheme "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname)
-	set_management_server_x_freecwmp_org__acs_hostname "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port)
-	set_management_server_x_freecwmp_org__acs_port "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path)
-	set_management_server_x_freecwmp_org__acs_path "$2"
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port)
-	set_management_server_x_freecwmp_org__connection_request_port "$2"
+	InternetGatewayDevice.ManagementServer.ParameterKey)
+	set_management_server_parameter_key "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
