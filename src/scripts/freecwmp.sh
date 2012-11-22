@@ -148,7 +148,7 @@ handle_scripts() {
     config_get delete_object_functions "$section" "delete_object_function"
 }
 
-config_load freecwmp
+config_load cwmp
 config_foreach handle_scripts "scripts"
 
 # Fault code
@@ -369,7 +369,7 @@ if [ "$action" = "reboot" ]; then
 fi
 
 if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]; then
-    __fault_count=`cat /var/state/freecwmp 2> /dev/null |wc -l 2> /dev/null`
+    __fault_count=`cat /var/state/cwmp 2> /dev/null |wc -l 2> /dev/null`
     let __fault_count=$__fault_count/3
     if [ "$__fault_count" = "0" ]; then
 		# applying
@@ -379,12 +379,12 @@ if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]
 		let n=$__fault_count-1
         for i in `seq 0 $n`
         do
-            local parm=`/sbin/uci -P /var/state get freecwmp.@fault[$i].parameter 2> /dev/null`
-            local fault_code=`/sbin/uci -P /var/state get freecwmp.@fault[$i].fault_code 2> /dev/null`
+            local parm=`/sbin/uci -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
+            local fault_code=`/sbin/uci -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
             ubus_freecwmp_fault_output "$parm" "$fault_code"
             if [ "$action" = "apply_notification" ]; then break; fi
         done
-        rm -rf /var/state/freecwmp 2> /dev/null
+        rm -rf /var/state/cwmp 2> /dev/null
         /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} revert freecwmp
     fi
 fi
