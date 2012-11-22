@@ -26,9 +26,6 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
 int cwmp_rpc_cpe_setParameterValues_response_data_init(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_setParameterValues_response(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
 int cwmp_rpc_cpe_setParameterValues_end(struct cwmp *cwmp, struct session *session, struct rpc_cpe *this);
-int dm_run_queue_cmd_handler_at_end_session (struct cwmp *cwmp, struct dm_set_handler *dm_set_handler);
-int cwmp_reboot(struct cwmp *cwmp,void *v);
-int dm_cwmp_config_reload (struct cwmp *cwmp, void *v );
 struct rpc_cpe *cwmp_add_session_rpc_cpe_Fault (struct session *session, int idx);
 int cwmp_session_rpc_cpe_destructor (struct cwmp *cwmp, struct session *session, struct rpc_cpe *rpc_cpe);
 static int check_duplicated_parameter_name (struct cwmp1__ParameterValueStruct **ptr_ParameterValueStruct, int size);

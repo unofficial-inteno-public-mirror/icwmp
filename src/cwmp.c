@@ -595,6 +595,7 @@ int cwmp_apply_acs_changes (struct cwmp *cwmp)
 
 void *thread_uloop_run (void *v)
 {
+	uloop_init();
 	uloop_run();
 	return NULL;
 }
