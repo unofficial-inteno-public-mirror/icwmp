@@ -203,7 +203,7 @@ freecwmp_set_parameter_value() {
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.$_section.value=$_val 2> /dev/null
 	else
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
-			add freecwmp cwmp
+			add cwmp cwmp
 			set cwmp.@cwmp[-1].parameter="$_parm"
 			set cwmp.@cwmp[-1].value="$_val"
 EOF
@@ -238,7 +238,7 @@ freecwmp_set_parameter_notification() {
 	local _val="$2"
 	local tmp=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@notifications[0] 2>/dev/null`
 	if [ "$tmp" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add freecwmp notifications 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add cwmp notifications 2>&1 >/dev/null
 	else
 		uci_remove_list_element "cwmp.@notifications[0].passive" "$_parm" 2>/dev/null
 		uci_remove_list_element "cwmp.@notifications[0].active" "$_parm" 2>/dev/null
@@ -265,7 +265,7 @@ freecwmp_set_parameter_tag() {
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.$_section.tag=$_tag 2> /dev/null
 	else
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
-			add freecwmp cwmp
+			add cwmp cwmp
 			set cwmp.@cwmp[-1].parameter="$_parm"
 			add_list cwmp.@cwmp[-1].tag="$_tag"
 EOF
@@ -317,7 +317,7 @@ freecwmp_set_parameter_fault() {
 	local _parm="$1"
 	local _fault="$2"
 		/sbin/uci -P /var/state batch << EOF 2>&1 >/dev/null
-			add freecwmp fault
+			add cwmp fault
 			set cwmp.@fault[-1].parameter="$_parm"
 			set cwmp.@fault[-1].fault_code="$_fault"
 EOF
@@ -332,14 +332,16 @@ freecwmp_add_lan_device_ip_interface() {
 		indice=$_instance
 	fi
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
-			add freecwmp object
+			add cwmp object
 			set cwmp.@object[-1].parameter="$_parm"
 			set cwmp.@object[-1].instance="$_instance"
 			set cwmp.@object[-1].interface="lan$indice"
 EOF
-let i=$indice-1
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice=interface
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.ifname=eth$i
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.type=bridge
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=dhcp
+if [ "$indice" != "" ]; then
+	let i=$indice-1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice=interface 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.ifname=eth$i 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.type=bridge 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=dhcp 2> /dev/null
+fi
 }

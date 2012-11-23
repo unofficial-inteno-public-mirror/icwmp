@@ -259,12 +259,12 @@ case "$1" in
 	get_ip_interface_netmask
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.*.IPInterface.)
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.*.IPInterface.*.)
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.[1-9]+.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
 	return $FAULT_CPE_NO_FAULT

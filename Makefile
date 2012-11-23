@@ -41,7 +41,7 @@ define Package/cwmpd/install
 	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/cwmpd.init $(1)/etc/init.d/cwmpd
 	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/iccu.init $(1)/etc/init.d/iccu
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(CP) $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
+	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp
 	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/freecwmp/defaults
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp/functions
