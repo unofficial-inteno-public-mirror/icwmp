@@ -95,7 +95,7 @@ check_connection_request_url() {
         if [ "_$cr_url" != "_$old_cr_url" ];then
             rm -rf /etc/cwmpd/.iccu
             uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url=$cr_url
-            cwmp_value_change "InternetGatewayDevice.ManagementServer.ConnectionRequestURL"
+            ubus call tr069 notify '{"parameter": "InternetGatewayDevice.ManagementServer.ConnectionRequestURL", "value": "'$cr_url'", "type": "xsd:string"}'
             if [ $? -eq 1 ];then
                 uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_change_state=yes
             else
