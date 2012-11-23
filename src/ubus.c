@@ -397,13 +397,14 @@ static struct ubus_object main_object = {
 int
 ubus_init(struct cwmp *cwmp)
 {
+	uloop_init();
 	ctx = ubus_connect(cwmp->conf.ubus_socket);
 	if (!ctx) return -1;
 
 	ubus_add_uloop(ctx);
 
 	if (ubus_add_object(ctx, &main_object)) return -1;
-
+	uloop_run();
 	return 0;
 }
 
