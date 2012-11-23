@@ -166,7 +166,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval 2> /dev/null`
 	;;
 	get_name)
 	val="1"
@@ -183,7 +183,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.periodic_inform_interval="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
