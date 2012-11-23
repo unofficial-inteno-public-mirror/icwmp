@@ -236,8 +236,7 @@ int external_get_action_execute()
 
 	// TODO: add some kind of checks
 
-	if (remove(fc_script_get_actions) != 0)
-		return -1;
+	remove(fc_script_get_actions);
 
 	return 0;
 }

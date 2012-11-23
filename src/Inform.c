@@ -129,16 +129,6 @@ int cwmp_rpc_acs_inform_data_init (struct cwmp *cwmp, struct session *session, s
     p_soap_cwmp1__Inform->Event->__size           = session->event_size;
     p_soap_cwmp1__Inform->Event->__ptrEventStruct = pEventStruct;
 
-    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.Manufacturer", NULL)) return CWMP_GEN_ERR;
-    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ManufacturerOUI", NULL)) return CWMP_GEN_ERR;
-    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ProductClass", NULL)) return CWMP_GEN_ERR;
-    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.SerialNumber", NULL)) return CWMP_GEN_ERR;
-    if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.HardwareVersion", NULL)) return CWMP_GEN_ERR;
-	if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.SoftwareVersion", NULL)) return CWMP_GEN_ERR;
-	if (external_get_action_write("value","InternetGatewayDevice.DeviceInfo.ProvisioningCode", NULL)) return CWMP_GEN_ERR;
-	if (external_get_action_write("value","InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress", NULL)) return CWMP_GEN_ERR;
-    if (external_get_action_write("value","InternetGatewayDevice.ManagementServer.ConnectionRequestURL", NULL)) return CWMP_GEN_ERR;
-
     if (external_simple("inform")) return CWMP_GEN_ERR;
 
     list_for_each(ilist,&(session->head_event_container))
