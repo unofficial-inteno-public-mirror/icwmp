@@ -475,6 +475,14 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_wan_device() {
 case "$1" in
+	InternetGatewayDevice.WANDevice.|\
+	InternetGatewayDevice.WANDevice.1.|\
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.|\
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.|\
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.|\
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
+	freecwmp_set_parameter_notification "$1" "$2"
+	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
 	set_wan_device_wan_ppp_enable "$2"
 	return $FAULT_CPE_NO_FAULT
