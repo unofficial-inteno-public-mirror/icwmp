@@ -98,8 +98,8 @@ add_ip_interface() {
 	done
 	let instance=$instance+1
 	freecwmp_add_lan_device_ip_interface "$1$instance." "$instance"
-	ubus_freecwmp_output "$instance" "0"
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	ubus_freecwmp_output "$instance" "0"
 }
 
 get_ip_interface() {
@@ -201,6 +201,7 @@ delete_ip_interface() {
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete cwmp.@object[$1]
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete network.lan$indice
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	ubus_freecwmp_output "0"
 }
 
 add_lan_device() {

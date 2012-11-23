@@ -46,22 +46,22 @@ fi
 
 case "$action" in
 	get_value)
-	ubus call tr069 GetParameterValues '{"parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'"}'
+	ubus call tr069 GetParameterValues '{"parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	get_name)
-	ubus call tr069 GetParameterNames '{"parameter": "'$parameter'", "writable": "'$value'", "fault_code":"'$fault_code'"}'
+	ubus call tr069 GetParameterNames '{"parameter": "'$parameter'", "writable": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	get_notification)
-	ubus call tr069 GetParameterAttributes '{"parameter": "'$parameter'", "notification": "'$value'", "fault_code":"'$fault_code'"}'
+	ubus call tr069 GetParameterAttributes '{"parameter": "'$parameter'", "notification": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	add_object)
 	local instance="$1"
 	local status="$2"
-	ubus call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}'
+	ubus call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	delete_object)
 	local status="$1"
-	ubus call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }'
+	ubus call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
 	;;
 esac
 }
@@ -71,10 +71,10 @@ local parameter="$1"
 local fault_code="$2"
 case "$action" in
 	apply_value)
-	ubus call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code":"'$fault_code'"}'
+	ubus call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	apply_notification)
-	ubus call tr069 SetParameterAttributes '{"fault_code":"'$fault_code'"}'
+	ubus call tr069 SetParameterAttributes '{"fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 esac
 }
