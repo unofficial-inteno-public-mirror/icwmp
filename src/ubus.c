@@ -217,12 +217,14 @@ freecwmpd_handle_getParamAttributes(struct ubus_context *ctx, struct ubus_object
 }
 
 static enum setParamAttributes {
+	SETPARAMATTRIBUTES_SUCCESS,
 	SETPARAMATTRIBUTES_FAULT,
 	__SETPARAMATTRIBUTES_MAX
 };
 
 static const struct blobmsg_policy setParamAttributes_policy[] = {
-	[SETPARAMATTRIBUTES_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
+		[SETPARAMATTRIBUTES_SUCCESS] = { .name = "success", .type = BLOBMSG_TYPE_STRING },
+		[SETPARAMATTRIBUTES_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int
@@ -235,12 +237,10 @@ freecwmpd_handle_setParamAttributes(struct ubus_context *ctx, struct ubus_object
 	blobmsg_parse(setParamAttributes_policy, ARRAY_SIZE(setParamAttributes_policy), tb,
 		      blob_data(msg), blob_len(msg));
 
-	if (!tb[SETPARAMATTRIBUTES_FAULT])
-		return UBUS_STATUS_INVALID_ARGUMENT;
-
 	CWMP_LOG(INFO, "triggered ubus SetParameterAttributes");
 
-	external_setParamAttrRespFault(blobmsg_data(tb[SETPARAMATTRIBUTES_FAULT]));
+	external_setParamAttrResp(tb[SETPARAMATTRIBUTES_SUCCESS] ? blobmsg_data(tb[SETPARAMATTRIBUTES_SUCCESS]) : NULL,
+			tb[SETPARAMATTRIBUTES_FAULT] ? blobmsg_data(tb[SETPARAMATTRIBUTES_FAULT]) : NULL);
 
 	return 0;
 }

@@ -64,7 +64,7 @@ int cwmp_rpc_cpe_setParameterAttributes (struct cwmp *cwmp, struct session *sess
     struct _cwmp1__SetParameterAttributes           *p_soap_cwmp1__SetParameterAttributes;
     int                                             i,size,error;
     struct cwmp1__SetParameterAttributesStruct      *ParameterAttributesStruct,**ptrParameterAttributeStruct;
-    char *fault = NULL;
+    char *fault = NULL, *status = NULL;
 
     p_soap_cwmp1__SetParameterAttributes        = (struct _cwmp1__SetParameterAttributes *)this->method_data;
     size                                        = p_soap_cwmp1__SetParameterAttributes->ParameterList->__size;
@@ -91,7 +91,7 @@ int cwmp_rpc_cpe_setParameterAttributes (struct cwmp *cwmp, struct session *sess
 		}
 		return CWMP_FAULT_CPE;
 	}
-    external_fetch_setParamAttrRespFault(&fault);
+    external_fetch_setParamAttrResp(&status, &fault);
     if (fault && fault[0]=='9')
 	{
 		error = FAULT_CPE_INTERNAL_ERROR_IDX;
@@ -111,6 +111,16 @@ int cwmp_rpc_cpe_setParameterAttributes (struct cwmp *cwmp, struct session *sess
 		return CWMP_FAULT_CPE;
 
 	}
+
+    if (!status)
+	{
+		if ((cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX))==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
+	}
+
     return CWMP_OK;
 }
 

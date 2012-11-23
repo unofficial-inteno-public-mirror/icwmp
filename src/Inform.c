@@ -259,16 +259,16 @@ int cwmp_rpc_acs_inform_end (struct cwmp *cwmp, struct session *session, struct 
         }
         if (p_soap_cwmp1__Inform->ParameterList!=NULL)
         {
-            struct cwmp1__ParameterValueStruct  *p;
+            struct cwmp1__ParameterValueStruct  **p;
             int                                 i = 0;
             if (p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct!= NULL)
             {
-				p   = *(p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct);
+				p   = p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct;
 				while (p!=NULL && i<p_soap_cwmp1__Inform->ParameterList->__size)
 				{
-					FREE(p->Name);
-					FREE(p->Value);
-					FREE(p->Type);
+					FREE((*p)->Name);
+					FREE((*p)->Value);
+					FREE((*p)->Type);
 					p++;
 					i++;
 				}

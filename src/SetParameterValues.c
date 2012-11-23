@@ -90,7 +90,7 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
         ParameterValueStruct = *ptr_ParameterValueStruct;
         CWMP_LOG(INFO,"param[%d] Name = %s, Value = %s",i,ParameterValueStruct->Name,(strlen(ParameterValueStruct->Value)<1000)?ParameterValueStruct->Value:"(Unable to display big stings)");
 
-        if (external_set_action_write("notification",ParameterValueStruct->Name, NULL))
+        if (external_set_action_write("value",ParameterValueStruct->Name, ParameterValueStruct->Value))
 		{
         	external_free_list_parameter();
         	if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
@@ -127,17 +127,26 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
 			{
 				return CWMP_GEN_ERR;
 			}
-			cwmp_rpc_cpe_Fault_parameter_cause(rpc_cpe_fault,ParameterValueStruct->Name);
+			cwmp_rpc_cpe_Fault_parameter_cause(rpc_cpe_fault,external_parameter->name);
 			external_free_list_parameter();
 			return CWMP_FAULT_CPE;
 		}
 	}
 
-    sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,parameter_key);
+	external_fetch_setParamValRespStatus(&status);
+
+	if (!status)
+	{
+		if ((rpc_cpe_fault = cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX))==NULL)
+		{
+			return CWMP_GEN_ERR;
+		}
+		return CWMP_FAULT_CPE;
+	}
+
+	sprintf(buf,"%s=%s",UCI_ACS_PARAMETERKEY_PATH,parameter_key);
 	uci_set_value (buf);
 	uci_commit_value();
-
-	external_fetch_setParamValRespStatus(&status);
 
 	p_soap_cwmp1__SetParameterValuesResponse->Status = atoi(status);
 

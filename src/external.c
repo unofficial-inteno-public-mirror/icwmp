@@ -66,14 +66,18 @@ void external_fetch_setParamValRespStatus (char **status)
 	external_MethodStatus = NULL;
 }
 
-void external_setParamAttrRespFault (char *fault)
+void external_setParamAttrResp (char *status, char *fault)
 {
+	FREE(external_MethodStatus);
+	external_MethodStatus = status ? strdup(status) : NULL;
 	FREE(external_MethodFault);
 	external_MethodFault = fault ? strdup(fault) : NULL;
 }
 
-void external_fetch_setParamAttrRespFault (char **fault)
+void external_fetch_setParamAttrResp (char **status, char **fault)
 {
+	*status = external_MethodStatus;
+	external_MethodStatus = NULL;
 	*fault = external_MethodFault;
 	external_MethodFault = NULL;
 }
@@ -293,6 +297,7 @@ int external_set_action_execute(char *action)
 	fprintf(fp, "/bin/sh %s apply %s\n", fc_script, action);
 #endif
 
+	fclose(fp);
 
 	if ((uproc.pid = fork()) == -1) {
 		return -1;

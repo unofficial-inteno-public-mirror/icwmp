@@ -16,8 +16,8 @@ static char *fc_script = "./ext/openwrt/scripts/freecwmp.sh";
 #else
 static char *fc_script = "/usr/sbin/freecwmp";
 #endif
-static char *fc_script_set_actions = "/tmp/freecwmp_set_action_values.sh";
-static char *fc_script_get_actions = "/tmp/freecwmp_get_action_values.sh";
+static char *fc_script_set_actions = "/tmp/freecwmp_set_action.sh";
+static char *fc_script_get_actions = "/tmp/freecwmp_get_action.sh";
 
 struct external_parameter {
 	struct list_head list;
@@ -29,8 +29,8 @@ struct external_parameter {
 
 void external_setParamValRespStatus (char *status);
 void external_fetch_setParamValRespStatus (char **status);
-void external_setParamAttrRespFault (char *fault);
-void external_fetch_setParamAttrRespFault (char **fault);
+void external_setParamAttrResp (char *status, char *fault);
+void external_fetch_setParamAttrResp (char **status, char **fault);
 void external_addObjectResp (char *instance, char *status, char *fault);
 void external_fetch_addObjectResp (char **instance, char **status, char **fault);
 void external_delObjectResp (char *status, char *fault);
