@@ -68,6 +68,7 @@ int cwmp_rpc_cpe_getParameterAttributes_response_data_init(struct cwmp *cwmp, st
     struct _cwmp1__GetParameterAttributesResponse   *p_soap_cwmp1__GetParameterAttributesResponse;
     struct cwmp1__ParameterAttributeStruct          **ptr_ParameterAttributeStruct;
     struct cwmp1ParameterAttributeList              *ParameterList;
+    struct cwmp1AccessList 							*AccessList;
     struct list_head 								*list;
     struct external_parameter						*external_parameter;
     char                                            **name;
@@ -141,11 +142,17 @@ int cwmp_rpc_cpe_getParameterAttributes_response_data_init(struct cwmp *cwmp, st
 	ParameterList->__ptrParameterAttributeStruct                = ptr_ParameterAttributeStruct;
 	p_soap_cwmp1__GetParameterAttributesResponse->ParameterList = ParameterList;
 
+
 	while (external_list_parameter.next!=&external_list_parameter) {
 		external_parameter = list_entry(external_list_parameter.next, struct external_parameter, list);
+		AccessList = calloc(1,sizeof(struct cwmp1AccessList));
+		AccessList->__ptrstring = calloc(1,sizeof(char *));
+		*(AccessList->__ptrstring) = strdup("Subscriber");
+		AccessList->__size = 1;
 		*ptr_ParameterAttributeStruct = calloc(1,sizeof(struct cwmp1__ParameterAttributeStruct));
 		(*ptr_ParameterAttributeStruct)->Name = external_parameter->name;
 		(*ptr_ParameterAttributeStruct)->Notification = atoi(external_parameter->data);
+		(*ptr_ParameterAttributeStruct)->AccessList = AccessList;
 		ptr_ParameterAttributeStruct++;
 
 		list_del(&external_parameter->list);
@@ -169,8 +176,8 @@ int cwmp_rpc_cpe_getParameterAttributes_end(struct cwmp *cwmp, struct session *s
 {
     struct _cwmp1__GetParameterAttributesResponse   *p_soap_cwmp1__GetParameterAttributesResponse;
     struct cwmp1__ParameterAttributeStruct          **ptrParameterAttributeStruct,*pParameterAttributeStruct;
-    char                                            **ptrAccessList,*pAccessList;
-    int                                             i,j,size_ParameterAttributeStruct,size_AccessList;
+    char                                            **ptrAccessList;
+    int                                             i,size_ParameterAttributeStruct;
 
     p_soap_cwmp1__GetParameterAttributesResponse = (struct _cwmp1__GetParameterAttributesResponse *)this->method_response_data;
 
@@ -190,17 +197,8 @@ int cwmp_rpc_cpe_getParameterAttributes_end(struct cwmp *cwmp, struct session *s
                 }
                 if(pParameterAttributeStruct->AccessList != NULL)
                 {
-                    size_AccessList = pParameterAttributeStruct->AccessList->__size;
-                    ptrAccessList   = pParameterAttributeStruct->AccessList->__ptrstring;
-                    for(j=0;j<size_AccessList;j++)
-                    {
-                        pAccessList = *ptrAccessList;
-                        ptrAccessList++;
-                        if(pAccessList != NULL)
-                        {
-                            free(pAccessList);
-                        }
-                    }
+                	free(*(pParameterAttributeStruct->AccessList->__ptrstring));
+                	free(pParameterAttributeStruct->AccessList->__ptrstring);
                     free(pParameterAttributeStruct->AccessList);
                 }
 
