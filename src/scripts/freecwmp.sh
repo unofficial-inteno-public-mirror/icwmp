@@ -42,6 +42,7 @@ case "$1" in
         if [ "$2" = "notification" ]; then
             __arg1="$3"
             __arg2="$4"
+            __arg3="echo $5| tr '[A-Z]' '[a-z]'"
             action="set_notification"
         elif [ "$2" = "tag" ]; then
             __arg1="$3"
@@ -301,27 +302,34 @@ if [ "$action" = "set_notification" ]; then
     no_fault="0"
     freecwmp_check_fault "$__arg1"
     fault_code="$?"
-    if [ "$fault_code" = "0" ]; then
-        if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-            __arg1="InternetGatewayDevice."
-		fi
-		for function_name in $set_notification_functions
-		do
-			$function_name "$__arg1" "$__arg2"
-            fault_code="$?"
-            if [ "$fault_code" = "0" ]; then
-                no_fault="1"
-            fi
-            if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-                break
-            fi
-        done
-        if [ "$no_fault" = "1" ]; then fault_code="0"; fi
-    fi
-    if [ "$fault_code" != "0" ]; then
-        let fault_code=$fault_code+9000
-        freecwmp_set_parameter_fault "$__arg1" "$fault_code"
-    fi
+	if [ "$__arg3" = "true" ]; then
+		__arg3="1"
+	elif [ "$__arg3" = "false" ]; then
+		__arg3="0"
+	fi
+	if [ "$__arg3" = "1" ]; then
+	    if [ "$fault_code" = "0" ]; then
+	        if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
+	            __arg1="InternetGatewayDevice."
+			fi
+			for function_name in $set_notification_functions
+			do
+				$function_name "$__arg1" "$__arg2"
+	            fault_code="$?"
+	            if [ "$fault_code" = "0" ]; then
+	                no_fault="1"
+	            fi
+	            if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
+	                break
+	            fi
+	        done
+	        if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+	    fi
+	    if [ "$fault_code" != "0" ]; then
+	        let fault_code=$fault_code+9000
+	        freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+	    fi
+	fi
 fi
 
 if [ "$action" = "get_tags" -o "$action" = "get_all" ]; then
