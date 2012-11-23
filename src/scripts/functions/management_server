@@ -9,7 +9,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.URL"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.url`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.url 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -104,7 +104,7 @@ local val=""
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.ParameterKey`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.ParameterKey 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -196,7 +196,7 @@ local val
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestURL"
 case "$action" in
 	get_value)
-	val=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url`
+	val=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url 2> /dev/null`
 	;;
 	get_name)
 	val="0"
