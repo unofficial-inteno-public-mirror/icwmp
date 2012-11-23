@@ -65,7 +65,7 @@ int cwmp_rpc_cpe_setParameterAttributes (struct cwmp *cwmp, struct session *sess
     int                                             i,size,error;
     struct cwmp1__SetParameterAttributesStruct      *ParameterAttributesStruct,**ptrParameterAttributeStruct;
     char *fault = NULL, *status = NULL;
-    char notification[8];
+    char notification[8], change[8];
 
     p_soap_cwmp1__SetParameterAttributes        = (struct _cwmp1__SetParameterAttributes *)this->method_data;
     size                                        = p_soap_cwmp1__SetParameterAttributes->ParameterList->__size;
@@ -76,7 +76,8 @@ int cwmp_rpc_cpe_setParameterAttributes (struct cwmp *cwmp, struct session *sess
     	ParameterAttributesStruct = *ptrParameterAttributeStruct;
     	CWMP_LOG(INFO,"param[%d] = \"%s\"",i,*(ParameterAttributesStruct->Name));
     	sprintf(notification,"%d",ParameterAttributesStruct->Notification);
-		if (external_set_action_write("notification",*(ParameterAttributesStruct->Name), notification))
+    	sprintf(change,"%d",ParameterAttributesStruct->NotificationChange);
+		if (external_set_action_write("notification",*(ParameterAttributesStruct->Name), notification, change))
 		{
 			if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)
 			{

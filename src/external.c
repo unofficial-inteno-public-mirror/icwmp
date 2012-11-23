@@ -246,7 +246,7 @@ int external_get_action_execute()
 }
 
 
-int external_set_action_write(char *action, char *name, char *value)
+int external_set_action_write(char *action, char *name, char *value, char *change)
 {
 
 	CWMP_LOG(INFO,"adding to set %s script '%s'\n", action, name);
@@ -267,12 +267,12 @@ int external_set_action_write(char *action, char *name, char *value)
 			return -1;
 		}
 	}
-
 #ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s set %s %s %s\n", fc_script, action, name, value);
+		fprintf(fp, "/bin/sh `pwd`/%s set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #else
-	fprintf(fp, "/bin/sh %s set %s %s %s\n", fc_script, action, name, value);
+		fprintf(fp, "/bin/sh %s set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #endif
+
 
 	fclose(fp);
 

@@ -90,7 +90,7 @@ int cwmp_rpc_cpe_setParameterValues (struct cwmp *cwmp, struct session *session,
         ParameterValueStruct = *ptr_ParameterValueStruct;
         CWMP_LOG(INFO,"param[%d] Name = %s, Value = %s",i,ParameterValueStruct->Name,(strlen(ParameterValueStruct->Value)<1000)?ParameterValueStruct->Value:"(Unable to display big stings)");
 
-        if (external_set_action_write("value",ParameterValueStruct->Name, ParameterValueStruct->Value))
+        if (external_set_action_write("value",ParameterValueStruct->Name, ParameterValueStruct->Value, NULL))
 		{
         	external_free_list_parameter();
         	if (cwmp_add_session_rpc_cpe_Fault(session,FAULT_CPE_INTERNAL_ERROR_IDX)==NULL)

@@ -38,7 +38,7 @@ void external_fetch_delObjectResp (char **status, char **fault);
 int external_get_action(char *action, char *name, char *arg);
 int external_get_action_write(char *action, char *name, char *arg);
 int external_get_action_execute();
-int external_set_action_write(char *action, char *name, char *value);
+int external_set_action_write(char *action, char *name, char *value, char *change);
 int external_set_action_execute(char *action);
 int external_simple(char *arg);
 int external_download(char *url, char *size);
