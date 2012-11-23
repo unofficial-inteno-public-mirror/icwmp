@@ -203,6 +203,7 @@ int cwmp_rpc_acs_inform_data_init (struct cwmp *cwmp, struct session *session, s
 
 
     p_soap_cwmp1__Inform->ParameterList->__size = size;
+    p_soap_cwmp1__Inform->ParameterList->__ptrParameterValueStruct = pp;
 
     return CWMP_OK;
 }
