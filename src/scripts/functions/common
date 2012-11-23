@@ -74,7 +74,7 @@ case "$action" in
 	ubus call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	apply_notification)
-	ubus call tr069 SetParameterAttributes '{"fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus call tr069 SetParameterAttributes '{"success": "", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 esac
 }

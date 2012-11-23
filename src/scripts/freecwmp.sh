@@ -375,6 +375,7 @@ if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]
 		# applying
         /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 		if [ "$action" = "apply_value" ]; then ubus call tr069 SetParameterValuesStatus '{"status": "0"}'; fi
+		if [ "$action" = "apply_notification" ]; then ubus call tr069 SetParameterAttributes '{"success": "0", "fault_code":""}' 2> /dev/null; fi
     else
 		let n=$__fault_count-1
         for i in `seq 0 $n`
