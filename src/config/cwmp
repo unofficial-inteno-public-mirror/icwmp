@@ -47,6 +47,8 @@ config scripts
     list get_notification_function get_lan_device_notification
     list set_value_function set_lan_device
     list set_notification_function set_lan_device_notification
+	list add_object_function add_lan_device
+    list delete_object_function delete_lan_device
     list location /usr/share/freecwmp/functions/management_server
     list get_value_function get_management_server
     list get_name_function get_management_server_name
