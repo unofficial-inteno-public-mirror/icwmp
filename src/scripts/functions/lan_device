@@ -120,7 +120,6 @@ local val=""
 local i=0
 while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" ]
 do
-	let i=$i+1
 	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`
 	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`
 	case "$action" in
@@ -133,6 +132,7 @@ do
 		ubus_freecwmp_output $parm"IPInterfaceIPAddress" "$val"
 		;;
 	esac
+	let i=$i+1
 done
 }
 
@@ -161,7 +161,6 @@ local val=""
 local i=0
 while [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`" != "" ]
 do
-	let i=$i+1
 	local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].parameter 2>/dev/null`
 	local indice=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@object[$i].instance 2>/dev/null`
 	case "$action" in
@@ -174,6 +173,7 @@ do
 		ubus_freecwmp_output $parm"IPInterfaceSubnetMask" "$val"
 		;;
 	esac
+	let i=$i+1
 done
 }
 
