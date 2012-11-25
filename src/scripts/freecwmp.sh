@@ -42,7 +42,7 @@ case "$1" in
         if [ "$2" = "notification" ]; then
             __arg1="$3"
             __arg2="$4"
-            __arg3="echo $5| tr '[A-Z]' '[a-z]'"
+            __arg3="`echo $5| tr '[A-Z]' '[a-z]'`"
             action="set_notification"
         elif [ "$2" = "tag" ]; then
             __arg1="$3"
@@ -299,15 +299,15 @@ if [ "$action" = "get_notification" -o "$action" = "get_all" ]; then
 fi
 
 if [ "$action" = "set_notification" ]; then
-    no_fault="0"
-    freecwmp_check_fault "$__arg1"
-    fault_code="$?"
 	if [ "$__arg3" = "true" ]; then
 		__arg3="1"
 	elif [ "$__arg3" = "false" ]; then
 		__arg3="0"
 	fi
 	if [ "$__arg3" = "1" ]; then
+		no_fault="0"
+		freecwmp_check_fault "$__arg1"
+		fault_code="$?"
 	    if [ "$fault_code" = "0" ]; then
 	        if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
 	            __arg1="InternetGatewayDevice."
@@ -394,7 +394,7 @@ if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]
             if [ "$action" = "apply_notification" ]; then break; fi
         done
         rm -rf /var/state/cwmp 2> /dev/null
-        /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} revert freecwmp
+        /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} revert cwmp
     fi
 fi
 

@@ -427,6 +427,13 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_lan_device_notification() {
 case "$1" in
+	InternetGatewayDevice.LANDevice.|\
+	InternetGatewayDevice.LANDevice.1.|\
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.|\
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
 	set_wlan_enable 0 "$2"
 	return $FAULT_CPE_NO_FAULT

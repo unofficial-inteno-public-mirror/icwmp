@@ -712,6 +712,10 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_management_server_notification() {
 case "$1" in
+	InternetGatewayDevice.ManagementServer.)
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.ManagementServer.URL)
 	set_management_server_url "$2"
 	return $FAULT_CPE_NO_FAULT

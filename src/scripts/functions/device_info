@@ -452,6 +452,10 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_device_info_notification() {
 case "$1" in
+	InternetGatewayDevice.DeviceInfo.)
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.DeviceInfo.Manufacturer)
 	set_device_info_manufacturer "$2"
 	return $FAULT_CPE_NO_FAULT

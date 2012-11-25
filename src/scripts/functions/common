@@ -176,11 +176,17 @@ freecwmp_config_notifications() {
 		if [ "$item" = "$3" ]; then
 			eval "export -- \"$4=2\""
 			return 0
+		elif [ "`echo $3|grep $item`" = "$3" ]; then
+			eval "export -- \"$4=2\""
+			return 0
 		fi
 	done
 	for item in $__passive
 	do
 		if [ "$item" = "$3" ]; then
+			eval "export -- \"$4=1\""
+			return 0
+		elif [ "`echo $3|grep $item`" = "$3" ]; then
 			eval "export -- \"$4=1\""
 			return 0
 		fi
