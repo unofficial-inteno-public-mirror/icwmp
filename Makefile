@@ -13,7 +13,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/cwmpd
   CATEGORY:=Utilities
   TITLE:=TR-069 client
-  DEPENDS:=PACKAGE_libuci:libuci PACKAGE_libexpat:libexpat PACKAGE_libcurl:libcurl PACKAGE_libpthread:libpthread PACKAGE_libopenssl:libopenssl PACKAGE_libubus:libubus PACKAGE_libubox:libubox PACKAGE_shflags:shflags PACKAGE_ubusd:ubusd PACKAGE_ubus:ubus
+  DEPENDS:=PACKAGE_libuci:libuci PACKAGE_libmicroxml:libmicroxml PACKAGE_libcurl:libcurl PACKAGE_libpthread:libpthread PACKAGE_libopenssl:libopenssl PACKAGE_libubus:libubus PACKAGE_libubox:libubox PACKAGE_shflags:shflags PACKAGE_ubusd:ubusd PACKAGE_ubus:ubus
 endef
 
 define Package/cwmpd/description
