@@ -130,9 +130,9 @@ int uci_get_value_common(char *cmd,char **value,bool state)
     }
     if (state)
     {
-        /*strcpy(state_path,"/var/state");
-        uci_add_history_path(c, c->savedir);
-        uci_set_savedir(c, state_path);*/ /* KMD TODO to check for DHCP*/
+        strcpy(state_path,"/var/state");
+        uci_add_delta_path(c, c->savedir);
+        uci_set_savedir(c, state_path); /* KMD TODO to check for DHCP*/
     }
     s = strdup(cmd);
     t = s;
