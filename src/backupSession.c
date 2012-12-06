@@ -49,7 +49,8 @@ void backup_session_insert_download(char *commandKey, char *url, time_t schedule
 void backup_session_delete_download(char *commandKey, char *url, time_t schedule_time);
 void backup_session_insert_parameter_download(char *name, char *value, char *url, time_t schedule_time, char *commandKey);
 
-
+struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_idx, char *command_key);
+struct _cwmp1__TransferComplete *cwmp_set_data_rpc_acs_transferComplete ();
 
 void backup_session_insert_rpc(char *name, char *commandKey, int status)
 {
@@ -552,7 +553,7 @@ void backup_session_insert_parameter_download(char *name, char *value, char *url
 int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loading load)
 {
 	int                 				i,j,fault_idx;
-	char    							*name = NULL, *commandKey  = NULL, *status  = NULL;
+	char    							*name = NULL, *commandKey = NULL, *status = NULL;
 	FILE    							*pFile;
 	mxml_node_t 						*tree, *n, *b, *c;
 	mxml_attr_t							*attr;
