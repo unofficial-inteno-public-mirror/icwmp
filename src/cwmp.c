@@ -27,6 +27,7 @@ struct cwmp         	cwmp_main;
 static pthread_mutex_t	thread_sync_mutex		= PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t	thread_sync_cond		= PTHREAD_COND_INITIALIZER;
 static bool				thread_sync_wait		= TRUE;
+extern pthread_mutex_t  mutex_backup_session;
 
 struct rpc_acs *cwmp_add_session_rpc_acs_inform (struct session *session);
 struct rpc_cpe  *cwmp_soap_receive_rpc_cpe (struct cwmp *cwmp,struct session *session);
@@ -610,6 +611,8 @@ int main(int argc, char **argv)
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
     pthread_t                       ubus_thread;
+
+    pthread_mutex_init(&mutex_backup_session, NULL);
 
     if (error = cwmp_init(argc, argv, cwmp))
     {

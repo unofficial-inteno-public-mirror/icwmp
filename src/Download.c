@@ -431,7 +431,10 @@ int cwmp_launch_download(struct cwmp *cwmp, struct session *session, struct down
 			res = curl_easy_perform(curl);
 			curl_easy_cleanup(curl);
 		}
-		fclose(fp);
+		if(fp != NULL)
+		{
+			fclose(fp);
+		}
 	}
 
 	if(res != CURLE_OK)
