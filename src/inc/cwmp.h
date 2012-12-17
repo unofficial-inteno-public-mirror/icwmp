@@ -196,7 +196,7 @@ typedef struct  api_value_change {
     pthread_mutex_t                     mutex;
 } api_value_change;
 
-struct cwmp {
+typedef struct cwmp {
     struct env                          env;
     struct config                       conf;
     struct list_head                    head_session_queue;
@@ -210,7 +210,7 @@ struct cwmp {
     struct list_head                    *head_event_container;
     struct  api_value_change            api_value_change;
     int                                 error;
-} ;
+} cwmp;
 
 typedef struct session {
     struct list_head                    list;
