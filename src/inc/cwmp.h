@@ -144,6 +144,7 @@ Author contact information:
 #define UCI_CPE_LOG_MAX_SIZE                                "cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG                           "cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG                             "cwmp.cpe.log_to_file"
+#define UCI_CPE_INTERFACE_PATH                              "cwmp.cpe.interface"
 
 #define UCI_TRACK_CONF                                      "ucitrack"
 #define UCI_TRACK_INIT                                      "init"
@@ -170,6 +171,8 @@ enum cwmp_bool {
 typedef struct config {
     char                                *acsurl;
     char                                *confFile;
+    char								*ip;
+    char								*interface;
     char                                *acs_userid;
     char                                *acs_passwd;
     char                                *cpe_userid;
@@ -193,7 +196,7 @@ typedef struct  api_value_change {
     pthread_mutex_t                     mutex;
 } api_value_change;
 
-typedef struct cwmp {
+struct cwmp {
     struct env                          env;
     struct config                       conf;
     struct list_head                    head_session_queue;
@@ -207,7 +210,7 @@ typedef struct cwmp {
     struct list_head                    *head_event_container;
     struct  api_value_change            api_value_change;
     int                                 error;
-} cwmp;
+} ;
 
 typedef struct session {
     struct list_head                    list;
@@ -362,4 +365,4 @@ typedef struct handler_ParameterValueStruct {
 # define DD(SEV,MESSAGE,args...)
 #endif
 
-#define FREE(x) free(x)
+#define FREE(x) free(x); x = NULL;

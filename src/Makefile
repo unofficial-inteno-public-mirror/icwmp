@@ -27,7 +27,7 @@ CWMPD_OBJECT_FILES=cwmp.o stdsoap2.o soapC.o soapClient.o backupSession.o\
  SetParameterValues.o FactoryReset.o ScheduleInform.o connectionRequest.o \
  config.o Inform.o event.o GetRPCMethods_acs.o Fault_cpe.o GetRPCMethods_cpe.o\
  httpda.o md5evp.o GetParameterAttributes.o SetParameterAttributes.o\
- Download.o AddObject.o DeleteObject.o ubus.o external.o
+ Download.o AddObject.o DeleteObject.o ubus.o external.o b64.o
 
 all: cwmpd
 

@@ -18,6 +18,8 @@
 void cwmp_add_notification (char *name, char *value, char *type);
 
 static struct ubus_context *ctx = NULL;
+static struct blob_buf b;
+static struct cwmp *ubus_cwmp;
 
 static enum notify {
 	NOTIFY_PARAM,
@@ -81,17 +83,6 @@ freecwmpd_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
 			     blobmsg_data(tb[INFORM_EVENT]));
 //	tmp = freecwmp_int_event_code(blobmsg_data(tb[INFORM_EVENT]));
 //	cwmp_connection_request(tmp);
-
-	return 0;
-}
-
-static int
-freecwmpd_handle_reload(struct ubus_context *ctx, struct ubus_object *obj,
-			struct ubus_request_data *req, const char *method,
-			struct blob_attr *msg)
-{
-	CWMP_LOG(INFO, "triggered ubus reload");
-//	freecwmp_reload();
 
 	return 0;
 }
@@ -370,9 +361,59 @@ freecwmpd_handle_delObject(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
+static enum command {
+	COMMAND_NAME,
+	__COMMAND_MAX
+};
+
+static const struct blobmsg_policy command_policy[] = {
+	[INFORM_EVENT] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
+};
+
+static int
+freecwmpd_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
+			 struct ubus_request_data *req, const char *method,
+			 struct blob_attr *msg)
+{
+	struct blob_attr *tb[__COMMAND_MAX];
+
+	blobmsg_parse(command_policy, ARRAY_SIZE(command_policy), tb,
+		      blob_data(msg), blob_len(msg));
+
+	if (!tb[INFORM_EVENT])
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	blob_buf_init(&b, 0);
+
+	char *cmd = blobmsg_data(tb[INFORM_EVENT]);
+	char *info;
+
+	if (!strcmp("reload", cmd)) {
+		CWMP_LOG(NOTICE, "triggered ubus reload");
+		cwmp_config_reload(ubus_cwmp);
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "freecwmpd reloaded") == -1)
+			return -1;
+	} else {
+		blobmsg_add_u32(&b, "status", -1);
+		if (asprintf(&info, "%s command is not supported", cmd) == -1)
+			return -1;
+	}
+
+	blobmsg_add_string(&b, "info", info);
+	free(info);
+
+	ubus_send_reply(ctx, req, b.head);
+
+	blob_buf_free(&b);
+
+	return 0;
+}
+
 static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("notify", freecwmpd_handle_notify, notify_policy),
 	UBUS_METHOD("inform", freecwmpd_handle_inform, inform_policy),
+	UBUS_METHOD("command", freecwmpd_handle_command, command_policy),
 	UBUS_METHOD("GetParameterValues", freecwmpd_handle_getParamValues, getParamValues_policy),
 	UBUS_METHOD("SetParameterValuesFault", freecwmpd_handle_setParamValuesFault, setParamValuesFault_policy),
 	UBUS_METHOD("SetParameterValuesStatus", freecwmpd_handle_setParamValuesStatus, setParamValuesStatus_policy),
@@ -381,7 +422,6 @@ static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("SetParameterAttributes", freecwmpd_handle_setParamAttributes, setParamAttributes_policy),
 	UBUS_METHOD("AddObject", freecwmpd_handle_addObject, addObject_policy),
 	UBUS_METHOD("DelObject", freecwmpd_handle_delObject, delObject_policy),
-	{ .name = "reload", .handler = freecwmpd_handle_reload },
 };
 
 static struct ubus_object_type main_object_type =
@@ -397,6 +437,7 @@ static struct ubus_object main_object = {
 int
 ubus_init(struct cwmp *cwmp)
 {
+	ubus_cwmp = cwmp;
 	uloop_init();
 	ctx = ubus_connect(cwmp->conf.ubus_socket);
 	if (!ctx) return -1;

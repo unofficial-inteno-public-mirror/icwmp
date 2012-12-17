@@ -21,6 +21,7 @@ Author contact information:
 #include <stdbool.h>
 #include <microxml.h>
 #include <time.h>
+#include <unistd.h>
 #include "cwmp.h"
 #include "backupSession.h"
 
@@ -571,9 +572,8 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loadin
 	time_t								scheduled_time;
 
 	pthread_mutex_lock (&mutex_backup_session);
-	pFile = fopen(CWMP_BKP_FILE,"r+");
 
-	if(pFile == NULL)
+	if(access(CWMP_BKP_FILE, F_OK) == -1)
 	{
 		pFile = fopen(CWMP_BKP_FILE,"w");
 		if(pFile == NULL)
@@ -587,7 +587,7 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loadin
 		pthread_mutex_unlock (&mutex_backup_session);
 		return CWMP_OK;
 	}
-	fclose(pFile);
+
 	pthread_mutex_unlock (&mutex_backup_session);
 	backup_session_move_inform_to_inform_queue ();
 	pthread_mutex_lock (&mutex_backup_session);

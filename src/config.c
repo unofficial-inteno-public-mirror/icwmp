@@ -816,6 +816,22 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+    if((error = uci_get_value(UCI_CPE_INTERFACE_PATH,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (conf->interface!=NULL)
+            {
+                free(conf->interface);
+            }
+            conf->interface = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
     if((error = uci_get_value(UCI_CPE_USERID_PATH,&value)) == CWMP_OK)
     {
         if(value != NULL)
