@@ -3,7 +3,10 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
+ *	Contributed by Inteno Broadband Technology AB
  *
+ *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *	Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
  */
 
@@ -54,27 +57,27 @@ http_client_init(struct cwmp *cwmp)
 #endif
 
 #ifdef HTTP_ZSTREAM
-	if (asprintf(&http_c.url, "%s://%s:%s@%s:%s%s",
-		     config->acs->scheme,
-		     config->acs->username,
-		     config->acs->password,
-		     config->acs->hostname,
-		     config->acs->port,
-		     config->acs->path) == -1)
+	char *add = strstr(cwmp->conf.acsurl,"://");
+	if(!add) return -1;
+	if (asprintf(&http_c.url, "%.*s://%s:%s@%s",
+			 add-cwmp->conf.acsurl,
+			 cwmp->conf.acsurl,
+			 cwmp->conf.acs_userid,
+			 cwmp->conf.acs_passwd,
+		     add+3) == -1)
 		return -1;
 #endif
 
-//	DDF("+++ HTTP CLIENT CONFIGURATION +++\n");
-//	DD("url: %s\n", http_c.url);
-//#ifdef HTTP_CURL
+	CWMP_LOG(INFO, "ACS url: %s\n", http_c.url);
+
+#ifdef HTTP_CURL
 //	if (config->acs->ssl_cert)
 //		DD("ssl_cert: %s\n", config->acs->ssl_cert);
 //	if (config->acs->ssl_cacert)
 //		DD("ssl_cacert: %s\n", config->acs->ssl_cacert);
 //	if (!config->acs->ssl_verify)
 //		DD("ssl_verify: SSL certificate validation disabled.\n");
-//#endif /* HTTP_CURL */
-//	DDF("--- HTTP CLIENT CONFIGURATION ---\n");
+#endif /* HTTP_CURL */
 
 #ifdef HTTP_CURL
 	http_c.header_list = NULL;
@@ -111,7 +114,6 @@ http_client_init(struct cwmp *cwmp)
 		return -1;
 #endif /* HTTP_ZSTREAM */
 
-//	freecwmp_log_message(NAME, L_NOTICE, "configured acs url %s", http_c.url);
 	return 0;
 }
 
@@ -153,10 +155,6 @@ http_get_response(void *buffer, size_t size, size_t rxed, char **msg_in)
 
 	free(*msg_in);
 	*msg_in = c;
-
-//	DDF("+++ RECEIVED HTTP RESPONSE (PART) +++\n");
-//	DDF("%.*s", size * rxed, buffer);
-//	DDF("--- RECEIVED HTTP RESPONSE (PART) ---\n");
 
 	return size * rxed;
 }
@@ -227,13 +225,6 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 		if (http_client_init()) return -1;
 	}
 
-//	if(msg_out) {
-//		DDF("+++ SENDING POST MESSAGE +++\n");
-//		DDF("%s", msg_out);
-//		DDF("--- SENDING POST MESSAGE ---\n");
-//	} else {
-//		DDF("+++ SENDING EMPTY POST MESSAGE +++\n");
-//	}
 
 	if (msg_out) {
 		zstream_write(http_c.stream, msg_out, strlen(msg_out));
@@ -259,13 +250,6 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 
 #endif /* HTTP_ZSTREAM */
 
-//	if (*msg_in) {
-//		DDF("+++ RECEIVED HTTP RESPONSE +++\n");
-//		DDF("%s", *msg_in);
-//		DDF("--- RECEIVED HTTP RESPONSE ---\n");
-//	} else {
-//		DDF("+++ RECEIVED EMPTY HTTP RESPONSE +++\n");
-//	}
 
 	return 0;
 
