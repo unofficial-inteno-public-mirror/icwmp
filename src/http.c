@@ -70,14 +70,7 @@ http_client_init(struct cwmp *cwmp)
 
 	CWMP_LOG(INFO, "ACS url: %s\n", http_c.url);
 
-#ifdef HTTP_CURL
-//	if (config->acs->ssl_cert)
-//		DD("ssl_cert: %s\n", config->acs->ssl_cert);
-//	if (config->acs->ssl_cacert)
-//		DD("ssl_cacert: %s\n", config->acs->ssl_cacert);
-//	if (!config->acs->ssl_verify)
-//		DD("ssl_verify: SSL certificate validation disabled.\n");
-#endif /* HTTP_CURL */
+	/* TODO debug ssl config from freecwmp*/
 
 #ifdef HTTP_CURL
 	http_c.header_list = NULL;
@@ -188,13 +181,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, fc_cookies);
 	curl_easy_setopt(curl, CURLOPT_COOKIEJAR, fc_cookies);
 
-	/* TODO: test this with real ACS configuration */
-//	if (config->acs->ssl_cert)
-//		curl_easy_setopt(curl, CURLOPT_SSLCERT, config->acs->ssl_cert);
-//	if (config->acs->ssl_cacert)
-//		curl_easy_setopt(curl, CURLOPT_CAINFO, config->acs->ssl_cacert);
-//	if (!config->acs->ssl_verify)
-//		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+	/* TODO: ssl config (from freecwmp) and test it with real ACS configuration */
 
 	*msg_in = (char *) calloc (1, sizeof(char));
 
