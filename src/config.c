@@ -1,33 +1,25 @@
 /*
-    config.c
-
-    cwmp service client in C
-
---------------------------------------------------------------------------------
-cwmp service client
-Copyright (C) 2011-2012, Inteno, Inc. All Rights Reserved.
-
-Any distribution, dissemination, modification, conversion, integral or partial
-reproduction, can not be made without the prior written permission of Inteno.
---------------------------------------------------------------------------------
-Author contact information:
-
---------------------------------------------------------------------------------
-*/
+ *	This program is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 2 of the License, or
+ *	(at your option) any later version.
+ *	Powered by Inteno Broadband Technology AB
+ *
+ *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+ *
+ */
 
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h>
-#include <sys/stat.h>
-#include "soapH.h"
-#include "cwmp.h"
 #include <uci.h>
-#include "backupSession.h"
 #include <unistd.h>
-
-void backup_session_insert_acs(char *value);
+#include "cwmp.h"
+#include "backupSession.h"
+#include "xml.h"
+#include "log.h"
 
 typedef enum uci_config_action {
     CMD_SET,
@@ -70,7 +62,7 @@ int uci_get_list_value(char *cmd, struct list_head *list)
 
     s = strdup(cmd);
     t = s;
-    if (uci_lookup_ptr(c, &ptr, s, TRUE) != UCI_OK)
+    if (uci_lookup_ptr(c, &ptr, s, true) != UCI_OK)
     {
         CWMP_LOG(ERROR, "Invalid uci command path: %s",cmd);
         free(t);
@@ -132,11 +124,11 @@ int uci_get_value_common(char *cmd,char **value,bool state)
     {
         strcpy(state_path,"/var/state");
         uci_add_delta_path(c, c->savedir);
-        uci_set_savedir(c, state_path); /* KMD TODO to check for DHCP*/
+        uci_set_savedir(c, state_path); /* TODO to check for DHCP*/
     }
     s = strdup(cmd);
     t = s;
-    if (uci_lookup_ptr(c, &ptr, s, TRUE) != UCI_OK)
+    if (uci_lookup_ptr(c, &ptr, s, true) != UCI_OK)
     {
         CWMP_LOG(ERROR, "Error occurred in uci %s get %s",state?"state":"config",cmd);
         free(t);
@@ -161,14 +153,14 @@ int uci_get_value_common(char *cmd,char **value,bool state)
 int uci_get_state_value(char *cmd,char **value)
 {
     int error;
-    error = uci_get_value_common (cmd,value,TRUE);
+    error = uci_get_value_common (cmd,value,true);
     return error;
 }
 
 int uci_get_value(char *cmd,char **value)
 {
     int error;
-    error = uci_get_value_common (cmd,value,FALSE);
+    error = uci_get_value_common (cmd,value,false);
     return error;
 }
 
@@ -191,12 +183,12 @@ static int uci_action_value_common(char *cmd, uci_config_action action)
 
     if (action == CMD_SET_STATE)
     {
-        /*strcpy(state_path,"/var/state");
-        uci_add_history_path(c, c->savedir);
-        uci_set_savedir(c, state_path);*/ /* KMD TODO to check for DHCP*/
+        strcpy(state_path,"/var/state");
+        uci_add_delta_path(c, c->savedir);
+        uci_set_savedir(c, state_path); /* TODO to check for DHCP*/
     }
 
-    if (uci_lookup_ptr(c, &ptr, s, TRUE) != UCI_OK)
+    if (uci_lookup_ptr(c, &ptr, s, true) != UCI_OK)
     {
         free(t);
         uci_free_context(c);
@@ -261,7 +253,7 @@ static int cwmp_package_commit(struct uci_context *c,char *tuple)
     struct uci_element      *e = NULL;
     struct uci_ptr          ptr;
 
-    if (uci_lookup_ptr(c, &ptr, tuple, TRUE) != UCI_OK) {
+    if (uci_lookup_ptr(c, &ptr, tuple, true) != UCI_OK) {
         return CWMP_GEN_ERR;
     }
 
@@ -334,7 +326,7 @@ int uci_revert_value ()
 
     for (p = configs; *p; p++)
     {
-        if (uci_lookup_ptr(ctx, &ptr, *p, TRUE) != UCI_OK)
+        if (uci_lookup_ptr(ctx, &ptr, *p, true) != UCI_OK)
         {
             return CWMP_GEN_ERR;
         }
@@ -343,342 +335,6 @@ int uci_revert_value ()
     uci_free_context(ctx);
 
     return CWMP_OK;
-}
-
-int uci_apply_web_packages()
-{
-    FILE            *fp;
-    char            cmd[256];
-    int             error;
-
-    sprintf(cmd,"/bin/opkg install %s",DOWNLOADED_WEBCONTENT_FILE);
-    fp = popen(cmd,"r");
-    error = pclose(fp);
-
-    remove(DOWNLOADED_WEBCONTENT_FILE);
-    if(error == 0)
-    {
-        return FAULT_CPE_NO_FAULT_IDX;
-    }
-    else
-    {
-        return FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED_IDX;
-    }
-}
-
-int uci_apply_configuration()
-{
-    struct  uci_context         *ctx = uci_alloc_context();
-    struct uci_package          *package = NULL;
-    char                        *name = NULL;
-    int                         ret = UCI_OK;
-    FILE                        *pFile;
-    struct uci_package          *p;
-    struct uci_element          *e;
-
-    if (!ctx)
-    {
-        CWMP_LOG(ERROR, "Out of memory");
-        return FAULT_CPE_INTERNAL_ERROR_IDX;
-    }
-
-    pFile = fopen(DOWNLOADED_CONFIG_FILE,"rb");
-
-    if(pFile == NULL)
-    {
-        CWMP_LOG(ERROR,"Configuration is not readable");
-        uci_free_context(ctx);
-        return FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED_IDX;
-    }
-    ret = uci_import(ctx, pFile, name, &package, (name != NULL));
-    if (ret == UCI_OK)
-    {
-        CWMP_LOG(INFO,"Trying to apply configuration file");
-        uci_foreach_element(&ctx->root, e)
-        {
-            p = uci_to_package(e);
-            ret = uci_commit(ctx, &p, true);
-            if(ret != CWMP_OK)
-            {
-                CWMP_LOG(ERROR,"Unable to save configuration");
-                fclose(pFile);
-                remove(DOWNLOADED_CONFIG_FILE);
-                uci_free_context(ctx);
-                return FAULT_CPE_INTERNAL_ERROR_IDX;
-            }
-        }
-    }
-    else
-    {
-        CWMP_LOG(ERROR,"Can not apply downloaded configuration file");
-        fclose(pFile);
-        remove(DOWNLOADED_CONFIG_FILE);
-        uci_free_context(ctx);
-        return FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED_IDX;
-    }
-    fclose(pFile);
-    uci_free_context(ctx);
-    return FAULT_CPE_NO_FAULT_IDX;
-}
-
-static int cwmp_check_image()
-{
-    FILE            *fp;
-    char            cmd[256];
-    int             error;
-
-    sprintf(cmd,". /etc/functions.sh; include /lib/upgrade; platform_check_image %s >/dev/null",DOWNLOADED_FIRMWARE_FILE);
-    fp = popen(cmd,"r");
-    error = pclose(fp);
-
-    if(error == 0)
-    {
-        return CWMP_OK;
-    }
-    else
-    {
-        return CWMP_GEN_ERR;
-    }
-
-    return CWMP_OK;
-}
-
-static int checkline (const char *str_regex,const char *str_request)
-{
-	int                 error;
-	regex_t             preg;
-	int                 match;
-	size_t              nmatch = 0;
-	regmatch_t          *pmatch = NULL;
-
-	if((str_request == NULL) || (strcmp(str_request,"") == 0))
-	{
-		return CWMP_GEN_ERR;
-	}
-
-	error = regcomp (&preg, str_regex, REG_EXTENDED);
-	if (error == 0)
-	{
-		nmatch = preg.re_nsub;
-		pmatch = malloc (sizeof (*pmatch) * nmatch);
-		if (pmatch)
-		{
-			match = regexec (&preg, str_request, nmatch, pmatch, 0);
-			regfree (&preg);
-			if (match == 0)
-			{
-				return CWMP_OK;
-			}
-			else if (match == REG_NOMATCH)
-			{
-				return CWMP_GEN_ERR;
-			}
-			else
-			{
-				return CWMP_MEM_ERR;
-			}
-	  }
-	  else
-	  {
-		  return CWMP_MEM_ERR;
-	  }
-	}
-    return CWMP_GEN_ERR;
-}
-
-long int cwmp_check_flash_size()
-{
-    char        line[256];
-    long int    size = 0;
-    FILE        *fp;
-    char        *n = NULL;
-    char        *b = NULL;
-    char        *s = NULL;
-    char        *t = NULL;
-    char        *endptr = NULL;
-    int         i = 0,error;
-
-    fp = fopen("/proc/mtd","r");
-    if (fp != NULL)
-    {
-        while (fgets(line,sizeof(line),fp))
-        {
-            if(checkline("^([^[:space:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+\"([^[:space:]]+)\"",line) == CWMP_OK)
-            {
-                t = strdup(line);
-                n = t;
-                n = strtok(n," ");
-                i = 0;
-                while(n != NULL)
-                {
-                    if(i == 1)
-                    {
-                        s = strdup(n);
-                    }
-                    if(i == 3)
-                    {
-                        break;
-                    }
-                    n = strtok(NULL," ");
-                    i++;
-                }
-                n[strlen(n)-1] = 0;
-                if(strcmp(n,"\"linux\"") == 0 || strcmp(n,"\"firmware\"") == 0)
-                {
-                    size = strtol(s, &endptr, 16);
-                    break;
-                }
-            }
-        }
-    }
-    else if (fp = fopen("/proc/partitions","r"))
-    {
-        while (fgets(line,sizeof(line),fp))
-        {
-            if(checkline("[[:space:]]*([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+([^[:space:]]+)",line) == CWMP_OK)
-            {
-                i = 0;
-                t = strdup(line);
-                n = t;
-                n = strtok(n," ");
-                while(n != NULL)
-                {
-                    if(i == 2)
-                    {
-                        b = strdup(n);
-                    }
-                    if(i == 3)
-                    {
-                        break;
-                    }
-                    n = strtok(NULL," ");
-                    i++;
-                }
-                if ((b != NULL) && (n != NULL) && (checkline("([^[:space:]]+)",n) == CWMP_OK))
-                {
-                    size = atoi(b) * 1024;
-                    break;
-                }
-            }
-        }
-    }
-    if(t != NULL)
-    {
-        free(t);
-    }
-    if(b != NULL)
-    {
-        free(b);
-    }
-    if(s != NULL)
-    {
-        free(s);
-    }
-    fclose(fp);
-    return size;
-}
-
-static long int cwmp_get_firmware_size()
-{
-    struct stat st;
-    long int    size = 0;
-
-    if (stat(DOWNLOADED_FIRMWARE_FILE, &st) == 0)
-    {
-        size = st.st_size;
-    }
-
-    return size;
-}
-
-int cwmp_start_upgrade(struct cwmp *cwmp,void *v)
-{
-    char            cmd[256];
-    char            line[256];
-    FILE            *fp;
-    int             error;
-
-    CWMP_LOG(INFO,"RUN Firmware upgrade function");
-    /** flush file system buffers **/
-    sync();
-    sprintf(cmd,"killall dropbear uhttpd; sleep 1; /sbin/sysupgrade %s",DOWNLOADED_LAST_VALID_FIRMWARE_FILE);
-    fp = popen(cmd,"r");
-    while (fgets(line,sizeof(line),fp))
-    {
-        continue;
-    }
-    error = pclose(fp);
-    if(error == 0)
-    {
-        return CWMP_OK;
-    }
-    else
-    {
-        return CWMP_GEN_ERR;
-    }
-}
-
-int cwmp_reset_factory(struct cwmp *cwmp,void *v)
-{
-    char            cmd[256];
-    char            line[256];
-    FILE            *fp;
-    int             error;
-
-    CWMP_LOG(INFO,"RUN Factory reset function"); /* TODO to be removed*/
-    sprintf(cmd,"killall dropbear uhttpd; sleep 1; mtd -r erase rootfs_data");
-    fp = popen(cmd,"r");
-    while (fgets(line,sizeof(line),fp))
-    {
-        continue;
-    }
-    error = pclose(fp);
-    if(error == 0)
-    {
-        return CWMP_OK;
-    }
-    else
-    {
-        return CWMP_GEN_ERR;
-    }
-}
-
-int uci_upgrade_image(struct cwmp *cwmp, struct session *session)
-{
-    int 		error;
-    long int 	flashsize = 0,filesize = 0;
-    FILE		*fp;
-
-    if(cwmp_check_image() == CWMP_OK)
-    {
-    	flashsize = cwmp->env.max_firmware_size;
-        filesize = cwmp_get_firmware_size();
-
-        if((flashsize > 0)&&(filesize > flashsize))
-        {
-            remove(DOWNLOADED_FIRMWARE_FILE);
-            return FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED_IDX;
-        }
-        else
-        {
-			remove(DOWNLOADED_LAST_VALID_FIRMWARE_FILE);
-        	rename(DOWNLOADED_FIRMWARE_FILE,DOWNLOADED_LAST_VALID_FIRMWARE_FILE);
-        	if(session != NULL)
-        	{
-            	add_session_end_func(session,cwmp_start_upgrade,NULL,FALSE);
-        	}
-            else
-            {
-            	add_download_end_func(cwmp_start_upgrade,NULL);
-            }
-            return FAULT_CPE_NO_FAULT_IDX;
-        }
-    }
-    else
-    {
-        remove(DOWNLOADED_FIRMWARE_FILE);
-        return FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED_IDX;
-    }
 }
 
 int check_global_config (struct config *conf)
@@ -950,18 +606,18 @@ int get_global_config(struct config *conf)
 			uppercase(value);
 			if ((strcmp(value,"TRUE")==0) || (strcmp(value,"1")==0))
 			{
-				conf->periodic_enable = TRUE;
+				conf->periodic_enable = true;
 			}
 			else
 			{
-				conf->periodic_enable = FALSE;
+				conf->periodic_enable = false;
 			}
 			free(value);
 			value = NULL;
 		}
 		else
 		{
-			conf->periodic_enable = FALSE;
+			conf->periodic_enable = false;
 		}
 	}
 	else
@@ -988,9 +644,6 @@ int global_env_init (int argc, char** argv, struct env *env)
             case 'g':
                 env->periodic = CWMP_START_PERIODIC;
                 break;
-            case 'c':
-				env->iccu = CWMP_START_ICCU;
-				break;
             case 'v':
                 show_version();
                 exit(EXIT_SUCCESS);
@@ -1001,7 +654,7 @@ int global_env_init (int argc, char** argv, struct env *env)
                 break;
         }
     }
-    env->max_firmware_size = cwmp_check_flash_size();
+
     return CWMP_OK;
 }
 
@@ -1030,7 +683,8 @@ int save_acs_bkp_config(struct cwmp *cwmp)
     error = cwmp_load_saved_session(cwmp, &acsurl, ACS);
     if((acsurl == NULL)||(acsurl != NULL && strcmp(acsurl,conf->acsurl) != 0))
     {
-        backup_session_insert_acs(conf->acsurl);
+    	bkp_session_insert_acs(conf->acsurl);
+    	bkp_session_save();
         if(acsurl != NULL)
         {
             free(acsurl);
@@ -1048,10 +702,11 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     {
         return error;
     }
-    memset(cwmp,0,sizeof(struct cwmp));
+    pthread_mutex_init(&cwmp->mutex_periodic, NULL);
+    pthread_mutex_init(&cwmp->mutex_session_queue, NULL);
+    pthread_mutex_init(&cwmp->mutex_session_send, NULL);
     memcpy(&(cwmp->env),&env,sizeof(struct env));
     INIT_LIST_HEAD(&(cwmp->head_session_queue));
-    INIT_LIST_HEAD(&(cwmp->api_value_change.parameter_list));
     if(error = global_conf_init(&(cwmp->conf)))
     {
         return error;

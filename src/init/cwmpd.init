@@ -59,35 +59,26 @@ check_dhcp() {
     fi
 }
 
-start_msg="Starting cwmpd ..."
-stop_msg="Stopping cwmpd ..."
+start_msg="Starting cwmpd..."
+stop_msg="Stopping cwmpd..."
 
-check_iccu() {
-	echo $start_msg
+run() {
+	echo $start_msg;printf "\033[A" ;sleep 1
 	check_dhcp
 	wait_connection_acs
-	iccu_url=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url`
-	iccu_change_state=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_change_state`
 	if [ "_$1" = "_boot" ];then
 		opt=$opt"-b "
 	fi
 	if [ "_$1" = "_GetRPCMethods" ];then
 		opt=$opt"-g "
 	fi
-	if [ "$iccu_change_state" = "yes" ];then
-		opt=$opt"-c "
-	fi
 	[ -f /etc/config/cwmp ] && /usr/bin/cwmpd $opt &
-	rm -rf /etc/cwmpd/.iccu
-	uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url=$iccu_url
-	uci set -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_change_state=no
 }
 
 boot() {
-    /etc/cwmpd/scripts/iccu_enable && rm /etc/cwmpd/scripts/iccu_enable
     run=$(ps aux|grep /usr/bin/cwmpd|grep -v grep|grep -v rc.common)
     if [ "$run" = "" ];then
-        check_iccu "boot"
+        run "boot"
     else
         echo "cwmpd is currently running ..."
     fi
@@ -98,9 +89,9 @@ start() {
     if [ "$run" = "" ]
     then
         if [ "$1" = "GetRPCMethods" ];then
-			check_iccu "GetRPCMethods"
+			run "GetRPCMethods"
         else
-            check_iccu
+            run
         fi
     else
         echo "cwmpd is currently running ..."
@@ -108,7 +99,7 @@ start() {
 }
 
 stop() {
-    echo $stop_msg
+    echo $stop_msg;printf "\033[A" ;sleep 1
     for pid in `ps aux|grep /usr/bin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
     do
         if [ "_$pid" != "_" ];then

@@ -29,9 +29,9 @@ get_device_hosts_ip_address() {
 get_device_hosts() {
 local leases_file
 if [ -z "$default_dnsmasq_leases_file" ]; then
-        leases_file="/var/dhcp.leases"
+		leases_file="/var/dhcp.leases"
 else
-        leases_file=$default_dnsmasq_leases_file
+		leases_file=$default_dnsmasq_leases_file
 fi
 
 local num_static_leases

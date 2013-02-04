@@ -15,6 +15,10 @@ DEFINE_boolean 'dummy' false 'echo system commands' 'D'
 DEFINE_boolean 'force' false 'force getting values for certain parameters' 'f'
 DEFINE_string 'url' '' 'file to download [download only]' 'u'
 DEFINE_string 'size' '' 'size of file to download [download only]' 's'
+DEFINE_string 'type' '' 'type of file to download [download only]' 't'
+DEFINE_string 'user' '' 'username for downloading file [download only]' 'a'
+DEFINE_string 'pass' '' 'password for downloading file [download only]' 'p'
+DEFINE_string 'delay' '' 'scheduled_time for downloading file [download only]' 'y'
 
 FLAGS_HELP=`cat << EOF
 USAGE: $0 [flags] command [parameter] [values]
@@ -94,6 +98,8 @@ case "$1" in
 			action="apply_notification"
 		elif [ "$2" = "value" ]; then
 			action="apply_value"
+		elif [ "$2" = "download" ]; then
+			action="apply_download"
 		else
 			action="apply_value"
 		fi
@@ -118,6 +124,9 @@ case "$1" in
 		;;
 	inform)
 		action="inform"
+		;;
+	end_session)
+		action="end_session"
 		;;
 esac
 
@@ -343,15 +352,82 @@ if [ "$action" = "set_tag" ]; then
 fi
 
 if [ "$action" = "download" ]; then
-
-	rm /tmp/freecwmp_download 2> /dev/null
-	wget -O /tmp/freecwmp_download "${FLAGS_url}" > /dev/null 2>&1
+	local fault_code="9000"
+	if [ "${FLAGS_user}" = "" -o "${FLAGS_pass}" = "" ];then
+		wget -O /tmp/freecwmp_download "${FLAGS_url}" > /dev/null
+		if [ "$?" != "0" ];then
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			ubus_freecwmp_fault_output "" "$fault_code"
+			exit 1
+		fi
+	else
+		local url="http://${FLAGS_user}:${FLAGS_pass}@`echo ${FLAGS_url}|sed 's/http:\/\///g'`"
+		wget -O /tmp/freecwmp_download "$url" > /dev/null
+		if [ "$?" != "0" ];then
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			ubus_freecwmp_fault_output "" "$fault_code"
+			exit 1
+		fi
+	fi
 
 	dl_size=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
 	if [ ! "$dl_size" -eq "${FLAGS_size}" ]; then
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 		rm /tmp/freecwmp_download 2> /dev/null
-		exit 1
+		ubus_freecwmp_fault_output "" "$fault_code"
+	else
+		if [ "${FLAGS_type}" = "1" ];then
+			mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
+			freecwmp_check_image
+			if [ "$?" = "0" ];then
+				local flashsize="`freecwmp_check_flash_size`"
+				local filesize="$dl_size"
+				if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
+					let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+					rm /tmp/firmware_upgrade_image 2> /dev/null
+					ubus_freecwmp_fault_output "" "$fault_code"
+				else
+					rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
+					mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
+					ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+					if [ "${FLAGS_delay}" = "0" ];then
+						echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+					fi
+				fi
+			else
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+				rm /tmp/firmware_upgrade_image 2> /dev/null
+				ubus_freecwmp_fault_output "" "$fault_code"
+			fi
+		elif [ "${FLAGS_type}" = "2" ];then
+			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
+			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			if [ "${FLAGS_delay}" = "0" ];then
+				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+			fi
+		elif [ "${FLAGS_type}" = "3" ];then
+			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			if [ "${FLAGS_delay}" = "0" ];then
+				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+			fi
+		else
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			ubus_freecwmp_fault_output "" "$fault_code"
+			rm /tmp/freecwmp_download 2> /dev/null
+		fi
 	fi
+fi
+
+if [ "$action" = "apply_download" ]; then
+	case "${FLAGS_type}" in
+		1) freecwmp_apply_firmware ;;
+		2) freecwmp_apply_web_content ;;
+		3) freecwmp_apply_vendor_configuration ;;
+	esac
 fi
 
 if [ "$action" = "factory_reset" ]; then
@@ -360,19 +436,16 @@ if [ "$action" = "factory_reset" ]; then
 	else
 		jffs2_mark_erase "rootfs_data"
 		sync
-		reboot
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "reboot_end_session" }' 2> /dev/null
 	fi
 fi
 
 if [ "$action" = "reboot" ]; then
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set freecwmp.@local[0].event="boot"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
-
 	if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
 		echo "# reboot"
 	else
 		sync
-		reboot
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "reboot_end_session" }' 2> /dev/null
 	fi
 fi
 
@@ -388,8 +461,8 @@ if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]
 		let n=$__fault_count-1
 		for i in `seq 0 $n`
 		do
-			local parm=`/sbin/uci -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
-			local fault_code=`/sbin/uci -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
+			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
+			local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
 			ubus_freecwmp_fault_output "$parm" "$fault_code"
 			if [ "$action" = "apply_notification" ]; then break; fi
 		done
@@ -421,7 +494,7 @@ if [ "$action" = "add_object" ]; then
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "$__arg1" "" "" "$fault_code"
+		ubus_freecwmp_output "" "" "" "$fault_code"
 	fi
 fi
 
@@ -448,7 +521,7 @@ if [ "$action" = "delete_object" ]; then
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "$__arg1" "" "" "$fault_code"
+		ubus_freecwmp_output "" "" "" "$fault_code"
 	fi
 fi
 
@@ -465,6 +538,11 @@ if [ "$action" = "inform" ]; then
 	get_wan_device_mng_interface_ip
 	get_management_server_connection_request_url
 	get_management_server_parameter_key
+fi
+
+if [ "$action" = "end_session" ]; then	
+	/bin/sh /tmp/end_session.sh
+	rm /tmp/end_session.sh
 fi
 
 if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then

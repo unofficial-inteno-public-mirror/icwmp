@@ -20,6 +20,7 @@
  */
 
 #ifndef HTTP_ZSTREAM
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <errno.h>

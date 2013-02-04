@@ -48,9 +48,9 @@ struct http_server
 static size_t http_get_response(void *buffer, size_t size, size_t rxed, char **msg_in);
 #endif /* HTTP_CURL */
 
-int http_client_init(void);
+int http_client_init(struct cwmp *cwmp);
 void http_client_exit(void);
-int8_t http_send_message(char *msg_out, char **msg_in);
+int http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in);
 
 void http_server_init(void);
 static void http_new_client(struct uloop_fd *ufd, unsigned events);

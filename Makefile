@@ -13,7 +13,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/cwmpd
   CATEGORY:=Utilities
   TITLE:=TR-069 client
-  DEPENDS:=PACKAGE_libuci:libuci PACKAGE_libmicroxml:libmicroxml PACKAGE_libcurl:libcurl PACKAGE_libpthread:libpthread PACKAGE_libopenssl:libopenssl PACKAGE_libubus:libubus PACKAGE_libubox:libubox PACKAGE_shflags:shflags PACKAGE_ubusd:ubusd PACKAGE_ubus:ubus
+  DEPENDS:=PACKAGE_libuci:libuci PACKAGE_libmicroxml:libmicroxml PACKAGE_libcurl:libcurl PACKAGE_libpthread:libpthread PACKAGE_libopenssl:libopenssl PACKAGE_libubus:libubus PACKAGE_libubox:libubox
 endef
 
 define Package/cwmpd/description
@@ -35,13 +35,11 @@ define Package/cwmpd/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cwmpd $(1)/usr/bin/
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) -m0644 $(PKG_BUILD_DIR)/config/cwmp $(1)/etc/config/
-	$(INSTALL_DIR) $(1)/etc/cwmpd/scripts
-	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/iccu_enable $(1)/etc/cwmpd/scripts/iccu_enable
+	$(INSTALL_DIR) $(1)/etc/cwmpd
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/cwmpd.init $(1)/etc/init.d/cwmpd
-	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/init/iccu.init $(1)/etc/init.d/iccu
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_DATA) -m0755 $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
+	$(CP) $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp
 	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/freecwmp/defaults
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp/functions
@@ -55,7 +53,6 @@ define Package/cwmpd/postinst
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		echo "Enabling rc.d symlink for cwmpd"
 		/etc/init.d/cwmpd enable
-		/etc/init.d/iccu enable
 	fi
 	exit 0
 endef
@@ -65,7 +62,6 @@ define Package/cwmpd/prerm
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		echo "Disabling rc.d symlink for cwmpd"
 		/etc/init.d/cwmpd disable
-		/etc/init.d/iccu disable
 	fi
 	exit 0
 endef

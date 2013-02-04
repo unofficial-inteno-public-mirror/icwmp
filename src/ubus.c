@@ -3,7 +3,10 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
+ *	Contributed by Inteno Broadband Technology AB
  *
+ *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *	Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
  */
 
@@ -14,12 +17,10 @@
 #include "cwmp.h"
 #include "ubus.h"
 #include "external.h"
-
-void cwmp_add_notification (char *name, char *value, char *type);
+#include "log.h"
 
 static struct ubus_context *ctx = NULL;
 static struct blob_buf b;
-static struct cwmp *ubus_cwmp;
 
 static enum notify {
 	NOTIFY_PARAM,
@@ -56,33 +57,99 @@ freecwmpd_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
-static enum inform {
-	INFORM_EVENT,
-	__INFORM_MAX
+static enum download_fault {
+	DOWNLOAD_FAULT,
+	__DOWNLOAD_MAX
 };
 
-static const struct blobmsg_policy inform_policy[] = {
-	[INFORM_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
+static const struct blobmsg_policy download_policy[] = {
+	[DOWNLOAD_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int
-freecwmpd_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
+freecwmpd_handle_download(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
 			struct blob_attr *msg)
 {
 	int tmp;
-	struct blob_attr *tb[__INFORM_MAX];
+	struct blob_attr *tb[__DOWNLOAD_MAX];
 
-	blobmsg_parse(inform_policy, ARRAY_SIZE(inform_policy), tb,
+	blobmsg_parse(download_policy, ARRAY_SIZE(download_policy), tb,
 		      blob_data(msg), blob_len(msg));
 
-	if (!tb[INFORM_EVENT])
+	if (!tb[DOWNLOAD_FAULT])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
-	CWMP_LOG(INFO,"triggered ubus inform %s",
-			     blobmsg_data(tb[INFORM_EVENT]));
-//	tmp = freecwmp_int_event_code(blobmsg_data(tb[INFORM_EVENT]));
-//	cwmp_connection_request(tmp);
+	CWMP_LOG(INFO,"triggered ubus download %s", blobmsg_data(tb[DOWNLOAD_FAULT]));
+
+	external_downloadResp (blobmsg_data(tb[DOWNLOAD_FAULT]));
+
+	return 0;
+}
+
+static enum command {
+	COMMAND_NAME,
+	__COMMAND_MAX
+};
+
+static const struct blobmsg_policy command_policy[] = {
+	[COMMAND_NAME] = { .name = "command", .type = BLOBMSG_TYPE_STRING },
+};
+
+static int
+freecwmpd_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
+			 struct ubus_request_data *req, const char *method,
+			 struct blob_attr *msg)
+{
+	struct blob_attr *tb[__COMMAND_MAX];
+
+	blobmsg_parse(command_policy, ARRAY_SIZE(command_policy), tb,
+		      blob_data(msg), blob_len(msg));
+
+	if (!tb[COMMAND_NAME])
+		return UBUS_STATUS_INVALID_ARGUMENT;
+
+	blob_buf_init(&b, 0);
+
+	char *cmd = blobmsg_data(tb[COMMAND_NAME]);
+	char *info;
+
+	if (!strcmp("reload_end_session", cmd)) {
+		CWMP_LOG(INFO, "triggered ubus reload_end_session\n");
+		cwmp_set_end_session(END_SESSION_RELOAD);
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "freecwmpd config will reload at the end of the session") == -1)
+			return -1;
+	} else if (!strcmp("reload", cmd)) {
+		CWMP_LOG(INFO, "triggered ubus reload\n");
+		cwmp_apply_acs_changes();
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "freecwmp config reloaded") == -1)
+			return -1;
+	} else if (!strcmp("reboot_end_session", cmd)) {
+		CWMP_LOG(INFO, "triggered ubus reboot_end_session");
+		cwmp_set_end_session(END_SESSION_REBOOT);
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "freecwmp will reboot at the end of the session") == -1)
+			return -1;
+	} else if (!strcmp("action_end_session", cmd)) {
+		CWMP_LOG(INFO, "triggered ubus action_end_session");
+		cwmp_set_end_session(END_SESSION_EXTERNAL_ACTION);
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "freecwmp will execute the scheduled action commands at the end of the session") == -1)
+			return -1;
+	} else {
+		blobmsg_add_u32(&b, "status", -1);
+		if (asprintf(&info, "%s command is not supported", cmd) == -1)
+			return -1;
+	}
+
+	blobmsg_add_string(&b, "info", info);
+	free(info);
+
+	ubus_send_reply(ctx, req, b.head);
+
+	blob_buf_free(&b);
 
 	return 0;
 }
@@ -120,7 +187,7 @@ freecwmpd_handle_getParamValues(struct ubus_context *ctx, struct ubus_object *ob
 			     blobmsg_data(tb[GETPARAMVALUES_PARAM]));
 
 
-	external_add_list_paramameter(blobmsg_data(tb[GETPARAMVALUES_PARAM]),
+	external_add_list_parameter(blobmsg_data(tb[GETPARAMVALUES_PARAM]),
 			tb[GETPARAMVALUES_VALUE]? blobmsg_data(tb[GETPARAMVALUES_VALUE]) : NULL,
 			tb[GETPARAMVALUES_TYPE]? blobmsg_data(tb[GETPARAMVALUES_TYPE]) : "xsd:string",
 			tb[GETPARAMVALUES_FAULT]? blobmsg_data(tb[GETPARAMVALUES_FAULT]) : NULL);
@@ -159,7 +226,7 @@ freecwmpd_handle_getParamNames(struct ubus_context *ctx, struct ubus_object *obj
 			     blobmsg_data(tb[GETPARAMNAMES_PARAM]));
 
 
-	external_add_list_paramameter(blobmsg_data(tb[GETPARAMNAMES_PARAM]),
+	external_add_list_parameter(blobmsg_data(tb[GETPARAMNAMES_PARAM]),
 			tb[GETPARAMNAMES_WRITABLE]? blobmsg_data(tb[GETPARAMNAMES_WRITABLE]) : NULL,
 			NULL,
 			tb[GETPARAMNAMES_FAULT]? blobmsg_data(tb[GETPARAMNAMES_FAULT]) : NULL);
@@ -199,7 +266,7 @@ freecwmpd_handle_getParamAttributes(struct ubus_context *ctx, struct ubus_object
 	CWMP_LOG(INFO, "triggered ubus GetParameterAttributes parameter %s",
 			     blobmsg_data(tb[GETPARAMATTRIBUTES_PARAM]));
 
-	external_add_list_paramameter(blobmsg_data(tb[GETPARAMATTRIBUTES_PARAM]),
+	external_add_list_parameter(blobmsg_data(tb[GETPARAMATTRIBUTES_PARAM]),
 				      blobmsg_data(tb[GETPARAMATTRIBUTES_NOTIF]),
 				      NULL,
 				      blobmsg_data(tb[GETPARAMATTRIBUTES_FAULT]));
@@ -214,8 +281,8 @@ static enum setParamAttributes {
 };
 
 static const struct blobmsg_policy setParamAttributes_policy[] = {
-		[SETPARAMATTRIBUTES_SUCCESS] = { .name = "success", .type = BLOBMSG_TYPE_STRING },
-		[SETPARAMATTRIBUTES_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
+	[SETPARAMATTRIBUTES_SUCCESS] = { .name = "success", .type = BLOBMSG_TYPE_STRING },
+	[SETPARAMATTRIBUTES_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int
@@ -268,7 +335,7 @@ freecwmpd_handle_setParamValuesFault(struct ubus_context *ctx, struct ubus_objec
 			     blobmsg_data(tb[SETPARAMVALUESFAULT_PARAM]));
 
 
-	external_add_list_paramameter(blobmsg_data(tb[SETPARAMVALUESFAULT_PARAM]),
+	external_add_list_parameter(blobmsg_data(tb[SETPARAMVALUESFAULT_PARAM]),
 						NULL,
 						NULL,
 						blobmsg_data(tb[SETPARAMVALUESFAULT__FAULT]));
@@ -353,6 +420,8 @@ freecwmpd_handle_delObject(struct ubus_context *ctx, struct ubus_object *obj,
 {
 	struct blob_attr *tb[__DELOBJECT_MAX];
 
+	CWMP_LOG(INFO, "triggered ubus DeleteObject");
+
 	blobmsg_parse(delObject_policy, ARRAY_SIZE(delObject_policy), tb,
 		      blob_data(msg), blob_len(msg));
 
@@ -361,59 +430,9 @@ freecwmpd_handle_delObject(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
-static enum command {
-	COMMAND_NAME,
-	__COMMAND_MAX
-};
-
-static const struct blobmsg_policy command_policy[] = {
-	[INFORM_EVENT] = { .name = "name", .type = BLOBMSG_TYPE_STRING },
-};
-
-static int
-freecwmpd_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
-			 struct ubus_request_data *req, const char *method,
-			 struct blob_attr *msg)
-{
-	struct blob_attr *tb[__COMMAND_MAX];
-
-	blobmsg_parse(command_policy, ARRAY_SIZE(command_policy), tb,
-		      blob_data(msg), blob_len(msg));
-
-	if (!tb[INFORM_EVENT])
-		return UBUS_STATUS_INVALID_ARGUMENT;
-
-	blob_buf_init(&b, 0);
-
-	char *cmd = blobmsg_data(tb[INFORM_EVENT]);
-	char *info;
-
-	if (!strcmp("reload", cmd)) {
-		CWMP_LOG(NOTICE, "triggered ubus reload");
-		cwmp_config_reload(ubus_cwmp);
-		blobmsg_add_u32(&b, "status", 0);
-		if (asprintf(&info, "freecwmpd reloaded") == -1)
-			return -1;
-	} else {
-		blobmsg_add_u32(&b, "status", -1);
-		if (asprintf(&info, "%s command is not supported", cmd) == -1)
-			return -1;
-	}
-
-	blobmsg_add_string(&b, "info", info);
-	free(info);
-
-	ubus_send_reply(ctx, req, b.head);
-
-	blob_buf_free(&b);
-
-	return 0;
-}
-
 static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("notify", freecwmpd_handle_notify, notify_policy),
-	UBUS_METHOD("inform", freecwmpd_handle_inform, inform_policy),
-	UBUS_METHOD("command", freecwmpd_handle_command, command_policy),
+	UBUS_METHOD("download", freecwmpd_handle_download, download_policy),
 	UBUS_METHOD("GetParameterValues", freecwmpd_handle_getParamValues, getParamValues_policy),
 	UBUS_METHOD("SetParameterValuesFault", freecwmpd_handle_setParamValuesFault, setParamValuesFault_policy),
 	UBUS_METHOD("SetParameterValuesStatus", freecwmpd_handle_setParamValuesStatus, setParamValuesStatus_policy),
@@ -422,6 +441,7 @@ static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("SetParameterAttributes", freecwmpd_handle_setParamAttributes, setParamAttributes_policy),
 	UBUS_METHOD("AddObject", freecwmpd_handle_addObject, addObject_policy),
 	UBUS_METHOD("DelObject", freecwmpd_handle_delObject, delObject_policy),
+	UBUS_METHOD("command", freecwmpd_handle_command, command_policy),
 };
 
 static struct ubus_object_type main_object_type =
@@ -437,8 +457,12 @@ static struct ubus_object main_object = {
 int
 ubus_init(struct cwmp *cwmp)
 {
-	ubus_cwmp = cwmp;
 	uloop_init();
+
+	if (netlink_init()) {
+		CWMP_LOG(ERROR,"netlink initialization failed");
+	}
+
 	ctx = ubus_connect(cwmp->conf.ubus_socket);
 	if (!ctx) return -1;
 

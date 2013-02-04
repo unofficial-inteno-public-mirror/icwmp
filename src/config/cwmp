@@ -8,7 +8,6 @@ config 'cwmp' 'acs'
 	option 'dhcp_discovery' 'disable'
 
 config 'cwmp' 'cpe'
-	option 'interface' 'br-lan'
 	option 'manufacturer' 'Inteno'
 	option 'oui' '000000'
 	option 'product_class' 'Inteno'

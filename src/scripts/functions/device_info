@@ -447,7 +447,6 @@ case "$1" in
 	;;
 esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
-# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 }
 
 set_device_info_notification() {
@@ -482,7 +481,6 @@ case "$1" in
 	;;
 esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
-# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 }
 
 check_parameter_device_info_generic() {
@@ -547,7 +545,6 @@ set_device_info_generic() {
 	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
 	freecwmp_set_parameter_value "$1" "$2"
-	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -555,6 +552,5 @@ set_device_info_generic_notification() {
 	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
 	freecwmp_set_parameter_notification "$1" "$2"
-	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 	return $FAULT_CPE_NO_FAULT
 }

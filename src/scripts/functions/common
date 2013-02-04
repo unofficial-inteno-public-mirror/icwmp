@@ -46,22 +46,22 @@ fi
 
 case "$action" in
 	get_value)
-	ubus call tr069 GetParameterValues '{"parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterValues '{"parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	get_name)
-	ubus call tr069 GetParameterNames '{"parameter": "'$parameter'", "writable": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterNames '{"parameter": "'$parameter'", "writable": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	get_notification)
-	ubus call tr069 GetParameterAttributes '{"parameter": "'$parameter'", "notification": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterAttributes '{"parameter": "'$parameter'", "notification": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	add_object)
 	local instance="$1"
 	local status="$2"
-	ubus call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
 	;;
 	delete_object)
 	local status="$1"
-	ubus call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
 	;;
 esac
 }
@@ -71,10 +71,13 @@ local parameter="$1"
 local fault_code="$2"
 case "$action" in
 	apply_value)
-	ubus call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code": "'$fault_code'"}' 2> /dev/null
 	;;
 	apply_notification)
-	ubus call tr069 SetParameterAttributes '{"success": "", "fault_code":"'$fault_code'"}' 2> /dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterAttributes '{"success": "", "fault_code": "'$fault_code'"}' 2> /dev/null
+	;;
+	download)
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 download '{"fault_code": "'$fault_code'"}' 2> /dev/null
 	;;
 esac
 }
@@ -322,7 +325,7 @@ return $FAULT_CPE_NO_FAULT
 freecwmp_set_parameter_fault() {
 	local _parm="$1"
 	local _fault="$2"
-		/sbin/uci -P /var/state batch << EOF 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state batch << EOF 2>&1 >/dev/null
 			add cwmp fault
 			set cwmp.@fault[-1].parameter="$_parm"
 			set cwmp.@fault[-1].fault_code="$_fault"
@@ -350,4 +353,94 @@ if [ "$indice" != "" ]; then
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.type=bridge 2> /dev/null
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=dhcp 2> /dev/null
 fi
+}
+
+freecwmp_check_image()
+{
+	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/freecwmp_download
+	return $?
+}
+
+freecwmp_check_flash_size()
+{
+	local size=0
+	if [ -f /proc/mtd ];then
+		for line in `cat /proc/mtd`
+		do
+			if [ "`echo $line|grep "^([^[:space:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+\"([^[:space:]]+)\""`" != "" ]
+			then
+				b=`cat $line|cut -f1 -d " "`
+				n=`cat $line|cut -f3 -d " "` 
+				if [ "$n" = "\"linux\"" -o "$n" = "\"firmware\"" ];then
+					size=`echo $(($s))`
+					break;
+				fi
+			fi
+		done
+	elif [ -f /proc/partitions ]
+	then
+		for line in `cat /proc/partitions` 
+		do
+			if [ "`echo $line|grep "[[:space:]]*([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+([^[:space:]]+)[[:space:]]+([^[:space:]]+)"`" != "" ]
+			then
+				b=`cat $line|cut -f2 -d " "`
+				n=`cat $line|cut -f3 -d " "`
+				if [ checkline "([^[:space:]]+)" $n ];then
+					size=`let $b*1024`;
+					break;
+				fi
+			fi
+		done
+	fi
+	echo "$size"
+}
+
+freecwmp_apply_firmware()
+{
+	local fault_code="9000"
+	
+	sync
+	killall dropbear uhttpd; sleep 1; /sbin/sysupgrade /tmp/firmware_upgrade_image_last_valid
+	if [ "$?" != "0" ];then
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+		ubus_freecwmp_fault_output "" "$fault_code"
+	else
+		ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+	fi
+}
+
+freecwmp_apply_web_content()
+{
+	local fault_code="9000"
+	
+	/bin/opkg install /tmp/web_content.ipk
+	if [ "$?" != "0" ];then
+		rm /tmp/web_content.ipk 2> /dev/null
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+		ubus_freecwmp_fault_output "" "$fault_code"
+   else
+		ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+	fi
+}
+
+freecwmp_apply_vendor_configuration()
+{
+	local fault_code="9000"
+	
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} import < /tmp/vendor_configuration_file.cfg
+	if [ "$?" = "0" ];then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+		if [ "$?" != "0" ];then
+			let fault_code=$fault_code+$FAULT_CPE_INTERNAL_ERROR
+			ubus_freecwmp_fault_output "" "$fault_code"
+		else
+			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			sync
+			reboot
+		fi
+	else
+		rm /tmp/vendor_configuration_file.cfg 2> /dev/null
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+		ubus_freecwmp_fault_output "" "$fault_code"
+	fi
 }

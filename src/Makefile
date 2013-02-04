@@ -22,12 +22,7 @@ ifneq ($(CWMP_REVISION),exported)
 endif
 endif
 
-CWMPD_OBJECT_FILES=cwmp.o stdsoap2.o soapC.o soapClient.o backupSession.o\
- log.o TransferComplete.o Reboot.o GetParameterNames.o GetParameterValues.o\
- SetParameterValues.o FactoryReset.o ScheduleInform.o connectionRequest.o \
- config.o Inform.o event.o GetRPCMethods_acs.o Fault_cpe.o GetRPCMethods_cpe.o\
- httpda.o md5evp.o GetParameterAttributes.o SetParameterAttributes.o\
- Download.o AddObject.o DeleteObject.o ubus.o external.o b64.o
+CWMPD_OBJECT_FILES=cwmp.o backupSession.o log.o config.o event.o ubus.o external.o time.o xml.o http.o netlink.o b64.o
 
 all: cwmpd
 

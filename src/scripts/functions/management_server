@@ -706,7 +706,6 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
-# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
@@ -753,7 +752,6 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
-# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
@@ -795,7 +793,6 @@ set_management_server_generic() {
 	check_parameter_management_server_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
 	freecwmp_set_parameter_value "$1" "$2"
-	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -803,6 +800,5 @@ set_management_server_generic_notification() {
 	check_parameter_management_server_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
 	freecwmp_set_parameter_notification "$1" "$2"
-	# /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 	return $FAULT_CPE_NO_FAULT
 }
