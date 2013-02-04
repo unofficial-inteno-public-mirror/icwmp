@@ -271,7 +271,7 @@ int xml_set_cwmp_id(struct session *session)
 	if (b) {
 
 		b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
-		if (!b || !b->value.text.string) return -1;
+		if (!b || !b->value.text.string) return 0;
 		c = strdup(b->value.text.string);
 
 		b = mxmlFindElement(session->tree_out, session->tree_out, "cwmp:ID", NULL, NULL, MXML_DESCEND);
