@@ -58,8 +58,7 @@ enum end_session {
 
 enum cwmp_start {
 	CWMP_START_BOOT  = 1,
-	CWMP_START_PERIODIC = 2,
-	CWMP_START_ICCU = 3
+	CWMP_START_PERIODIC = 2
 };
 
 enum cwmp_ret_err {

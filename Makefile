@@ -49,7 +49,6 @@ endef
 define Package/cwmpd/postinst
 	#!/bin/sh
 	echo "$(CWMP_BKP_FILE)" >> $${IPKG_INSTROOT}/etc/sysupgrade.conf
-	echo "/etc/cwmpd/.iccu/cwmp" >> $${IPKG_INSTROOT}/etc/sysupgrade.conf
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		echo "Enabling rc.d symlink for cwmpd"
 		/etc/init.d/cwmpd enable
