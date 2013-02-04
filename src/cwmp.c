@@ -390,6 +390,8 @@ int cwmp_session_destructor (struct cwmp *cwmp, struct session *session)
     while (session->head_rpc_acs.next != &(session->head_rpc_acs))
     {
     	rpc = list_entry(session->head_rpc_acs.next, struct rpc, list);
+		if (rpc_acs_methods[rpc->type].extra_clean != NULL)
+			rpc_acs_methods[rpc->type].extra_clean(session,rpc);
     	cwmp_session_rpc_destructor(rpc);
     }
     while (session->head_rpc_cpe.next != &(session->head_rpc_cpe))

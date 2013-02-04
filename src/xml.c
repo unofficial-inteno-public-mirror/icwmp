@@ -587,7 +587,7 @@ error:
 
 int cwmp_rpc_acs_destroy_data_inform(struct session *session, struct rpc *rpc)
 {
-	event_remove_all_event_container (session,RPC_SEND);
+	event_remove_all_event_container(session,RPC_SEND);
 	return 0;
 }
 
