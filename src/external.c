@@ -148,6 +148,7 @@ int external_get_action(char *action, char *name, char *arg /* arg is added for 
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
+		argv[i++] = "--ubus";
 		argv[i++] = "get";
 		argv[i++] = action;
 		argv[i++] = name;
@@ -208,9 +209,9 @@ int external_get_action_write(char *action, char *name, char *arg)
 	}
 
 #ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s get %s %s %s\n", fc_script, action, name, arg?arg:"");
+	fprintf(fp, "/bin/sh `pwd`/%s --ubus get %s %s %s\n", fc_script, action, name, arg?arg:"");
 #else
-	fprintf(fp, "/bin/sh %s get %s %s %s\n", fc_script, action, name, arg?arg:"");
+	fprintf(fp, "/bin/sh %s --ubus get %s %s %s\n", fc_script, action, name, arg?arg:"");
 #endif
 
 	fclose(fp);
@@ -278,9 +279,9 @@ int external_set_action_write(char *action, char *name, char *value, char *chang
 		}
 	}
 #ifdef DUMMY_MODE
-		fprintf(fp, "/bin/sh `pwd`/%s set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
+		fprintf(fp, "/bin/sh `pwd`/%s --ubus set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #else
-		fprintf(fp, "/bin/sh %s set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
+		fprintf(fp, "/bin/sh %s --ubus set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #endif
 
 
@@ -302,9 +303,9 @@ int external_set_action_execute(char *action)
 	if (!fp) return -1;
 
 #ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s apply %s\n", fc_script, action);
+	fprintf(fp, "/bin/sh `pwd`/%s --ubus apply %s\n", fc_script, action);
 #else
-	fprintf(fp, "/bin/sh %s apply %s\n", fc_script, action);
+	fprintf(fp, "/bin/sh %s --ubus apply %s\n", fc_script, action);
 #endif
 
 	fclose(fp);

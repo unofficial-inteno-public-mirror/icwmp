@@ -23,10 +23,10 @@
 #include "log.h"
 
 LIST_HEAD(list_download);
-static pthread_mutex_t      		mutex_download = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t       		threshold_download;
-static bool                 		thread_download_is_working = false;
-int									count_download_queue = 0;
+static pthread_mutex_t		mutex_download = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t		threshold_download;
+static bool					thread_download_is_working = false;
+int							count_download_queue = 0;
 
 LIST_HEAD(list_schedule_inform);
 static pthread_mutex_t      mutex_schedule_inform = PTHREAD_MUTEX_INITIALIZER;
