@@ -3,6 +3,7 @@
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 . /lib/functions.sh
+. /usr/share/libubox/jshn.sh
 . /usr/share/shflags/shflags.sh
 . /usr/share/freecwmp/defaults
 
@@ -77,7 +78,7 @@ case "$1" in
 			action="get_value"
 		elif [ "$2" = "name" ]; then
 			__arg1="$3"
-			__arg2=`echo $4| tr '[A-Z]' '[a-z]'`
+			__arg2="$4"
 			action="get_name"
 		elif [ "$2" = "all" ]; then
 			__arg1="$3"
