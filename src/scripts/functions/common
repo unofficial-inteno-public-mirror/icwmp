@@ -1,5 +1,6 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 # TODO: merge this one somewhere in OpenWrt
 uci_remove_list_element() {
@@ -17,85 +18,133 @@ uci_remove_list_element() {
 }
 
 freecwmp_output() {
-local parameter="$1"
-local value="$2"
-local delimiter="$3"
-
-if [ "$delimiter" = "" ]; then
-	delimiter=":"
-fi
-
-if [ -n "$value" -o ${FLAGS_empty} -eq ${FLAGS_TRUE} ]; then
-	if [ ${FLAGS_value} -eq ${FLAGS_TRUE} ]; then
-		echo $ECHO_newline $value
-	else
-		echo $ECHO_newline $parameter "$delimiter" $value
+	if [ "$FLAGS_value" = "${FLAGS_TRUE}" ]; then
+		local parameter="$1"
+		local value="$2"
+		local delimiter="$3"
+	
+		if [ "$delimiter" = "" ]; then
+			delimiter=":"
+		fi
+		if [ -n "$value" -o ${FLAGS_empty} -eq ${FLAGS_TRUE} ]; then
+			if [ ${FLAGS_value} -eq ${FLAGS_TRUE} ]; then
+				echo $ECHO_newline $value
+			else
+				echo $ECHO_newline $parameter "$delimiter" $value
+			fi
+		fi
 	fi
-fi
+	
+	if [ "$FLAGS_ubus" = "${FLAGS_TRUE}" ]; then
+		local parameter="$1"
+		local value="$2"
+		local permissions="$3"
+		local type="$4"
+		local fault_code="$5"
+		local status="$6"
+		local instance="$7"
+		
+		freecwmp_ubus_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance"
+	fi
 }
 
-ubus_freecwmp_output() {
-local parameter="$1"
-local value="$2"
-local type="$3"
-local fault_code="$4"
+freecwmp_ubus_output() {
 
-if [ "$type" = "" ]; then
-	type="xsd:string"
-fi
+	local parameter="$1"
+	local value="$2"
+	local permissions="$3"
+	local type="$4"
+	local fault_code="$5"
+	local status="$6"
+	local instance="$7"
 
-case "$action" in
-	get_value)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterValues '{"parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'"}' 2> /dev/null
-	;;
-	get_name)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterNames '{"parameter": "'$parameter'", "writable": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
-	;;
-	get_notification)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterAttributes '{"parameter": "'$parameter'", "notification": "'$value'", "fault_code":"'$fault_code'"}' 2> /dev/null
-	;;
-	add_object)
-	local instance="$1"
-	local status="$2"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
-	;;
-	delete_object)
-	local status="$1"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
-	;;
-esac
+	if [ "$type" = "" ]; then
+		type="xsd:string"
+	fi
+
+	case "$action" in
+		get_value)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterValues '{ "parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'" }' 2> /dev/null
+		;;
+		get_name)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterNames '{ "parameter": "'$parameter'", "writable": "'$permissions'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		;;
+		get_notification)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterAttributes '{ "parameter": "'$parameter'", "notification": "'$value'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		;;
+		add_object)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
+		;;
+		delete_object)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		;;
+	esac
 }
 
-ubus_freecwmp_fault_output() {
-local parameter="$1"
-local fault_code="$2"
-case "$action" in
-	apply_value)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code": "'$fault_code'"}' 2> /dev/null
-	;;
-	apply_notification)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterAttributes '{"success": "", "fault_code": "'$fault_code'"}' 2> /dev/null
-	;;
-	download)
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 download '{"fault_code": "'$fault_code'"}' 2> /dev/null
-	;;
-esac
+freecwmp_fault_output() {
+	local parameter="$1"
+	local fault_code="$2"
+	local success="$3"
+
+	case "$action" in
+		apply_value)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code": "'$fault_code'"}' 2> /dev/null
+		;;
+		apply_notification)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterAttributes '{"success": "'$success'", "fault_code": "'$fault_code'"}' 2> /dev/null
+		;;
+		*download)
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 download '{"fault_code": "'$fault_code'"}' 2> /dev/null
+		;;
+	esac
 }
 
 freecwmp_value_output() {
+	local tmp_value=${FLAGS_value}
+	FLAGS_value=${FLAGS_TRUE}
+	local tmp_ubus=${FLAGS_ubus}
+	FLAGS_ubus=${FLAGS_FALSE}
+	
 	freecwmp_output "$1" "$2" "V"
+	
+	FLAGS_value=$tmp_value
+	FLAGS_ubus=$tmp_ubus
 }
 
 freecwmp_notification_output() {
+	local tmp_value=${FLAGS_value}
+	FLAGS_value=${FLAGS_TRUE}
+	local tmp_ubus=${FLAGS_ubus}
+	FLAGS_ubus=${FLAGS_FALSE}
+
 	freecwmp_output "$1" "$2" "N"
+	
+	FLAGS_value=$tmp_value
+	FLAGS_ubus=$tmp_ubus
 }
 
 freecwmp_tags_output() {
+	local tmp_value=${FLAGS_value}
+	FLAGS_value=${FLAGS_TRUE}
+	local tmp_ubus=${FLAGS_ubus}
+	FLAGS_ubus=${FLAGS_FALSE}
+	
 	freecwmp_output "$1" "$2" "T"
+	
+	FLAGS_value=$tmp_value
+	FLAGS_ubus=$tmp_ubus
 }
 
 freecwmp_not_implemented() {
+	local tmp_value=${FLAGS_value}
+	FLAGS_value=${FLAGS_TRUE}
+	local tmp_ubus=${FLAGS_ubus}
+	FLAGS_ubus=${FLAGS_FALSE}
+	
 	freecwmp_output "$1" "NOT_IMPLEMENTED"
+	
+	FLAGS_value=$tmp_value
+	FLAGS_ubus=$tmp_ubus
 }
 
 freecwmp_parse_formated_parameter() {
@@ -355,6 +404,30 @@ if [ "$indice" != "" ]; then
 fi
 }
 
+freecwmp_execute_functions()
+{
+	local function_list="$1"
+	local arg1="$2"
+	local arg2="$3"
+	local arg3="$4"
+	local no_fault="0"
+	local fault_code=""
+	
+	for function_name in $function_list
+	do
+		$function_name "$arg1" "$arg2" "$arg3"
+		fault_code="$?"
+		if [ "$fault_code" = "0" ]; then
+			no_fault="1"
+		fi
+		if [ "$fault_code" != "0" -a "$fault_code" != "$E_INVALID_PARAMETER_NAME" ]; then
+			return $fault_code
+		fi
+	done
+	if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+	return $fault_code
+}
+
 freecwmp_check_image()
 {
 	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/freecwmp_download
@@ -403,9 +476,9 @@ freecwmp_apply_firmware()
 	killall dropbear uhttpd; sleep 1; /sbin/sysupgrade /tmp/firmware_upgrade_image_last_valid
 	if [ "$?" != "0" ];then
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		ubus_freecwmp_fault_output "" "$fault_code"
+		freecwmp_fault_output "" "$fault_code"
 	else
-		ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+		freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 	fi
 }
 
@@ -417,9 +490,9 @@ freecwmp_apply_web_content()
 	if [ "$?" != "0" ];then
 		rm /tmp/web_content.ipk 2> /dev/null
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		ubus_freecwmp_fault_output "" "$fault_code"
+		freecwmp_fault_output "" "$fault_code"
    else
-		ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+		freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 	fi
 }
 
@@ -432,15 +505,15 @@ freecwmp_apply_vendor_configuration()
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_INTERNAL_ERROR
-			ubus_freecwmp_fault_output "" "$fault_code"
+			freecwmp_fault_output "" "$fault_code"
 		else
-			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			sync
 			reboot
 		fi
 	else
 		rm /tmp/vendor_configuration_file.cfg 2> /dev/null
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		ubus_freecwmp_fault_output "" "$fault_code"
+		freecwmp_fault_output "" "$fault_code"
 	fi
 }

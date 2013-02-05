@@ -1,12 +1,13 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_device_users() {
 local parameter="$1"
 case "$parameter" in
 	Device.Users.UserNumberOfEntries)
 	local val=`wc -l /etc/passwd | awk '{ print $1 }'`
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 	;;
 esac
@@ -21,7 +22,7 @@ if [ $rc -eq 0 ]; then
 	# TODO: this is very system dependent, for now just look at users shell
 	local sed_cmd=`echo -n \'$num; echo p\'`
 	local val=`eval sed -n $sed_cmd /etc/passwd | grep -v '/bin/false' | wc -l`
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -30,7 +31,7 @@ if [ $rc -eq 0 ]; then
 	# TODO: this is very system dependent, for now just look at users shell
 	local sed_cmd=`echo -n \'$num; echo p\'`
 	local val=`eval sed -n $sed_cmd /etc/passwd | grep -v '/bin/false' | wc -l`
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -38,7 +39,7 @@ freecwmp_parse_formated_parameter "$parameter" "Device.Users.User.{i}.Username" 
 if [ $rc -eq 0 ]; then
 	local sed_cmd=`echo -n \'$num; echo p\'`
 	local val=`eval sed -n $sed_cmd /etc/passwd | awk -F ':' '{ print $1 }'`
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -48,13 +49,13 @@ if [ $rc -eq 0 ]; then
 	#   local sed_cmd=`echo -n \'$num; echo p\'`
 	#   local val=`eval sed -n $sed_cmd /etc/shadow | awk -F ':' '{ print $2 }'`
 	#   freecwmp_value_output "$parameter" "$val"
-	ubus_freecwmp_output "$parameter" ""
+	freecwmp_value_output "$parameter" ""
 	return
 fi
 
 freecwmp_parse_formated_parameter "$parameter" "Device.Users.User.{i}.Language" "rc" "num"
 if [ $rc -eq 0 ]; then
-	ubus_freecwmp_output "$parameter" ""
+	freecwmp_value_output "$parameter" ""
 	return
 fi
 return $FAULT_CPE_INVALID_PARAMETER_NAME
@@ -125,3 +126,15 @@ fi
 
 # TODO: Device.Users.User.{i}.Language (why? look at the get value function for this parameter)
 }
+
+get_device_users_name() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+get_device_users_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_users() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_users_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+add_device_users() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_device_users() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }

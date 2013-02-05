@@ -1,5 +1,6 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_device_hosts_number_of_leases() {
 	local _static=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show dhcp 2> /dev/null | fgrep 'dhcp.' | fgrep '.mac=' | wc -l`
@@ -44,7 +45,7 @@ local parameter=`echo -n $1 | sed "s/InternetGatewayDevice\.LANDevice\.1\./Devic
 case "$parameter" in
 	Device.Hosts.HostNumberOfEntries)
 	let local val=$num_static_leases+$num_dynamic_leases
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_output "$parameter" "$val"
 	return
 	;;
 esac
@@ -66,7 +67,7 @@ if [ $rc -eq 0 ]; then
 		local sed_cmd=`echo -n \'$num; echo p\'`
 		val=`eval sed -n $sed_cmd $leases_file | awk '{ print $2 }'`
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -74,7 +75,7 @@ freecwmp_parse_formated_parameter "$parameter" "Device.Hosts.Host.{i}.IPAddress"
 if [ $rc -eq 0 ]; then
 	local val
 	get_device_hosts_ip_address "$leases_file" "$num" "$num_static_leases" "$num_dynamic_leases" "val"
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -88,7 +89,7 @@ if [ $rc -eq 0 ]; then
 	if [ $num -gt 0 -a $num -le $num_dynamic_leases ]; then
 		val="DHCP"
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -107,7 +108,7 @@ if [ $rc -eq 0 ]; then
 		local t2=`date +%s`
 		let val=$t1-$t2
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -131,7 +132,7 @@ if [ $rc -eq 0 ]; then
 		val=`eval sed -n $sed_cmd $leases_file | awk '{ print $4 }'`
 		if [ "x$val" == "x*" ]; then val=""; fi
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -144,7 +145,7 @@ if [ $rc -eq 0 ]; then
 	get_device_hosts_ip_address "$leases_file" "$num" "$num_static_leases" "$num_dynamic_leases" "ip"
 	val=`ping -c 1 $ip 2>&1 > /dev/null ; echo $?`
 	let val=!$val
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -156,7 +157,7 @@ if [ $rc -eq 0 ]; then
 	if [ $num -le $n ]; then
 		val=1
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -168,7 +169,7 @@ if [ $rc -eq 0 ]; then
 	if [ $num -le $n ]; then
 		val=0
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -182,7 +183,7 @@ if [ $rc -eq 0 ]; then
 	if [ $num2 -eq 1 ]; then
 		get_device_hosts_ip_address "$leases_file" "$num1" "$num_static_leases" "$num_dynamic_leases" "val"
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_value_output "$parameter" "$val"
 	return
 fi
 
@@ -190,3 +191,14 @@ fi
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
+get_device_hosts_name() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+get_device_hosts_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_hosts() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_hosts_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+add_device_hosts() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_device_hosts() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }

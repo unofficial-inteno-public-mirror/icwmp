@@ -59,8 +59,8 @@ check_dhcp() {
     fi
 }
 
-start_msg="Starting cwmpd..."
-stop_msg="Stopping cwmpd..."
+start_msg="Start cwmpd ..."
+stop_msg="Stop cwmpd ..."
 
 run() {
 	echo $start_msg;printf "\033[A" ;sleep 1

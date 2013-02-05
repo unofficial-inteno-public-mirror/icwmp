@@ -1,5 +1,6 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 . /lib/functions.sh
 . /usr/share/shflags/shflags.sh
@@ -8,6 +9,7 @@
 # define a 'name' command-line string flag
 DEFINE_boolean 'newline' false 'do not output the trailing newline' 'n'
 DEFINE_boolean 'value' false 'output values only' 'v'
+DEFINE_boolean 'ubus' false 'send values using ubus' 'b'
 DEFINE_boolean 'empty' false 'output empty parameters' 'e'
 DEFINE_boolean 'last' false 'output only last line ; for parameters that tend to have huge output' 'l'
 DEFINE_boolean 'debug' false 'give debug output' 'd'
@@ -23,11 +25,13 @@ DEFINE_string 'delay' '' 'scheduled_time for downloading file [download only]' '
 FLAGS_HELP=`cat << EOF
 USAGE: $0 [flags] command [parameter] [values]
 command:
-  get [value|notification|tags|all]
+  get [value|notification|tags|name|all]
   set [value|notification|tag]
+  apply [value|notification|download]
   download
   factory_reset
   reboot
+  end_session
 EOF`
 
 FLAGS "$@" || exit 1
@@ -46,7 +50,6 @@ case "$1" in
 		if [ "$2" = "notification" ]; then
 			__arg1="$3"
 			__arg2="$4"
-			__arg3="`echo $5| tr '[A-Z]' '[a-z]'`"
 			action="set_notification"
 		elif [ "$2" = "tag" ]; then
 			__arg1="$3"
@@ -139,23 +142,33 @@ if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] started at \"`date`\""
 fi
 
+get_value_functions=""
+set_value_functions=""
+get_name_functions=""
+get_notification_functions=""
+set_notification_functions=""
+add_object_functions=""
+delete_object_functions=""
+	
 load_script() {
 	. $1 
 }
 
-get_value_functions=""
-set_value_functions=""
+load_function() {
+	get_value_functions="$get_value_functions get_$1"
+	set_value_functions="$set_value_functions set_$1"
+	get_name_functions="$get_name_functions get_$1_name"
+	get_notification_functions="$get_notification_functions get_$1_notification"
+	set_notification_functions="$set_notification_functions set_$1_notification"
+	add_object_functions="$add_object_functions add_$1"
+	delete_object_functions="$delete_object_functions delete_$1"
+}
+
 handle_scripts() {
 	local section="$1"
 	config_get prefix "$section" "prefix"
 	config_list_foreach "$section" 'location' load_script
-	config_get get_value_functions "$section" "get_value_function"
-	config_get get_name_functions "$section" "get_name_function"
-	config_get get_notification_functions "$section" "get_notification_function"
-	config_get set_value_functions "$section" "set_value_function"
-	config_get set_notification_functions "$section" "set_notification_function"
-	config_get add_object_functions "$section" "add_object_function"
-	config_get delete_object_functions "$section" "delete_object_function"
+	config_list_foreach "$section" 'function' load_function
 }
 
 config_load cwmp
@@ -185,94 +198,90 @@ FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION="19"
 
 if [ "$action" = "get_value" -o "$action" = "get_all" ]; then
-	no_fault="0"
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway and accepting empty string
+		if [  ${#__arg1} -lt ${#__tmp_arg} -a ${#__arg1} -ne 0 ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.' or ''     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
+		fi
+	fi
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-			__arg1="InternetGatewayDevice."
+		# TODO: don't return only 'InternetGatewayDevice.' when getting an empty string; but we should both
+		#       parameter with prefix 'InternetGatewayDevice.' and 'Device.'
+		if [ "$__arg1" = "InternetGatewayDevice." -a "$__arg1" = "" ]; then
+			__param="InternetGatewayDevice."
+		else
+			__param="$__arg1"
 		fi
-		for function_name in $get_value_functions
-		do
-			$function_name "$__arg1"
-				fault_code="$?"
-				if [ "$fault_code" = "0" ]; then
-					no_fault="1"
-				fi
-				if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-					break
-				fi
-		done
-		if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+		freecwmp_execute_functions "$get_value_functions" "$__param"
+		fault_code="$?"
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "$__arg1" "" "" "$fault_code"
+		freecwmp_output "$__arg1" "" "" "" "$fault_code"
 	fi
 fi
 
 if [ "$action" = "get_name" -o "$action" = "get_all" ]; then
-	no_fault="0"
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway and accepting empty string
+		if [  ${#__arg1} -lt ${#__tmp_arg} -a ${#__arg1} -ne 0 ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.' or ''     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
+		fi
+	fi
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg2" != "0" \) -a \( "$__arg2" != "1" \) -a \( "$__arg2" != "true" \) -a \( "$__arg2" != "false" \) ]; then
-			fault_code="$FAULT_CPE_INVALID_ARGUMENTS"
-		else
-			if [ "$__arg2" = "true" ]; then
-				__arg2="1"
-			elif [ "$__arg2" = "false" ]; then
-				__arg2="0"
-			fi
+		if [ "$__arg2" != "0" -a "$__arg2" != "1" ]; then
+			fault_code="$E_INVALID_ARGUMENTS"
 		fi
 		if [ "$fault_code" = "0" ]; then
-			if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-				ubus_freecwmp_output "InternetGatewayDevice." "0"
-				if [ \( "$__arg1" = "" \) -a \( "$__arg2" = "1" \) ]; then
+			# TODO: don't return only 'InternetGatewayDevice.' when getting an empty string; but we should both
+			#       parameters with prefix 'InternetGatewayDevice.' and 'Device.'
+			if [ "$__arg1" = "InternetGatewayDevice." -o "$__arg1" = "" ]; then
+				freecwmp_output "InternetGatewayDevice." "" "0"
+				if [ "$__arg1" = "" -a "$__arg2" = "1" ]; then
 					exit 0
 				fi
-				__arg1="InternetGatewayDevice."
+				__parm="InternetGatewayDevice."
+			else
+				__parm="$__arg1"
 			fi
-			for function_name in $get_name_functions
-			do
-				$function_name "$__arg1" "$__arg2"
-				fault_code="$?"
-				if [ "$fault_code" = "0" ]; then
-					no_fault="1"
-				fi
-				if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-					break
-				fi
-	done
-			if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+			freecwmp_execute_functions "$get_name_functions" "$__parm" "$__arg2"
+			fault_code="$?"
 		fi
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "$__arg1" "" "" "$fault_code"
+		freecwmp_output "$__arg1" "" "" "" "$fault_code"
 	fi
 fi
 
 if [ "$action" = "set_value" ]; then
-	no_fault="0"
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway
+		if [  ${#__arg1} -lt ${#__tmp_arg} ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.'     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
+		fi
+	fi
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-			__arg1="InternetGatewayDevice."
-		fi
-		for function_name in $set_value_functions
-		do
-			$function_name "$__arg1" "$__arg2"
-			fault_code="$?"
-			if [ "$fault_code" = "0" ]; then
-				no_fault="1"
-			fi
-			if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-				break
-			fi
-		done
-		if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+		freecwmp_execute_functions "$set_value_functions" "$__arg1" "$__arg2"
+		fault_code="$?"
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
@@ -281,63 +290,104 @@ if [ "$action" = "set_value" ]; then
 fi
 
 if [ "$action" = "get_notification" -o "$action" = "get_all" ]; then
-	no_fault="0"
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway and accepting empty string
+		if [  ${#__arg1} -lt ${#__tmp_arg} -a ${#__arg1} -ne 0 ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.' or ''     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
+		fi
+	fi
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-			__arg1="InternetGatewayDevice."
+		# TODO: don't return only 'InternetGatewayDevice.' when getting an empty string; but we should both
+		#       parameters with prefix 'InternetGatewayDevice.' and 'Device.'
+		if [ "$__arg1" = "InternetGatewayDevice." -a "$__arg1" = "" ]; then
+			__param="InternetGatewayDevice."
+		else
+			__param="$__arg1"
 		fi
-		for function_name in $get_notification_functions
-		do
-			$function_name "$__arg1"
-			fault_code="$?"
-			if [ "$fault_code" = "0" ]; then
-				no_fault="1"
-			fi
-			if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-				break
-			fi
-		done
-		if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+		freecwmp_execute_functions "$get_notification_functions" "$__param"
+		fault_code="$?"
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "$__arg1" "" "" "$fault_code"
+		freecwmp_output "$__arg1" "" "" "" "$fault_code"
 	fi
 fi
 
 if [ "$action" = "set_notification" ]; then
-	if [ "$__arg3" = "true" ]; then
-		__arg3="1"
-	elif [ "$__arg3" = "false" ]; then
-		__arg3="0"
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway
+		if [  ${#__arg1} -lt ${#__tmp_arg} ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.'     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
+		fi
 	fi
-	if [ "$__arg3" = "1" ]; then
-		no_fault="0"
-		freecwmp_check_fault "$__arg1"
+	freecwmp_check_fault "$__arg1"
+	fault_code="$?"
+	if [ "$fault_code" = "0" ]; then
+		freecwmp_execute_functions "$set_notification_functions" "$__parm" "$__arg2"
 		fault_code="$?"
-		if [ "$fault_code" = "0" ]; then
-			if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-				__arg1="InternetGatewayDevice."
-			fi
-			for function_name in $set_notification_functions
-			do
-				$function_name "$__arg1" "$__arg2"
-				fault_code="$?"
-				if [ "$fault_code" = "0" ]; then
-					no_fault="1"
-				fi
-				if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-					break
-				fi
-			done
-			if [ "$no_fault" = "1" ]; then fault_code="0"; fi
+	fi
+	if [ "$fault_code" != "0" ]; then
+		let fault_code=$fault_code+9000
+		freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+	fi
+fi
+
+
+if [ "$action" = "add_object" ]; then
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway
+		if [  ${#__arg1} -lt ${#__tmp_arg} ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.'     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
 		fi
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+	fi
+	no_fault="0"
+	freecwmp_check_fault "$__arg1"
+	fault_code="$?"
+	if [ "$fault_code" = "0" ]; then
+		freecwmp_execute_functions "$add_object_functions" "$__arg1"
+		fault_code="$?"
+	fi
+	if [ "$fault_code" != "0" ]; then
+		let fault_code=$fault_code+9000
+		freecwmp_output "" "" "" "" "$fault_code"
+	fi
+fi
+
+if [ "$action" = "delete_object" ]; then
+	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
+		__tmp_arg="Device."
+		# TODO: don't check only string length ; but this is only used
+		#       for getting correct prefix of CWMP parameter anyway
+		if [  ${#__arg1} -lt ${#__tmp_arg} ]; then
+			echo "CWMP parameters usualy begin with 'InternetGatewayDevice.' or 'Device.'     "
+			echo "if you want to force script execution with provided parameter use '-f' flag."
+			exit -1
 		fi
+	fi
+	no_fault="0"
+	freecwmp_check_fault "$__arg1"
+	fault_code="$?"
+	if [ "$fault_code" = "0" ]; then
+		freecwmp_execute_functions "$delete_object_functions" "$__arg1"
+		fault_code="$?"
+	fi
+	if [ "$fault_code" != "0" ]; then
+		let fault_code=$fault_code+9000
+		freecwmp_output "" "" "" "" "$fault_code"
 	fi
 fi
 
@@ -357,7 +407,7 @@ if [ "$action" = "download" ]; then
 		wget -O /tmp/freecwmp_download "${FLAGS_url}" > /dev/null
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			ubus_freecwmp_fault_output "" "$fault_code"
+			freecwmp_fault_output "" "$fault_code"
 			exit 1
 		fi
 	else
@@ -365,7 +415,7 @@ if [ "$action" = "download" ]; then
 		wget -O /tmp/freecwmp_download "$url" > /dev/null
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			ubus_freecwmp_fault_output "" "$fault_code"
+			freecwmp_fault_output "" "$fault_code"
 			exit 1
 		fi
 	fi
@@ -374,7 +424,7 @@ if [ "$action" = "download" ]; then
 	if [ ! "$dl_size" -eq "${FLAGS_size}" ]; then
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 		rm /tmp/freecwmp_download 2> /dev/null
-		ubus_freecwmp_fault_output "" "$fault_code"
+		freecwmp_fault_output "" "$fault_code"
 	else
 		if [ "${FLAGS_type}" = "1" ];then
 			mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
@@ -385,11 +435,11 @@ if [ "$action" = "download" ]; then
 				if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
 					let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 					rm /tmp/firmware_upgrade_image 2> /dev/null
-					ubus_freecwmp_fault_output "" "$fault_code"
+					freecwmp_fault_output "" "$fault_code"
 				else
 					rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
 					mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
-					ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+					freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 					if [ "${FLAGS_delay}" = "0" ];then
 						echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
 						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
@@ -398,25 +448,25 @@ if [ "$action" = "download" ]; then
 			else
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 				rm /tmp/firmware_upgrade_image 2> /dev/null
-				ubus_freecwmp_fault_output "" "$fault_code"
+				freecwmp_fault_output "" "$fault_code"
 			fi
 		elif [ "${FLAGS_type}" = "2" ];then
 			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
-			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
 				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
 				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
 			fi
 		elif [ "${FLAGS_type}" = "3" ];then
 			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
-			ubus_freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
 				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
 				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
 			fi
 		else
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			ubus_freecwmp_fault_output "" "$fault_code"
+			freecwmp_fault_output "" "$fault_code"
 			rm /tmp/freecwmp_download 2> /dev/null
 		fi
 	fi
@@ -449,79 +499,29 @@ if [ "$action" = "reboot" ]; then
 	fi
 fi
 
-if [ \( "$action" = "apply_notification" \) -o \( "$action" = "apply_value" \) ]; then
+if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 	__fault_count=`cat /var/state/cwmp 2> /dev/null |wc -l 2> /dev/null`
 	let __fault_count=$__fault_count/3
 	if [ "$__fault_count" = "0" ]; then
 		# applying
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
-		if [ "$action" = "apply_value" ]; then ubus call tr069 SetParameterValuesStatus '{"status": "0"}'; fi
-		if [ "$action" = "apply_notification" ]; then ubus call tr069 SetParameterAttributes '{"success": "0", "fault_code":""}' 2> /dev/null; fi
+		if [ "$action" = "apply_value" ]; then 
+			ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 set_parameter_values_status '{ "status": "0" }' 2> /dev/null
+		fi
+		if [ "$action" = "apply_notification" ]; then
+			freecwmp_fault_output "" "" "0"
+		fi
 	else
 		let n=$__fault_count-1
 		for i in `seq 0 $n`
 		do
 			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
 			local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
-			ubus_freecwmp_fault_output "$parm" "$fault_code"
+			freecwmp_fault_output "$parm" "$fault_code"
 			if [ "$action" = "apply_notification" ]; then break; fi
 		done
 		rm -rf /var/state/cwmp 2> /dev/null
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} revert cwmp
-	fi
-fi
-
-if [ "$action" = "add_object" ]; then
-	no_fault="0"
-	freecwmp_check_fault "$__arg1"
-	fault_code="$?"
-	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-			__arg1="InternetGatewayDevice."
-		fi
-		for function_name in $add_object_functions
-		do
-			$function_name "$__arg1"
-			fault_code="$?"
-			if [ "$fault_code" = "0" ]; then
-				no_fault="1"
-			fi
-			if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-				break
-			fi
-		done
-		if [ "$no_fault" = "1" ]; then fault_code="0"; fi
-	fi
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "" "" "" "$fault_code"
-	fi
-fi
-
-if [ "$action" = "delete_object" ]; then
-	no_fault="0"
-	freecwmp_check_fault "$__arg1"
-	fault_code="$?"
-	if [ "$fault_code" = "0" ]; then
-		if [ \( "$__arg1" = "InternetGatewayDevice." \) -o \( "$__arg1" = "" \) ]; then
-			__arg1="InternetGatewayDevice."
-		fi
-		for function_name in $delete_object_functions
-		do
-			$function_name "$__arg1"
-			fault_code="$?"
-			if [ "$fault_code" = "0" ]; then
-				no_fault="1"
-			fi
-			if [ "$fault_code" = "$FAULT_CPE_INVALID_ARGUMENTS" ]; then
-				break
-			fi
-		done
-		if [ "$no_fault" = "1" ]; then fault_code="0"; fi
-	fi
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
-		ubus_freecwmp_output "" "" "" "$fault_code"
 	fi
 fi
 

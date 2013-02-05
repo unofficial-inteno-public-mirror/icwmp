@@ -1,15 +1,16 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_misc_cpu_usage() {
 local val=`uptime | awk -F'average: ' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'.' '{ print $2 }'`
-ubus_freecwmp_output "Device.DeviceInfo.ProcessStatus.CPUUsage" "$val"
+freecwmp_output "Device.DeviceInfo.ProcessStatus.CPUUsage" "$val"
 }
 
 get_misc_process_number() {
 local val=`ps | grep -v COMMAND | wc -l`
 local type="xsd:unsignedInt"
-ubus_freecwmp_output "Device.DeviceInfo.ProcessStatus.ProcessNumberOfEntries" "$val" "$type"
+freecwmp_output "Device.DeviceInfo.ProcessStatus.ProcessNumberOfEntries" "$val" "" "$type"
 }
 
 get_misc() {
@@ -25,3 +26,15 @@ case "$1" in
 esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
+
+get_misc_name () { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+get_misc_notification () { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_misc() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_misc_notification () { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+add_misc() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_misc() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }

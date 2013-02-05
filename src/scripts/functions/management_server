@@ -1,24 +1,26 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_management_server_url() {
 local tmp=${FLAGS_value}
 FLAGS_value=${FLAGS_TRUE}
 FLAGS_value=$tmp
 local val=""
+local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.URL"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.url 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_url() {
@@ -38,19 +40,20 @@ esac
 
 get_management_server_username() {
 local val=""
+local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.userid 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_username() {
@@ -68,19 +71,20 @@ esac
 
 get_management_server_password() {
 local val=""
+local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.passwd 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_password() {
@@ -101,19 +105,20 @@ local tmp=${FLAGS_value}
 FLAGS_value=${FLAGS_TRUE}
 FLAGS_value=$tmp
 local val=""
+local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.ParameterKey 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_parameter_key() {
@@ -133,19 +138,21 @@ esac
 
 get_management_server_periodic_inform_enable() {
 local val=""
+local type="xsd:boolean"
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_enable`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions" "$type"
 }
 
 set_management_server_periodic_inform_enable() {
@@ -163,19 +170,21 @@ esac
 
 get_management_server_periodic_inform_interval() {
 local val=""
+local type="xsd:unsignedInt"
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions" "$type"
 }
 
 set_management_server_periodic_inform_interval() {
@@ -194,23 +203,40 @@ esac
 get_management_server_connection_request_url() {
 local val
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestURL"
+local permissions=""
 case "$action" in
 	get_value)
-	val=`uci get -q -P /etc/cwmpd/.iccu cwmp.cpe.iccu_url 2> /dev/null`
+	if [ -z "$default_management_server_connection_request_url" ]; then
+		local tmp_value=${FLAGS_value}
+		FLAGS_value=${FLAGS_TRUE}
+		local tmp_ubus=${FLAGS_ubus}
+		FLAGS_ubus=${FLAGS_FALSE}
+		local ip=`get_wan_device_mng_interface_ip`
+		local port=`get_management_server_x_freecwmp_org__connection_request_port`
+		FLAGS_value=$tmp_value
+		FLAGS_ubus=$tmp_ubus
+	
+		if [ -n "$ip" -a -n "$port" ]; then
+			val="http://$ip:$port/"
+		fi
+	else
+		val=$default_management_server_connection_request_url
+	fi
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 get_management_server_connection_request_username() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.userid 2> /dev/null`
@@ -222,7 +248,7 @@ case "$action" in
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_connection_request_username() {
@@ -241,18 +267,19 @@ esac
 get_management_server_connection_request_password() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.passwd 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="0"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-ubus_freecwmp_output "$parm" "$val"
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_connection_request_password() {
@@ -272,23 +299,20 @@ esac
 
 get_management_server_x_freecwmp_org__acs_scheme() {
 local val=""
+local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].scheme 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
-	ubus_freecwmp_output "$parm" "$val"
-else
-	freecwmp_output "$parm" "$val"
-fi
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_x_freecwmp_org__acs_scheme() {
@@ -307,22 +331,19 @@ esac
 get_management_server_x_freecwmp_org__acs_hostname() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].hostname 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
-	ubus_freecwmp_output "$parm" "$val"
-else
-	freecwmp_output "$parm" "$val"
-fi
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_x_freecwmp_org__acs_hostname() {
@@ -345,22 +366,19 @@ esac
 get_management_server_x_freecwmp_org__acs_port() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].port 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
-	ubus_freecwmp_output "$parm" "$val"
-else
-	freecwmp_output "$parm" "$val"
-fi
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_x_freecwmp_org__acs_port() {
@@ -379,22 +397,19 @@ esac
 get_management_server_x_freecwmp_org__acs_path() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].path 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
-	ubus_freecwmp_output "$parm" "$val"
-else
-	freecwmp_output "$parm" "$val"
-fi
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_x_freecwmp_org__acs_path() {
@@ -413,22 +428,19 @@ esac
 get_management_server_x_freecwmp_org__connection_request_port() {
 local val=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@local[0].port 2> /dev/null`
 	;;
 	get_name)
-	val="1"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
 	;;
 esac
-if [ "$FLAGS_value" != "${FLAGS_TRUE}" ]; then
-	ubus_freecwmp_output "$parm" "$val"
-else
-	freecwmp_output "$parm" "$val"
-fi
+freecwmp_output "$parm" "$val" "$permissions"
 }
 
 set_management_server_x_freecwmp_org__connection_request_port() {
@@ -511,7 +523,7 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 get_management_server_name() {
 case "$1" in
 	InternetGatewayDevice.)
-	ubus_freecwmp_output "InternetGatewayDevice.ManagementServer." "0"
+	freecwmp_output "InternetGatewayDevice.ManagementServer." "" "0"
 	if [ "$2" = "0" ]; then
 		get_management_server_url
 		get_management_server_username
@@ -525,7 +537,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.)
-	ubus_freecwmp_output "InternetGatewayDevice.ManagementServer." "0"
+	freecwmp_output "InternetGatewayDevice.ManagementServer." "" "0"
 	get_management_server_url
 	get_management_server_username
 	get_management_server_password
@@ -775,8 +787,8 @@ get_management_server_generic() {
 get_management_server_generic_name() {
 	check_parameter_management_server_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
-	local val="1"
-	ubus_freecwmp_output "$1" "$val"
+	local permissions="1"
+	freecwmp_output "$1" "" "$permissions"
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -785,7 +797,7 @@ get_management_server_generic_notification() {
 	
 	local val
 	freecwmp_get_parameter_notification "val" "$1"
-	ubus_freecwmp_output "$1" "$val"
+	freecwmp_output "$1" "$val"
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -802,3 +814,10 @@ set_management_server_generic_notification() {
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 }
+add_management_server { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_management_server { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+add_management_server_generic { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_management_server_generic { return $FAULT_CPE_INVALID_PARAMETER_NAME; }

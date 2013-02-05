@@ -1,5 +1,6 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 # TODO: LIMITATIONS: we only handle one device router at the moment
 
@@ -85,7 +86,7 @@ local parameter=$1
 
 case "$parameter" in
 	Device.Routing.RouterNumberOfEntries)
-	ubus_freecwmp_output "$parameter" "1"
+	freecwmp_output "$parameter" "1"
 	return
 	;;
 esac
@@ -101,7 +102,7 @@ if [ $rc -eq 0 ]; then
 	else
 		val="0"
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_output "$parameter" "$val"
 	return
 fi
 
@@ -113,7 +114,7 @@ if [ $rc -eq 0 ]; then
 	else
 		val="Disabled"
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_output "$parameter" "$val"
 	return
 fi
 
@@ -134,7 +135,7 @@ if [ $rc -eq 0 ]; then
 	else
 		return
 	fi
-	ubus_freecwmp_output "$parameter" "$total"
+	freecwmp_output "$parameter" "$total"
 	return
 fi
 
@@ -146,7 +147,7 @@ if [ $rc -eq 0 ]; then
 	else
 		return
 	fi
-	ubus_freecwmp_output "$parameter" "$val"
+	freecwmp_output "$parameter" "$val"
 	return
 fi
 
@@ -166,15 +167,15 @@ if [ $rc -eq 0 ]; then
 			return
 		fi
 		if [ $num2 -gt $static ]; then
-			ubus_freecwmp_output "$parameter" "Enabled"
+			freecwmp_output "$parameter" "Enabled"
 			return
 		fi
 		if [ $num2 -le $inactive ]; then
-			ubus_freecwmp_output "$parameter" "Error: not active but enabled"
+			freecwmp_output "$parameter" "Error: not active but enabled"
 			return
 		fi
 		if [ $num2 -le $static ]; then
-			ubus_freecwmp_output "$parameter" "Enabled"
+			freecwmp_output "$parameter" "Enabled"
 			return
 		fi
 	else
@@ -197,11 +198,11 @@ if [ $rc -eq 0 ]; then
 			return
 		fi
 		if [ $num2 -gt $static ]; then
-			ubus_freecwmp_output "$parameter" "0"
+			freecwmp_output "$parameter" "0"
 			return
 		fi
 		if [ $num2 -le $static ]; then
-			ubus_freecwmp_output "$parameter" "1"
+			freecwmp_output "$parameter" "1"
 			return
 		fi
 	else
@@ -230,7 +231,7 @@ if [ $rc -eq 0 ]; then
 			let local i=$static-$num2
 			target=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.@route[$i].target 2> /dev/null`
 		fi
-		ubus_freecwmp_output "$parameter" "$target"
+		freecwmp_output "$parameter" "$target"
 		return
 	else
 		return
@@ -258,7 +259,7 @@ if [ $rc -eq 0 ]; then
 			let local i=$static-$num2
 			netmask=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.@route[$i].netmask 2> /dev/null`
 		fi
-		ubus_freecwmp_output "$parameter" "$netmask"
+		freecwmp_output "$parameter" "$netmask"
 		return
 	else
 		return
@@ -288,7 +289,7 @@ if [ $rc -eq 0 ]; then
 			let local i=$static-$num2
 			gateway=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.@route[$i].gateway 2> /dev/null`
 		fi
-		ubus_freecwmp_output "$parameter" "$gateway"
+		freecwmp_output "$parameter" "$gateway"
 		return
 	else
 		return
@@ -315,7 +316,7 @@ if [ $rc -eq 0 ]; then
 		elif [ $num2 -le $static ]; then
 			val="Static"
 		fi
-		ubus_freecwmp_output "$parameter" "$val"
+		freecwmp_output "$parameter" "$val"
 		return
 	else
 		return
@@ -343,7 +344,7 @@ if [ $rc -eq 0 ]; then
 			let local i=$static-$num2
 			metric=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.@route[$i].metric 2> /dev/null`
 		fi
-		ubus_freecwmp_output "$parameter" "$metric"
+		freecwmp_output "$parameter" "$metric"
 		return
 	else
 		return
@@ -352,3 +353,14 @@ fi
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
+get_device_routing_name() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+get_device_routing_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_routing() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+set_device_routing_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+add_device_routing() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_device_routing() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
