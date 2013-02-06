@@ -814,10 +814,11 @@ set_management_server_generic_notification() {
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 }
-add_management_server { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-delete_management_server { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+add_management_server() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-add_management_server_generic { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+delete_management_server() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-delete_management_server_generic { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+add_management_server_generic() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+
+delete_management_server_generic() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }

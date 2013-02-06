@@ -517,6 +517,6 @@ esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
-add_wan_device { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+add_wan_device() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-delete_wan_device { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+delete_wan_device() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
