@@ -50,6 +50,7 @@ static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 	struct rtattr *rth = IFA_RTA(ifa);
 	int rtl = IFA_PAYLOAD(nlh);
 	char if_name[IFNAMSIZ], if_addr[INET_ADDRSTRLEN];
+	char *c;
 
 	memset(&if_name, 0, sizeof(if_name));
 	memset(&if_addr, 0, sizeof(if_addr));
@@ -78,6 +79,11 @@ static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 
 		if (cwmp_main.conf.ip) FREE(cwmp_main.conf.ip);
 		cwmp_main.conf.ip = strdup(if_addr);
+		if (asprintf(&c,"cwmp.cpe.ip=%s",cwmp_main.conf.ip) != -1)
+		{
+			uci_set_state_value(c);
+			free(c);
+		}
 		break;
 	}
 

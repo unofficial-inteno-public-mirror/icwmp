@@ -211,7 +211,7 @@ case "$action" in
 		FLAGS_value=${FLAGS_TRUE}
 		local tmp_ubus=${FLAGS_ubus}
 		FLAGS_ubus=${FLAGS_FALSE}
-		local ip=`get_wan_device_mng_interface_ip`
+		local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.cpe.ip`
 		local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.port`
 		FLAGS_value=$tmp_value
 		FLAGS_ubus=$tmp_ubus
