@@ -49,5 +49,3 @@ config scripts
 	list function device_hosts
 	list location /usr/share/freecwmp/functions/device_routing
 	list function device_routing
-	list location /usr/share/freecwmp/functions/device_ip
-	list function device_ip
