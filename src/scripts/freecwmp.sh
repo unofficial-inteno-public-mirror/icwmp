@@ -243,7 +243,7 @@ if [ "$action" = "get_name" -o "$action" = "get_all" ]; then
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
 		if [ "$__arg2" != "0" -a "$__arg2" != "1" ]; then
-			fault_code="$E_INVALID_ARGUMENTS"
+			fault_code="$FAULT_CPE_INVALID_ARGUMENTS"
 		fi
 		if [ "$fault_code" = "0" ]; then
 			# TODO: don't return only 'InternetGatewayDevice.' when getting an empty string; but we should both

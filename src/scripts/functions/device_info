@@ -404,7 +404,7 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 set_device_info_notification() {
-return $E_INVALID_PARAMETER_NAME
+return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 check_parameter_device_info_generic() {
