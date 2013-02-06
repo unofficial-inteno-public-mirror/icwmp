@@ -19,8 +19,6 @@
 #include "log.h"
 #include "external.h"
 
-#define CWMP_DAEMON_MULTITHREAD  1 /* need for debug */
-
 struct cwmp         	cwmp_main = {0};
 static pthread_mutex_t	thread_sync_mutex		= PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t	thread_sync_cond		= PTHREAD_COND_INITIALIZER;
@@ -176,9 +174,6 @@ void *cwmp_schedule_session (void *v)
         cwmp->session_send          = NULL;
         cwmp->retry_count_session   = 0;
         pthread_mutex_unlock (&(cwmp->mutex_session_send));
-# if !CWMP_DAEMON_MULTITHREAD /* TODO KMD need for debug*/
-        break;
-#endif
     }
     return CWMP_OK;
 }
@@ -496,11 +491,7 @@ int main(int argc, char **argv)
     {
         return error;
     }
-# if !CWMP_DAEMON_MULTITHREAD /* TODO KMD need for debug*/
 
-    cwmp_schedule_session(cwmp);
-
-#else
     error = pthread_create(&ubus_thread, NULL, &thread_uloop_run, NULL);
     if (error<0)
 	{
@@ -536,8 +527,6 @@ int main(int argc, char **argv)
     pthread_join(periodic_event_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
-
-#endif
 
     CWMP_LOG(INFO,"EXIT CWMP");
     return CWMP_OK;

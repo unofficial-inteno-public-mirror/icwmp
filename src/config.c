@@ -124,7 +124,7 @@ int uci_get_value_common(char *cmd,char **value,bool state)
     {
         strcpy(state_path,"/var/state");
         uci_add_delta_path(c, c->savedir);
-        uci_set_savedir(c, state_path); /* TODO to check for DHCP*/
+        uci_set_savedir(c, state_path);
     }
     s = strdup(cmd);
     t = s;
@@ -185,7 +185,7 @@ static int uci_action_value_common(char *cmd, uci_config_action action)
     {
         strcpy(state_path,"/var/state");
         uci_add_delta_path(c, c->savedir);
-        uci_set_savedir(c, state_path); /* TODO to check for DHCP*/
+        uci_set_savedir(c, state_path);
     }
 
     if (uci_lookup_ptr(c, &ptr, s, true) != UCI_OK)

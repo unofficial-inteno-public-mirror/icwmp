@@ -133,7 +133,7 @@ void external_fetch_delObjectResp (char **status, char **fault)
 	external_MethodFault = NULL;
 }
 
-int external_get_action(char *action, char *name, char *arg /* arg is added for GetParameterNames NextLevel argument*/)
+int external_get_action(char *action, char *name, char *arg)
 {
 
 	CWMP_LOG(INFO,"executing get %s '%s'", action, name);
@@ -248,9 +248,6 @@ int external_get_action_execute()
 		DD(DEBUG,"waiting for child to exit");
 	}
 
-
-	// TODO: add some kind of checks
-
 	remove(fc_script_actions);
 
 	return 0;
@@ -335,8 +332,6 @@ int external_set_action_execute(char *action)
 		DD(DEBUG,"waiting for child to exit");
 	}
 
-	// TODO: add some kind of checks
-
 	if (remove(fc_script_actions) != 0)
 		return -1;
 
@@ -353,10 +348,11 @@ int external_object_action(char *action, char *name)
 	if (uproc.pid == 0) {
 		/* child */
 
-		const char *argv[6];
+		const char *argv[8];
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
+		argv[i++] = "--ubus";
 		argv[i++] = action;
 		argv[i++] = "object";
 		argv[i++] = name;
@@ -390,10 +386,11 @@ int external_simple(char *arg)
 	if (uproc.pid == 0) {
 		/* child */
 
-		const char *argv[4];
+		const char *argv[6];
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
+		argv[i++] = "--ubus";
 		argv[i++] = arg;
 		argv[i++] = NULL;
 
@@ -409,8 +406,6 @@ int external_simple(char *arg)
 		DD(DEBUG,"waiting for child to exit");
 	}
 
-	// TODO: add some kind of checks
-
 	return 0;
 }
 
@@ -425,11 +420,12 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	if (uproc.pid == 0) {
 		/* child */
 
-		const char *argv[16];
+		const char *argv[20];
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
 		argv[i++] = "download";
+		argv[i++] = "--ubus";
 		argv[i++] = "--url";
 		argv[i++] = url;
 		argv[i++] = "--size";
@@ -462,11 +458,6 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	while (wait(&status) != uproc.pid) {
 		DD(INFO,"waiting for child to exit");
 	}
-//
-//	if (WIFEXITED(status) && !WEXITSTATUS(status))
-//		return 0;
-//	else
-//		return 1;
 
 	return 0;
 }
@@ -485,6 +476,7 @@ int external_apply_download(char *type)
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
+		argv[i++] = "--ubus";
 		argv[i++] = "apply";
 		argv[i++] = "download";
 		argv[i++] = "--type";
@@ -502,11 +494,6 @@ int external_apply_download(char *type)
 	while (wait(&status) != uproc.pid) {
 		DD(INFO,"waiting for child to exit");
 	}
-
-	if (WIFEXITED(status) && !WEXITSTATUS(status))
-		return 0;
-	else
-		return 1;
 
 	return 0;
 }
