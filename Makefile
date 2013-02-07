@@ -109,15 +109,15 @@ define Package/cwmp-$(BUILD_VARIANT)/install
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(CP) $(PKG_BUILD_DIR)/bin/cwmpd $(1)/usr/sbin
 	$(INSTALL_DIR) $(1)/etc/config
-	$(INSTALL_CONF) $(PKG_BUILD_DIR)/ext/openwrt/config/cwmp $(1)/etc/config
+	$(INSTALL_CONF) $(PKG_BUILD_DIR)/config/cwmp $(1)/etc/config
 	$(INSTALL_DIR) $(1)/etc/init.d
-	$(INSTALL_BIN) ./files/cwmpd.init $(1)/etc/init.d/cwmpd
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/init/cwmpd.init $(1)/etc/init.d/cwmpd
 ifeq ($(CONFIG_CWMP_SCRIPTS_FULL),y)
 	$(INSTALL_DIR) $(1)/usr/share/freecwmp
-	$(CP) $(PKG_BUILD_DIR)/ext/openwrt/scripts/defaults $(1)/usr/share/freecwmp
-	$(CP) $(PKG_BUILD_DIR)/ext/openwrt/scripts/functions $(1)/usr/share/freecwmp
+	$(CP) $(PKG_BUILD_DIR)/scripts/defaults $(1)/usr/share/freecwmp
+	$(CP) $(PKG_BUILD_DIR)/scripts/functions $(1)/usr/share/freecwmp
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ext/openwrt/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
 endif
 endef
 

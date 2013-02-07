@@ -72,11 +72,11 @@ run() {
 	if [ "_$1" = "_GetRPCMethods" ];then
 		opt=$opt"-g "
 	fi
-	[ -f /etc/config/cwmp ] && /usr/bin/cwmpd $opt &
+	[ -f /etc/config/cwmp ] && /usr/sbin/cwmpd $opt &
 }
 
 boot() {
-    run=$(ps aux|grep /usr/bin/cwmpd|grep -v grep|grep -v rc.common)
+    run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
     if [ "$run" = "" ];then
         run "boot"
     else
@@ -85,7 +85,7 @@ boot() {
 }
 
 start() {
-    run=$(ps aux|grep /usr/bin/cwmpd|grep -v grep|grep -v rc.common)
+    run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
     if [ "$run" = "" ]
     then
         if [ "$1" = "GetRPCMethods" ];then
@@ -100,7 +100,7 @@ start() {
 
 stop() {
     echo $stop_msg;printf "\033[A" ;sleep 1
-    for pid in `ps aux|grep /usr/bin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
+    for pid in `ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
     do
         if [ "_$pid" != "_" ];then
             /bin/kill -9 $pid 2> /dev/null

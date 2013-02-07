@@ -10,7 +10,7 @@ cwmpd_SOURCES =				\
 	../connectionRequest.c	\
 	../inc/cwmp.h			\
 	../cwmp.c				\
-	../	event.c				\
+	../event.c				\
 	../inc/external.h		\
 	../external.c			\
 	../inc/http.h			\
@@ -32,7 +32,8 @@ cwmpd_CFLAGS =			\
 	$(LIBUBUS_CFLAGS)	\
 	$(MICROXML_CFLAGS)	\
 	$(LIBCURL_CFLAGS)	\
-	$(LIBZSTREAM_CFLAGS)
+	$(LIBZSTREAM_CFLAGS) \
+	-I../inc
 
 cwmpd_LDFLAGS =			\
 	$(AM_LDFLAGS)		\
@@ -53,17 +54,4 @@ cwmpd_LDADD =			\
 	$(LIBCURL_LIBS)		\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)
-
-CWMP_REVISION=$(shell svnversion $(PWD) -n|cut -f2 -d:)
-
-cwmpd_CFLAGS+=-Iinc -DCWMP_VERSION=\"$(CWMP_VERSION)\"
-cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
-
-ifneq ($(CWMP_REVISION)_,_)
-ifneq ($(CWMP_REVISION),exported)
-	cwmpd_CFLAGS+=-DCWMP_REVISION=\"$(CWMP_REVISION)\"
-	cwmpd_LDFLAGS+=-DCWMP_REVISION=\"$(CWMP_REVISION)\"
-endif
-endif
-
 

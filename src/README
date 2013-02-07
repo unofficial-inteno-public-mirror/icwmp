@@ -1,0 +1,39 @@
+configure autotools
+===================
+
+$ autoreconf -if
+
+clean it all up
+===============
+
+$ make distclean
+
+or 
+
+$ git clean -df
+
+development environment
+=======================
+
+Make sure you have all the packages installed from packages-arch-tr069 git
+repository.
+
+$ ln -sf `pwd`/scripts/defaults /usr/share/freecwmp/defaults
+$ ln -sf `pwd`/scripts/functions/common /usr/share/freecwmp/functions/common
+$ ln -sf `pwd`/scripts/functions/device_info /usr/share/freecwmp/functions/device_info
+$ ln -sf `pwd`/scripts/functions/lan_device /usr/share/freecwmp/functions/lan_device
+$ ln -sf `pwd`/scripts/functions/management_server /usr/share/freecwmp/functions/management_server
+$ ln -sf `pwd`/scripts/functions/voice_service /usr/share/freecwmp/functions/voice_service
+$ ln -sf `pwd`/scripts/functions/wan_device /usr/share/freecwmp/functions/wan_device
+$ ln -sf `pwd`/scripts/functions/x_freecwmp_org /usr/share/freecwmp/functions/x_freecwmp_org
+$ ln -sf `pwd`/scripts/functions/device_users /usr/share/freecwmp/functions/device_users 
+$ ln -sf `pwd`/scripts/functions/device_hosts /usr/share/freecwmp/functions/device_hosts
+$ ln -sf `pwd`/scripts/functions/device_routing /usr/share/freecwmp/functions/device_routing
+$ ln -sf `pwd`/scripts/functions/device_ip /usr/share/freecwmp/functions/device_ip
+
+run cwmpd
+=============
+
+$ export UCI_CONFIG_DIR="`pwd`/config/" 
+$ export UBUS_SOCKET="/tmp/ubus.sock"
+$ ./bin/cwmpd -f
