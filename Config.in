@@ -17,7 +17,7 @@ endchoice
 
 config CWMP_DEBUG
 	bool "Compile with debug options"
-	default n
+	default y
 
 config CWMP_DEVEL_DEBUG
 	bool "Compile with development debug options"

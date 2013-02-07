@@ -2,27 +2,17 @@ bin_PROGRAMS = cwmpd
 CWMP_VERSION = 2.2
 
 cwmpd_SOURCES =				\
-	../inc/b64.h			\
 	../b64.c				\
-	../inc/backupSession.h	\
 	../backupSession.c		\
 	../config.c				\
-	../connectionRequest.c	\
-	../inc/cwmp.h			\
 	../cwmp.c				\
 	../event.c				\
-	../inc/external.h		\
 	../external.c			\
-	../inc/http.h			\
 	../http.c				\
-	../inc/log.h			\
 	../log.c				\
-	../inc/messages.h		\
 	../netlink.c			\
 	../time.c				\
-	../inc/ubus.h			\
 	../ubus.c				\
-	../inc/xml.h			\
 	../xml.c
 
 cwmpd_CFLAGS =			\
@@ -55,3 +45,10 @@ cwmpd_LDADD =			\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)
 
+CWMP_REVISION=$(shell svnversion $(PWD) -n|cut -f2 -d:)
+
+cwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+
+CWMP_BKP_FILE=/etc/cwmpd/.cwmpd_backup_session.xml
+cwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"

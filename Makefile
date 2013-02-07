@@ -100,12 +100,8 @@ CONFIGURE_ARGS += \
 	--enable-devel
 endif
 
-define Package/cwmp-$(BUILD_VARIANT)/conffiles
-/etc/config/cwmp
-/usr/share/cwmp/defaults
-endef
-
 define Package/cwmp-$(BUILD_VARIANT)/install
+	$(INSTALL_DIR) $(1)/etc/cwmpd
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(CP) $(PKG_BUILD_DIR)/bin/cwmpd $(1)/usr/sbin
 	$(INSTALL_DIR) $(1)/etc/config
