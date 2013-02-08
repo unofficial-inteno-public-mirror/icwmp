@@ -443,7 +443,7 @@ if [ "$action" = "download" ]; then
 					freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 					if [ "${FLAGS_delay}" = "0" ];then
 						echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
-						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 					fi
 				fi
 			else
@@ -456,14 +456,14 @@ if [ "$action" = "download" ]; then
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
 				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
-				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 			fi
 		elif [ "${FLAGS_type}" = "3" ];then
 			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
 				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
-				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "action_end_session" }' 2> /dev/null
+				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 			fi
 		else
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
@@ -487,7 +487,7 @@ if [ "$action" = "factory_reset" ]; then
 	else
 		jffs2_mark_erase "rootfs_data"
 		sync
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "reboot_end_session" }' 2> /dev/null
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2> /dev/null
 	fi
 fi
 
@@ -496,7 +496,7 @@ if [ "$action" = "reboot" ]; then
 		echo "# reboot"
 	else
 		sync
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "name": "reboot_end_session" }' 2> /dev/null
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2> /dev/null
 	fi
 fi
 
