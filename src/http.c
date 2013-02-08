@@ -74,7 +74,7 @@ http_client_init(struct cwmp *cwmp)
 
 #ifdef HTTP_CURL
 	http_c.header_list = NULL;
-	http_c.header_list = curl_slist_append(http_c.header_list, "User-Agent: freecwmp");
+	http_c.header_list = curl_slist_append(http_c.header_list, "User-Agent: cwmp");
 	if (!http_c.header_list) return -1;
 	http_c.header_list = curl_slist_append(http_c.header_list, "Content-Type: text/xml");
 	if (!http_c.header_list) return -1;
@@ -100,7 +100,7 @@ http_client_init(struct cwmp *cwmp)
 # endif
 		return -1;
 
-	if (zstream_http_addheader(http_c.stream, "User-Agent", "freecwmp"))
+	if (zstream_http_addheader(http_c.stream, "User-Agent", "cwmp"))
 		return -1;
 
 	if (zstream_http_addheader(http_c.stream, "Content-Type", "text/xml"))

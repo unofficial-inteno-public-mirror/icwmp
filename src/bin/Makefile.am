@@ -35,7 +35,6 @@ cwmpd_LDFLAGS =			\
 
 cwmpd_LDADD =			\
 	$(AM_LIBS)			\
-	$(LIBFREECWMP_LIBS)	\
 	$(LIBUCI_LIBS)		\
 	$(LIBUBOX_LIBS)		\
 	$(LIBUBUS_LIBS)		\
