@@ -442,7 +442,7 @@ if [ "$action" = "download" ]; then
 					mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
 					freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 					if [ "${FLAGS_delay}" = "0" ];then
-						echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+						echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
 						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 					fi
 				fi
@@ -455,14 +455,14 @@ if [ "$action" = "download" ]; then
 			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
-				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+				echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
 				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 			fi
 		elif [ "${FLAGS_type}" = "3" ];then
 			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			if [ "${FLAGS_delay}" = "0" ];then
-				echo "/bin/sh /usr/sbin/freecwmp apply download \"${FLAGS_type}\"" > /tmp/end_session.sh
+				echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
 				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
 			fi
 		else
