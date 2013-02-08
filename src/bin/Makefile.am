@@ -45,8 +45,6 @@ cwmpd_LDADD =			\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)
 
-CWMP_REVISION=$(shell svnversion $(PWD) -n|cut -f2 -d:)
-
 cwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 
