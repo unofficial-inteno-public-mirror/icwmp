@@ -20,7 +20,7 @@ PKG_CONFIG_DEPENDS:= \
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
-CWMP_REVISION:=$(shell svnversion $(PWD) -n|cut -f2 -d:)
+CWMP_REVISION=$(shell svnversion . -n|cut -f2 -d:)
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -65,8 +65,8 @@ TARGET_CFLAGS += \
 	
 ifneq ($(CWMP_REVISION)_,_)
 ifneq ($(CWMP_REVISION),exported)
-TARGET_CFLAGS += -DCWMP_REVISION=\"$(CWMP_REVISION)\"
-TARGET_LDFLAGS += -DCWMP_REVISION=\"$(CWMP_REVISION)\"
+TARGET_CFLAGS += "-DCWMP_REVISION=\\\"$(CWMP_REVISION)\\\""
+TARGET_LDFLAGS += "-DCWMP_REVISION=\\\"$(CWMP_REVISION)\\\""
 endif
 endif
 
