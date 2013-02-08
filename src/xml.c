@@ -1786,13 +1786,16 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 
     if(fault_code != NULL)
     {
-    	for(i=0;i<__FAULT_CPE_MAX;i++)
+    	if(strcmp(fault_code,"0") != 0)
     	{
-    		if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code)==0)
-    		{
-    			error = i;
-    			break;
-    		}
+			for(i=0;i<__FAULT_CPE_MAX;i++)
+			{
+				if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+				{
+					error = i;
+					break;
+				}
+			}
     	}
     	free(fault_code);
     }
@@ -1873,12 +1876,15 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		external_fetch_downloadResp(&fault_code);
     		if(fault_code != NULL)
     		{
-				for(i=0;i<__FAULT_CPE_MAX;i++)
+    			if(strcmp(fault_code,"0") != 0)
 				{
-					if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code)==0)
+					for(i=0;i<__FAULT_CPE_MAX;i++)
 					{
-						error = i;
-						break;
+						if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+						{
+							error = i;
+							break;
+						}
 					}
 				}
 				free(fault_code);
@@ -1969,7 +1975,10 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 
 	CWMP_LOG (INFO,"Prepare the RPC response message: DownloadResponse");
 	if (asprintf(&c, "%s:%s", ns.cwmp, "Download") == -1)
-		return -1;
+	{
+		error = FAULT_CPE_INTERNAL_ERROR;
+		goto fault;
+	}
 
 	n = mxmlFindElement(session->tree_in, session->tree_in, c, NULL, NULL, MXML_DESCEND);
 	FREE(c);
@@ -1979,7 +1988,10 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 
 	download = calloc (1,sizeof(struct download));
 	if (download == NULL)
-		return -1;
+	{
+		error = FAULT_CPE_INTERNAL_ERROR;
+		goto fault;
+	}
 
 	while (b != NULL) {
 		if (b && b->type == MXML_TEXT &&
@@ -2000,7 +2012,11 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 			else
 			{
 				tmp = file_type;
-				asprintf(file_type,"%s %s",tmp, b->value.text.string);
+				if (asprintf(&file_type,"%s %s",tmp, b->value.text.string) == -1)
+				{
+					error = FAULT_CPE_INTERNAL_ERROR;
+					goto fault;
+				}
 				FREE(tmp);
 			}
 		}
@@ -2112,12 +2128,15 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 //				external_fetch_downloadResp(&fault_code);
 //				if(fault_code != NULL)
 //				{
-//					for(i=0;i<__FAULT_CPE_MAX;i++)
+//					if(strcmp(fault_code,"0") != 0)
 //					{
-//						if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code)==0)
+//						for(i=0;i<__FAULT_CPE_MAX;i++)
 //						{
-//							error = i;
-//							break;
+//							if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+//							{
+//								error = i;
+//								break;
+//							}
 //						}
 //					}
 //					free(fault_code);
