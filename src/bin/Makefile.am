@@ -22,8 +22,7 @@ cwmpd_CFLAGS =			\
 	$(LIBUBUS_CFLAGS)	\
 	$(MICROXML_CFLAGS)	\
 	$(LIBCURL_CFLAGS)	\
-	$(LIBZSTREAM_CFLAGS) \
-	-I../inc
+	$(LIBZSTREAM_CFLAGS)
 
 cwmpd_LDFLAGS =			\
 	$(AM_LDFLAGS)		\
@@ -50,3 +49,4 @@ cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 
 CWMP_BKP_FILE=/etc/cwmpd/.cwmpd_backup_session.xml
 cwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"
+cwmpd_CFLAGS+=-I../inc
