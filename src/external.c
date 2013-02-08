@@ -221,6 +221,9 @@ int external_get_action_write(char *action, char *name, char *arg)
 
 int external_get_action_execute()
 {
+	if (access(fc_script_actions, F_OK) == -1)
+		return 0;
+
 	CWMP_LOG(INFO,"executing get script");
 
 	if ((uproc.pid = fork()) == -1) {

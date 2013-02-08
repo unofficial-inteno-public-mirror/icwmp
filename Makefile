@@ -20,7 +20,7 @@ PKG_CONFIG_DEPENDS:= \
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
-CWMP_REVISION=$(shell svnversion . -n|cut -f2 -d:)
+CWMP_REVISION=$(shell svnversion ./src/ -n|cut -f2 -d:)
 
 include $(INCLUDE_DIR)/package.mk
 
