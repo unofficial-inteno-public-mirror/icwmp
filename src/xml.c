@@ -1770,19 +1770,12 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 
     download_startTime = mix_get_time();
 
-    if(pdownload->scheduled_time != 0)
-    {
-    	bkp_session_delete_download(pdownload);
-    	bkp_session_save();
-    }
+    bkp_session_delete_download(pdownload);
+    bkp_session_save();
 
     sprintf(file_size,"%d",pdownload->file_size);
-    if(external_download(pdownload->url, file_size, pdownload->file_type, pdownload->username, pdownload->password, pdownload->scheduled_time))
-    {
-    	error = FAULT_CPE_DOWNLOAD_FAILURE;
-    }
-
-    external_fetch_downloadResp(&fault_code);
+    external_download(pdownload->url, file_size, pdownload->file_type, pdownload->username, pdownload->password);
+    external_fetch_downloadFaultResp(&fault_code);
 
     if(fault_code != NULL)
     {
@@ -1810,7 +1803,7 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 	p->command_key			= strdup(pdownload->command_key);
 	p->start_time 			= download_startTime;
 	p->complete_time		= mix_get_time();
-	if(error)
+	if(error != FAULT_CPE_NO_FAULT)
 	{
 		p->fault_code 		= error;
 	}
@@ -1839,7 +1832,10 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     {
     	pdownload = list_entry(list_download.next,struct download, list);
         current_time    = time(NULL);
-        timeout = current_time - pdownload->scheduled_time;
+        if(pdownload->scheduled_time != 0)
+			timeout = current_time - pdownload->scheduled_time;
+        else
+        	timeout = 0;
         if((timeout >= 0)&&(timeout > time_of_grace))
 		{
         	pthread_mutex_lock (&mutex_download);
@@ -1859,7 +1855,8 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 				cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
 			}
 			list_del (&(pdownload->list));
-			count_download_queue--;
+			if(pdownload->scheduled_time != 0)
+				count_download_queue--;
 			cwmp_free_download_request(pdownload);
 			pthread_mutex_unlock (&mutex_download);
 		}
@@ -1873,7 +1870,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
     		}
     		external_apply_download(pdownload->file_type);
-    		external_fetch_downloadResp(&fault_code);
+    		external_fetch_downloadFaultResp(&fault_code);
     		if(fault_code != NULL)
     		{
     			if(strcmp(fault_code,"0") != 0)
@@ -1898,7 +1895,8 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 			pthread_cond_signal (&(cwmp->threshold_session_send));
 			pthread_mutex_lock (&mutex_download);
 			list_del (&(pdownload->list));
-			count_download_queue--;
+			if(pdownload->scheduled_time != 0)
+				count_download_queue--;
 			cwmp_free_download_request(pdownload);
 			pthread_mutex_unlock (&mutex_download);
             continue;
@@ -1951,7 +1949,8 @@ int cwmp_scheduledDownload_remove_all()
 		download = list_entry(list_download.next,struct download, list);
 		list_del (&(download->list));
 		bkp_session_delete_download(download);
-		count_download_queue--;
+		if(download->scheduled_time != 0)
+			count_download_queue--;
 		cwmp_free_download_request(download);
 	}
 	pthread_mutex_unlock (&mutex_download);
@@ -2109,86 +2108,47 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 
 	if(error == FAULT_CPE_NO_FAULT)
 	{
-		if(download_delay == 0)
-		{
-			bkp_session_insert_download(download);
-			bkp_session_save();
-			error = cwmp_launch_download(download,&ptransfer_complete);
-			if(error != FAULT_CPE_NO_FAULT)
-			{
-				if(cwmp_root_cause_TransferComplete (&cwmp_main, ptransfer_complete) != CWMP_OK)
-				{
-					cwmp_free_download_request(download);
-					return -1;
-				}
-			}
-//			else
-//			{
-//				external_apply_download(download->file_type);
-//				external_fetch_downloadResp(&fault_code);
-//				if(fault_code != NULL)
-//				{
-//					if(strcmp(fault_code,"0") != 0)
-//					{
-//						for(i=0;i<__FAULT_CPE_MAX;i++)
-//						{
-//							if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
-//							{
-//								error = i;
-//								break;
-//							}
-//						}
-//					}
-//					free(fault_code);
-//					bkp_session_delete_transfer_complete(ptransfer_complete);
-//					ptransfer_complete->fault_code = atoi(fault_code);
-//					bkp_session_insert_transfer_complete(ptransfer_complete);
-//					bkp_session_save();
-//					cwmp_root_cause_TransferComplete (&cwmp_main,ptransfer_complete);
-//				}
-//			}
-			cwmp_free_download_request(download);
-		}
-		else
-		{
-			pthread_mutex_lock (&mutex_download);
+		pthread_mutex_lock (&mutex_download);
+		if(download_delay != 0)
 			scheduled_time = time(NULL) + download_delay;
 
-			list_for_each(ilist,&(list_download))
+		list_for_each(ilist,&(list_download))
+		{
+			idownload = list_entry(ilist,struct download, list);
+			if (idownload->scheduled_time == scheduled_time)
 			{
-				idownload = list_entry(ilist,struct download, list);
-				if (idownload->scheduled_time == scheduled_time)
-				{
-					pthread_mutex_unlock (&mutex_download);
-					return 0;
-				}
-				if (idownload->scheduled_time > scheduled_time)
-				{
-					cond_signal = true;
-					break;
-				}
+				pthread_mutex_unlock (&mutex_download);
+				return 0;
 			}
-			list_add (&(download->list), ilist->prev);
+			if (idownload->scheduled_time > scheduled_time)
+			{
+				cond_signal = true;
+				break;
+			}
+		}
+		list_add (&(download->list), ilist->prev);
+		if(download_delay != 0)
+		{
 			count_download_queue++;
 			download->scheduled_time	= scheduled_time;
-			bkp_session_insert_download(download);
-			bkp_session_save();
-			CWMP_LOG(INFO,"Download will start in %us",download_delay);
-			if (cond_signal)
+		}
+		bkp_session_insert_download(download);
+		bkp_session_save();
+		CWMP_LOG(INFO,"Download will start in %us",download_delay);
+		if (cond_signal)
+		{
+			pthread_cond_signal(&threshold_download);
+		}
+		pthread_mutex_unlock (&mutex_download);
+		if (!thread_download_is_working)
+		{
+			thread_download_is_working = true;
+			error = pthread_create(&download_thread, NULL, &thread_cwmp_rpc_cpe_download, (void *)&cwmp_main);
+			if (error<0)
 			{
-				pthread_cond_signal(&threshold_download);
-			}
-			pthread_mutex_unlock (&mutex_download);
-			if (!thread_download_is_working)
-			{
-				thread_download_is_working = true;
-				error = pthread_create(&download_thread, NULL, &thread_cwmp_rpc_cpe_download, (void *)&cwmp_main);
-				if (error<0)
-				{
-					CWMP_LOG(ERROR,"Error when creating the download thread!");
-					thread_download_is_working = false;
-					return -1;
-				}
+				CWMP_LOG(ERROR,"Error when creating the download thread!");
+				thread_download_is_working = false;
+				return -1;
 			}
 		}
 	}

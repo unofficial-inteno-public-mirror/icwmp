@@ -94,7 +94,7 @@ freecwmp_fault_output() {
 		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterAttributes '{"success": "'$success'", "fault_code": "'$fault_code'"}' 2> /dev/null
 		;;
 		*download)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 download '{"fault_code": "'$fault_code'"}' 2> /dev/null
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 downloadFault '{"fault_code": "'$fault_code'"}' 2> /dev/null
 		;;
 	esac
 }
@@ -430,7 +430,7 @@ freecwmp_execute_functions()
 
 freecwmp_check_image()
 {
-	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/freecwmp_download
+	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/firmware_upgrade_image
 	return $?
 }
 

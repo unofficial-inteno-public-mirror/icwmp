@@ -595,7 +595,8 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 		}
 	}
 	list_add (&(download_request->list), ilist->prev);
-	count_download_queue++;
+	if(download_request->scheduled_time != 0)
+		count_download_queue++;
 }
 
 void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)

@@ -19,9 +19,8 @@ DEFINE_boolean 'force' false 'force getting values for certain parameters' 'f'
 DEFINE_string 'url' '' 'file to download [download only]' 'u'
 DEFINE_string 'size' '' 'size of file to download [download only]' 's'
 DEFINE_string 'type' '' 'type of file to download [download only]' 't'
-DEFINE_string 'user' '' 'username for downloading file [download only]' 'a'
-DEFINE_string 'pass' '' 'password for downloading file [download only]' 'p'
-DEFINE_string 'delay' '' 'scheduled_time for downloading file [download only]' 'y'
+DEFINE_string 'user' '' 'username for downloading file [download only]' 'U'
+DEFINE_string 'pass' '' 'password for downloading file [download only]' 'P'
 
 FLAGS_HELP=`cat << EOF
 USAGE: $0 [flags] command [parameter] [values]
@@ -441,10 +440,6 @@ if [ "$action" = "download" ]; then
 					rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
 					mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
 					freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
-					if [ "${FLAGS_delay}" = "0" ];then
-						echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
-						ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
-					fi
 				fi
 			else
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
@@ -454,17 +449,9 @@ if [ "$action" = "download" ]; then
 		elif [ "${FLAGS_type}" = "2" ];then
 			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
-			if [ "${FLAGS_delay}" = "0" ];then
-				echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
-				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
-			fi
 		elif [ "${FLAGS_type}" = "3" ];then
 			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
-			if [ "${FLAGS_delay}" = "0" ];then
-				echo "/bin/sh /usr/sbin/freecwmp apply download --type ${FLAGS_type}" > /tmp/end_session.sh
-				ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' 2> /dev/null
-			fi
 		else
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 			freecwmp_fault_output "" "$fault_code"

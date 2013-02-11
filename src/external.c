@@ -57,13 +57,13 @@ inline void external_free_list_value_change()
 	parameter_container_delete_all(&external_list_value_change);
 }
 
-void external_downloadResp (char *fault_code)
+void external_downloadFaultResp (char *fault_code)
 {
 	FREE(external_MethodFault);
 	external_MethodFault = fault_code ? strdup(fault_code) : NULL;
 }
 
-void external_fetch_downloadResp (char **fault)
+void external_fetch_downloadFaultResp (char **fault)
 {
 	*fault = external_MethodFault;
 	external_MethodFault = NULL;
@@ -412,9 +412,8 @@ int external_simple(char *arg)
 	return 0;
 }
 
-int external_download(char *url, char *size, char *type, char *user, char *pass, time_t scheduled_time)
+int external_download(char *url, char *size, char *type, char *user, char *pass)
 {
-	char			delay[256];
 	CWMP_LOG(INFO,"executing download url '%s'", url);
 
 	if ((uproc.pid = fork()) == -1)
@@ -445,9 +444,6 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 			argv[i++] = "--pass";
 			argv[i++] = pass;
 		}
-		sprintf(delay,"%ld",scheduled_time);
-		argv[i++] = "--delay";
-		argv[i++] = delay;
 		argv[i++] = NULL;
 
 		execvp(argv[0], (char **) argv);

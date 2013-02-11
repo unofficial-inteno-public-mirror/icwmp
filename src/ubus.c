@@ -62,27 +62,27 @@ static enum download_fault {
 	__DOWNLOAD_MAX
 };
 
-static const struct blobmsg_policy download_policy[] = {
+static const struct blobmsg_policy download_fault_policy[] = {
 	[DOWNLOAD_FAULT] = { .name = "fault_code", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int
-freecwmpd_handle_download(struct ubus_context *ctx, struct ubus_object *obj,
+freecwmpd_handle_downloadFault(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
 			struct blob_attr *msg)
 {
 	int tmp;
 	struct blob_attr *tb[__DOWNLOAD_MAX];
 
-	blobmsg_parse(download_policy, ARRAY_SIZE(download_policy), tb,
+	blobmsg_parse(download_fault_policy, ARRAY_SIZE(download_fault_policy), tb,
 		      blob_data(msg), blob_len(msg));
 
 	if (!tb[DOWNLOAD_FAULT])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
-	CWMP_LOG(INFO,"triggered ubus download %s", blobmsg_data(tb[DOWNLOAD_FAULT]));
+	CWMP_LOG(INFO,"triggered ubus downloadFault %s", blobmsg_data(tb[DOWNLOAD_FAULT]));
 
-	external_downloadResp (blobmsg_data(tb[DOWNLOAD_FAULT]));
+	external_downloadFaultResp (blobmsg_data(tb[DOWNLOAD_FAULT]));
 
 	return 0;
 }
@@ -432,7 +432,7 @@ freecwmpd_handle_delObject(struct ubus_context *ctx, struct ubus_object *obj,
 
 static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("notify", freecwmpd_handle_notify, notify_policy),
-	UBUS_METHOD("download", freecwmpd_handle_download, download_policy),
+	UBUS_METHOD("downloadFault", freecwmpd_handle_downloadFault, download_fault_policy),
 	UBUS_METHOD("GetParameterValues", freecwmpd_handle_getParamValues, getParamValues_policy),
 	UBUS_METHOD("SetParameterValuesFault", freecwmpd_handle_setParamValuesFault, setParamValuesFault_policy),
 	UBUS_METHOD("SetParameterValuesStatus", freecwmpd_handle_setParamValuesStatus, setParamValuesStatus_policy),
