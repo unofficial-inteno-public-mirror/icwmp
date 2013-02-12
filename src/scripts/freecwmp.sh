@@ -494,7 +494,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 		# applying
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
 		if [ "$action" = "apply_value" ]; then 
-			ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 set_parameter_values_status '{ "status": "0" }' 2> /dev/null
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesStatus '{ "status": "0" }' 2> /dev/null
 		fi
 		if [ "$action" = "apply_notification" ]; then
 			freecwmp_fault_output "" "" "0"
