@@ -1779,9 +1779,9 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 
     if(fault_code != NULL)
     {
-    	if(strcmp(fault_code,"0") != 0)
+    	if(fault_code[0]=='9')
     	{
-			for(i=0;i<__FAULT_CPE_MAX;i++)
+			for(i=1;i<__FAULT_CPE_MAX;i++)
 			{
 				if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
 				{
@@ -1868,29 +1868,31 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		if(error != FAULT_CPE_NO_FAULT)
     		{
     			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
-    			return CWMP_OK;
     		}
-    		external_apply_download(pdownload->file_type);
-    		external_fetch_downloadFaultResp(&fault_code);
-    		if(fault_code != NULL)
+    		else
     		{
-    			if(strcmp(fault_code,"0") != 0)
+				external_apply_download(pdownload->file_type);
+				external_fetch_downloadFaultResp(&fault_code);
+				if(fault_code != NULL)
 				{
-					for(i=0;i<__FAULT_CPE_MAX;i++)
+					if(fault_code[0]=='9')
 					{
-						if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+						for(i=1;i<__FAULT_CPE_MAX;i++)
 						{
-							error = i;
-							break;
+							if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+							{
+								error = i;
+								break;
+							}
 						}
 					}
+					free(fault_code);
+					bkp_session_delete_transfer_complete(ptransfer_complete);
+					ptransfer_complete->fault_code = error;
+					bkp_session_insert_transfer_complete(ptransfer_complete);
+					bkp_session_save();
+					cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
 				}
-				free(fault_code);
-    			bkp_session_delete_transfer_complete(ptransfer_complete);
-    			ptransfer_complete->fault_code = error;
-    			bkp_session_insert_transfer_complete(ptransfer_complete);
-    			bkp_session_save();
-    			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
     		}
     		pthread_mutex_unlock (&(cwmp->mutex_session_send));
 			pthread_cond_signal (&(cwmp->threshold_session_send));
