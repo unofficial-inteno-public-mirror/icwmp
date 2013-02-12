@@ -192,6 +192,11 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 
 	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
+	if(http_code == 204)
+	{
+		CWMP_LOG (INFO,"Receive HTTP 204 No Content");
+	}
+
 	if (http_code != 200 && http_code != 204)
 		goto error;
 
