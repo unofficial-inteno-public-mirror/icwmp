@@ -33,7 +33,7 @@ wait_connection_acs() {
 		echo -e -n "" | nc $dest $port 2> /dev/null
 		result=$?
 		if [ $result -eq 1 ];then
-			i=`expr $i + 1`;echo -n $i;printf "\033[A" ;sleep 1
+			i=`expr $i + 1`;echo $i;printf "\033[A" ;sleep 1
 		fi
 	done
 }
