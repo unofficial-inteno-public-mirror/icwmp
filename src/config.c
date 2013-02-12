@@ -400,9 +400,26 @@ int get_global_config(struct config *conf)
         }
     }
 
+    if((error = uci_get_value(UCI_DHCP_ACS_URL_PATH,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (conf->dhcp_url_path!=NULL)
+            {
+                free(conf->dhcp_url_path);
+            }
+            conf->dhcp_url_path = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
+
     error 	= uci_get_value(UCI_DHCP_DISCOVERY_PATH,&value);
     error2 	= uci_get_state_value(UCI_ACS_URL_PATH,&value2);
-    error3 	= uci_get_state_value(UCI_DHCP_ACS_URL_PATH,&value3);
+    error3 	= uci_get_state_value(conf->dhcp_url_path,&value3);
 
     if ((((error == CWMP_OK) && (value != NULL) && (strcmp(value,"enable") == 0)) ||
 	   ((error2 == CWMP_OK) && ((value2 == NULL) || (value2[0] == 0)))) &&

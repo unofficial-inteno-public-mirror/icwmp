@@ -32,7 +32,7 @@
 
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
-#define UCI_DHCP_ACS_URL_PATH				"provisioning.iup.tr069url"
+#define UCI_DHCP_ACS_URL_PATH				"cwmp.acs.dhcp_url_path"
 #define UCI_ACS_URL_PATH					"cwmp.acs.url"
 #define UCI_PERIODIC_INFORM_INTERVAL_PATH	"cwmp.acs.periodic_inform_interval"
 #define UCI_PERIODIC_INFORM_ENABLE_PATH		"cwmp.acs.periodic_inform_enable"
@@ -129,6 +129,7 @@ typedef struct config {
     char                                *acs_passwd;
     char                                *cpe_userid;
     char                                *cpe_passwd;
+    char                                *dhcp_url_path;
     char								*ip;
     char								*interface;
     char                                *ubus_socket;

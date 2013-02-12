@@ -4,14 +4,15 @@
 START=99
 STOP=40
 
-EXTRA_HELP="        start [GetRPCMethods] Start cwmpd service and send GetRPCMethods"
+EXTRA_HELP="		start [GetRPCMethods] Start cwmpd service and send GetRPCMethods"
 
 wait_connection_acs() {
 	default_acs="http://192.168.1.1:8080/openacs/acs"
 	acs_dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
 	url=`uci -q get cwmp.acs.url`
+	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
-		url=`uci -P /var/state -q get provisioning.iup.tr069url`
+		url=`uci -P /var/state -q get $dhcp_url_path`
 	elif [ "_$url" != "_" ];then
 		url=`uci -q get cwmp.acs.url`
 	else
@@ -27,36 +28,37 @@ wait_connection_acs() {
 
 	i=0
 	result=1
-	until [ \( $result -eq 0 \) -o \( $i -eq 20 \) ];do
-	   echo -e -n "" | nc $dest $port
-	   result=$?
-	   if [ $result -eq 1 ];then
-	   	   i=`expr $i + 1`
-		   sleep 5
-	   fi
+	echo "binding acs url"
+	until [ \( $result -eq 0 \) -o \( $i -eq 100 \) ];do
+		echo -e -n "" | nc $dest $port 2> /dev/null
+		result=$?
+		if [ $result -eq 1 ];then
+			i=`expr $i + 1`;echo -n $i;printf "\033[A" ;sleep 1
+		fi
 	done
 }
 
 check_dhcp() {
-    i=0
-    dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
+	i=0
+	dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
 	url=`uci -q get cwmp.acs.url`
-    if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ]
-    then
-        while [ $i -le 10 ]
-        do
-            acs_url=`uci -P /var/state -q get provisioning.iup.tr069url`
-            if [ "$acs_url" != "" ]
-            then
-                echo "The acs url discovery from dhcp server is successfully done."
-                break
-            else
-                echo "Waiting for discovery of acs url from dhcp server ..."
-                sleep 10
-            fi
-            i=`expr $i + 1`
-        done
-    fi
+	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
+	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ]
+	then
+		while [ $i -le 10 ]
+		do
+			acs_url=`uci -P /var/state -q get $dhcp_url_path`
+			if [ "$acs_url" != "" ]
+			then
+				echo "The acs url discovery from dhcp server is successfully done."
+				break
+			else
+				echo "Waiting for discovery of acs url from dhcp server ..."
+				sleep 10
+			fi
+			i=`expr $i + 1`
+		done
+	fi
 }
 
 start_msg="Start cwmpd ..."
@@ -76,39 +78,39 @@ run() {
 }
 
 boot() {
-    run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
-    if [ "$run" = "" ];then
-        run "boot"
-    else
-        echo "cwmpd is currently running ..."
-    fi
+	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
+	if [ "$run" = "" ];then
+		run "boot"
+	else
+		echo "cwmpd is currently running ..."
+	fi
 }
 
 start() {
-    run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
-    if [ "$run" = "" ]
-    then
-        if [ "$1" = "GetRPCMethods" ];then
+	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
+	if [ "$run" = "" ]
+	then
+		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
-        else
-            run
-        fi
-    else
-        echo "cwmpd is currently running ..."
-    fi
+		else
+			run
+		fi
+	else
+		echo "cwmpd is currently running ..."
+	fi
 }
 
 stop() {
-    echo $stop_msg;printf "\033[A" ;sleep 1
-    for pid in `ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
-    do
-        if [ "_$pid" != "_" ];then
-            /bin/kill -9 $pid 2> /dev/null
-        fi
-    done
+	echo $stop_msg;printf "\033[A" ;sleep 1
+	for pid in `ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`
+	do
+		if [ "_$pid" != "_" ];then
+			/bin/kill -9 $pid 2> /dev/null
+		fi
+	done
 }
 
 restart() {
-    stop
-    start
+	stop
+	start
 }

@@ -6,6 +6,7 @@ config 'cwmp' 'acs'
 	option 'periodic_inform_interval' '1800'
 	option 'ParameterKey' ''
 	option 'dhcp_discovery' 'disable'
+	option 'dhcp_url_path' 'provisioning.iup.tr069url'
 
 config 'cwmp' 'cpe'
 	option 'interface' 'br-lan'
