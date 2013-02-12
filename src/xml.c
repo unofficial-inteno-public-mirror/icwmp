@@ -1868,6 +1868,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		if(error != FAULT_CPE_NO_FAULT)
     		{
     			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+    			return CWMP_OK;
     		}
     		external_apply_download(pdownload->file_type);
     		external_fetch_downloadFaultResp(&fault_code);
@@ -1963,8 +1964,8 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t 				*n, *t, *b = session->body_in;
 	pthread_t           		download_thread;
-	char 						*c/*, *fault_code*/, *tmp, *file_type = NULL;
-	int							/*i,*/error = FAULT_CPE_NO_FAULT;
+	char 						*c, *tmp, *file_type = NULL;
+	int							error = FAULT_CPE_NO_FAULT;
 	struct download 			*download,*idownload;
 	struct transfer_complete 	*ptransfer_complete;
 	struct list_head    		*ilist;

@@ -228,7 +228,10 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
 		if (xml_send_message(cwmp, session, NULL))
 			goto retry;
 		if (!session->tree_in)
+		{
+			CWMP_LOG (INFO,"Receive HTTP 204 No Content");
 			goto success;
+		}
 
 		if (xml_handle_message(session))
 			goto retry;
