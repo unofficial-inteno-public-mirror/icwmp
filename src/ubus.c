@@ -22,7 +22,7 @@
 static struct ubus_context *ctx = NULL;
 static struct blob_buf b;
 
-static enum notify {
+enum notify {
 	NOTIFY_PARAM,
 	NOTIFY_VALUE,
 	NOTIFY_TYPE,
@@ -57,7 +57,7 @@ freecwmpd_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
-static enum download_fault {
+enum download_fault {
 	DOWNLOAD_FAULT,
 	__DOWNLOAD_MAX
 };
@@ -87,7 +87,7 @@ freecwmpd_handle_downloadFault(struct ubus_context *ctx, struct ubus_object *obj
 	return 0;
 }
 
-static enum command {
+enum command {
 	COMMAND_NAME,
 	__COMMAND_MAX
 };
@@ -154,7 +154,7 @@ freecwmpd_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
-static enum getParamValues {
+enum getParamValues {
 	GETPARAMVALUES_PARAM,
 	GETPARAMVALUES_VALUE,
 	GETPARAMVALUES_TYPE,
@@ -195,7 +195,7 @@ freecwmpd_handle_getParamValues(struct ubus_context *ctx, struct ubus_object *ob
 	return 0;
 }
 
-static enum getParamNames {
+enum getParamNames {
 	GETPARAMNAMES_PARAM,
 	GETPARAMNAMES_WRITABLE,
 	GETPARAMNAMES_FAULT,
@@ -234,7 +234,7 @@ freecwmpd_handle_getParamNames(struct ubus_context *ctx, struct ubus_object *obj
 	return 0;
 }
 
-static enum getParamAttributes {
+enum getParamAttributes {
 	GETPARAMATTRIBUTES_PARAM,
 	GETPARAMATTRIBUTES_NOTIF,
 	GETPARAMATTRIBUTES_FAULT,
@@ -274,7 +274,7 @@ freecwmpd_handle_getParamAttributes(struct ubus_context *ctx, struct ubus_object
 	return 0;
 }
 
-static enum setParamAttributes {
+enum setParamAttributes {
 	SETPARAMATTRIBUTES_SUCCESS,
 	SETPARAMATTRIBUTES_FAULT,
 	__SETPARAMATTRIBUTES_MAX
@@ -303,7 +303,7 @@ freecwmpd_handle_setParamAttributes(struct ubus_context *ctx, struct ubus_object
 	return 0;
 }
 
-static enum setParamValuesFault {
+enum setParamValuesFault {
 	SETPARAMVALUESFAULT_PARAM,
 	SETPARAMVALUESFAULT__FAULT,
 	__SETPARAMVALUESFAULT_MAX
@@ -343,7 +343,7 @@ freecwmpd_handle_setParamValuesFault(struct ubus_context *ctx, struct ubus_objec
 	return 0;
 }
 
-static enum setParamValuesStatus {
+enum setParamValuesStatus {
 	SETPARAMVALUESSTATUS_STATUS,
 	__SETPARAMVALUESSTATUS_MAX
 };
@@ -373,7 +373,7 @@ freecwmpd_handle_setParamValuesStatus(struct ubus_context *ctx, struct ubus_obje
 	return 0;
 }
 
-static enum addObject {
+enum addObject {
 	ADDOBJECT_INSTANCE,
 	ADDOBJECT_STATUS,
 	ADDOBJECT_FAULT,
@@ -402,7 +402,7 @@ freecwmpd_handle_addObject(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
-static enum delObject {
+enum delObject {
 	DELOBJECT_STATUS,
 	DELOBJECT_FAULT,
 	__DELOBJECT_MAX
