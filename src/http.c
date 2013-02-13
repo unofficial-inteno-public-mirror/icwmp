@@ -381,7 +381,8 @@ http_end_child:
 			fflush(fp);
 			if (auth_status) {
 				status = 0;
-				fputs("HTTP/1.1 204 No Content\r\n\r\n", fp);
+				fputs("HTTP/1.1 200 OK\r\n", fp);
+				fputs("Content-Length: 0\r\n\r\n", fp);
 			} else {
 				status = EACCES;
 				fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
