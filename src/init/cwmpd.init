@@ -6,36 +6,41 @@ STOP=40
 
 EXTRA_HELP="		start [GetRPCMethods] Start cwmpd service and send GetRPCMethods"
 
-wait_connection_acs() {
+check_url_format() {
+	# SCHEMA_LIST: contain list of possible schemas that could be present in the acs url
+	# Example: SCHEMA_LIST="http https"
+	SCHEMA_LIST="http"
+	
+	for schema in $SCHEMA_LIST;	do
+		dest=`echo $1|sed 's/$schema:\/\///g'|cut -f1 -d \/|cut -f1 -d:`
+		if [ "_$dest" != "_" ]; then
+			return 0
+		fi
+	done
+	return 1
+}
+
+check_acs_url() {
 	default_acs="http://192.168.1.1:8080/openacs/acs"
 	acs_dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
 	url=`uci -q get cwmp.acs.url`
 	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
 		url=`uci -P /var/state -q get $dhcp_url_path`
+		echo "ACS URL from dhcp: $url"
 	elif [ "_$url" != "_" ];then
 		url=`uci -q get cwmp.acs.url`
+		echo "ACS URL from configuration: $url"
 	else
 		url=$default_acs
+		echo "Using default ACS URL: $url"
 	fi
 	
-	dest=`echo $url|sed 's/http:\/\///g'|cut -f1 -d \/|cut -f1 -d:`
-	port=`echo $url|sed 's/http:\/\///g'|cut -f1 -d \/|cut -f2 -d:`
-	
-	if [ "_$port" = "_" ];then
-		port=80
+	check_url_format $url
+	if [ "$?" != "0" ];then
+		echo "Invalid ACS URL: $url"
+		exit 1
 	fi
-
-	i=0
-	result=1
-	echo "binding acs url"
-	until [ \( $result -eq 0 \) -o \( $i -eq 100 \) ];do
-		echo -e -n "" | nc $dest $port 2> /dev/null
-		result=$?
-		if [ $result -eq 1 ];then
-			i=`expr $i + 1`;echo $i;printf "\033[A" ;sleep 1
-		fi
-	done
 }
 
 check_dhcp() {
@@ -50,7 +55,6 @@ check_dhcp() {
 			acs_url=`uci -P /var/state -q get $dhcp_url_path`
 			if [ "$acs_url" != "" ]
 			then
-				echo "The acs url discovery from dhcp server is successfully done."
 				break
 			else
 				echo "Waiting for discovery of acs url from dhcp server ..."
@@ -67,7 +71,7 @@ stop_msg="Stop cwmpd ..."
 run() {
 	echo $start_msg;printf "\033[A" ;sleep 1
 	check_dhcp
-	wait_connection_acs
+	check_acs_url
 	if [ "_$1" = "_boot" ];then
 		opt=$opt"-b "
 	fi
