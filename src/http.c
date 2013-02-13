@@ -162,6 +162,8 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	curl_easy_setopt(curl, CURLOPT_PASSWORD, cwmp->conf.acs_passwd);
 	curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC|CURLAUTH_DIGEST);
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_c.header_list);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, HTTP_TIMEOUT);
 
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, msg_out);
 	if (msg_out)

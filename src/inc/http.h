@@ -28,6 +28,8 @@ static char *fc_cookies = "./ext/tmp/freecwmp_cookies";
 static char *fc_cookies = "/tmp/freecwmp_cookies";
 #endif
 
+#define HTTP_TIMEOUT 30
+
 struct http_client
 {
 #ifdef HTTP_CURL
