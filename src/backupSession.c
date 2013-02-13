@@ -64,7 +64,7 @@ mxml_node_t *bkp_session_node_found(mxml_node_t *tree, char *name, struct search
 				{
 					d = c;
 					d = mxmlWalkNext(d, c, MXML_DESCEND);
-					if(d->type == MXML_TEXT && strcmp(keys[i].value, d->value.text.string) == 0)
+					if((keys[i].value == NULL)||(d && d->type == MXML_TEXT && keys[i].value != NULL && strcmp(keys[i].value, d->value.text.string) == 0))
 						i++;
 				}
 				c = mxmlWalkNext(c, b, MXML_NO_DESCEND);
@@ -454,7 +454,7 @@ void load_schedule_inform(mxml_node_t *tree,struct cwmp *cwmp)
 			if (strcmp(b->value.element.name, "command_key") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -465,7 +465,7 @@ void load_schedule_inform(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "time") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -509,7 +509,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			if (strcmp(b->value.element.name, "url") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -520,7 +520,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "command_key") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -531,7 +531,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "file_type") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -542,7 +542,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "username") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -553,7 +553,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "password") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -564,7 +564,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "file_size") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -575,7 +575,7 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name, "time") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -613,7 +613,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 			if (strcmp(b->value.element.name,"command_key") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -624,7 +624,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name,"start_time") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -635,7 +635,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name,"complete_time") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
@@ -646,7 +646,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 			else if (strcmp(b->value.element.name,"fault_code") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
-				if (c->type == MXML_TEXT)
+				if (c && c->type == MXML_TEXT)
 				{
 					if(c->value.text.string != NULL)
 					{
