@@ -483,7 +483,7 @@ if [ "$action" = "reboot" ]; then
 		echo "# reboot"
 	else
 		sync
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2> /dev/null
+		reboot
 	fi
 fi
 
