@@ -1521,7 +1521,7 @@ int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc)
 	struct event_container  *event_container;
 	char *command_key;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: SetParameterValuesResponse");
+	CWMP_LOG (INFO,"Prepare the RPC response message: RebootResponse");
 	b = session->body_in;
 
 	while (b) {
@@ -1550,8 +1550,7 @@ int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc)
 	b = mxmlNewElement(b, "cwmp:RebootResponse");
 	if (!b) goto fault;
 
-	if (external_simple("reboot"))
-		goto fault;
+	cwmp_set_end_session(END_SESSION_REBOOT);
 
 	return 0;
 
