@@ -474,7 +474,7 @@ if [ "$action" = "factory_reset" ]; then
 	else
 		jffs2_mark_erase "rootfs_data"
 		sync
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2> /dev/null
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2>&1 > /dev/null
 	fi
 fi
 
