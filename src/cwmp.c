@@ -374,7 +374,8 @@ int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *sessi
 
 void cwmp_set_end_session (unsigned int end_session_flag)
 {
-	cwmp_main.session_send->end_session |= end_session_flag;
+	if (cwmp_main.session_send)
+		cwmp_main.session_send->end_session |= end_session_flag;
 }
 
 int cwmp_session_destructor (struct cwmp *cwmp, struct session *session)
@@ -434,7 +435,10 @@ int run_session_end_func (struct session *session)
 		external_simple("end_session");
 
 	if (session->end_session & END_SESSION_REBOOT)
+	{
 		external_simple("reboot");
+		exit(EXIT_SUCCESS);
+	}
 
 	if (session->end_session & END_SESSION_RELOAD)
 		cwmp_apply_acs_changes();
