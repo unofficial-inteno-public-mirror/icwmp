@@ -23,8 +23,6 @@
 #include <libubox/uloop.h>
 #include <libubox/usock.h>
 
-#define HTTP_CURL 1/* TODO KMD to be removed */
-
 #ifdef HTTP_CURL
 #include <curl/curl.h>
 #endif
