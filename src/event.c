@@ -378,6 +378,39 @@ int cwmp_root_cause_event_periodic (struct cwmp *cwmp)
     return CWMP_OK;
 }
 
+void connection_request_ip_value_change(struct cwmp *cwmp)
+{
+	char *bip = NULL;
+	struct event_container *event_container;
+	int error;
+
+	error   = cwmp_load_saved_session(cwmp, &bip, CR_IP);
+
+	if(bip == NULL)
+	{
+		bkp_session_simple_insert("connection_request", "ip", cwmp->conf.ip);
+		bkp_session_save();
+		return;
+	}
+	if (strcmp(bip, cwmp->conf.ip)!=0)
+	{
+		pthread_mutex_lock (&(cwmp->mutex_session_queue));
+		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
+		if (event_container == NULL)
+		{
+			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+			return;
+		}
+		parameter_container_add(&(event_container->head_parameter_container),
+				"InternetGatewayDevice.ManagementServer.ConnectionRequestURL", NULL, NULL, NULL);
+		cwmp_save_event_container (cwmp,event_container);
+		bkp_session_simple_insert("connection_request", "ip", cwmp->conf.ip);
+		bkp_session_save();
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		pthread_cond_signal(&(cwmp->threshold_session_send));
+	}
+}
+
 int cwmp_root_cause_events (struct cwmp *cwmp)
 {
     int                     error;

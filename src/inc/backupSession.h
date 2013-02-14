@@ -29,7 +29,8 @@
 
 typedef enum backup_loading {
     ALL,
-    ACS
+    ACS,
+    CR_IP
 } backup_loading;
 
 struct search_keywords {
@@ -42,7 +43,7 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loadin
 mxml_node_t *bkp_session_insert_event(int index, char *command_key, int id, char *status);
 void bkp_session_delete_event(int id, char *status);
 void bkp_session_insert_parameter(mxml_node_t *b, char *name);
-void bkp_session_insert_acs(char *value);
+void bkp_session_simple_insert(char *parent, char *child, char *value);
 void bkp_session_move_inform_to_inform_send ();
 void bkp_session_move_inform_to_inform_queue ();
 void bkp_session_insert_schedule_inform(time_t schedule_time,char *command_key);

@@ -130,17 +130,16 @@ void bkp_session_insert_parameter(mxml_node_t *b, char *name)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
-void bkp_session_insert_acs(char *value)
+void bkp_session_simple_insert(char *parent, char *child, char *value)
 {
 	mxml_node_t *b = bkp_tree;
-	struct search_keywords *key;
 
 	pthread_mutex_lock (&mutex_backup_session);
-	b = mxmlFindElement(b, b, "acs", NULL, NULL, MXML_DESCEND);
+	b = mxmlFindElement(b, b, parent, NULL, NULL, MXML_DESCEND);
 	if(b)
 		mxmlDelete(b);
-	b = bkp_session_insert(bkp_tree, "acs",NULL);
-	bkp_session_insert(b,"url",value);
+	b = bkp_session_insert(bkp_tree, parent,NULL);
+	bkp_session_insert(b,child,value);
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
@@ -341,26 +340,26 @@ void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_co
 /*
  * Load backup session
  */
-char *load_acs_url(mxml_node_t *tree)
+char *load_child_value(mxml_node_t *tree, char *sub_name)
 {
-	char		*acs_url = NULL;
+	char		*value = NULL;
 	mxml_node_t	*b = tree;
 
 	if (b) {
 		b = mxmlWalkNext(b, tree, MXML_DESCEND);
-		if (b && b->type == MXML_ELEMENT && strcmp(b->value.element.name, "url") == 0) {
+		if (b && b->type == MXML_ELEMENT && strcmp(b->value.element.name, sub_name) == 0) {
 			b = mxmlWalkNext(b, tree, MXML_DESCEND);
 			if (b && b->type == MXML_TEXT)
 			{
 				if(b->value.text.string != NULL)
 				{
-					acs_url = strdup(b->value.text.string);
+					value = strdup(b->value.text.string);
 				}
 			}
 		}
 	}
 
-	return acs_url;
+	return value;
 }
 
 void load_queue_event(mxml_node_t *tree,struct cwmp *cwmp)
@@ -660,9 +659,8 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 	cwmp_root_cause_TransferComplete (cwmp, ptransfer_complete);
 }
 
-int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loading load)
+int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading load)
 {
-	char		*acs_url = NULL;
 	FILE		*pFile;
 	mxml_node_t *b;
 
@@ -694,15 +692,18 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loadin
 	b = mxmlWalkNext(b, bkp_tree, MXML_DESCEND);
 	while(b)
 	{
-		if(load == ALL || load == ACS)
+		if(load == ACS)
 		{
 			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "acs") == 0)
 			{
-				acs_url = load_acs_url(b);
-				if(acsurl != NULL)
-				{
-					*acsurl = acs_url;
-				}
+				*ret = load_child_value(b, "url");
+			}
+		}
+		if(load == CR_IP)
+		{
+			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
+			{
+				*ret = load_child_value(b, "ip");
 			}
 		}
 		if(load == ALL)

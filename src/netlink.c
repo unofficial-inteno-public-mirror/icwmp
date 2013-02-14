@@ -85,6 +85,7 @@ static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 			uci_set_state_value(c);
 			free(c);
 		}
+		connection_request_ip_value_change(&cwmp_main);
 		break;
 	}
 

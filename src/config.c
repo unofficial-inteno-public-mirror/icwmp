@@ -692,21 +692,11 @@ int global_conf_init (struct config *conf)
 
 int save_acs_bkp_config(struct cwmp *cwmp)
 {
-    int             error;
-    char            *acsurl = NULL;
     struct config   *conf;
 
     conf = &(cwmp->conf);
-    error = cwmp_load_saved_session(cwmp, &acsurl, ACS);
-    if((acsurl == NULL)||(acsurl != NULL && strcmp(acsurl,conf->acsurl) != 0))
-    {
-    	bkp_session_insert_acs(conf->acsurl);
-    	bkp_session_save();
-        if(acsurl != NULL)
-        {
-            free(acsurl);
-        }
-    }
+	bkp_session_simple_insert("acs", "url", conf->acsurl);
+	bkp_session_save();
     return CWMP_OK;
 }
 
