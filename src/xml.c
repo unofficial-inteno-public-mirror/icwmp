@@ -1808,8 +1808,6 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 	}
 
 	bkp_session_insert_transfer_complete(p);
-	bkp_session_save();
-
 	*ptransfer_complete = p;
 
     return error;
@@ -1850,7 +1848,6 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 				ptransfer_complete->fault_code		= error;
 
 				bkp_session_insert_transfer_complete(ptransfer_complete);
-
 				cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
 			}
 			list_del (&(pdownload->list));
@@ -1867,9 +1864,11 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		if(error != FAULT_CPE_NO_FAULT)
     		{
     			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+    			bkp_session_delete_transfer_complete(ptransfer_complete);
     		}
     		else
     		{
+				bkp_session_save();
 				external_apply_download(pdownload->file_type);
 				external_fetch_downloadFaultResp(&fault_code);
 				if(fault_code != NULL)
