@@ -333,7 +333,7 @@ if [ "$action" = "set_notification" ]; then
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$fault_code" = "0" ]; then
-		freecwmp_execute_functions "$set_notification_functions" "$__parm" "$__arg2"
+		freecwmp_execute_functions "$set_notification_functions" "$__arg1" "$__arg2"
 		fault_code="$?"
 	fi
 	if [ "$fault_code" != "0" ]; then
