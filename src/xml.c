@@ -429,11 +429,14 @@ static int xml_prepare_parameters_inform(struct parameter_container *parameter_c
 	b = mxmlFindElementText(parameter_list, parameter_list, parameter_container->name, MXML_DESCEND);
 	if(b && parameter_container->data != NULL)
 	{
-		b = mxmlWalkNext(b, b, MXML_NO_DESCEND);
-		if(!b) return -1;
-		node = b->parent;
+		node = b->parent->parent;
+		b = mxmlFindElement(node, node, "Value", NULL, NULL, MXML_DESCEND_FIRST);
+		if(!b) return 0;
+		if (b->child && strcmp(parameter_container->data, b->child->value.text.string)==0)
+			return 0;
 		mxmlDelete(b);
 		(*size)--;
+
 		goto create_value;
 	}
 	else if (b && parameter_container->data == NULL)
@@ -442,11 +445,9 @@ static int xml_prepare_parameters_inform(struct parameter_container *parameter_c
 	}
 	else if (!b && parameter_container->data == NULL)
 	{
-		if (external_get_action_write("value", parameter_container->name, NULL))
-			return -1;
+		external_get_action_write("value", parameter_container->name, NULL);
 		return 0;
 	}
-
 	node = mxmlNewElement (parameter_list, "ParameterValueStruct");
 	if (!node) return -1;
 
@@ -467,7 +468,6 @@ create_value:
 	if (!b) return -1;
 
 	(*size)++;
-
 	return 0;
 }
 
@@ -521,10 +521,13 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 		}
 		parameter_container_delete(parameter_container);
 	}
+
 	if (xml_prepare_events_inform(session, tree))
 		goto error;
+
 	b = mxmlFindElement(tree, tree, "CurrentTime", NULL, NULL, MXML_DESCEND);
 	if (!b) goto error;
+
 	b = mxmlNewText(b, 0, mix_get_time());
 	if (!b) goto error;
 
@@ -533,7 +536,7 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 
     list_for_each(ilist, &(session->head_event_container))
     {
-        event_container = list_entry(ilist, struct event_container, list);
+    	event_container = list_entry(ilist, struct event_container, list);
         list_for_each(jlist, &(event_container->head_parameter_container))
         {
         	parameter_container = list_entry(jlist, struct parameter_container, list);
@@ -542,8 +545,8 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
         }
     }
 
-    if (external_get_action_execute()) return -1;
-    if (external_simple("inform")) return -1;
+    external_get_action_execute();
+    external_simple("inform");
 
     while (external_list_parameter.next!=&external_list_parameter) {
 
