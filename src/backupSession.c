@@ -697,6 +697,7 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "acs") == 0)
 			{
 				*ret = load_child_value(b, "url");
+				break;
 			}
 		}
 		if(load == CR_IP)
@@ -704,6 +705,7 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
 			{
 				*ret = load_child_value(b, "ip");
+				break;
 			}
 		}
 		if(load == ALL)
