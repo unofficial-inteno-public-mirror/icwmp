@@ -50,6 +50,7 @@ case "$1" in
 		if [ "$2" = "notification" ]; then
 			__arg1="$3"
 			__arg2="$4"
+			__arg3="$5"
 			action="set_notification"
 		elif [ "$2" = "tag" ]; then
 			__arg1="$3"
@@ -332,9 +333,11 @@ if [ "$action" = "set_notification" ]; then
 	fi
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
-	if [ "$fault_code" = "0" ]; then
-		freecwmp_execute_functions "$set_notification_functions" "$__arg1" "$__arg2"
-		fault_code="$?"
+	if [ "$__arg3" != "0" ];then
+		if [ "$fault_code" = "0" ]; then
+			freecwmp_execute_functions "$set_notification_functions" "$__arg1" "$__arg2"
+			fault_code="$?"
+		fi
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
