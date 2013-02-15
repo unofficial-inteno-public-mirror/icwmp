@@ -1504,6 +1504,8 @@ int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc)
 	if (external_simple("factory_reset"))
 		goto fault;
 
+	return 0;
+
 fault:
 	if (cwmp_create_fault_message(session, rpc, FAULT_CPE_INTERNAL_ERROR))
 		goto error;
@@ -2157,6 +2159,7 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 	}
 
 	return 0;
+
 fault:
 	if (cwmp_create_fault_message(session, rpc, error))
 		goto error;
