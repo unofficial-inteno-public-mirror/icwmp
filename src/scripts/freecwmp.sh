@@ -10,7 +10,7 @@
 # define a 'name' command-line string flag
 DEFINE_boolean 'newline' false 'do not output the trailing newline' 'n'
 DEFINE_boolean 'value' false 'output values only' 'v'
-DEFINE_boolean 'ubus' false 'send values using ubus' 'b'
+DEFINE_boolean 'json' false 'send values using ubus' 'j'
 DEFINE_boolean 'empty' false 'output empty parameters' 'e'
 DEFINE_boolean 'last' false 'output only last line ; for parameters that tend to have huge output' 'l'
 DEFINE_boolean 'debug' false 'give debug output' 'd'
@@ -496,12 +496,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 	if [ "$__fault_count" = "0" ]; then
 		# applying
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
-		if [ "$action" = "apply_value" ]; then 
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesStatus '{ "status": "0" }' 2> /dev/null
-		fi
-		if [ "$action" = "apply_notification" ]; then
-			freecwmp_fault_output "" "" "0"
-		fi
+		freecwmp_output "" "" "" "" "" "0"
 	else
 		let n=$__fault_count-1
 		for i in `seq 0 $n`

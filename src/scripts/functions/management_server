@@ -25,11 +25,12 @@ freecwmp_output "$parm" "$val" "$permissions"
 
 set_management_server_url() {
 local parm="InternetGatewayDevice.ManagementServer.URL"
+local type="xsd:string"
 case "$action" in
 	set_value)
 	local url=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.url="$val"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 inform '{ "event": "value_change" }' &
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > dev/null &
 	;;
 	set_notification)
 	local val=$1
@@ -123,11 +124,12 @@ freecwmp_output "$parm" "$val" "$permissions"
 
 set_management_server_parameter_key() {
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
+local type="xsd:string"
 case "$action" in
 	set_value)
 	local val=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 inform '{ "event": "value_change" }' &
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > dev/null
 	;;
 	set_notification)
 	local val=$1
@@ -209,12 +211,12 @@ case "$action" in
 	if [ -z "$default_management_server_connection_request_url" ]; then
 		local tmp_value=${FLAGS_value}
 		FLAGS_value=${FLAGS_TRUE}
-		local tmp_ubus=${FLAGS_ubus}
-		FLAGS_ubus=${FLAGS_FALSE}
+		local tmp_json=${FLAGS_json}
+		FLAGS_json=${FLAGS_FALSE}
 		local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.cpe.ip`
 		local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.port`
 		FLAGS_value=$tmp_value
-		FLAGS_ubus=$tmp_ubus
+		FLAGS_json=$tmp_json
 	
 		if [ -n "$ip" -a -n "$port" ]; then
 			val="http://$ip:$port/"

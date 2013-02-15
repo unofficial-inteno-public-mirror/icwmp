@@ -35,7 +35,7 @@ freecwmp_output() {
 		fi
 	fi
 	
-	if [ "$FLAGS_ubus" = "${FLAGS_TRUE}" ]; then
+	if [ "$FLAGS_json" = "${FLAGS_TRUE}" ]; then
 		local parameter="$1"
 		local value="$2"
 		local permissions="$3"
@@ -44,12 +44,13 @@ freecwmp_output() {
 		local status="$6"
 		local instance="$7"
 		
-		freecwmp_ubus_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance"
+		echo `freecwmp_json_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance"`
 	fi
 }
 
-freecwmp_ubus_output() {
+freecwmp_json_output() {
 
+	local MSG=""
 	local parameter="$1"
 	local value="$2"
 	local permissions="$3"
@@ -61,90 +62,139 @@ freecwmp_ubus_output() {
 	if [ "$type" = "" ]; then
 		type="xsd:string"
 	fi
-
+		
 	case "$action" in
 		get_value)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterValues '{ "parameter": "'$parameter'", "value": "'$value'", "type": "'$type'", "fault_code":"'$fault_code'" }' 2> /dev/null
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "value" "$value"
+		json_add_string "type" "$type"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		get_name)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterNames '{ "parameter": "'$parameter'", "writable": "'$permissions'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "writable" "$permissions"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		get_notification)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 GetParameterAttributes '{ "parameter": "'$parameter'", "notification": "'$value'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "notification" "$value"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		add_object)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 AddObject '{"instance":"'$instance'", "status":"'$status'", "fault_code":"'$fault_code'"}' 2> /dev/null
+		json_init
+		json_add_string "instance" "$instance"
+		json_add_string "status" "$status"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		delete_object)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 DelObject '{ "status": "'$status'", "fault_code": "'$fault_code'" }' 2> /dev/null
+		json_init
+		json_add_string "status" "$status"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
+		;;
+		apply_value|\
+		apply_notification)
+		json_init
+		json_add_string "status" "$status"
+		json_close_object
+		MSG=`json_dump`
 		;;
 	esac
+	
+	echo "$MSG"
 }
 
 freecwmp_fault_output() {
+	
+	local MSG=""
 	local parameter="$1"
 	local fault_code="$2"
 	local success="$3"
 
 	case "$action" in
 		apply_value)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterValuesFault '{"parameter": "'$parameter'", "fault_code": "'$fault_code'"}' 2> /dev/null
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		apply_notification)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 SetParameterAttributes '{"success": "'$success'", "fault_code": "'$fault_code'"}' 2> /dev/null
+		json_init
+		json_add_string "success" "$success"
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 		*download)
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 downloadFault '{"fault_code": "'$fault_code'"}' 2> /dev/null
+		json_init
+		json_add_string "fault_code" "$fault_code"
+		json_close_object
+		MSG=`json_dump`
 		;;
 	esac
+	
+	echo "$MSG"
 }
 
 freecwmp_value_output() {
 	local tmp_value=${FLAGS_value}
 	FLAGS_value=${FLAGS_TRUE}
-	local tmp_ubus=${FLAGS_ubus}
-	FLAGS_ubus=${FLAGS_FALSE}
+	local tmp_json=${FLAGS_json}
+	FLAGS_json=${FLAGS_FALSE}
 	
 	freecwmp_output "$1" "$2" "V"
 	
 	FLAGS_value=$tmp_value
-	FLAGS_ubus=$tmp_ubus
+	FLAGS_json=$tmp_json
 }
 
 freecwmp_notification_output() {
 	local tmp_value=${FLAGS_value}
 	FLAGS_value=${FLAGS_TRUE}
-	local tmp_ubus=${FLAGS_ubus}
-	FLAGS_ubus=${FLAGS_FALSE}
+	local tmp_json=${FLAGS_json}
+	FLAGS_json=${FLAGS_FALSE}
 
 	freecwmp_output "$1" "$2" "N"
 	
 	FLAGS_value=$tmp_value
-	FLAGS_ubus=$tmp_ubus
+	FLAGS_json=$tmp_json
 }
 
 freecwmp_tags_output() {
 	local tmp_value=${FLAGS_value}
 	FLAGS_value=${FLAGS_TRUE}
-	local tmp_ubus=${FLAGS_ubus}
-	FLAGS_ubus=${FLAGS_FALSE}
+	local tmp_json=${FLAGS_json}
+	FLAGS_json=${FLAGS_FALSE}
 	
 	freecwmp_output "$1" "$2" "T"
 	
 	FLAGS_value=$tmp_value
-	FLAGS_ubus=$tmp_ubus
+	FLAGS_json=$tmp_json
 }
 
 freecwmp_not_implemented() {
 	local tmp_value=${FLAGS_value}
 	FLAGS_value=${FLAGS_TRUE}
-	local tmp_ubus=${FLAGS_ubus}
-	FLAGS_ubus=${FLAGS_FALSE}
+	local tmp_json=${FLAGS_json}
+	FLAGS_json=${FLAGS_FALSE}
 	
 	freecwmp_output "$1" "NOT_IMPLEMENTED"
 	
 	FLAGS_value=$tmp_value
-	FLAGS_ubus=$tmp_ubus
+	FLAGS_json=$tmp_json
 }
 
 freecwmp_parse_formated_parameter() {
