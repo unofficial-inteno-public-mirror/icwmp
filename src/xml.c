@@ -1057,7 +1057,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 	char *parameter_name = NULL;
 	char *parameter_value = NULL;
 	char *parameter_key = NULL;
-	char *status=NULL;
+	char *status = NULL;
 	char buf[128];
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
@@ -1164,8 +1164,7 @@ error:
 int cwmp_handle_rpc_cpe_set_parameter_attributes(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t *n, *b = session->body_in;
-	char *c, *parameter_name, *parameter_notification, *success=NULL, *fault=NULL;
-	char *attr_notification_update;
+	char *c, *parameter_name = NULL, *parameter_notification = NULL, *attr_notification_update = NULL, *success=NULL, *fault=NULL;
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
 	/* handle cwmp:SetParameterAttributes */
@@ -1181,7 +1180,7 @@ int cwmp_handle_rpc_cpe_set_parameter_attributes(struct session *session, struct
 	while (b != NULL) {
 		if (b && b->type == MXML_ELEMENT &&
 			!strcmp(b->value.element.name, "SetParameterAttributesStruct")) {
-			attr_notification_update = 0;
+			attr_notification_update = NULL;
 			parameter_name = NULL;
 			parameter_notification = NULL;
 		}
@@ -1207,7 +1206,7 @@ int cwmp_handle_rpc_cpe_set_parameter_attributes(struct session *session, struct
 			if (external_set_action_write("notification",
 					parameter_name, parameter_notification, attr_notification_update))
 				goto fault;
-			attr_notification_update = 0;
+			attr_notification_update = NULL;
 			parameter_name = NULL;
 			parameter_notification = NULL;
 		}
@@ -1438,7 +1437,7 @@ error:
 int cwmp_handle_rpc_cpe_get_rpc_methods(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t *n, *method_list, *b = session->body_in;
-	char *c=NULL;
+	char *c = NULL;
 	int i,counter = 0;
 
 	CWMP_LOG (INFO,"Prepare the RPC response message: GetRPCMethodsResponse");
@@ -1522,7 +1521,7 @@ int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t *b;
 	struct event_container  *event_container;
-	char *command_key;
+	char *command_key = NULL;
 
 	CWMP_LOG (INFO,"Prepare the RPC response message: RebootResponse");
 	b = session->body_in;
@@ -1662,7 +1661,7 @@ int cwmp_scheduleInform_remove_all()
 int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t *n, *method_list, *b = session->body_in;
-	char *c=NULL, *command_key;
+	char *c = NULL, *command_key = NULL;
 	int i,counter = 0;
     struct event_container          *event_container;
     struct schedule_inform          *schedule_inform;
@@ -1671,7 +1670,7 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     bool                            cond_signal=false;
     pthread_t                       scheduleInform_thread;
     int                             error;
-    unsigned int					delay_seconds;
+    unsigned int					delay_seconds = 0;
 
     CWMP_LOG (INFO,"Prepare the RPC response message: ScheduleInformResponse");
     pthread_mutex_lock (&mutex_schedule_inform);
