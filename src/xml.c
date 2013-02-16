@@ -169,12 +169,13 @@ void xml_exit(void)
 int xml_send_message(struct cwmp *cwmp, struct session *session, struct rpc *rpc)
 {
 	char *s, *c, *msg_out = NULL, *msg_in = NULL;
-	int f = 0, r = 0;
+	int f, r = 0;
 	mxml_node_t	*b;
 
 	if (session->tree_out)
 		msg_out = mxmlSaveAllocString(session->tree_out, whitespace_cb);
 	while (1) {
+		f = 0;
 		if (http_send_message(cwmp, msg_out, &msg_in))
 			goto error;
 		if (msg_in) {
