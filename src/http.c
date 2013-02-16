@@ -265,6 +265,10 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 {
 	int status;
 	struct timeval t;
+    static int      cr_request = 0;
+    static time_t   restrict_start_time = 0;
+    time_t          current_time;
+    bool			service_available;
 
 	t.tv_sec = 60;
 	t.tv_usec = 0;
@@ -279,6 +283,24 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 
 		if (client == -1)
 			break;
+
+	    current_time = time(NULL);
+	    service_available = true;
+	    if ((restrict_start_time==0) ||
+	    	((current_time-restrict_start_time) > CONNECTION_REQUEST_RESTRICT_PERIOD))
+	    {
+	        restrict_start_time = current_time;
+	        cr_request          = 1;
+	    }
+	    else
+	    {
+	        cr_request++;
+	        if (cr_request>CONNECTION_REQUEST_RESTRICT_REQUEST)
+	        {
+	            restrict_start_time = current_time;
+	            service_available = false;
+	        }
+	    }
 
 		struct uloop_process *uproc = calloc(1, sizeof(*uproc));
 		if (!uproc || (uproc->pid = fork()) == -1) {
@@ -300,6 +322,9 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 
 			fp = fdopen(client, "r+");
 
+			if(!service_available)
+				goto http_end_child;
+
 			while (fgets(buffer, sizeof(buffer), fp)) {
 				if (!strncasecmp(buffer, "Authorization: Digest ", strlen("Authorization: Digest "))) {
 					char *username = cwmp_main.conf.cpe_userid;
@@ -307,7 +332,7 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 
 					if (!username || !password) {
 						// if we dont have username or password configured proceed with connecting to ACS
-						auth_status = 1;
+						service_available = false;
 						goto http_end_child;
 					}
 
@@ -333,12 +358,17 @@ http_end_child:
 			if (auth_status) {
 				status = 0;
 				fputs("HTTP/1.1 200 OK\r\n", fp);
-				fputs("Content-Length: 0\r\n\r\n", fp);
+				fputs("Content-Length: 0\r\n", fp);
+			} else if (!service_available) {
+				status = EACCES;
+				fputs("HTTP/1.1 503 Service Unavailable\r\n", fp);
+				fputs("Connection: close\r\n", fp);
 			} else {
 				status = EACCES;
 				fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
 				fputs("Connection: close\r\n", fp);
 				http_digest_auth_fail_response(fp, "GET", "/", REALM, OPAQUE);
+				fputs("\r\n", fp);
 			}
 			fputs("\r\n", fp);
 			goto done_child;
