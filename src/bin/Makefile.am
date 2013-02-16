@@ -9,6 +9,7 @@ cwmpd_SOURCES =				\
 	../event.c				\
 	../external.c			\
 	../http.c				\
+	../jshn.c				\
 	../log.c				\
 	../netlink.c			\
 	../time.c				\
@@ -41,7 +42,8 @@ cwmpd_LDADD =			\
 	$(MICROXML_LIBS)	\
 	$(LIBCURL_LIBS)		\
 	$(LIBZSTREAM_LIBS)	\
-	$(LIBPTHREAD_LIBS)
+	$(LIBPTHREAD_LIBS)	\
+	$(LIBJSON_LIBS)
 
 cwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"

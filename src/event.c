@@ -15,6 +15,7 @@
 #include "xml.h"
 #include "backupSession.h"
 #include "log.h"
+#include "jshn.h"
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_0BOOTSTRAP]                      = {"0 BOOTSTRAP",                       EVENT_TYPE_SINGLE,  EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
@@ -139,7 +140,8 @@ void cwmp_add_notification (char *name, char *value, char *type)
 	struct event_container   *event_container;
 	struct cwmp   *cwmp = &cwmp_main;
 
-	external_get_action_data("notification", name, &notification);
+	external_get_action_data("notification", name, &notification,
+			cwmp_handle_getParamAttributes);
 	if (!notification || notification[0]=='0')
 	{
 		free(notification);

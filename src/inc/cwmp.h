@@ -184,7 +184,7 @@ typedef struct rpc {
     void				*extra_data;
 } rpc;
 
-#define sizearray(a)  (sizeof(a) / sizeof((a)[0]))
+#define ARRAYSIZEOF(a)  (sizeof(a) / sizeof((a)[0]))
 #define FREE(x) do { free(x); x = NULL; } while (0)
 
 extern struct cwmp	cwmp_main;

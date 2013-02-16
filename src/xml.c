@@ -21,6 +21,7 @@
 #include "messages.h"
 #include "backupSession.h"
 #include "log.h"
+#include "jshn.h"
 
 LIST_HEAD(list_download);
 static pthread_mutex_t		mutex_download = PTHREAD_MUTEX_INITIALIZER;
@@ -502,12 +503,12 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 	b = mxmlNewInteger(b, cwmp->retry_count_session);
 	if (!b) goto error;
 
-	for (i=0; i<sizearray(DEVICE_ID_CONST); i++)
+	for (i=0; i<ARRAYSIZEOF(DEVICE_ID_CONST); i++)
 		if (external_get_action_write("value",DEVICE_ID_CONST[i].parameter_name, NULL)) return -1;
-	if (external_get_action_execute()) return -1;
+	if (external_get_action_execute(cwmp_handle_getParamValues)) return -1;
 	while (external_list_parameter.next!=&external_list_parameter) {
 		parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
-		for (i=0; i<sizearray(DEVICE_ID_CONST); i++)
+		for (i=0; i<ARRAYSIZEOF(DEVICE_ID_CONST); i++)
 		{
 			if(strcmp(DEVICE_ID_CONST[i].parameter_name, parameter_container->name)==0) {
 				if (parameter_container->fault_code && parameter_container->fault_code[0]=='9')
@@ -545,8 +546,8 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
         }
     }
 
-    external_get_action_execute();
-    external_simple("inform");
+    external_get_action_execute(cwmp_handle_getParamValues);
+    external_simple("inform", cwmp_handle_getParamValues);
 
     while (external_list_parameter.next!=&external_list_parameter) {
 
@@ -766,7 +767,7 @@ int cwmp_handle_rpc_cpe_get_parameter_values(struct session *session, struct rpc
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 		parameter_name = NULL;
 	}
-	if (external_get_action_execute())
+	if (external_get_action_execute(cwmp_handle_getParamValues))
 		goto fault;
 
 	while (external_list_parameter.next!=&external_list_parameter) {
@@ -875,7 +876,7 @@ int cwmp_handle_rpc_cpe_get_parameter_names(struct session *session, struct rpc 
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 	}
 	if (parameter_name && NextLevel) {
-		if (external_get_action("name", parameter_name, NextLevel))
+		if (external_get_action("name", parameter_name, NextLevel, cwmp_handle_getParamNames))
 			goto fault;
 	}
 
@@ -982,7 +983,7 @@ int cwmp_handle_rpc_cpe_get_parameter_attributes(struct session *session, struct
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 		parameter_name = NULL;
 	}
-	if (external_get_action_execute())
+	if (external_get_action_execute(cwmp_handle_getParamAttributes))
 		goto fault;
 
 	while (external_list_parameter.next!=&external_list_parameter) {
@@ -1104,7 +1105,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 	if (b && b->value.text.string)
 		parameter_key = b->value.text.string;
 
-	if (external_set_action_execute("value"))
+	if (external_set_action_execute("value",cwmp_handle_setParamValues))
 		goto fault;
 
 	while (external_list_parameter.next != &external_list_parameter) {
@@ -1213,7 +1214,7 @@ int cwmp_handle_rpc_cpe_set_parameter_attributes(struct session *session, struct
 		b = mxmlWalkNext(b, n, MXML_DESCEND);
 	}
 
-	if (external_set_action_execute("notification"))
+	if (external_set_action_execute("notification", cwmp_handle_setParamAttributes))
 		goto fault;
 
 	external_fetch_setParamAttrResp(&success, &fault);
@@ -1282,7 +1283,7 @@ int cwmp_handle_rpc_cpe_add_object(struct session *session, struct rpc *rpc)
 	}
 
 	if (object_name) {
-		if (external_object_action("add", object_name))
+		if (external_object_action("add", object_name, cwmp_handle_addObject))
 			goto fault;
 	} else {
 		fault_code = FAULT_CPE_INVALID_PARAMETER_NAME;
@@ -1376,7 +1377,7 @@ int cwmp_handle_rpc_cpe_delete_object(struct session *session, struct rpc *rpc)
 	}
 
 	if (object_name) {
-		if (external_object_action("delete", object_name))
+		if (external_object_action("delete", object_name, cwmp_handle_delObject))
 			goto fault;
 	} else {
 		fault_code = FAULT_CPE_INVALID_PARAMETER_NAME;
@@ -1501,7 +1502,7 @@ int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc)
 	b = mxmlNewElement(b, "cwmp:FactoryResetResponse");
 	if (!b) goto fault;
 
-	if (external_simple("factory_reset"))
+	if (external_simple("factory_reset", NULL))
 		goto fault;
 
 	return 0;
@@ -1777,7 +1778,9 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
     bkp_session_save();
 
     sprintf(file_size,"%d",pdownload->file_size);
-    external_download(pdownload->url, file_size, pdownload->file_type, pdownload->username, pdownload->password);
+    external_download(pdownload->url, file_size, pdownload->file_type,
+    		pdownload->username, pdownload->password,
+    		cwmp_handle_downloadFault);
     external_fetch_downloadFaultResp(&fault_code);
 
     if(fault_code != NULL)
@@ -1873,7 +1876,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		else
     		{
 				bkp_session_save();
-				external_apply_download(pdownload->file_type);
+				external_apply_download(pdownload->file_type, cwmp_handle_downloadFault);
 				external_fetch_downloadFaultResp(&fault_code);
 				if(fault_code != NULL)
 				{

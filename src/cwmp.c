@@ -432,11 +432,11 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp)
 int run_session_end_func (struct session *session)
 {
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
-		external_simple("end_session");
+		external_simple("end_session", NULL);
 
 	if (session->end_session & END_SESSION_REBOOT)
 	{
-		external_simple("reboot");
+		external_simple("reboot", NULL);
 		exit(EXIT_SUCCESS);
 	}
 

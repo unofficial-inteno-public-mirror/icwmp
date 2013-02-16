@@ -133,8 +133,33 @@ void external_fetch_delObjectResp (char **status, char **fault)
 	external_MethodFault = NULL;
 }
 
-int external_get_action(char *action, char *name, char *arg)
+static void external_action_jshn_parse(int fp, int external_handler(char *msg))
 {
+    char buf[1], *value = NULL, *c = NULL;
+    int i=0, len;
+
+    while(read(fp, buf, sizeof(buf))>0) {
+        if (buf[0]!='\n') {
+			if (value)
+				asprintf(&c,"%s%c",value,buf[0]);
+			else
+				asprintf(&c,"%c",buf[0]);
+
+			free(value);
+			value = c;
+        } else {
+        	if (!value) continue;
+        	external_handler(value);
+            FREE(value);
+        }
+    }
+}
+
+int external_get_action(char *action, char *name, char *arg, int external_handler(char *msg))
+{
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
 
 	CWMP_LOG(INFO,"executing get %s '%s'", action, name);
 
@@ -148,12 +173,16 @@ int external_get_action(char *action, char *name, char *arg)
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
-		argv[i++] = "--ubus";
+		argv[i++] = "--json";
 		argv[i++] = "get";
 		argv[i++] = action;
 		argv[i++] = name;
 		if(arg) argv[i++] = arg;
 		argv[i++] = NULL;
+
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
 
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
@@ -161,22 +190,28 @@ int external_get_action(char *action, char *name, char *arg)
 	} else if (uproc.pid < 0)
 		goto error;
 
+	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(DEBUG,"waiting for child to exit");
 	}
 
+	external_action_jshn_parse(pfds[0], external_handler);
+
+    close(pfds[0]);
 	return 0;
 
 error:
+	close(pfds[0]);
 	return -1;
-
 }
 
-int external_get_action_data(char *action, char *name, char **value)
+int external_get_action_data(char *action, char *name, char **value, int external_handler(char *msg))
 {
 	struct parameter_container *parameter_container;
-	external_get_action(action, name, NULL);
+	external_get_action(action, name, NULL, external_handler);
 	if (external_list_parameter.next!=&external_list_parameter) {
 		parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
 		if (parameter_container->data)
@@ -209,9 +244,9 @@ int external_get_action_write(char *action, char *name, char *arg)
 	}
 
 #ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s --ubus get %s %s %s\n", fc_script, action, name, arg?arg:"");
+	fprintf(fp, "/bin/sh `pwd`/%s --json get %s %s %s\n", fc_script, action, name, arg?arg:"");
 #else
-	fprintf(fp, "/bin/sh %s --ubus get %s %s %s\n", fc_script, action, name, arg?arg:"");
+	fprintf(fp, "/bin/sh %s --json get %s %s %s\n", fc_script, action, name, arg?arg:"");
 #endif
 
 	fclose(fp);
@@ -219,15 +254,19 @@ int external_get_action_write(char *action, char *name, char *arg)
 	return 0;
 }
 
-int external_get_action_execute()
+int external_get_action_execute(int external_handler(char *msg))
 {
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
+
 	if (access(fc_script_actions, F_OK) == -1)
-		return 0;
+		goto success;
 
 	CWMP_LOG(INFO,"executing get script");
 
 	if ((uproc.pid = fork()) == -1) {
-		return -1;
+		goto error;
 	}
 
 	if (uproc.pid == 0) {
@@ -239,21 +278,34 @@ int external_get_action_execute()
 		argv[i++] = fc_script_actions;
 		argv[i++] = NULL;
 
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
+
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
 
 	} else if (uproc.pid < 0)
-		return -1;
+		goto error;
 
 	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(DEBUG,"waiting for child to exit");
 	}
 
+	external_action_jshn_parse(pfds[0], external_handler);
 	remove(fc_script_actions);
 
+success:
+	close(pfds[0]);
 	return 0;
+
+error:
+	close(pfds[0]);
+	return -1;
 }
 
 
@@ -279,9 +331,9 @@ int external_set_action_write(char *action, char *name, char *value, char *chang
 		}
 	}
 #ifdef DUMMY_MODE
-		fprintf(fp, "/bin/sh `pwd`/%s --ubus set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
+		fprintf(fp, "/bin/sh `pwd`/%s --json set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #else
-		fprintf(fp, "/bin/sh %s --ubus set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
+		fprintf(fp, "/bin/sh %s --json set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
 #endif
 
 
@@ -290,28 +342,32 @@ int external_set_action_write(char *action, char *name, char *value, char *chang
 	return 0;
 }
 
-int external_set_action_execute(char *action)
+int external_set_action_execute(char *action, int external_handler(char *msg))
 {
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
+
 	CWMP_LOG(INFO,"executing set script");
 
 	FILE *fp;
 
 	if (access(fc_script_actions, R_OK | W_OK | F_OK) == -1)
-		return -1;
+		goto error;
 
 	fp = fopen(fc_script_actions, "a");
-	if (!fp) return -1;
+	if (!fp) goto error;
 
 #ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s --ubus apply %s\n", fc_script, action);
+	fprintf(fp, "/bin/sh `pwd`/%s --json apply %s\n", fc_script, action);
 #else
-	fprintf(fp, "/bin/sh %s --ubus apply %s\n", fc_script, action);
+	fprintf(fp, "/bin/sh %s --json apply %s\n", fc_script, action);
 #endif
 
 	fclose(fp);
 
 	if ((uproc.pid = fork()) == -1) {
-		return -1;
+		goto error;
 	}
 
 	if (uproc.pid == 0) {
@@ -323,26 +379,43 @@ int external_set_action_execute(char *action)
 		argv[i++] = fc_script_actions;
 		argv[i++] = NULL;
 
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
+
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
 
 	} else if (uproc.pid < 0)
-		return -1;
+		goto error;
 
 	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(DEBUG,"waiting for child to exit");
 	}
 
-	if (remove(fc_script_actions) != 0)
-		return -1;
+ 	external_action_jshn_parse(pfds[0], external_handler);
 
+	if (remove(fc_script_actions) != 0)
+		goto error;
+
+    close(pfds[0]);
 	return 0;
+
+error:
+	close(pfds[0]);
+	return -1;
 }
 
-int external_object_action(char *action, char *name)
+int external_object_action(char *action, char *name, int external_handler(char *msg))
 {
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
+
 	CWMP_LOG(INFO,"executing object %s '%s'", action, name);
 
 	if ((uproc.pid = fork()) == -1)
@@ -355,11 +428,15 @@ int external_object_action(char *action, char *name)
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
-		argv[i++] = "--ubus";
+		argv[i++] = "--json";
 		argv[i++] = action;
 		argv[i++] = "object";
 		argv[i++] = name;
 		argv[i++] = NULL;
+
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
 
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
@@ -367,24 +444,34 @@ int external_object_action(char *action, char *name)
 	} else if (uproc.pid < 0)
 		goto error;
 
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(DEBUG, "waiting for child to exit");
 	}
 
+ 	external_action_jshn_parse(pfds[0], external_handler);
+
+	close(pfds[0]);
 	return 0;
 
 error:
+	close(pfds[0]);
 	return -1;
 }
 
-int external_simple(char *arg)
+int external_simple(char *arg, int external_handler(char *msg))
 {
+
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
 
 	CWMP_LOG(INFO,"executing %s request", arg);
 
 	if ((uproc.pid = fork()) == -1)
-		return -1;
+		goto error;
 
 	if (uproc.pid == 0) {
 		/* child */
@@ -393,31 +480,48 @@ int external_simple(char *arg)
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
-		argv[i++] = "--ubus";
+		argv[i++] = "--json";
 		argv[i++] = arg;
 		argv[i++] = NULL;
+
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
 
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
 
 	} else if (uproc.pid < 0)
-		return -1;
+		goto error;
 
 	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(DEBUG,"waiting for child to exit");
 	}
 
+ 	if (external_handler)
+ 		external_action_jshn_parse(pfds[0], external_handler);
+    close(pfds[0]);
 	return 0;
+
+error:
+	close(pfds[0]);
+	return -1;
 }
 
-int external_download(char *url, char *size, char *type, char *user, char *pass)
+int external_download(char *url, char *size, char *type, char *user, char *pass, int external_handler(char *msg))
 {
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
+
 	CWMP_LOG(INFO,"executing download url '%s'", url);
 
 	if ((uproc.pid = fork()) == -1)
-		return -1;
+		goto error;
 
 	if (uproc.pid == 0) {
 		/* child */
@@ -427,7 +531,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass)
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
 		argv[i++] = "download";
-		argv[i++] = "--ubus";
+		argv[i++] = "--json";
 		argv[i++] = "--url";
 		argv[i++] = url;
 		argv[i++] = "--size";
@@ -446,27 +550,43 @@ int external_download(char *url, char *size, char *type, char *user, char *pass)
 		}
 		argv[i++] = NULL;
 
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
+
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
 
 	} else if (uproc.pid < 0)
-		return -1;
+		goto error;
 
 	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(INFO,"waiting for child to exit");
 	}
 
+ 	external_action_jshn_parse(pfds[0], external_handler);
+    close(pfds[0]);
 	return 0;
+
+error:
+	close(pfds[0]);
+	return -1;
 }
 
-int external_apply_download(char *type)
+int external_apply_download(char *type, int external_handler(char *msg))
 {
+	int pfds[2];
+	if (pipe(pfds) < 0)
+		return -1;
+
 	CWMP_LOG(INFO,"applying downloaded file");
 
 	if ((uproc.pid = fork()) == -1)
-		return -1;
+		goto error;
 
 	if (uproc.pid == 0) {
 		/* child */
@@ -475,25 +595,37 @@ int external_apply_download(char *type)
 		int i = 0;
 		argv[i++] = "/bin/sh";
 		argv[i++] = fc_script;
-		argv[i++] = "--ubus";
+		argv[i++] = "--json";
 		argv[i++] = "apply";
 		argv[i++] = "download";
 		argv[i++] = "--type";
 		argv[i++] = type;
 		argv[i++] = NULL;
 
+		close(pfds[0]);
+		dup2(pfds[1], 1);
+		close(pfds[1]);
+
 		execvp(argv[0], (char **) argv);
 		exit(ESRCH);
 
 	} else if (uproc.pid < 0)
-		return -1;
+		goto error;
 
 	/* parent */
+	close(pfds[1]);
+
 	int status;
 	while (wait(&status) != uproc.pid) {
 		DD(INFO,"waiting for child to exit");
 	}
 
+ 	external_action_jshn_parse(pfds[0], external_handler);
+    close(pfds[0]);
 	return 0;
+
+error:
+	close(pfds[0]);
+	return -1;
 }
 

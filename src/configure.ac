@@ -32,6 +32,9 @@ AM_PROG_CC_C_O
 LIBPTHREAD_LIBS='-lpthread'
 AC_SUBST([LIBPTHREAD_LIBS])
 
+LIBJSON_LIBS='-ljson'
+AC_SUBST([LIBJSON_LIBS])
+
 AC_ARG_WITH([uci-include-path],
   [AS_HELP_STRING([--with-uci-include-path],
     [location of the uci library headers])],
