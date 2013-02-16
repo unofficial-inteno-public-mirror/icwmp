@@ -30,7 +30,7 @@ case "$action" in
 	set_value)
 	local url=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.url="$val"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > dev/null &
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > /dev/null &
 	;;
 	set_notification)
 	local val=$1
@@ -129,7 +129,7 @@ case "$action" in
 	set_value)
 	local val=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > dev/null
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > /dev/null
 	;;
 	set_notification)
 	local val=$1
