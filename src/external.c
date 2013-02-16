@@ -27,6 +27,7 @@
 #include "log.h"
 
 static struct uloop_process uproc;
+static pthread_mutex_t external_mutex_exec = PTHREAD_MUTEX_INITIALIZER;
 
 LIST_HEAD(external_list_parameter);
 LIST_HEAD(external_list_value_change);
@@ -160,7 +161,7 @@ int external_get_action(char *action, char *name, char *arg, int external_handle
 	int pfds[2];
 	if (pipe(pfds) < 0)
 		return -1;
-
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"executing get %s '%s'", action, name);
 
 	if ((uproc.pid = fork()) == -1)
@@ -201,10 +202,13 @@ int external_get_action(char *action, char *name, char *arg, int external_handle
 	external_action_jshn_parse(pfds[0], external_handler);
 
     close(pfds[0]);
+
+    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
@@ -224,22 +228,23 @@ int external_get_action_data(char *action, char *name, char **value, int externa
 
 int external_get_action_write(char *action, char *name, char *arg)
 {
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"adding to get %s script '%s'", action, name);
 
 	FILE *fp;
 
 	if (access(fc_script_actions, R_OK | W_OK | X_OK) != -1) {
 		fp = fopen(fc_script_actions, "a");
-		if (!fp) return -1;
+		if (!fp) goto error;
 	} else {
 		fp = fopen(fc_script_actions, "w");
-		if (!fp) return -1;
+		if (!fp) goto error;
 
 		fprintf(fp, "#!/bin/sh\n");
 
 		if (chmod(fc_script_actions,
 			strtol("0700", 0, 8)) < 0) {
-			return -1;
+			goto error;
 		}
 	}
 
@@ -251,7 +256,12 @@ int external_get_action_write(char *action, char *name, char *arg)
 
 	fclose(fp);
 
+	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
+
+error:
+	pthread_mutex_unlock(&external_mutex_exec);
+	return -1;
 }
 
 int external_get_action_execute(int external_handler(char *msg))
@@ -259,6 +269,8 @@ int external_get_action_execute(int external_handler(char *msg))
 	int pfds[2];
 	if (pipe(pfds) < 0)
 		return -1;
+
+	pthread_mutex_lock(&external_mutex_exec);
 
 	if (access(fc_script_actions, F_OK) == -1)
 		goto success;
@@ -301,33 +313,35 @@ int external_get_action_execute(int external_handler(char *msg))
 
 success:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
 
 int external_set_action_write(char *action, char *name, char *value, char *change)
 {
-
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"adding to set %s script '%s'", action, name);
 
 	FILE *fp;
 
 	if (access(fc_script_actions, R_OK | W_OK | X_OK) != -1) {
 		fp = fopen(fc_script_actions, "a");
-		if (!fp) return -1;
+		if (!fp) goto error;
 	} else {
 		fp = fopen(fc_script_actions, "w");
-		if (!fp) return -1;
+		if (!fp) goto error;
 
 		fprintf(fp, "#!/bin/sh\n");
 
 		if (chmod(fc_script_actions,
 			strtol("0700", 0, 8)) < 0) {
-			return -1;
+			goto error;
 		}
 	}
 #ifdef DUMMY_MODE
@@ -339,7 +353,12 @@ int external_set_action_write(char *action, char *name, char *value, char *chang
 
 	fclose(fp);
 
+	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
+
+error:
+	pthread_mutex_unlock(&external_mutex_exec);
+	return -1;
 }
 
 int external_set_action_execute(char *action, int external_handler(char *msg))
@@ -348,6 +367,7 @@ int external_set_action_execute(char *action, int external_handler(char *msg))
 	if (pipe(pfds) < 0)
 		return -1;
 
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"executing set script");
 
 	FILE *fp;
@@ -403,10 +423,13 @@ int external_set_action_execute(char *action, int external_handler(char *msg))
 		goto error;
 
     close(pfds[0]);
+
+    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
@@ -416,6 +439,7 @@ int external_object_action(char *action, char *name, int external_handler(char *
 	if (pipe(pfds) < 0)
 		return -1;
 
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"executing object %s '%s'", action, name);
 
 	if ((uproc.pid = fork()) == -1)
@@ -454,10 +478,13 @@ int external_object_action(char *action, char *name, int external_handler(char *
  	external_action_jshn_parse(pfds[0], external_handler);
 
 	close(pfds[0]);
+
+	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
@@ -468,6 +495,7 @@ int external_simple(char *arg, int external_handler(char *msg))
 	if (pipe(pfds) < 0)
 		return -1;
 
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"executing %s request", arg);
 
 	if ((uproc.pid = fork()) == -1)
@@ -505,10 +533,13 @@ int external_simple(char *arg, int external_handler(char *msg))
  	if (external_handler)
  		external_action_jshn_parse(pfds[0], external_handler);
     close(pfds[0]);
+
+    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
@@ -518,6 +549,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	if (pipe(pfds) < 0)
 		return -1;
 
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"executing download url '%s'", url);
 
 	if ((uproc.pid = fork()) == -1)
@@ -570,10 +602,13 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 
  	external_action_jshn_parse(pfds[0], external_handler);
     close(pfds[0]);
+
+    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
@@ -583,6 +618,7 @@ int external_apply_download(char *type, int external_handler(char *msg))
 	if (pipe(pfds) < 0)
 		return -1;
 
+	pthread_mutex_lock(&external_mutex_exec);
 	CWMP_LOG(INFO,"applying downloaded file");
 
 	if ((uproc.pid = fork()) == -1)
@@ -622,10 +658,13 @@ int external_apply_download(char *type, int external_handler(char *msg))
 
  	external_action_jshn_parse(pfds[0], external_handler);
     close(pfds[0]);
+
+    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
 
 error:
 	close(pfds[0]);
+	pthread_mutex_unlock(&external_mutex_exec);
 	return -1;
 }
 
