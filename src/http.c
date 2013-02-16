@@ -32,11 +32,12 @@
 #include <zstream/http.h>
 #endif
 
-#ifndef HTTP_ZSTREAM
-#include "b64.h"
-#endif
-
 #include "http.h"
+
+#include "digestauth.h"
+
+#define REALM "authenticate@cwmp"
+#define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 static struct http_client http_c;
 static struct http_server http_s;
@@ -300,70 +301,20 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 			fp = fdopen(client, "r+");
 
 			while (fgets(buffer, sizeof(buffer), fp)) {
-				if (!strncasecmp(buffer, "Authorization: Basic ", strlen("Authorization: Basic "))) {
-					const char *c1, *c2, *min, *val;
-					char *username = NULL;
-					char *password = NULL;
-					char *acs_auth_basic = NULL;
-					char *auth_basic_check = NULL;
-					int len;
-
-					username = cwmp_main.conf.cpe_userid;
-					password = cwmp_main.conf.cpe_passwd;
+				if (!strncasecmp(buffer, "Authorization: Digest ", strlen("Authorization: Digest "))) {
+					char *username = cwmp_main.conf.cpe_userid;
+					char *password = cwmp_main.conf.cpe_passwd;
 
 					if (!username || !password) {
 						// if we dont have username or password configured proceed with connecting to ACS
-						FREE(username);
-						FREE(password);
 						auth_status = 1;
 						goto http_end_child;
 					}
 
-					c1 = strrchr(buffer, '\r');
-					c2 = strrchr(buffer, '\n');
-
-					if (!c1)
-						c1 = c2;
-					if (!c2)
-						c2 = c1;
-					if (!c1 || !c2)
-						continue;
-
-					min = (c1 < c2) ? c1 : c2;
-
-					val = strrchr(buffer, ' ');
-					if (!val)
-						continue;
-
-					val += sizeof(char);
-					ssize_t size = min - val;
-
-					acs_auth_basic = (char *) zstream_b64decode(val, &size);
-					if (!acs_auth_basic)
-						continue;
-
-					if (asprintf(&auth_basic_check, "%s:%s", username, password) == -1) {
-						FREE(username);
-						FREE(password);
-						free(acs_auth_basic);
-						goto error_child;
-					}
-
-					if (size == strlen(auth_basic_check)) {
-						len = size;
-					} else {
-						auth_status = 0;
-						goto free_resources;
-					}
-
-					if (!memcmp(acs_auth_basic, auth_basic_check, len * sizeof(char)))
+					if (http_digest_auth_check("GET", "/", buffer + strlen("Authorization: Digest "), REALM, username, password, 300) == MHD_YES)
 						auth_status = 1;
 					else
 						auth_status = 0;
-
-free_resources:
-					free(acs_auth_basic);
-					free(auth_basic_check);
 				}
 
 				if (buffer[0] == '\r' || buffer[0] == '\n') {
@@ -387,7 +338,7 @@ http_end_child:
 				status = EACCES;
 				fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
 				fputs("Connection: close\r\n", fp);
-				fputs("WWW-Authenticate: Basic realm=\"default\"\r\n", fp);
+				http_digest_auth_fail_response(fp, "GET", "/", REALM, OPAQUE);
 			}
 			fputs("\r\n", fp);
 			goto done_child;

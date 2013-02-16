@@ -2,15 +2,16 @@ bin_PROGRAMS = cwmpd
 CWMP_VERSION = 2.2
 
 cwmpd_SOURCES =				\
-	../b64.c				\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
+	../digestauth.c			\
 	../event.c				\
 	../external.c			\
 	../http.c				\
 	../jshn.c				\
 	../log.c				\
+	../md5.c				\
 	../netlink.c			\
 	../time.c				\
 	../ubus.c				\
