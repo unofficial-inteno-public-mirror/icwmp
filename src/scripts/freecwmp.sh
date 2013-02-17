@@ -500,6 +500,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 			freecwmp_output "" "" "" "" "" "" "" "0"
 		elif [ "$action" = "apply_value" ]; then
 			freecwmp_output "" "" "" "" "" "0"
+			ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &
 		fi
 	else
 		let n=$__fault_count-1

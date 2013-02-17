@@ -102,9 +102,6 @@ esac
 }
 
 get_management_server_parameter_key() {
-local tmp=${FLAGS_value}
-FLAGS_value=${FLAGS_TRUE}
-FLAGS_value=$tmp
 local val=""
 local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
@@ -125,14 +122,13 @@ freecwmp_output "$parm" "$val" "$permissions"
 set_management_server_parameter_key() {
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
 local type="xsd:string"
+local val="$1"
 case "$action" in
 	set_value)
-	local val=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
 	freecwmp_notify "$parm" "$val" "$type"
 	;;
 	set_notification)
-	local val=$1
 	freecwmp_set_parameter_notification "$parm" "$val"
 	;;
 esac
@@ -469,6 +465,7 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
+	get_management_server_parameter_key
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.)
@@ -480,6 +477,7 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
+	get_management_server_parameter_key 
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
@@ -535,6 +533,7 @@ case "$1" in
 		get_management_server_connection_request_url
 		get_management_server_connection_request_username
 		get_management_server_connection_request_password
+		get_management_server_parameter_key
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -548,6 +547,7 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
+	get_management_server_parameter_key 
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
@@ -628,6 +628,7 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
+	get_management_server_parameter_key
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.)
@@ -639,6 +640,7 @@ case "$1" in
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
+	get_management_server_parameter_key 
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.URL)
