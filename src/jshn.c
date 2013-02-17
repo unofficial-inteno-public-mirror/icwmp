@@ -26,16 +26,24 @@ static int jshn_message_parse(char **policy, int size, char **tb, char *msg)
 {
 	int i;
 	json_object *obj;
+	char		*c;
 
 	jshn_obj = json_tokener_parse(msg);
-	if (jshn_obj == NULL)
+	if (jshn_obj == NULL || is_error(jshn_obj) ||
+		json_object_get_type(jshn_obj) != json_type_object)
+	{
+		jshn_obj = NULL;
 		return -1;
+	}
 	for (i=0; i<size; i++)
 	{
 		obj = json_object_object_get(jshn_obj, policy[i]);
-		if (obj == NULL)
+		if (obj == NULL || is_error(obj) ||
+			json_object_get_type(obj) != json_type_string)
 			continue;
-		tb[i] = (char *)json_object_get_string(obj);
+		c = (char *)json_object_get_string(obj);
+		if(c && c[0] != '\0')
+			tb[i] = c;
 	}
 	return 0;
 }
