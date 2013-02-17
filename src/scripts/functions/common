@@ -43,8 +43,9 @@ freecwmp_output() {
 		local fault_code="$5"
 		local status="$6"
 		local instance="$7"
+		local success="$8"
 		
-		echo `freecwmp_json_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance"`
+		echo `freecwmp_json_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance" "$success"`
 	fi
 }
 
@@ -58,6 +59,7 @@ freecwmp_json_output() {
 	local fault_code="$5"
 	local status="$6"
 	local instance="$7"
+	local success="$8"
 
 	if [ "$type" = "" ]; then
 		type="xsd:string"
@@ -104,10 +106,16 @@ freecwmp_json_output() {
 		json_close_object
 		MSG=`json_dump`
 		;;
-		apply_value|\
-		apply_notification)
+		apply_value)
 		json_init
 		json_add_string "status" "$status"
+		json_close_object
+		MSG=`json_dump`
+		;;
+		apply_notification)
+		json_init
+		json_add_string "success" "$success"
+		json_add_string "fault_code" "$fault_code"
 		json_close_object
 		MSG=`json_dump`
 		;;
@@ -339,6 +347,18 @@ freecwmp_get_parameter_notification() {
 	fi
 	if [ "$_val" = "" ];then _val="0" ;fi
 	eval "export -- \"$_dest=$_val\""
+}
+
+freecwmp_notify() {
+	local parm="$1"
+	local val="$2"
+	local attribute
+	local type="$3"
+	
+	freecwmp_get_parameter_notification "attribute" "$parm"
+	if [ "$attribute" != "0" ];then
+		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "attribute": "'$attribute'", "type": "'$type'" }' &
+	fi
 }
 
 freecwmp_set_parameter_notification() {

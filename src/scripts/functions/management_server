@@ -30,7 +30,7 @@ case "$action" in
 	set_value)
 	local url=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.url="$url"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$url'", "type": "'$type'" }' 2>&1 > /dev/null &
+	freecwmp_notify "$parm" "$url" "$type"
 	;;
 	set_notification)
 	local val=$1
@@ -129,7 +129,7 @@ case "$action" in
 	set_value)
 	local val=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "type": "'$type'" }' 2>&1 > /dev/null
+	freecwmp_notify "$parm" "$val" "$type"
 	;;
 	set_notification)
 	local val=$1
@@ -782,7 +782,7 @@ get_management_server_generic() {
 	check_parameter_management_server_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
 	freecwmp_get_parameter_value "val" "$1"
-	ubus_freecwmp_output "$1" "$val"
+	freecwmp_output "$1" "$val"
 	return $FAULT_CPE_NO_FAULT
 }
 

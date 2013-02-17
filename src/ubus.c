@@ -25,6 +25,7 @@ static struct blob_buf b;
 enum notify {
 	NOTIFY_PARAM,
 	NOTIFY_VALUE,
+	NOTIFY_ATTRIB,
 	NOTIFY_TYPE,
 	__NOTIFY_MAX
 };
@@ -32,6 +33,7 @@ enum notify {
 static const struct blobmsg_policy notify_policy[] = {
 	[NOTIFY_PARAM] = { .name = "parameter", .type = BLOBMSG_TYPE_STRING },
 	[NOTIFY_VALUE] = { .name = "value", .type = BLOBMSG_TYPE_STRING },
+	[NOTIFY_ATTRIB] = { .name = "attribute", .type = BLOBMSG_TYPE_STRING },
 	[NOTIFY_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
 };
 
@@ -48,10 +50,14 @@ cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 	if (!tb[NOTIFY_PARAM])
 		return UBUS_STATUS_INVALID_ARGUMENT;
 
+	if (!tb[NOTIFY_ATTRIB])
+			return UBUS_STATUS_INVALID_ARGUMENT;
+
 	CWMP_LOG(INFO, "triggered ubus notification parameter %s",
 						     blobmsg_data(tb[NOTIFY_PARAM]));
 	cwmp_add_notification(blobmsg_data(tb[NOTIFY_PARAM]),
 			tb[NOTIFY_VALUE]? blobmsg_data(tb[NOTIFY_VALUE]) : NULL,
+			blobmsg_data(tb[NOTIFY_ATTRIB]),
 			tb[NOTIFY_TYPE]? blobmsg_data(tb[NOTIFY_TYPE]) : NULL);
 
 	return 0;

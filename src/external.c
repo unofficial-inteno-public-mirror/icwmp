@@ -212,20 +212,6 @@ error:
 	return -1;
 }
 
-int external_get_action_data(char *action, char *name, char **value, int external_handler(char *msg))
-{
-	struct parameter_container *parameter_container;
-	external_get_action(action, name, NULL, external_handler);
-	if (external_list_parameter.next!=&external_list_parameter) {
-		parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
-		if (parameter_container->data)
-			*value = strdup(parameter_container->data);
-		parameter_container_delete(parameter_container);
-	}
-	external_free_list_parameter();
-	return 0;
-}
-
 int external_get_action_write(char *action, char *name, char *arg)
 {
 	pthread_mutex_lock(&external_mutex_exec);

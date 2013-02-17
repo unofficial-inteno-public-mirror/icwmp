@@ -134,37 +134,27 @@ void parameter_container_delete_all(struct list_head *list)
 	}
 }
 
-void cwmp_add_notification (char *name, char *value, char *type)
+void cwmp_add_notification (char *name, char *value, char *attribute, char *type)
 {
 	char *notification = NULL;
 	struct event_container   *event_container;
 	struct cwmp   *cwmp = &cwmp_main;
 
-	external_get_action_data("notification", name, &notification,
-			cwmp_handle_getParamAttributes);
-	if (!notification || notification[0]=='0')
-	{
-		free(notification);
-		return;
-	}
 	external_add_list_value_change(name, value, type);
 	pthread_mutex_lock (&(cwmp->mutex_session_queue));
-	if (notification[0]=='2')
+	if (attribute[0]=='2')
 	{
 		event_container = cwmp_add_event_container(cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 		if (event_container == NULL)
 		{
 			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-			free(notification);
 			return;
 		}
 		cwmp_save_event_container(cwmp,event_container);
 		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 		pthread_cond_signal(&(cwmp->threshold_session_send));
-		free(notification);
 		return;
 	}
-	free(notification);
 	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 }
 

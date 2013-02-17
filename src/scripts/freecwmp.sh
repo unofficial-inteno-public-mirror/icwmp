@@ -496,7 +496,11 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 	if [ "$__fault_count" = "0" ]; then
 		# applying
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
-		freecwmp_output "" "" "" "" "" "0"
+		if [ "$action" = "apply_notification" ]; then
+			freecwmp_output "" "" "" "" "" "" "" "0"
+		elif [ "$action" = "apply_value" ]; then
+			freecwmp_output "" "" "" "" "" "0"
+		fi
 	else
 		let n=$__fault_count-1
 		for i in `seq 0 $n`

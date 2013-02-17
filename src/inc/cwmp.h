@@ -198,7 +198,7 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_i
 int event_remove_all_event_container(struct session *session, int rem_from);
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container);
 void *thread_event_periodic (void *v);
-void cwmp_add_notification (char *name, char *value, char *type);
+void cwmp_add_notification (char *name, char *value, char *attribute, char *type);
 int netlink_init(void);
 char * mix_get_time(void);
 

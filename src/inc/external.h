@@ -37,7 +37,6 @@ void external_fetch_addObjectResp (char **instance, char **status, char **fault)
 void external_delObjectResp (char *status, char *fault);
 void external_fetch_delObjectResp (char **status, char **fault);
 int external_get_action(char *action, char *name, char *arg, int external_handler(char *msg));
-int external_get_action_data(char *action, char *name, char **value, int external_handler(char *msg));
 int external_get_action_write(char *action, char *name, char *arg);
 int external_get_action_execute(int external_handler(char *msg));
 int external_set_action_write(char *action, char *name, char *value, char *change);
