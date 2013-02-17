@@ -191,7 +191,6 @@ extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
 
 struct rpc *cwmp_add_session_rpc_cpe (struct session *session, int type);
-void *cwmp_schedule_session (void *v);
 struct session *cwmp_add_queue_session (struct cwmp *cwmp);
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type);
 struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_idx, char *command_key);

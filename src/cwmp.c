@@ -20,9 +20,6 @@
 #include "external.h"
 
 struct cwmp         	cwmp_main = {0};
-static pthread_mutex_t	thread_sync_mutex		= PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t	thread_sync_cond		= PTHREAD_COND_INITIALIZER;
-static bool				thread_sync_wait		= true;
 
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type)
 {
@@ -91,25 +88,6 @@ int cwmp_get_retry_interval (struct cwmp *cwmp)
     }
 }
 
-void thread_sync()
-{
-	pthread_mutex_lock(&thread_sync_mutex);
-	thread_sync_wait = false;
-	pthread_cond_signal(&thread_sync_cond);
-	pthread_mutex_unlock(&thread_sync_mutex);
-}
-
-void thread_wait_sync()
-{
-	pthread_mutex_lock(&thread_sync_mutex);
-	if(thread_sync_wait)
-	{
-		pthread_cond_wait(&thread_sync_cond,&thread_sync_mutex);
-	}
-	thread_sync_wait = true;
-	pthread_mutex_unlock(&thread_sync_mutex);
-}
-
 static void cwmp_prepare_value_change (struct cwmp *cwmp, struct session *session)
 {
 	struct event_container *event_container;
@@ -127,16 +105,14 @@ end:
 	pthread_mutex_unlock(&(cwmp->mutex_session_queue));
 }
 
-void *cwmp_schedule_session (void *v)
+void cwmp_schedule_session (struct cwmp *cwmp)
 {
     struct list_head                    *ilist;
     struct session                      *session;
     int                                 t,error = CWMP_OK;
     static struct timespec              time_to_wait = {0, 0};
     bool                                retry = false;
-    struct cwmp                         *cwmp = (struct cwmp *) v;
 
-    thread_sync();
     while (1)
     {
     	pthread_mutex_lock (&(cwmp->mutex_session_send));
@@ -175,7 +151,6 @@ void *cwmp_schedule_session (void *v)
         cwmp->retry_count_session   = 0;
         pthread_mutex_unlock (&(cwmp->mutex_session_send));
     }
-    return CWMP_OK;
 }
 
 int cwmp_rpc_cpe_handle_message (struct session *session, struct rpc *rpc_cpe)
@@ -473,7 +448,6 @@ int main(int argc, char **argv)
 
     struct cwmp                     *cwmp = &cwmp_main;
     int                             error;
-    pthread_t                       session_scheduler_thread;
     pthread_t                       periodic_event_thread;
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
@@ -500,13 +474,6 @@ int main(int argc, char **argv)
 	{
 		CWMP_LOG(ERROR,"Error when creating the ubus thread!");
 	}
-    error = pthread_create(&session_scheduler_thread, NULL, &cwmp_schedule_session, (void *)cwmp);
-    if (error<0)
-    {
-        CWMP_LOG(EMERG,"FATAL error when creating the session scheduler thread!");
-        exit(EXIT_FAILURE);
-    }
-
     error = pthread_create(&periodic_event_thread, NULL, &thread_event_periodic, (void *)cwmp);
     if (error<0)
     {
@@ -517,15 +484,13 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the scheduled inform thread!");
     }
-    thread_wait_sync();
     error = pthread_create(&download_thread, NULL, &thread_cwmp_rpc_cpe_download, (void *)cwmp);
     if (error<0)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
-
+    cwmp_schedule_session (cwmp);
     pthread_join(ubus_thread, NULL);
-    pthread_join(session_scheduler_thread, NULL);
     pthread_join(periodic_event_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
