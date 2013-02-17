@@ -334,14 +334,23 @@ if [ "$action" = "set_notification" ]; then
 	freecwmp_check_fault "$__arg1"
 	fault_code="$?"
 	if [ "$__arg3" != "0" ];then
+		if [  "$__arg1" = "InternetGatewayDevice." -o "$__arg1" = "" ]; then
+            __parm="InternetGatewayDevice."
+		else
+			__parm="$__arg1"
+		fi
 		if [ "$fault_code" = "0" ]; then
-			freecwmp_execute_functions "$set_notification_functions" "$__arg1" "$__arg2"
+			freecwmp_execute_functions "$set_notification_functions" "$__parm" "$__arg2"
 			fault_code="$?"
+		fi
+		if [ "$fault_code" = "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$__parm" = "InternetGatewayDevice." ]; then
+			freecwmp_set_parameter_notification "$__parm" "$__arg2"
+			fault_code="$FAULT_CPE_NO_FAULT"
 		fi
 	fi
 	if [ "$fault_code" != "0" ]; then
 		let fault_code=$fault_code+9000
-		freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+		freecwmp_set_parameter_fault "$__parm" "$fault_code"
 	fi
 fi
 
