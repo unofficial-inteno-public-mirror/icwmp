@@ -1052,6 +1052,21 @@ error:
  * [RPC CPE]: SetParameterValues
  */
 
+static int is_duplicated_parameter(mxml_node_t *param_node, struct session *session)
+{
+	mxml_node_t *b = param_node;
+	while(b = mxmlWalkNext(b, session->body_in, MXML_DESCEND)) {
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "Name")) {
+			if(strcmp(b->value.text.string, param_node->value.text.string)==0)
+				return -1;
+		}
+	}
+	return 0;
+}
+
 int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc *rpc)
 {
 	mxml_node_t *b;
@@ -1077,6 +1092,11 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 			b->parent->type == MXML_ELEMENT &&
 			!strcmp(b->parent->value.element.name, "Name")) {
 			parameter_name = b->value.text.string;
+			if (is_duplicated_parameter(b,session)) {
+				fault_code = FAULT_CPE_INVALID_ARGUMENTS;
+				goto fault;
+			}
+			parameter_value = NULL;
 		}
 
 		if (b && b->type == MXML_TEXT &&
@@ -1114,7 +1134,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 
 		if (parameter_container->fault_code && parameter_container->fault_code[0]=='9')
 		{
-			fault_code = cwmp_get_fault_code(parameter_container->fault_code);
+			fault_code = FAULT_CPE_INVALID_ARGUMENTS;
 			goto fault;
 		}
 	}
