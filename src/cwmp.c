@@ -464,7 +464,6 @@ int cwmp_apply_acs_changes ()
 
 void *thread_uloop_run (void *v)
 {
-	thread_sync();
 	ubus_init(&cwmp_main);
 	return NULL;
 }
@@ -501,7 +500,6 @@ int main(int argc, char **argv)
 	{
 		CWMP_LOG(ERROR,"Error when creating the ubus thread!");
 	}
-    thread_wait_sync();
     error = pthread_create(&session_scheduler_thread, NULL, &cwmp_schedule_session, (void *)cwmp);
     if (error<0)
     {
