@@ -28,7 +28,7 @@ define Package/cwmp/Default
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=CWMP client
-  DEPENDS:=+libuci +libubox +libubus +libmicroxml +shflags
+  DEPENDS:=+libuci +libmicroxml +libubox +libjson +jshn +libubus +libblobmsg-json +ubusd +shflags +getopt
 endef
 
 define Package/cwmp/description
