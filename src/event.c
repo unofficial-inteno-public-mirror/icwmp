@@ -363,9 +363,11 @@ int cwmp_root_cause_event_periodic (struct cwmp *cwmp)
     {
         return CWMP_OK;
     }
+    pthread_mutex_lock (&(cwmp->mutex_periodic));
     period  		= cwmp->conf.period;
     periodic_enable = cwmp->conf.periodic_enable;
     CWMP_LOG(INFO,periodic_enable?"Periodic event is enabled. Interval period = %ds":"Periodic event is disabled", period);
+    pthread_mutex_unlock (&(cwmp->mutex_periodic));
     pthread_cond_signal(&(cwmp->threshold_periodic));
     return CWMP_OK;
 }

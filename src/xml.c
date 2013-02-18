@@ -1743,11 +1743,11 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     list_add (&(schedule_inform->list), ilist->prev);
     bkp_session_insert_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
     bkp_session_save();
+    pthread_mutex_unlock (&mutex_schedule_inform);
     if (cond_signal)
     {
         pthread_cond_signal(&threshold_schedule_inform);
     }
-    pthread_mutex_unlock (&mutex_schedule_inform);
 
     if (!thread_is_working)
     {
@@ -2164,11 +2164,12 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		bkp_session_insert_download(download);
 		bkp_session_save();
 		CWMP_LOG(INFO,"Download will start in %us",download_delay);
+
+		pthread_mutex_unlock (&mutex_download);
 		if (cond_signal)
 		{
 			pthread_cond_signal(&threshold_download);
 		}
-		pthread_mutex_unlock (&mutex_download);
 		if (!thread_download_is_working)
 		{
 			thread_download_is_working = true;

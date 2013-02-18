@@ -115,18 +115,20 @@ void cwmp_schedule_session (struct cwmp *cwmp)
 
     while (1)
     {
-    	pthread_mutex_lock (&(cwmp->mutex_session_send));
     	ilist = (&(cwmp->head_session_queue))->next;
         while ((ilist == &(cwmp->head_session_queue)) || retry)
         {
-            t = cwmp_get_retry_interval(cwmp);
+        	pthread_mutex_lock (&(cwmp->mutex_session_send));
+        	t = cwmp_get_retry_interval(cwmp);
             time_to_wait.tv_sec = time(NULL) + t;
             CWMP_LOG(INFO,"Waiting the next session");
             pthread_cond_timedwait(&(cwmp->threshold_session_send), &(cwmp->mutex_session_send), &time_to_wait);
             ilist = (&(cwmp->head_session_queue))->next;
             retry = false;
+            pthread_mutex_unlock (&(cwmp->mutex_session_send));
         }
 
+        pthread_mutex_lock (&(cwmp->mutex_session_send));
         session = list_entry(ilist, struct session, list);
 
         cwmp_prepare_value_change(cwmp, session);
@@ -203,7 +205,7 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
 		if (xml_send_message(cwmp, session, NULL))
 			goto retry;
 		if (!session->tree_in)
-			goto success;
+			goto next;
 
 		if (xml_handle_message(session))
 			goto retry;
@@ -226,7 +228,9 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
 			if (xml_handle_message(session))
 				goto retry;
 		}
-        if (session->head_rpc_acs.next==&(session->head_rpc_acs))
+
+next:
+		if (session->head_rpc_acs.next==&(session->head_rpc_acs))
             break;
         MXML_DELETE(session->tree_in);
         MXML_DELETE(session->tree_out);
