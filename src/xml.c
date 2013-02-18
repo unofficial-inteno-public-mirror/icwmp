@@ -340,6 +340,7 @@ int xml_handle_message(struct session *session)
 		}
 	}
 	if (!rpc_cpe) {
+		session->fault_code = FAULT_CPE_METHOD_NOT_SUPPORTED;
 		rpc_cpe = cwmp_add_session_rpc_cpe(session, RPC_CPE_FAULT);
 		if (rpc_cpe == NULL) goto error;
 	}
