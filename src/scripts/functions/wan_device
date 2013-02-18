@@ -261,9 +261,17 @@ case "$1" in
 	InternetGatewayDevice.)
 	freecwmp_output "InternetGatewayDevice.WANDevice." "" "1"
 	if [ "$2" = "0" ]; then
+		freecwmp_output "InternetGatewayDevice.WANDevice.1." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
 		get_wan_device_mng_status
 		get_wan_device_mng_interface_ip
 		get_wan_device_mng_interface_mac
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
 		get_wan_device_wan_ppp_enable
 		get_wan_device_wan_ppp_username
 		get_wan_device_wan_ppp_password
@@ -274,12 +282,19 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.WANDevice." "" "1"
 	freecwmp_output "InternetGatewayDevice.WANDevice.1." "" "1"
 	if [ "$2" = "0" ]; then
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
-	get_wan_device_wan_ppp_enable
-	get_wan_device_wan_ppp_username
-	get_wan_device_wan_ppp_password
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -287,25 +302,36 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.WANDevice.1." "" "1"
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "" "1"
 	if [ "$2" = "0" ]; then
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
-	get_wan_device_wan_ppp_enable
-	get_wan_device_wan_ppp_username
-	get_wan_device_wan_ppp_password
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.)
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "" "1"
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "" "1"
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2." "" "1"
 	if [ "$2" = "0" ]; then
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
-	get_wan_device_wan_ppp_enable
-	get_wan_device_wan_ppp_username
-	get_wan_device_wan_ppp_password
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+		freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -313,12 +339,19 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "1"
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
 	if [ "$2" = "0" ]; then
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
-	get_wan_device_wan_ppp_enable
-	get_wan_device_wan_ppp_username
-	get_wan_device_wan_ppp_password
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.)
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2." "1"
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+	if [ "$2" = "0" ]; then
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -326,17 +359,19 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "" "1"
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
 	if [ "$2" = "0" ]; then
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
 	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "" "1"
-	get_wan_device_mng_status
-	get_wan_device_mng_interface_ip
-	get_wan_device_mng_interface_mac
+	if [ "$2" = "0" ]; then
+		get_wan_device_mng_status
+		get_wan_device_mng_interface_ip
+		get_wan_device_mng_interface_mac
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus)
@@ -358,6 +393,25 @@ case "$1" in
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
 	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.)
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection." "" "1"
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
+	if [ "$2" = "0" ]; then
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.)
+	freecwmp_output "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1." "" "1"
+	if [ "$2" = "0" ]; then
+		get_wan_device_wan_ppp_enable
+		get_wan_device_wan_ppp_username
+		get_wan_device_wan_ppp_password
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
@@ -427,6 +481,9 @@ case "$1" in
 	get_wan_device_mng_status
 	get_wan_device_mng_interface_ip
 	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.)
 	get_wan_device_wan_ppp_enable
 	get_wan_device_wan_ppp_username
 	get_wan_device_wan_ppp_password
@@ -454,6 +511,18 @@ case "$1" in
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress)
 	get_wan_device_mng_interface_mac
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.)
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.)
+	get_wan_device_wan_ppp_enable
+	get_wan_device_wan_ppp_username
+	get_wan_device_wan_ppp_password
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable)
@@ -492,12 +561,58 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_wan_device_notification() {
 case "$1" in
-	InternetGatewayDevice.WANDevice.|\
-	InternetGatewayDevice.WANDevice.1.|\
-	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.|\
-	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.|\
-	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.|\
+	InternetGatewayDevice.WANDevice.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password" "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password" "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password" "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.)
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANPPPConnection.1.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password" "0"
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;

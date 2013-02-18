@@ -728,6 +728,15 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 set_management_server_notification() {
 case "$1" in
 	InternetGatewayDevice.ManagementServer.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.URL" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.Password" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformEnable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformInterval" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestURL" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestUsername" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestPassword" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ParameterKey" "0"
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
