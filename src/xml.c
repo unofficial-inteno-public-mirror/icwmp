@@ -1829,8 +1829,8 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 	}
 
 	p->command_key			= strdup(pdownload->command_key);
-	p->start_time 			= download_startTime;
-	p->complete_time		= mix_get_time();
+	p->start_time 			= strdup(download_startTime);
+	p->complete_time		= strdup(mix_get_time());
 	if(error != FAULT_CPE_NO_FAULT)
 	{
 		p->fault_code 		= error;
@@ -1872,8 +1872,8 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 				error = FAULT_CPE_DOWNLOAD_FAILURE;
 
 				ptransfer_complete->command_key		= strdup(pdownload->command_key);
-				ptransfer_complete->start_time 		= mix_get_time();
-				ptransfer_complete->complete_time	= ptransfer_complete->start_time;
+				ptransfer_complete->start_time 		= strdup(mix_get_time());
+				ptransfer_complete->complete_time	= strdup(ptransfer_complete->start_time);
 				ptransfer_complete->fault_code		= error;
 
 				bkp_session_insert_transfer_complete(ptransfer_complete);
