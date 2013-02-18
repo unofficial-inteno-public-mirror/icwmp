@@ -215,7 +215,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	if (zstream_reopen(http_c.stream, http_c.url, ZSTREAM_POST)) {
 		/* something not good, let's try recreate */
 		http_client_exit();
-		if (http_client_init()) return -1;
+		if (http_client_init(cwmp)) return -1;
 	}
 
 
