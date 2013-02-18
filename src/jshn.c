@@ -26,7 +26,6 @@ static int jshn_message_parse(char **policy, int size, char **tb, char *msg)
 {
 	int i;
 	json_object *obj;
-	char		*c;
 
 	jshn_obj = json_tokener_parse(msg);
 	if (jshn_obj == NULL || is_error(jshn_obj) ||
@@ -41,9 +40,7 @@ static int jshn_message_parse(char **policy, int size, char **tb, char *msg)
 		if (obj == NULL || is_error(obj) ||
 			json_object_get_type(obj) != json_type_string)
 			continue;
-		c = (char *)json_object_get_string(obj);
-		if(c && c[0] != '\0')
-			tb[i] = c;
+		tb[i] = (char *)json_object_get_string(obj);
 	}
 	return 0;
 }
@@ -117,7 +114,7 @@ cwmp_handle_getParamValues(char *msg)
 
 	external_add_list_parameter(tb[GETPARAMVALUES_PARAM],
 			tb[GETPARAMVALUES_VALUE],
-			tb[GETPARAMVALUES_TYPE]? tb[GETPARAMVALUES_TYPE] : "xsd:string",
+			(tb[GETPARAMVALUES_TYPE] && (tb[GETPARAMVALUES_TYPE])[0])? tb[GETPARAMVALUES_TYPE] : "xsd:string",
 			tb[GETPARAMVALUES_FAULT]);
 
 	jshn_message_delete();
@@ -190,9 +187,6 @@ cwmp_handle_getParamAttributes(char *msg)
 	jshn_message_parse(getParamAttributes_policy, ARRAYSIZEOF(getParamAttributes_policy), tb, msg);
 
 	if (!tb[GETPARAMATTRIBUTES_PARAM])
-		goto error;
-
-	if (!tb[GETPARAMATTRIBUTES_NOTIF])
 		goto error;
 
 	CWMP_LOG(INFO, "triggered handle get parameter attribute of: %s",
