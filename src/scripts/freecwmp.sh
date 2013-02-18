@@ -432,8 +432,9 @@ if [ "$action" = "download" ]; then
 		fi
 	fi
 
-	dl_size=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
-	if [ ! "$dl_size" -eq "${FLAGS_size}" ]; then
+	local flashsize="`freecwmp_check_flash_size`"
+	local filesize=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
+	if [ $flashsize -gt 0 -a $flashsize -lt ${FLAGS_size} ]; then
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 		rm /tmp/freecwmp_download 2> /dev/null
 		freecwmp_fault_output "" "$fault_code"
@@ -442,8 +443,6 @@ if [ "$action" = "download" ]; then
 			mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
 			freecwmp_check_image
 			if [ "$?" = "0" ];then
-				local flashsize="`freecwmp_check_flash_size`"
-				local filesize="$dl_size"
 				if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
 					let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 					rm /tmp/firmware_upgrade_image 2> /dev/null
