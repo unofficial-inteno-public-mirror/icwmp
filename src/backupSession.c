@@ -407,7 +407,7 @@ void load_queue_event(mxml_node_t *tree,struct cwmp *cwmp)
 				}
 				if(idx != -1)
 				{
-					if ((cwmp->env.boot != CWMP_START_BOOT) || (EVENT_CONST[idx].RETRY & EVENT_RETRY_AFTER_REBOOT))
+					if (EVENT_CONST[idx].RETRY & EVENT_RETRY_AFTER_REBOOT)
 					{
 						event_container_save = cwmp_add_event_container (cwmp, idx, ((command_key!=NULL)?command_key:""));
 						if(event_container_save != NULL)

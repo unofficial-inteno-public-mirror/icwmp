@@ -42,7 +42,7 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
     char                                section[256];
     mxml_node_t							*b;
 
-    if (EVENT_CONST[event_container->code].RETRY != 0)
+    if (EVENT_CONST[event_container->code].RETRY & EVENT_RETRY_AFTER_REBOOT)
     {
         b = bkp_session_insert_event(event_container->code, event_container->command_key, event_container->id, "queue");
 
@@ -51,8 +51,9 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
             parameter_container = list_entry(ilist, struct parameter_container, list);
             bkp_session_insert_parameter(b, parameter_container->name);
         }
+        bkp_session_save();
     }
-    bkp_session_save();
+
     return;
 }
 
