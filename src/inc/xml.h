@@ -128,7 +128,7 @@ typedef struct transfer_complete {
 	char 								*complete_time;
 } transfer_complete;
 
-#define MXML_DELETE(X)  if (X) { mxmlDelete(X); X = NULL; }
+#define MXML_DELETE(X)  do {if (X) { mxmlDelete(X); X = NULL; } } while(0)
 
 extern struct list_head		list_schedule_inform;
 extern struct list_head		list_download;
