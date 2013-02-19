@@ -220,9 +220,9 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
 			if (xml_send_message(cwmp, session, rpc_cpe))
 				goto retry;
 			MXML_DELETE(session->tree_out);
+			cwmp_session_rpc_destructor(rpc_cpe);
 			if (!session->tree_in)
 				break;
-			cwmp_session_rpc_destructor(rpc_cpe);
 			if (xml_handle_message(session))
 				goto retry;
 		}
@@ -267,8 +267,8 @@ int cwmp_move_session_to_session_send (struct cwmp *cwmp, struct session *sessio
 
 int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *session)
 {
-    struct list_head            *ilist,*jlist;
-    struct rpc              	*rpc_acs,*queue_rpc_acs;
+    struct list_head            *ilist, *jlist;
+    struct rpc              	*rpc_acs, *queue_rpc_acs, *rpc_cpe;
     struct event_container      *event_container_old, *event_container_new;
     struct session              *session_queue;
     bool                        dup;
@@ -302,6 +302,11 @@ int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *sessi
 				return CWMP_MEM_ERR;
 			}
         }
+        while (session->head_rpc_cpe.next != &(session->head_rpc_cpe))
+		{
+        	rpc_cpe = list_entry(session->head_rpc_cpe.next, struct rpc, list);
+			cwmp_session_rpc_destructor(rpc_cpe);
+		}
         bkp_session_move_inform_to_inform_queue ();
         bkp_session_save();
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
