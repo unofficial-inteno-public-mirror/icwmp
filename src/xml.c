@@ -674,7 +674,7 @@ int cwmp_rpc_acs_prepare_transfer_complete(struct cwmp *cwmp, struct session *se
 	n = mxmlNewElement(n, "CompleteTime");
 	if (!n) goto error;
 
-	n = mxmlNewText(n, 0, p->complete_time);
+	n = mxmlNewText(n, 0, mix_get_time());
 	if (!n) goto error;
 
 	if(p->fault_code != 0)
@@ -1914,6 +1914,11 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 						}
 					}
 					free(fault_code);
+					if((error == FAULT_CPE_NO_FAULT) &&
+						(pdownload->file_type[0] == '1' || pdownload->file_type[0] == '3'))
+					{
+						exit(EXIT_SUCCESS);
+					}
 					bkp_session_delete_transfer_complete(ptransfer_complete);
 					ptransfer_complete->fault_code = error;
 					bkp_session_insert_transfer_complete(ptransfer_complete);
