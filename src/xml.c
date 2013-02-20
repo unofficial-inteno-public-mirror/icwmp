@@ -1524,8 +1524,7 @@ int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc)
 	b = mxmlNewElement(b, "cwmp:FactoryResetResponse");
 	if (!b) goto fault;
 
-	if (external_simple("factory_reset", NULL))
-		goto fault;
+	cwmp_set_end_session(END_SESSION_FACTORY_RESET);
 
 	return 0;
 

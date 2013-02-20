@@ -425,6 +425,12 @@ int run_session_end_func (struct session *session)
 	if (session->end_session & END_SESSION_RELOAD)
 		cwmp_apply_acs_changes();
 
+	if (session->end_session & END_SESSION_FACTORY_RESET)
+	{
+		external_simple("factory_reset", NULL);
+		exit(EXIT_SUCCESS);
+	}
+
 	session->end_session = 0;
 
 	return CWMP_OK;

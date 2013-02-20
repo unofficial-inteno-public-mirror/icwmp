@@ -492,7 +492,7 @@ if [ "$action" = "factory_reset" ]; then
 	else
 		jffs2_mark_erase "rootfs_data"
 		sync
-		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reboot_end_session" }' 2>&1 > /dev/null
+		reboot
 	fi
 fi
 
@@ -554,7 +554,7 @@ if [ "$action" = "notify" ]; then
 	fi
 	freecwmp_execute_functions "$get_notification_functions" "$__param"
 	fault_code="$?"
-	if [ "$fault_code" != "$FAULT_CPE_NO_FAULT" ]; then
+	if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ]; then
 		freecwmp_notify "$__arg1" "$__arg2" "$__arg3"
 	else
 		echo "Invalid parameter name" 1>&2
