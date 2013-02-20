@@ -149,11 +149,12 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	if [ ${FLAGS_last} -eq ${FLAGS_TRUE} ]; then
-		val=`dmesg | tail -n1`
-	else
-		val=`dmesg | tail -n10`
-	fi
+	#if [ ${FLAGS_last} -eq ${FLAGS_TRUE} ]; then
+	#	val=`dmesg | tail -n1`
+	#else
+	#	val=`dmesg | tail -n10`
+	#fi
+	val=""
 	;;
 	get_name)
 	permissions="0"
