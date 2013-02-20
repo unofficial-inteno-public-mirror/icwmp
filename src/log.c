@@ -123,14 +123,13 @@ void puts_log(int severity, const char *fmt, ...)
         strcpy(log_file_name,DEFAULT_LOG_FILE_NAME);
     }
 
-    if (stat(log_file_name, &st) == 0)
-    {
-        size = st.st_size;
-    }
-
     if(enable_log_file)
     {
         pthread_mutex_lock (&mutex_log);
+        if (stat(log_file_name, &st) == 0)
+        {
+            size = st.st_size;
+        }
         if(size >= log_max_size)
         {
             sprintf(log_file_name_bak,"%s.1",log_file_name);
