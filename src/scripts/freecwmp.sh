@@ -31,6 +31,7 @@ command:
   download
   factory_reset
   reboot
+  notify
   end_session
 EOF`
 
@@ -128,6 +129,12 @@ case "$1" in
 		;;
 	inform)
 		action="inform"
+		;;
+	notify)
+		action="notify"
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
 		;;
 	end_session)
 		action="end_session"
@@ -537,6 +544,21 @@ if [ "$action" = "inform" ]; then
 	get_wan_device_mng_interface_ip
 	get_management_server_connection_request_url
 	get_management_server_parameter_key
+fi
+
+if [ "$action" = "notify" ]; then
+	if [ "$__arg1" = "InternetGatewayDevice." -a "$__arg1" = "" ]; then
+		__param="InternetGatewayDevice."
+	else
+		__param="$__arg1"
+	fi
+	freecwmp_execute_functions "$get_notification_functions" "$__param"
+	fault_code="$?"
+	if [ "$fault_code" != "$FAULT_CPE_NO_FAULT" ]; then
+		freecwmp_notify "$__arg1" "$__arg2" "$__arg3"
+	else
+		echo "Invalid parameter name" 1>&2
+	fi
 fi
 
 if [ "$action" = "end_session" ]; then	
