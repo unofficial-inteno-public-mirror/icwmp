@@ -28,6 +28,7 @@ static pthread_mutex_t		mutex_download = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t		threshold_download;
 static bool					thread_download_is_working = false;
 int							count_download_queue = 0;
+int							count_schedule_inform_queue = 0;
 
 LIST_HEAD(list_schedule_inform);
 static pthread_mutex_t      mutex_schedule_inform = PTHREAD_MUTEX_INITIALIZER;
@@ -1634,6 +1635,7 @@ void *thread_cwmp_rpc_cpe_scheduleInform (void *v)
                 free (schedule_inform->commandKey);
             }
             free(schedule_inform);
+            count_schedule_inform_queue--;
             pthread_mutex_unlock (&mutex_schedule_inform);
             add_event_same_time = true;
             continue;
@@ -1683,7 +1685,7 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     struct list_head                *ilist;
     bool                            cond_signal=false;
     pthread_t                       scheduleInform_thread;
-    int                             error;
+    int                             error,fault = FAULT_CPE_NO_FAULT;
     unsigned int					delay_seconds = 0;
 
     pthread_mutex_lock (&mutex_schedule_inform);
@@ -1704,6 +1706,13 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
 		}
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 	}
+
+    if(count_schedule_inform_queue>=MAX_SCHEDULE_INFORM_QUEUE)
+	{
+		fault = FAULT_CPE_RESOURCES_EXCEEDED;
+		goto fault;
+	}
+    count_schedule_inform_queue++;
 
     scheduled_time = time(NULL) + delay_seconds;
     list_for_each(ilist,&(list_schedule_inform))
@@ -1762,7 +1771,7 @@ success:
 	return 0;
 
 fault:
-	if (cwmp_create_fault_message(session, rpc, FAULT_CPE_INTERNAL_ERROR))
+	if (cwmp_create_fault_message(session, rpc, fault?fault:FAULT_CPE_INTERNAL_ERROR))
 		goto error;
 	goto success;
 

@@ -21,6 +21,7 @@
 #define DOWNLOAD_PROTOCOL_HTTP		"http://"
 #define DOWNLOAD_PROTOCOL_FTP		"ftp://"
 #define	MAX_DOWNLOAD_QUEUE			10
+#define	MAX_SCHEDULE_INFORM_QUEUE	10
 
 struct cwmp_namespaces
 {
