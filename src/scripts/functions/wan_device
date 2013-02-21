@@ -561,6 +561,17 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 
 set_wan_device_notification() {
 case "$1" in
+	InternetGatewayDevice.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1." "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Enable" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password" "0"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.WANDevice.)
 	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1." "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.WANDevice.1.WANConnectionDevice." "0"
