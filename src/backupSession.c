@@ -15,7 +15,7 @@
 #include "xml.h"
 #include "log.h"
 
-static mxml_node_t		*bkp_tree;
+static mxml_node_t		*bkp_tree = NULL;
 pthread_mutex_t         mutex_backup_session = PTHREAD_MUTEX_INITIALIZER;
 
 void bkp_session_save()
@@ -688,9 +688,12 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 		return CWMP_OK;
 	}
 
-	pFile = fopen(CWMP_BKP_FILE, "r");
-	bkp_tree = mxmlLoadFile(NULL, pFile, MXML_NO_CALLBACK);
-	fclose(pFile);
+	if(bkp_tree == NULL)
+	{
+		pFile = fopen(CWMP_BKP_FILE, "r");
+		bkp_tree = mxmlLoadFile(NULL, pFile, MXML_NO_CALLBACK);
+		fclose(pFile);
+	}
 
 	if(bkp_tree == NULL)
 	{
