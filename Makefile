@@ -126,7 +126,7 @@ ifeq ($(CONFIG_CWMP_SCRIPTS_FULL),y)
 endif
 endef
 
-define Package/cwmpd/postinst
+define Package/cwmp-$(BUILD_VARIANT)/postinst
 	#!/bin/sh
 	echo "$(CWMP_BKP_FILE)" >> $${IPKG_INSTROOT}/etc/sysupgrade.conf
 	if [ -z "$${IPKG_INSTROOT}" ]; then
@@ -136,7 +136,7 @@ define Package/cwmpd/postinst
 	exit 0
 endef
 
-define Package/cwmpd/prerm
+define Package/cwmp-$(BUILD_VARIANT)/prerm
 	#!/bin/sh
 	if [ -z "$${IPKG_INSTROOT}" ]; then
 		echo "Disabling rc.d symlink for cwmpd"
