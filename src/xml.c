@@ -1710,6 +1710,7 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     if(count_schedule_inform_queue>=MAX_SCHEDULE_INFORM_QUEUE)
 	{
 		fault = FAULT_CPE_RESOURCES_EXCEEDED;
+		pthread_mutex_unlock (&mutex_schedule_inform);
 		goto fault;
 	}
     count_schedule_inform_queue++;
