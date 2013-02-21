@@ -162,7 +162,7 @@ int external_get_action(char *action, char *name, char *arg, int external_handle
 	if (pipe(pfds) < 0)
 		return -1;
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"executing get %s '%s'", action, name);
+	DD(INFO,"executing get %s '%s'", action, name);
 
 	if ((uproc.pid = fork()) == -1)
 		goto error;
@@ -215,7 +215,7 @@ error:
 int external_get_action_write(char *action, char *name, char *arg)
 {
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"adding to get %s script '%s'", action, name);
+	DD(INFO,"adding to get %s script '%s'", action, name);
 
 	FILE *fp;
 
@@ -261,7 +261,7 @@ int external_get_action_execute(int external_handler(char *msg))
 	if (access(fc_script_actions, F_OK) == -1)
 		goto success;
 
-	CWMP_LOG(INFO,"executing get script");
+	DD(INFO,"executing get script");
 
 	if ((uproc.pid = fork()) == -1) {
 		goto error;
@@ -312,7 +312,7 @@ error:
 int external_set_action_write(char *action, char *name, char *value, char *change)
 {
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"adding to set %s script '%s'", action, name);
+	DD(INFO,"adding to set %s script '%s'", action, name);
 
 	FILE *fp;
 
@@ -354,7 +354,7 @@ int external_set_action_execute(char *action, int external_handler(char *msg))
 		return -1;
 
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"executing set script");
+	DD(INFO,"executing set script");
 
 	FILE *fp;
 
@@ -426,7 +426,7 @@ int external_object_action(char *action, char *name, int external_handler(char *
 		return -1;
 
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"executing object %s '%s'", action, name);
+	DD(INFO,"executing object %s '%s'", action, name);
 
 	if ((uproc.pid = fork()) == -1)
 		goto error;
@@ -482,7 +482,7 @@ int external_simple(char *arg, int external_handler(char *msg))
 		return -1;
 
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"executing %s request", arg);
+	DD(INFO,"executing %s request", arg);
 
 	if ((uproc.pid = fork()) == -1)
 		goto error;
@@ -536,7 +536,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 		return -1;
 
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"executing download url '%s'", url);
+	DD(INFO,"executing download url '%s'", url);
 
 	if ((uproc.pid = fork()) == -1)
 		goto error;
@@ -605,7 +605,7 @@ int external_apply_download(char *type, int external_handler(char *msg))
 		return -1;
 
 	pthread_mutex_lock(&external_mutex_exec);
-	CWMP_LOG(INFO,"applying downloaded file");
+	DD(INFO,"applying downloaded file");
 
 	if ((uproc.pid = fork()) == -1)
 		goto error;

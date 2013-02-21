@@ -70,7 +70,7 @@ cwmp_handle_downloadFault(char *msg)
 	if (!tb[DOWNLOAD_FAULT])
 		goto error;
 
-	CWMP_LOG(INFO,"triggered handle download fault %s", tb[DOWNLOAD_FAULT]);
+	DD(INFO,"triggered handle download fault %s", tb[DOWNLOAD_FAULT]);
 
 	external_downloadFaultResp (tb[DOWNLOAD_FAULT]);
 
@@ -108,7 +108,7 @@ cwmp_handle_getParamValues(char *msg)
 		goto error;
 
 
-	CWMP_LOG(INFO, "triggered handle get parameter value of: %s",
+	DD(INFO, "triggered handle get parameter value of: %s",
 			     tb[GETPARAMVALUES_PARAM]);
 
 
@@ -149,7 +149,7 @@ cwmp_handle_getParamNames(char *msg)
 		goto error;
 
 
-	CWMP_LOG(INFO, "triggered handle get parameter name of: %s",
+	DD(INFO, "triggered handle get parameter name of: %s",
 			     tb[GETPARAMNAMES_PARAM]);
 
 
@@ -189,7 +189,7 @@ cwmp_handle_getParamAttributes(char *msg)
 	if (!tb[GETPARAMATTRIBUTES_PARAM])
 		goto error;
 
-	CWMP_LOG(INFO, "triggered handle get parameter attribute of: %s",
+	DD(INFO, "triggered handle get parameter attribute of: %s",
 			     tb[GETPARAMATTRIBUTES_PARAM]);
 
 	external_add_list_parameter(tb[GETPARAMATTRIBUTES_PARAM],
@@ -223,7 +223,7 @@ cwmp_handle_setParamAttributes(char *msg)
 
 	jshn_message_parse(setParamAttributes_policy, ARRAYSIZEOF(setParamAttributes_policy), tb, msg);
 
-	CWMP_LOG(INFO, "triggered handle set parameter attribute");
+	DD(INFO, "triggered handle set parameter attribute");
 
 	external_setParamAttrResp(tb[SETPARAMATTRIBUTES_SUCCESS],
 			tb[SETPARAMATTRIBUTES_FAULT]);
@@ -257,7 +257,7 @@ cwmp_handle_setParamValuesFault(char *msg)
 		goto error;
 
 
-	CWMP_LOG(INFO, "triggered handle set parameter value fault (%s) of: %s",
+	DD(INFO, "triggered handle set parameter value fault (%s) of: %s",
 						tb[SETPARAMVALUESFAULT_FAULT],
 						tb[SETPARAMVALUESFAULT_PARAM]);
 
@@ -295,7 +295,7 @@ cwmp_handle_setParamValuesStatus(char *msg)
 		goto error;
 
 
-	CWMP_LOG(INFO, "triggered handle set parameter value status");
+	DD(INFO, "triggered handle set parameter value status");
 
 	external_setParamValRespStatus(tb[SETPARAMVALUESSTATUS_STATUS]);
 
@@ -337,7 +337,7 @@ cwmp_handle_addObject(char *msg)
 {
 	char *tb[__ADDOBJECT_MAX] = {0};
 
-	CWMP_LOG(INFO, "triggered handle add object");
+	DD(INFO, "triggered handle add object");
 
 	jshn_message_parse(addObject_policy, ARRAYSIZEOF(addObject_policy), tb, msg);
 
@@ -364,7 +364,7 @@ cwmp_handle_delObject(char *msg)
 {
 	char *tb[__DELOBJECT_MAX] = {0};
 
-	CWMP_LOG(INFO, "triggered handle delete object");
+	DD(INFO, "triggered handle delete object");
 
 	jshn_message_parse(delObject_policy, ARRAYSIZEOF(delObject_policy), tb, msg);
 

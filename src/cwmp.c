@@ -136,7 +136,9 @@ void cwmp_schedule_session (struct cwmp *cwmp)
             CWMP_LOG(EMERG,"FATAL error in the mutex process in the session scheduler!");
             exit(EXIT_FAILURE);
         }
+        CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
+        CWMP_LOG (INFO,"End session");
         run_session_end_func(session);
         if (session->error == CWMP_RETRY_SESSION)
         {
@@ -182,11 +184,19 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
             rpc_acs = list_entry (ilist, struct rpc, list);
             if (!rpc_acs->type)
             	goto retry;
+
+            CWMP_LOG (INFO,"Preparing the %s RPC message to send to the ACS",
+            		rpc_acs_methods[rpc_acs->type].name);
             if (rpc_acs_methods[rpc_acs->type].prepare_message(cwmp, session, rpc_acs))
             	goto retry;
-            CWMP_LOG (INFO,"Send the RPC message to the ACS");
+
+            CWMP_LOG (INFO,"Send the %s RPC message to the ACS",
+            		rpc_acs_methods[rpc_acs->type].name);
             if (xml_send_message(cwmp, session, rpc_acs))
             	goto retry;
+
+            CWMP_LOG (INFO,"Get the %sResponse message from the ACS",
+                        		rpc_acs_methods[rpc_acs->type].name);
             if (rpc_acs_methods[rpc_acs->type].parse_response)
             	if (rpc_acs_methods[rpc_acs->type].parse_response(cwmp, session, rpc_acs))
             		goto retry;
@@ -200,11 +210,13 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
             if (session->hold_request)
                  break;
         }
-		if (xml_send_message(cwmp, session, NULL))
+        CWMP_LOG (INFO,"Send empty message to the ACS");
+        if (xml_send_message(cwmp, session, NULL))
 			goto retry;
 		if (!session->tree_in)
 			goto next;
 
+		CWMP_LOG (INFO,"Receive request from the ACS");
 		if (xml_handle_message(session))
 			goto retry;
 
@@ -213,16 +225,26 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
 			rpc_cpe = list_entry (session->head_rpc_cpe.next, struct rpc, list);
 			if (!rpc_cpe->type)
 				goto retry;
+
+			CWMP_LOG (INFO,"Preparing the %s%s message",
+					rpc_cpe_methods[rpc_cpe->type].name,
+					(rpc_cpe->type != RPC_CPE_FAULT) ? "Response" : "");
 			if (cwmp_rpc_cpe_handle_message(session, rpc_cpe))
 				goto retry;
 			MXML_DELETE(session->tree_in);
-			CWMP_LOG (INFO,"Send the RPC response message to the ACS");
+
+			CWMP_LOG (INFO,"Send the %s%s message to the ACS",
+					rpc_cpe_methods[rpc_cpe->type].name,
+					(rpc_cpe->type != RPC_CPE_FAULT) ? "Response" : "");
 			if (xml_send_message(cwmp, session, rpc_cpe))
 				goto retry;
 			MXML_DELETE(session->tree_out);
+
 			cwmp_session_rpc_destructor(rpc_cpe);
 			if (!session->tree_in)
 				break;
+
+			CWMP_LOG (INFO,"Receive request from the ACS");
 			if (xml_handle_message(session))
 				goto retry;
 		}
@@ -237,7 +259,9 @@ next:
 success:
 	session->error = CWMP_OK;
 	goto end;
+
 retry:
+	CWMP_LOG (INFO,"Failed");
 	session->error = CWMP_RETRY_SESSION;
 
 end:
@@ -414,21 +438,29 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp)
 int run_session_end_func (struct session *session)
 {
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
+	{
+		CWMP_LOG (INFO,"Executing external commands: end session request");
 		external_simple("end_session", NULL);
+	}
+
+	if (session->end_session & END_SESSION_FACTORY_RESET)
+	{
+		CWMP_LOG (INFO,"Executing factory reset: end session request");
+		external_simple("factory_reset", NULL);
+		exit(EXIT_SUCCESS);
+	}
 
 	if (session->end_session & END_SESSION_REBOOT)
 	{
+		CWMP_LOG (INFO,"Executing Reboot: end session request");
 		external_simple("reboot", NULL);
 		exit(EXIT_SUCCESS);
 	}
 
 	if (session->end_session & END_SESSION_RELOAD)
-		cwmp_apply_acs_changes();
-
-	if (session->end_session & END_SESSION_FACTORY_RESET)
 	{
-		external_simple("factory_reset", NULL);
-		exit(EXIT_SUCCESS);
+		CWMP_LOG (INFO,"Config reload: end session request");
+		cwmp_apply_acs_changes();
 	}
 
 	session->end_session = 0;

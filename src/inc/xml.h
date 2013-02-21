@@ -92,6 +92,7 @@ struct rpc_cpe_method {
 };
 
 struct rpc_acs_method {
+	const char *name;
 	int (*prepare_message)(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 	int (*parse_response)(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 	int (*extra_clean)(struct session *session, struct rpc *rpc);

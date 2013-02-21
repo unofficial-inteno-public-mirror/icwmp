@@ -90,9 +90,9 @@ const struct rpc_cpe_method rpc_cpe_methods[] = {
 };
 
 const struct rpc_acs_method rpc_acs_methods[] = {
-	[RPC_ACS_INFORM] 			= {cwmp_rpc_acs_prepare_message_inform, cwmp_rpc_acs_parse_response_inform, cwmp_rpc_acs_destroy_data_inform},
-	[RPC_ACS_GET_RPC_METHODS] 	= {cwmp_rpc_acs_prepare_get_rpc_methods, NULL, NULL},
-	[RPC_ACS_TRANSFER_COMPLETE] = {cwmp_rpc_acs_prepare_transfer_complete,	NULL, cwmp_rpc_acs_destroy_data_transfer_complete}
+	[RPC_ACS_INFORM] 			= {"Inform", cwmp_rpc_acs_prepare_message_inform, cwmp_rpc_acs_parse_response_inform, cwmp_rpc_acs_destroy_data_inform},
+	[RPC_ACS_GET_RPC_METHODS] 	= {"GetRPCMethods", cwmp_rpc_acs_prepare_get_rpc_methods, NULL, NULL},
+	[RPC_ACS_TRANSFER_COMPLETE] = {"TransferComplete", cwmp_rpc_acs_prepare_transfer_complete,	NULL, cwmp_rpc_acs_destroy_data_transfer_complete}
 };
 
 const struct DEVICE_ID_STRUCT DEVICE_ID_CONST [] = {
@@ -329,10 +329,10 @@ int xml_handle_message(struct session *session)
 	} else {
 		goto error;
 	}
-	CWMP_LOG (INFO,"Receive SOAP RPC from ACS: %s", c);
+	CWMP_LOG (INFO,"SOAP RPC message: %s", c);
 	rpc_cpe = NULL;
-	for (i = 1; i < RPC_CPE_FAULT; i++) {
-		if (!strcmp(c, rpc_cpe_methods[i].name)) {
+	for (i = 1; i < __RPC_CPE_MAX; i++) {
+		if (i!= RPC_CPE_FAULT && strcmp(c, rpc_cpe_methods[i].name) == 0) {
 			CWMP_LOG (INFO,"%s RPC is supported",c);
 			rpc_cpe = cwmp_add_session_rpc_cpe(session, i);
 			if (rpc_cpe == NULL) goto error;
@@ -340,6 +340,7 @@ int xml_handle_message(struct session *session)
 		}
 	}
 	if (!rpc_cpe) {
+		CWMP_LOG (INFO,"%s RPC is not supported",c);
 		session->fault_code = FAULT_CPE_METHOD_NOT_SUPPORTED;
 		rpc_cpe = cwmp_add_session_rpc_cpe(session, RPC_CPE_FAULT);
 		if (rpc_cpe == NULL) goto error;
@@ -488,7 +489,6 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
         return -1;
     }
 
-    CWMP_LOG (INFO,"Prepare the RPC message: Inform");
 #ifdef DUMMY_MODE
 	FILE *fp;
 	fp = fopen("./ext/soap_msg_templates/cwmp_inform_message.xml", "r");
@@ -605,7 +605,6 @@ int cwmp_rpc_acs_prepare_get_rpc_methods(struct cwmp *cwmp, struct session *sess
 {
 	mxml_node_t *tree, *n;
 
-	CWMP_LOG (INFO,"Prepare the RPC message: GetRPCMethods");
 	tree = mxmlLoadString(NULL, CWMP_RESPONSE_MESSAGE, MXML_NO_CALLBACK);
 
 	n = mxmlFindElement(tree, tree, "soap_env:Body",
@@ -646,7 +645,6 @@ int cwmp_rpc_acs_prepare_transfer_complete(struct cwmp *cwmp, struct session *se
 	mxml_node_t *tree, *n;
 	struct transfer_complete *p;
 
-	CWMP_LOG (INFO,"Prepare the RPC message: TransferComplete");
 	p = (struct transfer_complete *)rpc->extra_data;
 	tree = mxmlLoadString(NULL, CWMP_RESPONSE_MESSAGE, MXML_NO_CALLBACK);
 
@@ -734,7 +732,6 @@ int cwmp_handle_rpc_cpe_get_parameter_values(struct session *session, struct rpc
 	char *c = NULL;
 	int counter = 0, fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: GetParameterValuesResponse");
 	b = session->body_in;
 	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
 			    NULL, NULL, MXML_DESCEND);
@@ -842,7 +839,6 @@ int cwmp_handle_rpc_cpe_get_parameter_names(struct session *session, struct rpc 
 	char *c;
 	int counter = 0, fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: GetParameterNamesResponse");
 	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
 				NULL, NULL, MXML_DESCEND);
 	if (!n) goto fault;
@@ -950,7 +946,6 @@ int cwmp_handle_rpc_cpe_get_parameter_attributes(struct session *session, struct
 	char *c=NULL;
 	int counter = 0, fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: GetParameterAttributesResponse");
 	b = session->body_in;
 	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
 				NULL, NULL, MXML_DESCEND);
@@ -1079,7 +1074,6 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 	char buf[128];
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: SetParameterValuesResponse");
 
 	b = mxmlFindElement(session->body_in, session->body_in, "ParameterList", NULL, NULL, MXML_DESCEND);
 	if(!b) {
@@ -1286,7 +1280,6 @@ int cwmp_handle_rpc_cpe_add_object(struct session *session, struct rpc *rpc)
 	char *status = NULL, *instance = NULL, *fault = NULL;
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: AddObjectResponse");
 	b = session->body_in;
 	while (b) {
 		if (b && b->type == MXML_TEXT &&
@@ -1380,7 +1373,6 @@ int cwmp_handle_rpc_cpe_delete_object(struct session *session, struct rpc *rpc)
 	char *status = NULL, *fault = NULL;
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: DeleteObjectResponse");
 	b = session->body_in;
 	while (b) {
 		if (b && b->type == MXML_TEXT &&
@@ -1463,7 +1455,6 @@ int cwmp_handle_rpc_cpe_get_rpc_methods(struct session *session, struct rpc *rpc
 	char *c = NULL;
 	int i,counter = 0;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: GetRPCMethodsResponse");
 	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
 				NULL, NULL, MXML_DESCEND);
 	if (!n) goto fault;
@@ -1476,7 +1467,7 @@ int cwmp_handle_rpc_cpe_get_rpc_methods(struct session *session, struct rpc *rpc
 
 	for (i=1; i<__RPC_CPE_MAX; i++)
 	{
-		if ((rpc_cpe_methods[i].handler != NULL) && (rpc_cpe_methods[i].name != NULL))
+		if (i!= RPC_CPE_FAULT)
 		{
 			n = mxmlNewElement(method_list, "string");
 			if (!n) goto fault;
@@ -1547,7 +1538,6 @@ int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc)
 	struct event_container  *event_container;
 	char *command_key = NULL;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: RebootResponse");
 	b = session->body_in;
 
 	while (b) {
@@ -1696,7 +1686,6 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     int                             error;
     unsigned int					delay_seconds = 0;
 
-    CWMP_LOG (INFO,"Prepare the RPC response message: ScheduleInformResponse");
     pthread_mutex_lock (&mutex_schedule_inform);
 
     while (b) {
@@ -2006,7 +1995,6 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 	time_t 						download_delay;
 	bool                		cond_signal = false;
 
-	CWMP_LOG (INFO,"Prepare the RPC response message: DownloadResponse");
 	if (asprintf(&c, "%s:%s", ns.cwmp, "Download") == -1)
 	{
 		error = FAULT_CPE_INTERNAL_ERROR;
@@ -2300,6 +2288,7 @@ int cwmp_get_fault_code (char *fault_code)
 
 int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int fault_code)
 {
+	CWMP_LOG (INFO,"Fault in the received RPC");
 	session->fault_code = fault_code;
 
 	MXML_DELETE(session->tree_out);
@@ -2307,6 +2296,7 @@ int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int 
 	if (xml_prepare_msg_out(session))
 		return -1;
 
+	CWMP_LOG (INFO,"Preparing the Fault message");
 	if (rpc_cpe_methods[RPC_CPE_FAULT].handler(session, rpc_cpe))
 		return -1;
 
