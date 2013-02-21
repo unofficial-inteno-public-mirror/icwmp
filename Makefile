@@ -104,7 +104,7 @@ CONFIGURE_ARGS += \
 	--enable-debug
 endif
 
-ifeq ($(CONFIG_CWMP_DEVEL_DEBUG),y)
+ifeq ($(CONFIG_CWMP_DEVEL_DEBUG),n)
 CONFIGURE_ARGS += \
 	--enable-devel
 endif
