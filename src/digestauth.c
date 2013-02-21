@@ -17,6 +17,7 @@
 #include <errno.h>
 #include "md5.h"
 #include "digestauth.h"
+#include "log.h"
 
 #define HASH_MD5_HEX_LEN (2 * MD5_DIGEST_SIZE)
 
