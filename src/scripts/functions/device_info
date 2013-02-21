@@ -7,7 +7,7 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.manufacturer 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.manufacturer 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -24,7 +24,7 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.oui 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.oui 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -40,7 +40,7 @@ get_device_info_product_class() {
 local val=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.product_class 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.product_class 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -57,7 +57,7 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.serial_number 2> /dev/null`
+	local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.serial_number 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -74,7 +74,7 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.hardware_version 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.hardware_version 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -91,7 +91,7 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.software_version 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.software_version 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"

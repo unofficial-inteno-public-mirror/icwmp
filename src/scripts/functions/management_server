@@ -11,7 +11,7 @@ local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.URL"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.url 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.url 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -29,7 +29,7 @@ local type="xsd:string"
 case "$action" in
 	set_value)
 	local url=$1
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.url="$url"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.url="$url"
 	freecwmp_notify "$parm" "$url" "$type"
 	;;
 	set_notification)
@@ -45,7 +45,7 @@ local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.userid 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.userid 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -62,7 +62,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.userid="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.userid="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -76,7 +76,7 @@ local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.passwd 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.passwd 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -93,7 +93,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.passwd="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.passwd="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -107,7 +107,7 @@ local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.ParameterKey"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.ParameterKey 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.ParameterKey 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -125,7 +125,7 @@ local type="xsd:string"
 local val="$1"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.ParameterKey="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.ParameterKey="$val"
 	freecwmp_notify "$parm" "$val" "$type"
 	;;
 	set_notification)
@@ -141,7 +141,7 @@ local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_enable`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.periodic_inform_enable`
 	;;
 	get_name)
 	permissions="1"
@@ -158,7 +158,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.periodic_inform_enable="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.periodic_inform_enable="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -173,7 +173,7 @@ local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.acs.periodic_inform_interval 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.periodic_inform_interval 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -190,7 +190,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.acs.periodic_inform_interval="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.periodic_inform_interval="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -209,8 +209,8 @@ case "$action" in
 		FLAGS_value=${FLAGS_TRUE}
 		local tmp_json=${FLAGS_json}
 		FLAGS_json=${FLAGS_FALSE}
-		local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.cpe.ip`
-		local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.port`
+		local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.cpe.ip`
+		local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.port`
 		FLAGS_value=$tmp_value
 		FLAGS_json=$tmp_json
 	
@@ -237,7 +237,7 @@ local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.userid 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.userid 2> /dev/null`
 	;;
 	get_name)
 	val="0"
@@ -254,7 +254,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.userid="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.cpe.userid="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -268,7 +268,7 @@ local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.cpe.passwd 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.passwd 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
@@ -285,7 +285,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.passwd="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.cpe.passwd="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -301,7 +301,7 @@ local permissions=""
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].scheme 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@acs[0].scheme 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -318,7 +318,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Scheme"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].scheme="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@acs[0].scheme="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -332,7 +332,7 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].hostname 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@acs[0].hostname 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -350,9 +350,9 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Hostname"
 case "$action" in
 	set_value)
 	if [ -z "$default_management_server_acs_hostname" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].hostname="$val"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@acs[0].hostname="$val"
 	else
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].hostname="$default_management_server_acs_hostname"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@acs[0].hostname="$default_management_server_acs_hostname"
 	fi
 	;;
 	set_notification)
@@ -367,7 +367,7 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].port 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@acs[0].port 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -384,7 +384,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Port"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].port="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@acs[0].port="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -398,7 +398,7 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@acs[0].path 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@acs[0].path 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -415,7 +415,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__ACS_Path"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@acs[0].path="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@acs[0].path="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -429,7 +429,7 @@ local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Re
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@local[0].port 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@local[0].port 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -446,7 +446,7 @@ local val=$1
 local parm="InternetGatewayDevice.ManagementServer.X_freecwmp_org__Connection_Request_Port"
 case "$action" in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.@local[0].port="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.@local[0].port="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"

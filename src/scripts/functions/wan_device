@@ -51,7 +51,7 @@ local permissions=""
 case "$action" in
 	get_value)
 	if [ -z "$default_wan_device_mng_interface_mac" ]; then
-		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.mng.macaddr`
+		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.mng.macaddr`
 	else
 		val=$default_wan_device_mng_interface_mac
 	fi
@@ -73,7 +73,7 @@ local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnec
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.auto 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.wan.auto 2> /dev/null`
 	if [ -z $val ]; then
 		val="1"
 	fi
@@ -94,10 +94,10 @@ local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnec
 case $action in
 	set_value)
 	if [ "$val" -eq 0 ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.auto=0
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.wan.auto=0
 		ifdown wan &
 	elif [ "$val" -eq 1 ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.auto=1
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.wan.auto=1
 		ifup wan &
 	fi
 	;;
@@ -113,7 +113,7 @@ local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnec
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.username 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.wan.username 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -130,7 +130,7 @@ local val=$1
 local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Username"
 case $action in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.username="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.wan.username="$val"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -144,7 +144,7 @@ local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnec
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get network.wan.password 2> /dev/null`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.wan.password 2> /dev/null`
 	;;
 	get_name)
 	permissions="1"
@@ -161,7 +161,7 @@ local val=$1
 local parm="InternetGatewayDevice.WANDevice.1.WANConnectionDevice.2.WANPPPConnection.1.Password"
 case $action in
 	set_value)
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.wan.password="$1"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.wan.password="$1"
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
