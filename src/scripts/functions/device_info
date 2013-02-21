@@ -370,6 +370,12 @@ case "$1" in
 	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
 	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
+	InternetGatewayDevice.DeviceInfo.UpTime)
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	;;
+	InternetGatewayDevice.DeviceInfo.DeviceLog)
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	;;
 esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
@@ -395,6 +401,12 @@ case "$1" in
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
 	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.UpTime)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.DeviceLog)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
 esac
