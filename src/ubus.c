@@ -92,13 +92,13 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 	char *info;
 
 	if (!strcmp("reload_end_session", cmd)) {
-		CWMP_LOG(INFO, "triggered ubus reload_end_session\n");
+		CWMP_LOG(INFO, "triggered ubus reload_end_session");
 		cwmp_set_end_session(END_SESSION_RELOAD);
 		blobmsg_add_u32(&b, "status", 0);
 		if (asprintf(&info, "freecwmpd config will reload at the end of the session") == -1)
 			return -1;
 	} else if (!strcmp("reload", cmd)) {
-		CWMP_LOG(INFO, "triggered ubus reload\n");
+		CWMP_LOG(INFO, "triggered ubus reload");
 		cwmp_apply_acs_changes();
 		blobmsg_add_u32(&b, "status", 0);
 		if (asprintf(&info, "freecwmp config reloaded") == -1)

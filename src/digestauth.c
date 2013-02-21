@@ -18,8 +18,6 @@
 #include "md5.h"
 #include "digestauth.h"
 
-#undef DIGEST_DEBUG
-
 #define HASH_MD5_HEX_LEN (2 * MD5_DIGEST_SIZE)
 
 /**
@@ -318,9 +316,8 @@ int http_digest_auth_fail_response(FILE *fp, const char *http_method,
 				"Digest realm=\"%s\",qop=\"auth\",nonce=\"%s\",opaque=\"%s\"%s",
 				realm, nonce, opaque, signal_stale ? ",stale=\"true\"" : "");
 
-#ifdef DIGEST_DEBUG
-		printf("%s: header: %s\n", __FUNCTION__, header);
-#endif
+		DD(DEBUG, "%s: header: %s", __FUNCTION__, header);
+
 		fputs("WWW-Authenticate: ", fp);
 		fputs(header, fp);
 		return MHD_YES;
@@ -362,9 +359,7 @@ int http_digest_auth_check(const char *http_method, const char *url,
 	size_t left; /* number of characters left in 'header' for 'uri' */
 	unsigned long int nci;
 
-#ifdef DIGEST_DEBUG
-	printf("%s: header: %s\n", __FUNCTION__, header);
-#endif
+	DD(DEBUG, "%s: header: %s", __FUNCTION__, header);
 
 	left = strlen(header);
 
@@ -410,9 +405,8 @@ int http_digest_auth_check(const char *http_method, const char *url,
 
 		if (0 != strncmp(uri, url, strlen(url)))
 		{
-#ifdef DIGEST_DEBUG
-			printf("Authentication failed: URI does not match.\n");
-#endif
+			DD(DEBUG, "Authentication failed: URI does not match.");
+
 			return MHD_NO;
 		}
 
@@ -440,17 +434,13 @@ int http_digest_auth_check(const char *http_method, const char *url,
 						== lookup_sub_value(response, sizeof(response), header,
 								"response")))
 		{
-#ifdef DIGEST_DEBUG
-			printf("Authentication failed, invalid format.\n");
-#endif
+			DD(DEBUG, "Authentication failed, invalid format.");
 			return MHD_NO;
 		}
 		nci = strtoul(nc, &end, 16);
 		if (('\0' != *end) || ((LONG_MAX == nci) && (ERANGE == errno)))
 		{
-#ifdef DIGEST_DEBUG
-			printf("Authentication failed, invalid format.\n");
-#endif
+			DD(DEBUG, "Authentication failed, invalid format.");
 			return MHD_NO; /* invalid nonce format */
 		}
 

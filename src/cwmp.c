@@ -173,7 +173,7 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
     int					error=0,e;
 
     if (http_client_init(cwmp)) {
-		CWMP_LOG(INFO, "initializing http client failed\n");
+		CWMP_LOG(INFO, "Initializing http client failed");
 		goto retry;
 	}
 

@@ -74,19 +74,19 @@ struct FAULT_CPE FAULT_CPE_ARRAY [] = {
 };
 
 const struct rpc_cpe_method rpc_cpe_methods[] = {
-	[RPC_CPE_GET_RPC_METHODS] 				= {"GetRPCMethods",           cwmp_handle_rpc_cpe_get_rpc_methods},
-	[RPC_CPE_SET_PARAMETER_VALUES] 			= {"SetParameterValues",      cwmp_handle_rpc_cpe_set_parameter_values},
-	[RPC_CPE_GET_PARAMETER_VALUES] 			= {"GetParameterValues",      cwmp_handle_rpc_cpe_get_parameter_values},
-	[RPC_CPE_GET_PARAMETER_NAMES] 			= {"GetParameterNames",       cwmp_handle_rpc_cpe_get_parameter_names},
-	[RPC_CPE_SET_PARAMETER_ATTRIBUTES] 		= {"SetParameterAttributes",  cwmp_handle_rpc_cpe_set_parameter_attributes},
-	[RPC_CPE_GET_PARAMETER_ATTRIBUTES] 		= {"GetParameterAttributes",  cwmp_handle_rpc_cpe_get_parameter_attributes},
-	[RPC_CPE_ADD_OBJECT] 					= {"AddObject",               cwmp_handle_rpc_cpe_add_object},
-	[RPC_CPE_DELETE_OBJECT] 				= {"DeleteObject",            cwmp_handle_rpc_cpe_delete_object},
-	[RPC_CPE_REBOOT] 						= {"Reboot",                  cwmp_handle_rpc_cpe_reboot},
-	[RPC_CPE_DOWNLOAD] 						= {"Download",                cwmp_handle_rpc_cpe_download},
-	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset",            cwmp_handle_rpc_cpe_factory_reset},
-	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform",          cwmp_handle_rpc_cpe_schedule_inform},
-	[RPC_CPE_FAULT] 						= {NULL,          			  cwmp_handle_rpc_cpe_fault}
+	[RPC_CPE_GET_RPC_METHODS] 				= {"GetRPCMethods", cwmp_handle_rpc_cpe_get_rpc_methods},
+	[RPC_CPE_SET_PARAMETER_VALUES] 			= {"SetParameterValues", cwmp_handle_rpc_cpe_set_parameter_values},
+	[RPC_CPE_GET_PARAMETER_VALUES] 			= {"GetParameterValues", cwmp_handle_rpc_cpe_get_parameter_values},
+	[RPC_CPE_GET_PARAMETER_NAMES] 			= {"GetParameterNames", cwmp_handle_rpc_cpe_get_parameter_names},
+	[RPC_CPE_SET_PARAMETER_ATTRIBUTES] 		= {"SetParameterAttributes", cwmp_handle_rpc_cpe_set_parameter_attributes},
+	[RPC_CPE_GET_PARAMETER_ATTRIBUTES] 		= {"GetParameterAttributes", cwmp_handle_rpc_cpe_get_parameter_attributes},
+	[RPC_CPE_ADD_OBJECT] 					= {"AddObject", cwmp_handle_rpc_cpe_add_object},
+	[RPC_CPE_DELETE_OBJECT] 				= {"DeleteObject", cwmp_handle_rpc_cpe_delete_object},
+	[RPC_CPE_REBOOT] 						= {"Reboot", cwmp_handle_rpc_cpe_reboot},
+	[RPC_CPE_DOWNLOAD] 						= {"Download", cwmp_handle_rpc_cpe_download},
+	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset", cwmp_handle_rpc_cpe_factory_reset},
+	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform", cwmp_handle_rpc_cpe_schedule_inform},
+	[RPC_CPE_FAULT] 						= {"Fault", cwmp_handle_rpc_cpe_fault}
 };
 
 const struct rpc_acs_method rpc_acs_methods[] = {

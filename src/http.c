@@ -67,7 +67,7 @@ http_client_init(struct cwmp *cwmp)
 		return -1;
 #endif
 
-	CWMP_LOG(INFO, "ACS url: %s\n", http_c.url);
+	CWMP_LOG(INFO, "ACS url: %s", http_c.url);
 
 	/* TODO debug ssl config from freecwmp*/
 
@@ -278,7 +278,7 @@ static void http_new_client(struct uloop_fd *ufd, unsigned events)
 
 		/* set one minute timeout */
 		if (setsockopt(ufd->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&t, sizeof t)) {
-			CWMP_LOG(ERROR,"setsockopt() failed\n");
+			CWMP_LOG(ERROR,"setsockopt() failed");
 		}
 
 		if (client == -1)
