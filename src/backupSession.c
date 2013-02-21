@@ -659,6 +659,24 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 	cwmp_root_cause_TransferComplete (cwmp, ptransfer_complete);
 }
 
+bkp_session_create_file()
+{
+	FILE		*pFile;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	pFile = fopen(CWMP_BKP_FILE,"w");
+	if(pFile == NULL)
+	{
+		CWMP_LOG(ERROR,"Unable to create %s file",CWMP_BKP_FILE);
+		pthread_mutex_unlock (&mutex_backup_session);
+		return CWMP_MEM_ERR;
+	}
+	fprintf(pFile,"%s",CWMP_BACKUP_SESSION);
+	bkp_tree = mxmlLoadString(NULL, CWMP_BACKUP_SESSION, MXML_NO_CALLBACK);
+	fclose(pFile);
+	pthread_mutex_unlock (&mutex_backup_session);
+}
+
 int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading load)
 {
 	FILE		*pFile;
@@ -666,24 +684,19 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 
 	if(access(CWMP_BKP_FILE, F_OK) == -1)
 	{
-		pthread_mutex_lock (&mutex_backup_session);
-		pFile = fopen(CWMP_BKP_FILE,"w");
-		if(pFile == NULL)
-		{
-			CWMP_LOG(ERROR,"Unable to create %s file",CWMP_BKP_FILE);
-			pthread_mutex_unlock (&mutex_backup_session);
-			return CWMP_MEM_ERR;
-		}
-		fprintf(pFile,"%s",CWMP_BACKUP_SESSION);
-		bkp_tree = mxmlLoadString(NULL, CWMP_BACKUP_SESSION, MXML_NO_CALLBACK);
-		fclose(pFile);
-		pthread_mutex_unlock (&mutex_backup_session);
+		bkp_session_create_file();
 		return CWMP_OK;
 	}
 
 	pFile = fopen(CWMP_BKP_FILE, "r");
 	bkp_tree = mxmlLoadFile(NULL, pFile, MXML_NO_CALLBACK);
 	fclose(pFile);
+
+	if(bkp_tree == NULL)
+	{
+		bkp_session_create_file();
+		return CWMP_OK;
+	}
 
 	bkp_session_move_inform_to_inform_queue ();
 	bkp_session_save();
