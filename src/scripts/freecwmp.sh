@@ -350,7 +350,7 @@ if [ "$action" = "set_notification" ]; then
 			freecwmp_execute_functions "$set_notification_functions" "$__parm" "$__arg2"
 			fault_code="$?"
 		fi
-		if [ "$fault_code" = "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$__parm" = "InternetGatewayDevice." ]; then
+		if [ "$__parm" = "InternetGatewayDevice." ]; then
 			freecwmp_set_parameter_notification "$__parm" "$__arg2"
 			fault_code="$FAULT_CPE_NO_FAULT"
 		fi
