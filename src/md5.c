@@ -17,6 +17,9 @@
 
 #include "md5.h"
 
+# if __BYTE_ORDER == __BIG_ENDIAN
+#define HIGHFIRST
+#endif
 
 #ifndef HIGHFIRST
 #define byteReverse(buf, len)	/* Nothing */
