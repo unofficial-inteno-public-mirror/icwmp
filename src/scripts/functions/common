@@ -490,7 +490,7 @@ freecwmp_execute_functions()
 		if [ "$fault_code" = "0" ]; then
 			no_fault="1"
 		fi
-		if [ "$fault_code" != "0" -a \( "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -o "$fault_code" != "$FAULT_CPE_NOTIFICATION_REJECTED" \) ]; then
+		if [ "$fault_code" != "0" -a "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" ]; then
 			return $fault_code
 		fi
 	done

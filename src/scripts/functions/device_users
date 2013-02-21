@@ -133,7 +133,7 @@ get_device_users_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
 set_device_users() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-set_device_users_notification() { return $FAULT_CPE_NOTIFICATION_REJECTED; }
+set_device_users_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
 add_device_users() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 

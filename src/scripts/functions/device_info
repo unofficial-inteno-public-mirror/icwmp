@@ -19,10 +19,6 @@ esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.Manufacturer" "$val" "$permissions"
 }
 
-set_device_info_manufacturer() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.manufacturer="$1"
-}
-
 get_device_info_oui() {
 local val=""
 local permissions=""
@@ -40,10 +36,6 @@ esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.ManufacturerOUI" "$val" "$permissions"
 }
 
-set_device_info_oui() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.oui="$1"
-}
-
 get_device_info_product_class() {
 local val=""
 case "$action" in
@@ -58,10 +50,6 @@ case "$action" in
 	;;
 esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.ProductClass" "$val" "$permissions"
-}
-
-set_device_info_product_class() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.product_class="$1"
 }
 
 get_device_info_serial_number() {
@@ -81,10 +69,6 @@ esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.SerialNumber" "$val" "$permissions"
 }
 
-set_device_info_serial_number() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.serial_number="$1"
-}
-
 get_device_info_hardware_version() {
 local val=""
 local permissions=""
@@ -102,10 +86,6 @@ esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.HardwareVersion" "$val" "$permissions"
 }
 
-set_device_info_hardware_version() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.hardware_version="$1"
-}
-
 get_device_info_software_version() {
 local val=""
 local permissions=""
@@ -121,10 +101,6 @@ case "$action" in
 	;;
 esac
 freecwmp_output "InternetGatewayDevice.DeviceInfo.SoftwareVersion" "$val" "$permissions"
-}
-
-set_device_info_software_version() {
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.cpe.software_version="$1"
 }
 
 get_device_info_uptime() {
@@ -377,35 +353,51 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 set_device_info() {
 case "$1" in
 	InternetGatewayDevice.DeviceInfo.Manufacturer)
-	set_device_info_manufacturer "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
-	set_device_info_oui "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 	InternetGatewayDevice.DeviceInfo.ProductClass)
-	set_device_info_product_class "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 	InternetGatewayDevice.DeviceInfo.SerialNumber)
-	set_device_info_serial_number "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 	InternetGatewayDevice.DeviceInfo.HardwareVersion)
-	set_device_info_hardware_version "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
-	set_device_info_software_version "$2"
-	return $FAULT_CPE_NO_FAULT
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
 esac
 return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 set_device_info_notification() {
-return $FAULT_CPE_NOTIFICATION_REJECTED
+	InternetGatewayDevice.DeviceInfo.)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.Manufacturer)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.ManufacturerOUI)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.ProductClass)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.SerialNumber)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.HardwareVersion)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.DeviceInfo.SoftwareVersion)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+esac
+return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 check_parameter_device_info_generic() {
