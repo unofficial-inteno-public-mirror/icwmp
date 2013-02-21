@@ -356,14 +356,17 @@ error_child:
 http_end_child:
 			fflush(fp);
 			if (auth_status) {
+				CWMP_LOG (INFO,"Receive Connection Request: success authentication");
 				status = 0;
 				fputs("HTTP/1.1 200 OK\r\n", fp);
 				fputs("Content-Length: 0\r\n", fp);
 			} else if (!service_available) {
+				CWMP_LOG (INFO,"Receive Connection Request: Return 503 Service Unavailable");
 				status = EACCES;
 				fputs("HTTP/1.1 503 Service Unavailable\r\n", fp);
 				fputs("Connection: close\r\n", fp);
 			} else {
+				CWMP_LOG (INFO,"Receive Connection Request: Return 401 Unauthorized");
 				status = EACCES;
 				fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
 				fputs("Connection: close\r\n", fp);
