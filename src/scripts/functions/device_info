@@ -375,6 +375,7 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 set_device_info_notification() {
+case "$1" in
 	InternetGatewayDevice.DeviceInfo.)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
