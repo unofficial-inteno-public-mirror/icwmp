@@ -257,7 +257,7 @@ void http_server_init(void)
 
 	sprintf(port,"%d",cwmp_main.conf.connection_request_port);
 	http_s.http_event.cb = http_new_client;
-	http_s.http_event.fd = usock(USOCK_TCP | USOCK_SERVER, cwmp_main.conf.ip, port);
+	http_s.http_event.fd = usock(USOCK_TCP | USOCK_SERVER, "0.0.0.0", port);
 	uloop_fd_add(&http_s.http_event, ULOOP_READ | ULOOP_EDGE_TRIGGER);
 }
 

@@ -90,8 +90,6 @@ static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 	}
 
 	if (strlen(if_addr) == 0) return;
-
-	uloop_timeout_set(&netlink_timer, 2500);
 }
 
 static void netlink_new_msg(struct uloop_fd *ufd, unsigned events)
@@ -174,6 +172,8 @@ int netlink_init(void)
 
 	struct uloop_fd dummy_event = { .fd = sock[1] };
 	netlink_new_msg(&dummy_event, 0);
+
+	uloop_timeout_set(&netlink_timer, 2500);
 
 	return 0;
 }
