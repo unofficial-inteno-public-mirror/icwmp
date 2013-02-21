@@ -33,7 +33,7 @@ get_misc_notification () { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
 set_misc() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-set_misc_notification () { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+set_misc_notification () { return $FAULT_CPE_NOTIFICATION_REJECTED; }
 
 add_misc() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 

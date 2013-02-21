@@ -197,7 +197,7 @@ get_device_hosts_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
 set_device_hosts() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
-set_device_hosts_notification() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
+set_device_hosts_notification() { return $FAULT_CPE_NOTIFICATION_REJECTED; }
 
 add_device_hosts() { return $FAULT_CPE_INVALID_PARAMETER_NAME; }
 
