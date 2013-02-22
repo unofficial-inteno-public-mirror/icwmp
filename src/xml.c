@@ -2298,7 +2298,7 @@ int cwmp_get_fault_code (char *fault_code)
 
 int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int fault_code)
 {
-	CWMP_LOG (INFO,"Fault in the received RPC");
+	CWMP_LOG (INFO,"Fault detected");
 	session->fault_code = fault_code;
 
 	MXML_DELETE(session->tree_out);
