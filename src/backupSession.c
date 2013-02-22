@@ -26,7 +26,6 @@ void bkp_session_save()
 	fp = fopen(CWMP_BKP_FILE, "w");
 	mxmlSaveFile(bkp_tree, fp, MXML_NO_CALLBACK);
 	fclose(fp);
-	sync();
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
@@ -659,7 +658,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 	cwmp_root_cause_TransferComplete (cwmp, ptransfer_complete);
 }
 
-bkp_session_create_file()
+void bkp_session_create_file()
 {
 	FILE		*pFile;
 
@@ -669,7 +668,7 @@ bkp_session_create_file()
 	{
 		CWMP_LOG(ERROR,"Unable to create %s file",CWMP_BKP_FILE);
 		pthread_mutex_unlock (&mutex_backup_session);
-		return CWMP_MEM_ERR;
+		return;
 	}
 	fprintf(pFile,"%s",CWMP_BACKUP_SESSION);
 	bkp_tree = mxmlLoadString(NULL, CWMP_BACKUP_SESSION, MXML_NO_CALLBACK);
@@ -677,15 +676,14 @@ bkp_session_create_file()
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
-int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading load)
+int bkp_session_check_file()
 {
 	FILE		*pFile;
-	mxml_node_t *b;
 
 	if(access(CWMP_BKP_FILE, F_OK) == -1)
 	{
 		bkp_session_create_file();
-		return CWMP_OK;
+		return -1;
 	}
 
 	if(bkp_tree == NULL)
@@ -698,11 +696,27 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 	if(bkp_tree == NULL)
 	{
 		bkp_session_create_file();
-		return CWMP_OK;
+		return -1;
 	}
-
 	bkp_session_move_inform_to_inform_queue ();
 	bkp_session_save();
+	return 0;
+}
+
+int cwmp_init_backup_session(struct cwmp *cwmp, char **ret, enum backup_loading load)
+{
+	int error;
+
+	if(bkp_session_check_file())
+		return 0;
+
+	error = cwmp_load_saved_session(cwmp, ret, load);
+	return error;
+}
+
+int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading load)
+{
+	mxml_node_t *b;
 
 	b = bkp_tree;
 	b = mxmlWalkNext(b, bkp_tree, MXML_DESCEND);

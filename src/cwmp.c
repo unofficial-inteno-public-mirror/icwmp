@@ -504,7 +504,7 @@ int main(int argc, char **argv)
     }
     CWMP_LOG(INFO,"STARTING CWMP");
 
-    if (error = cwmp_load_saved_session(cwmp, NULL, ALL))
+    if (error = cwmp_init_backup_session(cwmp, NULL, ALL))
     {
         return error;
     }
