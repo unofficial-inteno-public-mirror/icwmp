@@ -2166,7 +2166,14 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		}
 		bkp_session_insert_download(download);
 		bkp_session_save();
-		CWMP_LOG(INFO,"Download will start in %us",download_delay);
+		if(download_delay != 0)
+		{
+			CWMP_LOG(INFO,"Download will start in %us",download_delay);
+		}
+		else
+		{
+			CWMP_LOG(INFO,"Download will start at the end of session");
+		}
 
 		pthread_mutex_unlock (&mutex_download);
 		if (cond_signal)
