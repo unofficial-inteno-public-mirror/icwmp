@@ -347,6 +347,20 @@ if [ "$action" = "set_notification" ]; then
 			__parm="$__arg1"
 		fi
 		if [ "$fault_code" = "0" ]; then
+			tmp_empty=${FLAGS_empty}
+			FLAGS_empty=${FLAGS_TRUE}
+			tmp_json=${FLAGS_json}
+			FLAGS_json=${FLAGS_FALSE}
+			action="get_value"
+			parameters=`freecwmp_execute_functions "$get_value_functions" "$__parm"`
+			for parameter in $parameters;do
+				uci_remove_list_element "cwmp.@notifications[0].passive" "$parameter" 2>/dev/null
+				uci_remove_list_element "cwmp.@notifications[0].active" "$parameter" 2>/dev/null
+				uci_remove_list_element "cwmp.@notifications[0].disabled" "$parameter" 2>/dev/null
+			done
+			FLAGS_empty=${tmp_empty}
+			FLAGS_json=${tmp_json}
+			action="set_notification"
 			freecwmp_execute_functions "$set_notification_functions" "$__parm" "$__arg2"
 			fault_code="$?"
 		fi

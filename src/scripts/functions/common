@@ -35,6 +35,11 @@ freecwmp_output() {
 		fi
 	fi
 	
+	if [ ${FLAGS_empty} -eq ${FLAGS_TRUE} ]; then
+		local parameter="$1"
+		echo $ECHO_newline $parameter
+	fi
+	
 	if [ "$FLAGS_json" = "${FLAGS_TRUE}" ]; then
 		local parameter="$1"
 		local value="$2"
@@ -286,11 +291,11 @@ freecwmp_config_notifications() {
 		for item in $__disabled
         do
                 if [ "$item" = "$3" ]; then
-                        eval "export -- \"$4=1\""
+                        eval "export -- \"$4=0\""
                         return 0
                 elif [ "`echo $3|grep $item`" = "$3" ]; then
                         if [ $length -lt ${#item} ]; then
-                              eval "export -- \"$4=1\""
+                              eval "export -- \"$4=0\""
                               length="${#item}"
                         fi
                 fi
@@ -395,7 +400,7 @@ freecwmp_set_parameter_notification() {
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "2" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
-	else
+	elif [ "$_val" -eq "0" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
 	fi
 }
