@@ -3,25 +3,25 @@
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 handle_wan_logical_intf() {
-local config="$1"
-local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
-local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
-local logical_intf
-if [ "$_orig_ifname" != "" ];then
-	logical_intf=$_orig_ifname
-else
-	logical_intf=$ifname
-fi
-
-if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
-	echo $logical_intf
-fi
+for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;do
+	local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
+	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
+	local logical_intf
+	if [ "$_orig_ifname" != "" ];then
+		logical_intf=$_orig_ifname
+	else
+		logical_intf=$ifname
+	fi
+	
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
+		echo $logical_intf
+	fi
+done
 }
 
 get_wan_logical_intf() {
 local intf="$1"
-config_load network
-local list_intf=`config_foreach handle_wan_logical_intf interface`
+local list_intf=`handle_wan_logical_intf`
 for i in $list_intf;do
 	if [ "`echo $i|cut -c1-3`" != "`echo $prev_i|cut -c1-3`" ];then
 		n=1
@@ -37,38 +37,49 @@ done
 }
 
 handle_wan_interface() {
-local config="$1"
-local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
-local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
-local logical_intf
-local instance
-if [ "$_orig_ifname" != "" ];then
-	logical_intf=$_orig_ifname
-else
-	logical_intf=$ifname
-fi
-if [ "`echo $_orig_ifname|grep eth`" != "" -o "`echo $ifname|grep eth`" != "" ];then
-	instance=1 
-elif [ "`echo $_orig_ifname|grep atm`" != "" -o "`echo $ifname|grep atm`" != "" ];then
-	instance=2
-elif [ "`echo $_orig_ifname|grep ptm`" != "" -o "`echo $ifname|grep ptm`" != "" ];then
-	instance=3
-fi
-if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
-	echo $config:$instance:$logical_intf
-fi
+for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;do
+	local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
+	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
+	local logical_intf
+	local instance
+	if [ "$_orig_ifname" != "" ];then
+		logical_intf=$_orig_ifname
+	else
+		logical_intf=$ifname
+	fi
+	if [ "`echo $_orig_ifname|grep eth`" != "" -o "`echo $ifname|grep eth`" != "" ];then
+		instance=1 
+	elif [ "`echo $_orig_ifname|grep atm`" != "" -o "`echo $ifname|grep atm`" != "" ];then
+		instance=2
+	elif [ "`echo $_orig_ifname|grep ptm`" != "" -o "`echo $ifname|grep ptm`" != "" ];then
+		instance=3
+	fi
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
+		echo $config:$instance:$logical_intf
+	fi
+done
 }
 
 get_wan_device_instance() {
-config_load network
-local interface="$1"
-local list_interface=`config_foreach handle_wan_interface interface`
+local populate="$1"
+local parameter="$2"
+local value="$3"
+local next_level="$4"
+local notification="$5"
+local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
+local fault_err=$FAULT_CPE_INVALID_PARAMETER_NAME
+local list_interface=`handle_wan_interface`
 local logical_intf
 local dev=0
 local wan=0
 local wan_ppp=1
 local wan_ip=1
-echo "InternetGatewayDevice.WANDevice.:$iface:get_wan_device_object_name"
+# $1:parameter $2:param $3:get_fn $4:set_fn $5:value $6:notification $7:next_level $8:interface
+$populate "$parameter" "InternetGatewayDevice.WANDevice." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+fault_code="$?"
+if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+	fault_err=$FAULT_CPE_NO_FAULT
+fi
 for intf in $list_interface;do
 		iface=`echo $intf|cut -f1 -d:`
 		dev=`echo $intf|cut -f2 -d:`
@@ -84,42 +95,136 @@ for intf in $list_interface;do
 		fi		
 		
 		proto=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$iface.proto`
-		echo "InternetGatewayDevice.WANDevice.$dev.:$iface:get_wan_device_object_name"
-		echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.:$iface:get_wan_device_object_name"
-		echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.:$iface:get_wan_device_object_name"
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface" 
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.:$iface:get_wan_device_object_name"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.:$iface:get_wan_device_object_name"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable:$iface:get_wan_device_wan_mng_enable:set_wan_device_wan_mng_enable"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ConnectionStatus:$iface:get_wan_device_mng_status:set_wan_device_mng_status"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress:$iface:get_wan_device_mng_interface_ip"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.MACAddress:$iface:get_wan_device_mng_interface_mac"
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable" "get_wan_device_wan_mng_enable" "set_wan_device_wan_mng_enable" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ConnectionStatus" "get_wan_device_mng_status" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress" "get_wan_device_mng_interface_ip" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.MACAddress" "get_wan_device_mng_interface_mac" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
 				let wan_ip=$wan_ip+1
 		fi
 		if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.:$iface:get_wan_device_object_name"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.:$iface:get_wan_device_object_name"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable:$iface:get_wan_device_wan_ppp_enable:set_wan_device_wan_ppp_enable"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress:$iface:get_wan_device_ppp_interface_ip"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username:$iface:get_wan_device_wan_ppp_username:set_wan_device_wan_ppp_username"
-				echo "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password:$iface:get_wan_device_wan_ppp_password:set_wan_device_wan_ppp_password"
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable" "get_wan_device_wan_ppp_enable" "set_wan_device_wan_ppp_enable" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ConnectionStatus" "get_wan_device_ppp_status" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "get_wan_device_ppp_interface_ip" "" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username" "get_wan_device_wan_ppp_username" "set_wan_device_wan_ppp_username" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
+				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "get_wan_device_wan_ppp_password" "set_wan_device_wan_ppp_password" "$value" "$notification" "$next_level" "$iface"
+				fault_code="$?"
+				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					fault_err=$FAULT_CPE_NO_FAULT
+				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+					return $fault_code
+				fi
 				let wan_ppp=$wan_ppp+1
 		fi
 		prev_wan=$wan
 		prev_dev=$dev
 done
-}
-
-get_wan_device_interface() {
-local instance="$1"
-local instances=`get_wan_device_instance`
-local list_interface=`config_foreach handle_wan_interface interface`
-for i in $instances;do
-        if [ "`echo $i|cut -f1 -d:`" = "$instance" ];then
-                echo $i|cut -f2 -d:
-                return 0
-        fi
-done
+return $fault_err
 }
 
 get_wan_device_wan_mng_enable() {
@@ -127,7 +232,7 @@ local val=""
 local type="xsd:boolean"
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	json_load "$(ifstatus $intf)"
@@ -147,7 +252,7 @@ freecwmp_output "$parm" "$val" "$permissions" "$type"
 set_wan_device_wan_mng_enable() {
 local parm="$1"
 local val="$2"
-local intf=`get_wan_device_interface $parm`
+local intf="$3"
 case $action in
 	set_value)
 	if [ "$val" -eq 0 ]; then
@@ -167,7 +272,41 @@ get_wan_device_mng_status() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
+case "$action" in
+	get_value)
+	json_load "$(ifstatus $intf)"
+	json_get_var up up
+	if [ "$up" = "1" ];then
+		json_get_var uptime uptime
+		json_get_var pending pending
+	else
+		uptime=0
+	fi
+	if [ $uptime -gt 0 ];then
+		val="Connected"
+	elif [ $pending = 1 ];then
+		val="Pending Disconnect"
+	else
+		val="Disconnected"
+	fi
+	;;
+	get_name)
+	permissions="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+freecwmp_output "$parm" "$val" "$permissions"
+}
+
+get_wan_device_ppp_status() {
+# TODO: Unconfigured ; Connecting ; Connected ; PendingDisconnect ; Disconneting ; Disconnected 
+local val=""
+local parm="$1"
+local permissions=""
+local intf="$2"
 case "$action" in
 	get_value)
 	json_load "$(ifstatus $intf)"
@@ -200,7 +339,7 @@ get_wan_device_mng_interface_ip() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	if [ -z "$default_wan_device_mng_interface_ip" ]; then
@@ -223,7 +362,7 @@ get_wan_device_ppp_interface_ip() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	if [ -z "$default_wan_device_mng_interface_ip" ]; then
@@ -246,7 +385,7 @@ get_wan_device_mng_interface_mac() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 local _orig_ifname
 local ifname
 case "$action" in
@@ -276,7 +415,7 @@ local val=""
 local type="xsd:boolean"
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	json_load "$(ifstatus $intf)"
@@ -296,7 +435,7 @@ freecwmp_output "$parm" "$val" "$permissions" "$type"
 set_wan_device_wan_ppp_enable() {
 local parm="$1"
 local val="$2"
-local intf=`get_wan_device_interface $parm`
+local intf="$3"
 case $action in
 	set_value)
 	if [ "$val" -eq 0 ]; then
@@ -315,7 +454,7 @@ get_wan_device_wan_ppp_username() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$intf.username 2> /dev/null`
@@ -333,7 +472,7 @@ freecwmp_output "$parm" "$val" "$permissions"
 set_wan_device_wan_ppp_username() {
 local parm="$1"
 local val="$2"
-local intf=`get_wan_device_interface $parm`
+local intf="$3"
 case $action in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.$intf.username="$val"
@@ -348,7 +487,7 @@ get_wan_device_wan_ppp_password() {
 local val=""
 local parm="$1"
 local permissions=""
-local intf=`get_wan_device_interface $parm`
+local intf="$2"
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$intf.password 2> /dev/null`
@@ -366,12 +505,9 @@ freecwmp_output "$parm" "$val" "$permissions"
 set_wan_device_wan_ppp_password() {
 local parm="$1"
 local val="$2"
-local intf=`get_wan_device_interface $parm`
+local intf="$3"
 case $action in
 	set_value)
-	echo $parm
-	echo $intf 
-	echo $val
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.$intf.password="$val"
 	;;
 	set_notification)
@@ -380,120 +516,169 @@ case $action in
 esac
 }
 
-get_wan_device() {
-local parameters=`get_wan_device_instance`
+get_pop() {
 local parameter="$1"
+local parm="$2"
+local get_fn="$3"
+local intf="$8"
 local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
-for param in $parameters;do
-	check=`echo $param|grep $parameter`
-	if [ "$check" != "" ];then
-		parm=`echo $param|cut -f1 -d:`
-		get_fn=`echo $param|cut -f3 -d:`
-		if [ "`echo $parm|grep '\.$'`" = "" ];then
-			eval "$get_fn $parm" 2> /dev/null
-		fi
-		fault_code=$FAULT_CPE_NO_FAULT
+check=`echo $parm|grep $parameter`
+if [ "$check" != "" ];then
+	if [ "`echo $parm|grep '\.$'`" = "" ];then
+		eval "$get_fn $parm $intf" 2> /dev/null
 	fi
-done
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
 return $fault_code
 }
 
 get_wan_device_object_name() {
 local parm="$1"
-	freecwmp_output "$parm" "" "1"
+freecwmp_output "$parm" "" "1"
+return $FAULT_CPE_NO_FAULT
 }
 
-get_wan_device_name() {
-local parameters=`get_wan_device_instance`
+get_pop_inform() {
 local parameter="$1"
+local parm="$2"
+local get_fn="$3"
+local intf="$8"
+local extern_intf=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.default_wan_interface`
 local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
-for param in $parameters;do
-	check=`echo $param|grep $parameter`
-	if [ "$check" != "" ];then
-		if [ "`echo $parameter|grep '\.$'`" = "" -a "$2" = "1" ];then
-			return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
-		parm=`echo $param|cut -f1 -d:`
-		get_fn=`echo $param|cut -f3 -d:`
-		if [ "$2" = "1" ];then
-			if [ "`echo $parameter|grep '\.$'`" = "" -a "${parm%.*}." = "$parameter" ];then
-				eval "$get_fn $parm" 2> /dev/null
-			fi
-			if [ "`echo $parm|grep '\.$'`" != "" ];then
-				p="${parm%.*}"
-				if [ "$prev_obj" != "$parm" -a "${p%.*}." = "$parameter" ];then
-					eval "$get_fn $parm" 2> /dev/null
-					prev_obj=$parm
-				fi
-			fi
-		else
-			eval "$get_fn $parm" 2> /dev/null
-		fi
-		fault_code=$FAULT_CPE_NO_FAULT
+if [ "$intf" = "$extern_intf" -a "`echo $parm|grep ExternalIPAddress`" != "" ];then
+	eval "$get_fn $parm $intf" 2> /dev/null
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
+return $fault_code
+}
+
+get_pop_name() {
+local parameter="$1"
+local parm="$2"
+local next_level="$7"
+local get_fn="$3"
+local intf="$8"
+local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
+check=`echo $parm|grep $parameter`
+if [ "$check" != "" ];then
+	if [ "`echo $parameter|grep '\.$'`" = "" -a "$next_level" = "1" ];then
+		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-done
+	if [ "$next_level" = "1" ];then
+		if [ "`echo $parameter|grep '\.$'`" = "" -a "${parm%.*}." = "$parameter" ];then
+			eval "$get_fn $parm $intf" 2> /dev/null
+		fi
+		if [ "`echo $parm|grep '\.$'`" != "" ];then
+			p="${parm%.*}"
+			if [ "$prev_obj" != "$parm" -a "${p%.*}." = "$parameter" ];then
+				eval "$get_fn $parm $intf" 2> /dev/null
+				prev_obj=$parm
+			fi
+		fi
+	else
+		eval "$get_fn $parm" 2> /dev/null
+	fi
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
+return $fault_code
+}
+
+get_pop_notification() {
+local parameter="$1"
+local parm="$2"
+local get_fn="$3"
+local intf="$8"
+local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
+check=`echo $parm|grep $parameter`
+if [ "$check" != "" ];then
+	if [ "`echo $parm|grep '\.$'`" = "" ];then
+		eval "$get_fn $parm $intf" 2> /dev/null
+	fi
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
+return $fault_code 
+}
+
+set_pop() {
+local parameter="$1"
+local parm="$2"
+local set_fn="$4"
+local value="$5"
+local intf="$8"
+local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
+check=`echo $parm|grep $parameter`
+if [ "$check" != "" ];then
+	if [ "`echo $parameter|grep '\.$'`" = "" -a "$set_fn" != "" ];then
+		eval "$set_fn $parm $value $intf" 2> /dev/null
+	fi
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
+return $fault_code
+}
+
+set_pop_notification() {
+local parameter="$1"
+local parm="$2"
+local set_fn="$4"
+local notification="$6"
+local intf="$8"
+local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
+check=`echo $parm|grep $parameter`
+if [ "$check" != "" ];then
+	if [ "`echo $parameter|grep '\.$'`" = "" -a "$set_fn" != "" ];then
+		eval "$set_fn $parm $notification $intf" 2> /dev/null
+	else
+		freecwmp_set_parameter_notification "$parm" "0"
+	fi
+	fault_code=$FAULT_CPE_NO_FAULT
+fi
+if [ "`echo $parameter|grep '\.$'`" != "" ];then
+	freecwmp_set_parameter_notification "$parameter" "$notification"
+fi
+return $fault_code
+}
+
+get_wan_device() {
+local fault_code
+local parameter="$1"
+get_wan_device_instance "get_pop" "$parameter" "" "" ""
+fault_code="$?"
 return $fault_code
 }
 
 get_wan_device_notification() {
-local parameters=`get_wan_device_instance`
+local fault_code
 local parameter="$1"
-local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
-for param in $parameters;do
-	check=`echo $param|grep $parameter`
-	if [ "$check" != "" ];then
-		parm=`echo $param|cut -f1 -d:`
-		get_fn=`echo $param|cut -f3 -d:`
-		if [ "`echo $parm|grep '\.$'`" = "" ];then
-			eval "$get_fn $parm" 2> /dev/null
-		fi
-		fault_code=$FAULT_CPE_NO_FAULT
-	fi
-done
+get_wan_device_instance "get_pop_notification" "$parameter" "" "" ""
+fault_code="$?"
+return $fault_code
+}
+
+get_wan_device_name() {
+local fault_code
+local parameter="$1"
+local next_level="$2"
+get_wan_device_instance "get_pop_name" "$parameter" "" "$next_level" ""
+fault_code="$?"
 return $fault_code
 }
 
 set_wan_device() {
-local parameters=`get_wan_device_instance`
+local fault_code
 local parameter="$1"
 local value="$2"
-local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
-for param in $parameters;do
-	check=`echo $param|grep $parameter`
-	if [ "$check" != "" ];then
-		parm=`echo $param|cut -f1 -d:`
-		set_fn=`echo $param|cut -f4 -d:`
-		echo $set_fn
-		if [ "`echo $parameter|grep '\.$'`" = "" -a "$set_fn" != "" ];then
-			eval "$set_fn $parm $value" 2> /dev/null
-		fi
-		fault_code=$FAULT_CPE_NO_FAULT
-	fi
-done
+get_wan_device_instance "set_pop" "$parameter" "$value" "" ""
+fault_code="$?"
 return $fault_code
 }
 
-set_wan_device_notification() {
-local parameters=`get_wan_device_instance`
+set_wan_device_notification () {
+local fault_code
 local parameter="$1"
 local notification="$2"
-local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
-for param in $parameters;do
-	check=`echo $param|grep $parameter`
-	if [ "$check" != "" ];then
-		parm=`echo $param|cut -f1 -d:`
-		set_fn=`echo $param|cut -f4 -d:`
-		if [ "`echo $parameter|grep '\.$'`" = "" -a "$set_fn" != "" ];then
-			eval "$set_fn $parm $notification" 2> /dev/null
-		else
-			freecwmp_set_parameter_notification "$parm" "0"
-		fi
-		fault_code=$FAULT_CPE_NO_FAULT
-	fi
-done
-if [ "`echo $parameter|grep '\.$'`" != "" ];then
-	freecwmp_set_parameter_notification "$parameter" "$notification"
-fi
+local fault_code
+get_wan_device_instance "set_pop_notification" "$parameter" "" "" "$notification"
+fault_code="$?"
 return $fault_code
 }
 

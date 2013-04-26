@@ -556,7 +556,7 @@ if [ "$action" = "inform" ]; then
 	get_device_info_software_version
 	get_device_info_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode"
 	get_device_info_generic "InternetGatewayDevice.DeviceInfo.SpecVersion"
-	get_wan_device_mng_interface_ip ""
+	get_wan_device_instance "get_pop_inform" "" "" "" "" "fault"
 	get_management_server_connection_request_url
 	get_management_server_parameter_key
 fi
