@@ -13,7 +13,7 @@ for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;
 		logical_intf=$ifname
 	fi
 	
-	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" != "1"  ];then
 		echo $logical_intf
 	fi
 done
@@ -54,7 +54,7 @@ for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;
 	elif [ "`echo $_orig_ifname|grep ptm`" != "" -o "`echo $ifname|grep ptm`" != "" ];then
 		instance=3
 	fi
-	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" = "0"  ];then
+	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" != "1"  ];then
 		echo $config:$instance:$logical_intf
 	fi
 done
