@@ -53,6 +53,9 @@ config scripts
 	list function device_hosts
 	list location /usr/share/freecwmp/functions/device_routing
 	list function device_routing
+	list location /usr/share/freecwmp/functions/voice_service
+	list function voice_service
+	
 	
 config notifications
         list active 'InternetGatewayDevice.ManagementServer.URL'
