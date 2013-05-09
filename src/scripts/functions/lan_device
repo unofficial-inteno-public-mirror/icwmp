@@ -2,6 +2,11 @@
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
+get_wlan_number_of_entries() {
+local val=`/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show wireless | fgrep '=wifi-iface' | wc -l`
+eval "export -- \"$1=$val\""
+}
+
 get_wlan_enable() {
 local num="$1"
 local type="xsd:boolean"
@@ -88,11 +93,11 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	device=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].device 2> /dev/null`
-	let num=$num+1
-	json_load "$(devstatus $device)"
-	json_get_var macaddr macaddr
-	val="$macaddr"
+	if [ "$num" = "0" ];then
+		val=`/usr/sbin/wlctl -i wl$num bssid`
+	else
+		val=`/usr/sbin/wlctl -i wl0.$num bssid`
+	fi
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BSSID" "$val" "$permissions" "$type"
 	;;
 	get_name)
@@ -108,13 +113,97 @@ case "$action" in
 esac
 }
 
+get_wlan_max_bit_rate() {
+local num="$1"
+local type="xsd:string"
+local val=""
+local permissions=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.wl0.hwmode`
+	let num=$num+1
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "$val" "$permissions" "$type"
+	;;
+	get_name)
+	permissions="1"
+	let num=$num+1
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "$val" "$permissions"
+	;;
+	get_notification)
+	let num=$num+1
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "$val"
+	;;
+esac
+}
+
+set_wlan_max_bit_rate() {
+local num="$1"
+local val="$2"
+case $action in
+	set_value)
+	delay_command "wifi" "wifi" "45"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.wl0.hwmode="auto"
+	;;
+	set_notification)
+	let num=$num+1
+	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate"
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
+get_wlan_channel() {
+local num="$1"
+local type="xsd:string"
+local val=""
+local permissions=""
+case "$action" in
+	get_value)
+	if [ "$num" = "0" ];then
+		val=`/usr/sbin/wlctl -i wl$num channel|grep "target channel"|awk -F ' ' '{print$3}'`
+	else
+		val=`/usr/sbin/wlctl -i wl0.$num channel|grep "target channel"|awk -F ' ' '{print$3}'`
+	fi
+	let num=$num+1
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions" "$type"
+	;;
+	get_name)
+	permissions="1"
+	let num=$num+1
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions"
+	;;
+	get_notification)
+	let num=$num+1
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val"
+	;;
+esac
+}
+
+set_wlan_channel() {
+local num="$1"
+local val="$2"
+case $action in
+	set_value)
+	delay_command "wifi" "wifi" "45"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].channel="$val"
+	;;
+	set_notification)
+	let num=$num+1
+	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel"
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
 get_wlan_ssid() {
 local num="$1"
 local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/sbin/wlc ssid`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].ssid`
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val"
 	;;
@@ -143,46 +232,6 @@ case $action in
 	set_notification)
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID"
-	freecwmp_set_parameter_notification "$parm" "$val"
-	;;
-esac
-}
-
-get_wlan_channel() {
-local num="$1"
-local type="xsd:string"
-local val=""
-local permissions=""
-case "$action" in
-	get_value)
-	val=`/sbin/wlc channel`
-	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions" "$type"
-	;;
-	get_name)
-	permissions="1"
-	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions"
-	;;
-	get_notification)
-	let num=$num+1
-	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel"
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val"
-	;;
-esac
-}
-
-set_wlan_channel() {
-local num="$1"
-local val="$2"
-case $action in
-	set_value)
-	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].channel="$val"
-	;;
-	set_notification)
-	let num=$num+1
-	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel"
 	freecwmp_set_parameter_notification "$parm" "$val"
 	;;
 esac
@@ -290,7 +339,11 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	wep=`/usr/sbin/wlctl -i wl$num wepstatus`
+	if [ "$num" = "0" ];then
+		wep=`/usr/sbin/wlctl -i wl$num wepstatus`
+	else
+		wep=`/usr/sbin/wlctl -i wl0.$num wepstatus`
+	fi
 	let num=$num+1
 	if [ "$wep" = "1" ]; then
 		val="WEPEncryption"
@@ -342,8 +395,13 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	wep=`/usr/sbin/wlctl -i wl$num wepstatus`
-	auth=`/usr/sbin/wlctl -i wl$num auth`
+	if [ "$num" = "0" ];then
+		wep=`/usr/sbin/wlctl -i wl$num wepstatus`
+		auth=`/usr/sbin/wlctl -i wl$num auth`
+	else
+		wep=`/usr/sbin/wlctl -i wl0.$num wepstatus`
+		auth=`/usr/sbin/wlctl -i wl0.$num auth`
+	fi
 	let num=$num+1
 	if [ "$wep" = "1" -a "$auth" = "1" ]; then
 		val="SharedAuthentication"
@@ -396,7 +454,11 @@ local permissions=""
 case "$action" in
 	get_value)
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
-	value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	if [ "$num" = "0" ];then
+		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	else
+		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
+	fi
 	wpa=`echo $(($value))`
 	encryption=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption`
 	let num=$num+1
@@ -460,7 +522,11 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	if [ "$num" = "0" ];then
+		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	else
+		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
+	fi
 	wpa=`echo $(($value))`
 	let num=$num+1
 	if [ "$wpa" = "4" -o "$wpa" = "66" ]; then
@@ -518,7 +584,11 @@ local permissions=""
 case "$action" in
 	get_value)
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
-	value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	if [ "$num" = "0" ];then
+		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	else
+		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
+	fi
 	wpa=`echo $(($value))`
 	encryption=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption`
 	let num=$num+1
@@ -582,7 +652,11 @@ local val=""
 local permissions=""
 case "$action" in
 	get_value)
-	value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	if [ "$num" = "0" ];then
+		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	else
+		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
+	fi
 	wpa=`echo $(($value))`
 	let num=$num+1
 	if [ "$wpa" = "128" -o "$wpa" = "132" ]; then
@@ -638,7 +712,11 @@ local type="xsd:boolean"
 local permissions=""
 case "$action" in
 	get_value)
-	radio=`/usr/sbin/wlctl -i wl$num radio`
+	if [ "$num" = "0" ];then
+		radio=`/usr/sbin/wlctl -i wl$num radio`
+	else
+		radio=`/usr/sbin/wlctl -i wl0.$num radio`
+	fi
 	val=`echo $(($radio))`
 	if [ "$val" = "0" ];then
 		val=1
@@ -672,7 +750,11 @@ case $action in
 	elif [ "$val" = "1" ];then
 		val="on"
 	fi
-	/usr/sbin/wlctl -i wl$num radio $val
+	if [ "$num" = "0" ];then
+		/usr/sbin/wlctl -i wl$num radio $val
+	else
+		/usr/sbin/wlctl -i wl0.$num radio $val
+	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.RadioEnabled"
 	freecwmp_notify "$parm" "$2" "xsd:boolean"
@@ -695,8 +777,6 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].mode`
 	if [ "$val" = "ap" ];then
 		val="InfrastructureAccessPoint"
-	elif [ "$val" = "wds" ];then
-		val="WirelessRepeater"
 	fi
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.DeviceOperationMode" "$val" "$permissions" "$type"
@@ -722,8 +802,6 @@ case $action in
 	delay_command "wifi" "wifi" "45"
 	if [ "$val" = "InfrastructureAccessPoint" ];then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].mode="ap"
-	elif [ "$val" = "WirelessRepeaterwds" ];then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].mode="wds"
 	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.DeviceOperationMode"
@@ -744,8 +822,11 @@ local type="xsd:boolean"
 local permissions=""
 case "$action" in
 	get_value)
-	2/64/66
-	value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	if [ "$num" = "0" ];then
+		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
+	else
+		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
+	fi
 	wpa=`echo $(($value))`
 	if [ "$wpa" = "2" -o "$wpa" = "64" -o "$wpa" = "66" ]; then
 		val="RadiusClient"
@@ -798,12 +879,16 @@ local type="xsd:unsignedInt"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/usr/sbin/wlctl -i wl$num assoclist | grep -c 'assoclist'`
+	if [ "$num" = "0" ];then
+		val=`/usr/sbin/wlctl -i wl$num assoclist | grep -c 'assoclist'`
+	else
+		val=`/usr/sbin/wlctl -i wl0.$num assoclist | grep -c 'assoclist'`
+	fi
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations" "$val" "$permissions" "$type"
 	;;
 	get_name)
-	permissions="1"
+	permissions="0"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations" "$val" "$permissions"
 	;;
@@ -820,7 +905,12 @@ local num="$1"
 local val=""
 local permissions=""
 local i=0
-local assoclist=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
+local assoclist
+if [ "$num" = "0" ];then
+	assoclist=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
+else
+	assoclist=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
+fi
 let num=$num+1
 case "$action" in
 	get_value)
@@ -830,7 +920,7 @@ case "$action" in
 		ip=`cat /proc/net/arp|grep $mac_lower|awk -F' ' '{print $1}'`
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "$permissions"
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "$permissions"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$ip" "$permissions" "xsd:boolean"
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "1" "$permissions" "xsd:boolean"
 	done
 	;;
 	get_name)
@@ -842,9 +932,6 @@ case "$action" in
 	done
 	;;
 	get_notification)
-	let num=$num+1
-	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations"
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations" "$val"
 	for mac in $assoclist;do
 		let i=$i+1
 		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceMACAddress"
@@ -854,6 +941,48 @@ case "$action" in
 		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState"
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$val"
 	done
+	;;
+esac
+}
+
+get_wlan_wep_key() {
+local num="$1"
+local key_index="$2"
+local val=""
+local permissions=""
+# this parameter must an empty value (TR-098 standard)
+let num=$num+1
+case "$action" in
+	get_value)
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val" "$permissions"
+	;;
+	get_name)
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "" "0"
+	;;
+	get_notification)
+		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey"
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val"
+	;;
+esac
+}
+
+set_wlan_wep_key() {
+local num="$1"
+local key_index="$2"
+local val="$3"
+local permissions=""
+val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key$key_index=$val`
+let num=$num+1
+case "$action" in
+	get_value)
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val" "$permissions"
+	;;
+	get_name)
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "" "0"
+	;;
+	get_notification)
+		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey"
+		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val"
 	;;
 esac
 }
@@ -1004,74 +1133,111 @@ esac
 }
 
 get_lan_device() {
+local max_num
+
+get_wlan_number_of_entries "max_num"
+
 case "$1" in
 	InternetGatewayDevice.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"LANDevice.1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.)
@@ -1090,113 +1256,241 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_enable $uci_num
+		get_wlan_status $uci_num
+		get_wlan_bssid $uci_num
+		get_wlan_max_bit_rate $uci_num
+		get_wlan_channel $uci_num
+		get_wlan_ssid $uci_num
+		get_wlan_mac_control_enable $uci_num
+		get_wlan_wep_key_index $uci_num
+		get_wlan_basic_encryption_modes $uci_num
+		get_wlan_basic_authentication_mode $uci_num
+		get_wlan_wpa_encryption_modes $uci_num
+		get_wlan_wpa_authentication_mode $uci_num
+		get_wlan_ieee_11i_encryption_modes $uci_num
+		get_wlan_ieee_11i_authentication_mode $uci_num
+		get_wlan_radio_enabled $uci_num
+		get_wlan_device_operation_mode $uci_num
+		get_wlan_authentication_service_mode $uci_num
+		get_wlan_total_associations $uci_num
+		get_wlan_associated_device $uci_num
+		get_wlan_wep_key $uci_num "1"
+		get_wlan_wep_key $uci_num "2"
+		get_wlan_wep_key $uci_num "3"
+		get_wlan_wep_key $uci_num "4"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
-	get_wlan_enable 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Enable)
+	freecwmp_parse_formated_parameter "$1.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Enable" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_enable $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Status)
-	get_wlan_status 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Status)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Status" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_status $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID)
-	get_wlan_bssid 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel)
-	get_wlan_channel 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
-	get_wlan_ssid 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled)
-	get_wlan_mac_control_enable 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex)
-	get_wlan_wep_key_index 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes)
-	get_wlan_basic_encryption_modes 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode)
-	get_wlan_basic_authentication_mode 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes)
-	get_wlan_wpa_encryption_modes 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode)
-	get_wlan_wpa_authentication_mode 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes)
-	get_wlan_ieee_11i_encryption_modes 0
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode)
-	get_wlan_ieee_11i_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BSSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BSSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_bssid $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;	
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode)
-	get_wlan_device_operation_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MaxBitRate)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MaxBitRate" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_max_bit_rate $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Channel)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Channel" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_channel $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].SSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.SSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ssid $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MACAddressControlEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_mac_control_enable $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKeyIndex)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKeyIndex" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key_index $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_encryption_modes $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_authentication_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_encryption_modes $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_authentication_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_encryption_modes $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;	
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode)
-	get_wlan_authentication_service_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].DeviceOperationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.DeviceOperationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_device_operation_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.AuthenticationServiceMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_authentication_service_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled)
-	get_wlan_radio_enabled 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].RadioEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.RadioEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_radio_enabled $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations)
-	get_wlan_total_associations 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.TotalAssociations" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_total_associations $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "1"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "3"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "4"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -1204,31 +1498,47 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 get_lan_device_name() {
+local max_num
+
+get_wlan_number_of_entries "max_num"
+
 case "$1" in
 	InternetGatewayDevice.)
 	freecwmp_output "InternetGatewayDevice.LANDevice." "" "1"
 	if [ "$2" = "0" ]; then
 		freecwmp_output "InternetGatewayDevice.LANDevice.1." "" "1"
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "" "1"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "" "1"
-		get_wlan_enable 0
-		get_wlan_status 0
-		get_wlan_bssid 0
-		get_wlan_channel 0
-		get_wlan_ssid 0
-		get_wlan_mac_control_enable 0
-		get_wlan_wep_key_index 0
-		get_wlan_basic_encryption_modes 0
-		get_wlan_basic_authentication_mode 0
-		get_wlan_wpa_encryption_modes 0
-		get_wlan_wpa_authentication_mode 0
-		get_wlan_ieee_11i_encryption_modes 0
-		get_wlan_ieee_11i_authentication_mode 0
-		get_wlan_radio_enabled 0
-		get_wlan_device_operation_mode 0
-		get_wlan_authentication_service_mode 0
-		get_wlan_total_associations 0
-		get_wlan_associated_device 0
+		for i in `seq 1 $max_num`;do
+			freecwmp_parse_formated_parameter $1"LANDevice.1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+			if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "" "1"
+				let uci_num=$num-1
+				get_wlan_enable $uci_num
+				get_wlan_status $uci_num
+				get_wlan_bssid $uci_num
+				get_wlan_max_bit_rate $uci_num
+				get_wlan_channel $uci_num
+				get_wlan_ssid $uci_num
+				get_wlan_mac_control_enable $uci_num
+				get_wlan_wep_key_index $uci_num
+				get_wlan_basic_encryption_modes $uci_num
+				get_wlan_basic_authentication_mode $uci_num
+				get_wlan_wpa_encryption_modes $uci_num
+				get_wlan_wpa_authentication_mode $uci_num
+				get_wlan_ieee_11i_encryption_modes $uci_num
+				get_wlan_ieee_11i_authentication_mode $uci_num
+				get_wlan_radio_enabled $uci_num
+				get_wlan_device_operation_mode $uci_num
+				get_wlan_authentication_service_mode $uci_num
+				get_wlan_total_associations $uci_num
+				get_wlan_associated_device $uci_num
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey" "" "0"
+				get_wlan_wep_key $uci_num "1"
+				get_wlan_wep_key $uci_num "2"
+				get_wlan_wep_key $uci_num "3"
+				get_wlan_wep_key $uci_num "4"
+			fi
+		done
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -1237,25 +1547,37 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1." "" "1"
 	if [ "$2" = "0" ]; then
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "" "1"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "" "1"
-		get_wlan_enable 0
-		get_wlan_status 0
-		get_wlan_bssid 0
-		get_wlan_channel 0
-		get_wlan_ssid 0
-		get_wlan_mac_control_enable 0
-		get_wlan_wep_key_index 0
-		get_wlan_basic_encryption_modes 0
-		get_wlan_basic_authentication_mode 0
-		get_wlan_wpa_encryption_modes 0
-		get_wlan_wpa_authentication_mode 0
-		get_wlan_ieee_11i_encryption_modes 0
-		get_wlan_ieee_11i_authentication_mode 0
-		get_wlan_radio_enabled 0
-		get_wlan_device_operation_mode 0
-		get_wlan_authentication_service_mode 0
-		get_wlan_total_associations 0
-		get_wlan_associated_device 0
+		for i in `seq 1 $max_num`;do
+			freecwmp_parse_formated_parameter $1"1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+			if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "" "1"
+				let uci_num=$num-1
+				get_wlan_enable $uci_num
+				get_wlan_status $uci_num
+				get_wlan_bssid $uci_num
+				get_wlan_max_bit_rate $uci_num
+				get_wlan_channel $uci_num
+				get_wlan_ssid $uci_num
+				get_wlan_mac_control_enable $uci_num
+				get_wlan_wep_key_index $uci_num
+				get_wlan_basic_encryption_modes $uci_num
+				get_wlan_basic_authentication_mode $uci_num
+				get_wlan_wpa_encryption_modes $uci_num
+				get_wlan_wpa_authentication_mode $uci_num
+				get_wlan_ieee_11i_encryption_modes $uci_num
+				get_wlan_ieee_11i_authentication_mode $uci_num
+				get_wlan_radio_enabled $uci_num
+				get_wlan_device_operation_mode $uci_num
+				get_wlan_authentication_service_mode $uci_num
+				get_wlan_total_associations $uci_num
+				get_wlan_associated_device $uci_num
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey" "" "0"
+				get_wlan_wep_key $uci_num "1"
+				get_wlan_wep_key $uci_num "2"
+				get_wlan_wep_key $uci_num "3"
+				get_wlan_wep_key $uci_num "4"
+			fi
+		done
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
@@ -1263,194 +1585,351 @@ case "$1" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1." "" "1"
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "" "1"
 	if [ "$2" = "0" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "" "1"
-		get_wlan_enable 0
-		get_wlan_status 0
-		get_wlan_bssid 0
-		get_wlan_channel 0
-		get_wlan_ssid 0
-		get_wlan_mac_control_enable 0
-		get_wlan_wep_key_index 0
-		get_wlan_basic_encryption_modes 0
-		get_wlan_basic_authentication_mode 0
-		get_wlan_wpa_encryption_modes 0
-		get_wlan_wpa_authentication_mode 0
-		get_wlan_ieee_11i_encryption_modes 0
-		get_wlan_ieee_11i_authentication_mode 0
-		get_wlan_radio_enabled 0
-		get_wlan_device_operation_mode 0
-		get_wlan_authentication_service_mode 0
-		get_wlan_total_associations 0
-		get_wlan_associated_device 0
+		for i in `seq 1 $max_num`;do
+			freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+			if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "" "1"
+				let uci_num=$num-1
+				get_wlan_enable $uci_num
+				get_wlan_status $uci_num
+				get_wlan_bssid $uci_num
+				get_wlan_max_bit_rate $uci_num
+				get_wlan_channel $uci_num
+				get_wlan_ssid $uci_num
+				get_wlan_mac_control_enable $uci_num
+				get_wlan_wep_key_index $uci_num
+				get_wlan_basic_encryption_modes $uci_num
+				get_wlan_basic_authentication_mode $uci_num
+				get_wlan_wpa_encryption_modes $uci_num
+				get_wlan_wpa_authentication_mode $uci_num
+				get_wlan_ieee_11i_encryption_modes $uci_num
+				get_wlan_ieee_11i_authentication_mode $uci_num
+				get_wlan_radio_enabled $uci_num
+				get_wlan_device_operation_mode $uci_num
+				get_wlan_authentication_service_mode $uci_num
+				get_wlan_total_associations $uci_num
+				get_wlan_associated_device $uci_num
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey" "" "0"
+				get_wlan_wep_key $uci_num "1"
+				get_wlan_wep_key $uci_num "2"
+				get_wlan_wep_key $uci_num "3"
+				get_wlan_wep_key $uci_num "4"
+			fi
+		done
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "" "1"
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "" "1"
 	if [ "$2" = "0" ]; then
-		get_wlan_enable 0
-		get_wlan_status 0
-		get_wlan_bssid 0
-		get_wlan_channel 0
-		get_wlan_ssid 0
-		get_wlan_mac_control_enable 0
-		get_wlan_wep_key_index 0
-		get_wlan_basic_encryption_modes 0
-		get_wlan_basic_authentication_mode 0
-		get_wlan_wpa_encryption_modes 0
-		get_wlan_wpa_authentication_mode 0
-		get_wlan_ieee_11i_encryption_modes 0
-		get_wlan_ieee_11i_authentication_mode 0
-		get_wlan_radio_enabled 0
-		get_wlan_device_operation_mode 0
-		get_wlan_authentication_service_mode 0
-		get_wlan_total_associations 0
-		get_wlan_associated_device 0
+		for i in `seq 1 $max_num`;do
+			freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+			if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "" "1"
+				let uci_num=$num-1
+				get_wlan_enable $uci_num
+				get_wlan_status $uci_num
+				get_wlan_bssid $uci_num
+				get_wlan_max_bit_rate $uci_num
+				get_wlan_channel $uci_num
+				get_wlan_ssid $uci_num
+				get_wlan_mac_control_enable $uci_num
+				get_wlan_wep_key_index $uci_num
+				get_wlan_basic_encryption_modes $uci_num
+				get_wlan_basic_authentication_mode $uci_num
+				get_wlan_wpa_encryption_modes $uci_num
+				get_wlan_wpa_authentication_mode $uci_num
+				get_wlan_ieee_11i_encryption_modes $uci_num
+				get_wlan_ieee_11i_authentication_mode $uci_num
+				get_wlan_radio_enabled $uci_num
+				get_wlan_device_operation_mode $uci_num
+				get_wlan_authentication_service_mode $uci_num
+				get_wlan_total_associations $uci_num
+				get_wlan_associated_device $uci_num
+				freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey" "" "0"
+				get_wlan_wep_key $uci_num "1"
+				get_wlan_wep_key $uci_num "2"
+				get_wlan_wep_key $uci_num "3"
+				get_wlan_wep_key $uci_num "4"
+			fi
+		done
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "" "1"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].)
+	freecwmp_output "$1" "" "1"
 	if [ "$2" = "0" ]; then
-		get_wlan_enable 0
-		get_wlan_status 0
-		get_wlan_ssid 0
-		get_wlan_channel 0
-		get_wlan_bssid 0
-		get_wlan_mac_control_enable 0
-		get_wlan_wep_key_index 0
-		get_wlan_basic_encryption_modes 0
-		get_wlan_basic_authentication_mode 0
-		get_wlan_wpa_encryption_modes 0
-		get_wlan_wpa_authentication_mode 0
-		get_wlan_ieee_11i_encryption_modes 0
-		get_wlan_ieee_11i_authentication_mode 0
-		get_wlan_radio_enabled 0
-		get_wlan_device_operation_mode 0
-		get_wlan_authentication_service_mode 0
-		get_wlan_total_associations 0
-		get_wlan_associated_device 0
+		freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey" "" "0"
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Enable)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_enable 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Enable" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_enable $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Status)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Status)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_status 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Status" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_status $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BSSID)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_bssid 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BSSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_bssid $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MaxBitRate)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_channel 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MaxBitRate" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_max_bit_rate $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Channel)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_ssid 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Channel" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_channel $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].SSID)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_mac_control_enable 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.SSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ssid $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_wep_key_index 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MACAddressControlEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_mac_control_enable $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKeyIndex)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_basic_encryption_modes 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKeyIndex" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key_index $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_basic_authentication_mode 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicAuthenticationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_wpa_encryption_modes 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_wpa_authentication_mode 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_ieee_11i_encryption_modes 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_ieee_11i_authentication_mode 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_radio_enabled 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].RadioEnabled)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_device_operation_mode 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.RadioEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_radio_enabled $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].DeviceOperationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_authentication_service_mode 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.DeviceOperationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_device_operation_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	get_wlan_total_associations 0
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.AuthenticationServiceMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_authentication_service_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.TotalAssociations" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_total_associations $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "1"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "3"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "4"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -1458,178 +1937,364 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 get_lan_device_notification() {
+local max_num
+
+get_wlan_number_of_entries "max_num"
+
 case "$1" in
 	InternetGatewayDevice.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"LANDevice.1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.LANHostConfigManagement.IPInterface.[1-9]+.)
+	get_ip_interface_ip_address
+	get_ip_interface_netmask
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			get_wlan_enable $uci_num
+			get_wlan_status $uci_num
+			get_wlan_bssid $uci_num
+			get_wlan_max_bit_rate $uci_num
+			get_wlan_channel $uci_num
+			get_wlan_ssid $uci_num
+			get_wlan_mac_control_enable $uci_num
+			get_wlan_wep_key_index $uci_num
+			get_wlan_basic_encryption_modes $uci_num
+			get_wlan_basic_authentication_mode $uci_num
+			get_wlan_wpa_encryption_modes $uci_num
+			get_wlan_wpa_authentication_mode $uci_num
+			get_wlan_ieee_11i_encryption_modes $uci_num
+			get_wlan_ieee_11i_authentication_mode $uci_num
+			get_wlan_radio_enabled $uci_num
+			get_wlan_device_operation_mode $uci_num
+			get_wlan_authentication_service_mode $uci_num
+			get_wlan_total_associations $uci_num
+			get_wlan_associated_device $uci_num
+			get_wlan_wep_key $uci_num "1"
+			get_wlan_wep_key $uci_num "2"
+			get_wlan_wep_key $uci_num "3"
+			get_wlan_wep_key $uci_num "4"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
-	get_wlan_enable 0
-	get_wlan_status 0
-	get_wlan_bssid 0
-	get_wlan_channel 0
-	get_wlan_ssid 0
-	get_wlan_mac_control_enable 0
-	get_wlan_wep_key_index 0
-	get_wlan_basic_encryption_modes 0
-	get_wlan_basic_authentication_mode 0
-	get_wlan_wpa_encryption_modes 0
-	get_wlan_wpa_authentication_mode 0
-	get_wlan_ieee_11i_encryption_modes 0
-	get_wlan_ieee_11i_authentication_mode 0
-	get_wlan_radio_enabled 0
-	get_wlan_device_operation_mode 0
-	get_wlan_authentication_service_mode 0
-	get_wlan_total_associations 0
-	get_wlan_associated_device 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_enable $uci_num
+		get_wlan_status $uci_num
+		get_wlan_bssid $uci_num
+		get_wlan_max_bit_rate $uci_num
+		get_wlan_channel $uci_num
+		get_wlan_ssid $uci_num
+		get_wlan_mac_control_enable $uci_num
+		get_wlan_wep_key_index $uci_num
+		get_wlan_basic_encryption_modes $uci_num
+		get_wlan_basic_authentication_mode $uci_num
+		get_wlan_wpa_encryption_modes $uci_num
+		get_wlan_wpa_authentication_mode $uci_num
+		get_wlan_ieee_11i_encryption_modes $uci_num
+		get_wlan_ieee_11i_authentication_mode $uci_num
+		get_wlan_radio_enabled $uci_num
+		get_wlan_device_operation_mode $uci_num
+		get_wlan_authentication_service_mode $uci_num
+		get_wlan_total_associations $uci_num
+		get_wlan_associated_device $uci_num
+		get_wlan_wep_key $uci_num "1"
+		get_wlan_wep_key $uci_num "2"
+		get_wlan_wep_key $uci_num "3"
+		get_wlan_wep_key $uci_num "4"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
-	get_wlan_enable 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Enable)
+	freecwmp_parse_formated_parameter "$1.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Enable" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_enable $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Status)
-	get_wlan_status 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Status)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Status" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_status $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID)
-	get_wlan_bssid 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BSSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BSSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_bssid $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MaxBitRate)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MaxBitRate" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_max_bit_rate $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel)
-	get_wlan_channel 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Channel)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Channel" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_channel $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
-	get_wlan_ssid 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].SSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.SSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ssid $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled)
-	get_wlan_mac_control_enable 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MACAddressControlEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_mac_control_enable $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex)
-	get_wlan_wep_key_index 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKeyIndex)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKeyIndex" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key_index $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes)
-	get_wlan_basic_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode)
-	get_wlan_basic_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_basic_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes)
-	get_wlan_wpa_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode)
-	get_wlan_wpa_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wpa_authentication_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes)
-	get_wlan_ieee_11i_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_encryption_modes $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode)
-	get_wlan_ieee_11i_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_ieee_11i_authentication_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].DeviceOperationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.DeviceOperationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_device_operation_mode $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.AuthenticationServiceMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_authentication_service_mode $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled)
-	get_wlan_radio_enabled 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].RadioEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.RadioEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_radio_enabled $uci_num
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode)
-	get_wlan_device_operation_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.TotalAssociations" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_total_associations $uci_num
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;	
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "1"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode)
-	get_wlan_authentication_service_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.TotalAssociations)
-	get_wlan_total_associations 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "3"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		get_wlan_wep_key $uci_num "4"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac
@@ -1637,70 +2302,173 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 set_lan_device() {
+local max_num
+
+get_wlan_number_of_entries "max_num"
+
 case "$1" in
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
-	set_wlan_enable 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Enable)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Enable" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_enable $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Status)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Status)
 	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BSSID)
 	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MaxBitRate)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MaxBitRate" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_max_bit_rate $uci_num "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Channel)
 	if [ $2 -lt 0 -o $2 -gt 255 ];then
 		return $FAULT_CPE_INVALID_PARAMETER_VALUE
 	fi
-	set_wlan_channel 0 "$2"
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Channel" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_channel $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
-	set_wlan_ssid 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].SSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.SSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ssid $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled)
-	set_wlan_mac_control_enable 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MACAddressControlEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_mac_control_enable $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex)
-	set_wlan_wep_key_index 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKeyIndex)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKeyIndex" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key_index $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes)
-	set_wlan_basic_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_basic_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode)
-	set_wlan_basic_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_basic_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes)
-	set_wlan_wpa_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wpa_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode)
-	set_wlan_wpa_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wpa_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes)
-	set_wlan_ieee_11i_encryption_modes 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ieee_11i_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode)
-	set_wlan_ieee_11i_authentication_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ieee_11i_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled)
-	set_wlan_radio_enabled 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].RadioEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.RadioEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_radio_enabled $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode)
-	set_wlan_device_operation_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].DeviceOperationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.DeviceOperationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_device_operation_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode)
-	set_wlan_authentication_service_mode 0
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.AuthenticationServiceMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_authentication_service_mode $uci_num "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "1" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "2" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "3" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "4" "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 	*)
@@ -1718,165 +2486,320 @@ return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 set_lan_device_notification() {
+local max_num
+
+get_wlan_number_of_entries "max_num"
+
 case "$1" in
 	InternetGatewayDevice.)
 	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1." "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode" "0"
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"LANDevice.1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Enable" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MaxBitRate" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Channel" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.SSID" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MACAddressControlEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKeyIndex" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.RadioEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.DeviceOperationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.AuthenticationServiceMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.1.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.2.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.3.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.4.WEPKey" "0"
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.)
 	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1." "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.channel" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode" "0"
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Enable" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MaxBitRate" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Channel" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.SSID" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MACAddressControlEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKeyIndex" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.RadioEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.DeviceOperationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.AuthenticationServiceMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.1.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.2.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.3.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.4.WEPKey" "0"
+		fi
+	done
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.)
 	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode" "0"
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Enable" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MaxBitRate" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Channel" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.SSID" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MACAddressControlEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKeyIndex" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.RadioEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.DeviceOperationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.AuthenticationServiceMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.1.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.2.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.3.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.4.WEPKey" "0"
+		fi
+	done
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.)
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1." "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode" "0"
+	for i in `seq 1 $max_num`;do
+		freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+			let uci_num=$num-1
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i." "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Enable" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MaxBitRate" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.Channel" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.SSID" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.MACAddressControlEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKeyIndex" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.BasicAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WPAAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iEncryptionModes" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.IEEE11iAuthenticationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.RadioEnabled" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.DeviceOperationMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.AuthenticationServiceMode" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.1.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.2.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.3.WEPKey" "0"
+			freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.4.WEPKey" "0"
+			fi
+	done
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.)
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode" "0"
-	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode" "0"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MACAddressControlEnabled" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKeyIndex" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicEncryptionModes" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicAuthenticationMode" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAEncryptionModes" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAAuthenticationMode" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.IEEE11iEncryptionModes" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.IEEE11iAuthenticationMode" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.RadioEnabled" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.DeviceOperationMode" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AuthenticationServiceMode" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.1.WEPKey" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.2.WEPKey" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.3.WEPKey" "0"
+		freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$i.WEPKey.4.WEPKey" "0"
+	fi
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Enable)
-	set_wlan_enable 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Enable)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Enable" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_enable $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Status)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Status)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BSSID)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BSSID)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.Channel)
-	set_wlan_channel 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MaxBitRate)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MaxBitRate" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_max_bit_rate $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.SSID)
-	set_wlan_ssid 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].Channel)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.Channel" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_channel $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.MACAddressControlEnabled)
-	set_wlan_mac_control_enable 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].SSID)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.SSID" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ssid $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WEPKeyIndex)
-	set_wlan_wep_key_index 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.MACAddressControlEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_mac_control_enable $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicEncryptionModes)
-	set_wlan_basic_encryption_modes 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKeyIndex)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKeyIndex" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key_index $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.BasicAuthenticationMode)
-	set_wlan_basic_authentication_mode 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_basic_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAEncryptionModes)
-	set_wlan_wpa_encryption_modes 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].BasicAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.BasicAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_basic_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.WPAAuthenticationMode)
-	set_wlan_wpa_authentication_mode 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wpa_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iEncryptionModes)
-	set_wlan_ieee_11i_encryption_modes 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WPAAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wpa_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.IEEE11iAuthenticationMode)
-	set_wlan_ieee_11i_authentication_mode 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iEncryptionModes" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ieee_11i_encryption_modes $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.RadioEnabled)
-	set_wlan_radio_enabled 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.IEEE11iAuthenticationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_ieee_11i_authentication_mode $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.DeviceOperationMode)
-	set_wlan_device_operation_mode 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].RadioEnabled)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.RadioEnabled" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_radio_enabled $uci_num "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.1.AuthenticationServiceMode)
-	set_wlan_authentication_service_mode 0 "$2"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].DeviceOperationMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.DeviceOperationMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_device_operation_mode $uci_num "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.AuthenticationServiceMode" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_authentication_service_mode $uci_num "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
+	return $FAULT_CPE_NOTIFICATION_REJECTED
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "1" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "2" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "3" "$2"
+	fi
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+		let uci_num=$num-1
+		set_wlan_wep_key $uci_num "4" "$2"
+	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
 esac

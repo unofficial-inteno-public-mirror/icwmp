@@ -433,8 +433,8 @@ return 1
 get_device_info_generic() {
 	check_parameter_device_info_generic "$1" ; _tmp=$? ; if [ "$_tmp" -eq 1 ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 
-	freecwmp_get_parameter_value "val" "$1"
-	freecwmp_output "$1" "$val"
+	freecwmp_get_parameter_value "value" "$1"
+	freecwmp_output "$1" "$value"
 	return $FAULT_CPE_NO_FAULT
 }
 
