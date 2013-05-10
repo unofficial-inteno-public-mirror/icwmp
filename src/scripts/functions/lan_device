@@ -1470,7 +1470,7 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;	
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -1478,24 +1478,24 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "2"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.3.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "3"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.4.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "4"
@@ -1897,7 +1897,7 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
@@ -1908,33 +1908,33 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.2.WEPKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "2"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.3.WEPKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.3.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "3"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.4.WEPKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.4.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "4"
@@ -2274,7 +2274,7 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;	
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -2282,24 +2282,24 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.2.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.2.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "2"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.3.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "3"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.4.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		get_wlan_wep_key $uci_num "4"
@@ -2448,7 +2448,7 @@ case "$1" in
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
 	return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -2456,7 +2456,7 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.2.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -2464,16 +2464,16 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.3.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		set_wlan_wep_key $uci_num "3" "$2"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.4.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		set_wlan_wep_key $uci_num "4" "$2"
@@ -2779,7 +2779,7 @@ case "$1" in
 	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].TotalAssociations)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.1.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -2787,7 +2787,7 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.2.WEPKey)
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.2.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.2.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
@@ -2795,16 +2795,16 @@ case "$1" in
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.3.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.3.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.3.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.3.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		set_wlan_wep_key $uci_num "3" "$2"
 	fi
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num]..WEPKey.4.WEPKey)
-	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}..WEPKey.4.WEPKey" "rc" "num"
+	InternetGatewayDevice.LANDevice.1.WLANConfiguration.[1-$max_num].WEPKey.4.WEPKey)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}.WEPKey.4.WEPKey" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let uci_num=$num-1
 		set_wlan_wep_key $uci_num "4" "$2"
