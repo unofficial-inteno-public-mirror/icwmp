@@ -920,7 +920,16 @@ case "$action" in
 		ip=`cat /proc/net/arp|grep $mac_lower|awk -F' ' '{print $1}'`
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "$permissions"
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "$permissions"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "1" "$permissions" "xsd:boolean"
+		if [ "$num" = "0" ];then
+			is_authenticated=`/usr/sbin/wlctl -i wl$num authe_sta_list|grep $mac`
+		else
+			is_authenticated=`/usr/sbin/wlctl -i wl0.$num authe_sta_list|grep $mac`
+		fi
+		if [ "$is_authenticated" = "" ];then
+			freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "0" "$permissions" "xsd:boolean"
+		else
+			freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "1" "$permissions" "xsd:boolean"
+		fi
 	done
 	;;
 	get_name)
