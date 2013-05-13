@@ -11,7 +11,7 @@ get_wlan_enable() {
 local num="$1"
 local type="xsd:boolean"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-device[$num].disabled 2> /dev/null`
@@ -24,6 +24,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val" "$permissions"
 	;;
@@ -60,7 +61,7 @@ get_wlan_status() {
 local num="$1"
 local type="xsd:string"
 local val=""
-local permissions="0"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-device[$num].disabled 2> /dev/null`
@@ -73,6 +74,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="0"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status" "$val" "$permissions"
 	;;
@@ -88,7 +90,7 @@ get_wlan_bssid() {
 local num="$1"
 local type="xsd:string"
 local val=""
-local permissions="0"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -100,6 +102,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BSSID" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="0"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BSSID" "$val" "$permissions"
 	;;
@@ -115,7 +118,7 @@ get_wlan_max_bit_rate() {
 local num="$1"
 local type="xsd:string"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.wl0.hwmode`
@@ -123,6 +126,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MaxBitRate" "$val" "$permissions"
 	;;
@@ -154,7 +158,7 @@ get_wlan_channel() {
 local num="$1"
 local type="xsd:string"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -166,6 +170,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Channel" "$val" "$permissions"
 	;;
@@ -196,7 +201,7 @@ esac
 get_wlan_ssid() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].ssid`
@@ -204,6 +209,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.SSID" "$val" "$permissions"
 	;;
@@ -235,7 +241,7 @@ esac
 get_wlan_beacon_type() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	encryption=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption`
@@ -254,6 +260,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BeaconType" "$val"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BeaconType" "$val" "$permissions"
 	;;
@@ -296,7 +303,7 @@ get_wlan_mac_control_enable() {
 local num="$1"
 local type="xsd:boolean"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-device[$num].macfilter 2> /dev/null`
@@ -309,6 +316,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MACAddressControlEnabled" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.MACAddressControlEnabled" "$val" "$permissions"
 	;;
@@ -347,7 +355,7 @@ esac
 get_wlan_standard() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.wl0.hwmode`
@@ -364,6 +372,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Standard" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Standard" "$val" "$permissions"
 	;;
@@ -407,7 +416,7 @@ get_wlan_wep_key_index() {
 local num="$1"
 local val=""
 local type="xsd:unsignedInt"
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].key`
@@ -415,6 +424,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKeyIndex" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKeyIndex" "$val" "$permissions"
 	;;
@@ -449,13 +459,14 @@ get_wlan_key_passphrase() {
 local num="$1"
 local val=""
 local type="xsd:unsignedInt"
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.KeyPassphrase" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.KeyPassphrase" "$val" "$permissions"
 	;;
@@ -492,7 +503,7 @@ esac
 get_wlan_wep_encryption_level() {
 local num="$1"
 local val=""
-local permissions="0"
+local permissions=""
 case "$action" in
 	get_value)
 	val="40-bit, 104-bit"
@@ -500,6 +511,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPEncryptionLevel" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="0"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPEncryptionLevel" "$val" "$permissions"
 	;;
@@ -514,7 +526,7 @@ esac
 get_wlan_basic_encryption_modes() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -531,6 +543,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicEncryptionModes" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicEncryptionModes" "$val" "$permissions"
 	;;
@@ -569,7 +582,7 @@ esac
 get_wlan_basic_authentication_mode() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -588,6 +601,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicAuthenticationMode" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.BasicAuthenticationMode" "$val" "$permissions"
 	;;
@@ -626,7 +640,7 @@ esac
 get_wlan_wpa_encryption_modes() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
@@ -652,6 +666,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAEncryptionModes" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAEncryptionModes" "$val" "$permissions"
 	;;
@@ -694,7 +709,7 @@ esac
 get_wlan_wpa_authentication_mode() {
 local num="$1"
 local val=""
-local permissions="1"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -714,6 +729,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAAuthenticationMode" "$val" "$permissions"
 	;;
 	get_name)
+	permissions="1"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WPAAuthenticationMode" "$val" "$permissions"
 	;;
@@ -1050,7 +1066,7 @@ get_wlan_total_associations() {
 local num="$1"
 local val=""
 local type="xsd:unsignedInt"
-local permissions="0"
+local permissions=""
 case "$action" in
 	get_value)
 	if [ "$num" = "0" ];then
@@ -1062,6 +1078,7 @@ case "$action" in
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations" "$val" "$permissions" "$type"
 	;;
 	get_name)
+	permissions="0"
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.TotalAssociations" "$val" "$permissions"
 	;;
@@ -1076,7 +1093,7 @@ esac
 get_wlan_associated_device() {
 local num="$1"
 local val=""
-local permissions="0"
+local permissions=""
 local i=0
 local assoclist
 if [ "$num" = "0" ];then
@@ -1106,6 +1123,7 @@ case "$action" in
 	done
 	;;
 	get_name)
+	permissions="0"
 	for mac in $assoclist;do
 		let i=$i+1
 		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "" "$permissions"
@@ -1131,19 +1149,20 @@ get_wlan_wep_key() {
 local num="$1"
 local key_index="$2"
 local val=""
-local permissions="1"
+local permissions=""
 # this parameter must an empty value (TR-098 standard)
 let num=$num+1
 case "$action" in
 	get_value)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val" "$permissions"
 	;;
 	get_name)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "" "$permissions"
+	permissions="1"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "" "$permissions"
 	;;
 	get_notification)
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.WEPKey.$key_index.WEPKey" "$val"
 	;;
 esac
 }
@@ -1172,19 +1191,20 @@ get_wlan_pre_shared_key() {
 local num="$1"
 local key_index="$2"
 local val=""
-local permissions="1"
+local permissions=""
 # this parameter must an empty value (TR-098 standard)
 let num=$num+1
 case "$action" in
 	get_value)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "$val" "$permissions"
 	;;
 	get_name)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "" "$permissions"
+	permissions="1"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "" "$permissions"
 	;;
 	get_notification)
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.PreSharedKey" "$val"
 	;;
 esac
 }
@@ -1213,19 +1233,20 @@ get_wlan_pre_shared_key_key_passphrase() {
 local num="$1"
 local key_index="$2"
 local val=""
-local permissions="1"
+local permissions=""
 # this parameter must an empty value (TR-098 standard)
 let num=$num+1
 case "$action" in
 	get_value)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "$val" "$permissions"
 	;;
 	get_name)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "" "$permissions"
+	permissions="1"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "" "$permissions"
 	;;
 	get_notification)
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.KeyPassphrase.$key_index.PreSharedKey"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.KeyPassphrase.$key_index.PreSharedKey"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.KeyPassphrase" "$val"
 	;;
 esac
 }
@@ -1253,19 +1274,20 @@ get_wlan_pre_shared_key_associated_device_MACAddress() {
 local num="$1"
 local key_index="$2"
 local val=""
-local permissions="1"
+local permissions=""
 # this parameter must an empty value (TR-098 standard)
 let num=$num+1
 case "$action" in
 	get_value)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "$val" "$permissions"
 	;;
 	get_name)
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "" "$permissions"
+	permissions="1"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "" "$permissions"
 	;;
 	get_notification)
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress"
-		freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress"
+	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.PreSharedKey.$key_index.AssociatedDeviceMACAddress" "$val"
 	;;
 esac
 }
