@@ -485,7 +485,7 @@ case $action in
 	set_value)
 	delay_command "wifi" "wifi" "45"
 	i=1
-	for key in `/usr/sbin/wepkeygen 64 $val`;done
+	for key in `/usr/sbin/wepkeygen 64 $val`;do
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key$i="$key"
 		let i++
 	done
