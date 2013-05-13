@@ -484,10 +484,11 @@ local val="$2"
 case $action in
 	set_value)
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key1="$val"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key2="$val"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key3="$val"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key4="$val"
+	i=1
+	for key in `/usr/sbin/wepkeygen 64 $val`;done
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key$i="$key"
+		let i++
+	done
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.KeyPassphrase"
 	freecwmp_notify "$parm" "$2" "xsd:unsignedInt"
