@@ -1,0 +1,72 @@
+#!/usr/sbin/bash
+usage()
+{
+	echo "Usage: $0 <strength> <passphrase>"
+	echo "-<strength>	Indicate the WEP KEY strength to generate. Should be 64 or 128"
+	echo "<passphrase>	Indicate the passphrase used to generate the WEP KEY"
+	echo "$0 -h display this help"
+}
+
+wepkey128()
+{
+	dup="$1"
+	while [ ${#dup} -lt 64 ]
+	do
+	  dup="$dup$1"
+	done
+	dup="${dup:0:64}"
+	key=`echo -n $dup | md5sum`
+	echo "${key:0:26}"
+}
+
+wepkey64()
+{
+	pass=$1
+	pseed="  0  0  0  0"
+	
+	i=0
+	while [ $i -lt ${#pass} ]
+	do
+		let n=$i%4
+		let j=$n*3
+		let h=$j+3
+		code=`printf '%d' "'${pass:$i:1}"`
+		let "oxor=$code^${pseed:$j:3}"
+		oxor=`printf '%3d' $oxor`
+		pseed=${pseed:0:$j}$oxor${pseed:$h}
+		let "i++"
+	done
+	let "randNumber=${pseed:0:3}|(${pseed:3:3}<<8)|(${pseed:6:3}<<16)|(${pseed:9}<<24)"
+	k64=""
+	for i in 0 1 2 3
+	do
+		for j in 0 1 2 3 4
+		do
+			let "randNumber=($randNumber * $((0x343fd)) + $((0x269ec3))) & $((0xffffffff))"
+			let "tmp=($randNumber>>16)&$((0xff))"
+			k64=$k64`printf '%02x' $tmp`
+		done
+		k64=$k64"\n"
+	done
+	printf "$k64"
+}
+
+
+if [ "_$1" = "-h" ]; then
+	usage;
+	exit 0;
+fi
+
+strength=$1
+passphrase=$2
+
+if [ _$strength != "_64" -a _$strength != "_128" ] || [ _$passphrase = "_" ]; then
+	usage;
+	exit 0;
+fi
+
+if [ $strength = "128" ]; then
+	wepkey128 $passphrase
+else
+	wepkey64 $passphrase
+fi
