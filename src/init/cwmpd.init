@@ -82,12 +82,7 @@ run() {
 }
 
 boot() {
-	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
-	if [ "$run" = "" ];then
-		run "boot"
-	else
-		echo "cwmpd is currently running ..."
-	fi
+	rm -f /etc/cwmpd/.cwmpd_boot 2>/dev/null
 }
 
 start() {
@@ -97,7 +92,12 @@ start() {
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
 		else
-			run
+			if [ -f /etc/cwmpd/.cwmpd_boot ]; then
+				run
+			else
+				run "boot"
+				touch /etc/cwmpd/.cwmpd_boot
+			fi
 		fi
 	else
 		echo "cwmpd is currently running ..."

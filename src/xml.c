@@ -506,6 +506,8 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 	b = mxmlNewInteger(b, cwmp->retry_count_session);
 	if (!b) goto error;
 
+	remove(fc_script_actions);
+
 	for (i=0; i<ARRAYSIZEOF(DEVICE_ID_CONST); i++)
 		if (external_get_action_write("value",DEVICE_ID_CONST[i].parameter_name, NULL)) return -1;
 	if (external_get_action_execute(cwmp_handle_getParamValues)) return -1;
