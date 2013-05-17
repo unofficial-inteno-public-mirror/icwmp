@@ -3,7 +3,7 @@
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 handle_wan_logical_intf() {
-for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;do
+for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 	local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
 	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
 	local logical_intf
@@ -37,7 +37,7 @@ done
 }
 
 handle_wan_interface() {
-for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;do
+for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 	local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
 	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
 	local logical_intf
@@ -55,7 +55,7 @@ for config in `ubus list|grep network.interface.|sed 's/network.interface.//g'`;
 		instance=3
 	fi
 	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" != "1"  ];then
-		echo $config:$instance:$logical_intf
+		echo $logical_intf:$instance:$config
 	fi
 done
 }
@@ -81,9 +81,9 @@ if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 	fault_err=$FAULT_CPE_NO_FAULT
 fi
 for intf in $list_interface;do
-		iface=`echo $intf|cut -f1 -d:`
+		iface=`echo $intf|cut -f3 -d:`
 		dev=`echo $intf|cut -f2 -d:`
-		logical_intf=`echo $intf|cut -f3 -d:`
+		logical_intf=`echo $intf|cut -f1 -d:`
 		wan=`get_wan_logical_intf $logical_intf`
 		if [ "$prev_wan" != "$wan" -a "$prev_wan" != "" ];then
 			wan_ip=1
@@ -103,7 +103,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -112,7 +113,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -121,7 +123,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -130,7 +133,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -139,7 +143,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -148,7 +153,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -160,7 +166,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -169,7 +176,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -178,7 +186,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -187,7 +196,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -196,7 +206,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -205,7 +216,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -214,7 +226,8 @@ for intf in $list_interface;do
 				fault_code="$?"
 				if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					fault_err=$FAULT_CPE_NO_FAULT
-				elif [ "`echo $parameter|grep '\.$'`" = "" -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+				fi
+				if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
 				elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
 					return $fault_code
@@ -543,7 +556,6 @@ local parameter="$1"
 local parm="$2"
 local get_fn="$3"
 local intf="$8"
-local extern_intf=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.default_wan_interface`
 local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
 if [ "$intf" = "$extern_intf" -a "`echo $parm|grep ExternalIPAddress`" != "" ];then
 	eval "$get_fn $parm $intf" 2> /dev/null

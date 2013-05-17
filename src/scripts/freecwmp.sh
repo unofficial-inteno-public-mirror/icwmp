@@ -547,6 +547,7 @@ fi
 
 if [ "$action" = "inform" ]; then
 	action="get_value"
+	extern_intf=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.default_wan_interface`
 	
 	get_device_info_manufacturer
 	get_device_info_oui

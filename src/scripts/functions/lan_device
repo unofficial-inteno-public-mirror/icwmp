@@ -3,12 +3,18 @@
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_wlan_number_of_entries() {
-local val=`/sbin/uci -q ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show wireless | fgrep '=wifi-iface' | wc -l`
+local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless | fgrep '=wifi-iface' | wc -l`
+eval "export -- \"$1=$val\""
+}
+
+get_lan_number_of_entries() {
+local val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show network | fgrep 'is_lan=1' | wc -l`
 eval "export -- \"$1=$val\""
 }
 
 get_wlan_enable() {
 local num="$1"
+local num_lan="$2"
 local type="xsd:boolean"
 local val=""
 local permissions=""
@@ -21,17 +27,17 @@ case "$action" in
 	else
 		val="1"
 	fi
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val" "$permissions" "$type"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Enable" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	permissions="1"
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Enable" "$val" "$permissions"
 	;;
 	get_notification)
 	let num=$num+1
-	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable"
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Enable" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Enable"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Enable" "$val"
 	;;
 esac
 }
@@ -59,6 +65,7 @@ esac
 
 get_wlan_status() {
 local num="$1"
+local num_lan="$2"
 local type="xsd:string"
 local val=""
 local permissions=""
@@ -71,17 +78,17 @@ case "$action" in
 	else
 		val="Up"
 	fi
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status" "$val" "$permissions" "$type"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Status" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	permissions="0"
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Status" "$val" "$permissions"
 	;;
 	get_notification)
 	let num=$num+1
-	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status"
-	freecwmp_output "InternetGatewayDevice.LANDevice.1.WLANConfiguration.$num.Status" "$val"
+	freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Status"
+	freecwmp_output "InternetGatewayDevice.LANDevice.$num_lan.WLANConfiguration.$num.Status" "$val"
 	;;
 esac
 }
@@ -1463,45 +1470,51 @@ local max_num
 
 get_wlan_number_of_entries "max_num"
 
+local max_lan_device
+
+get_lan_number_of_entries "max_lan_device"
+
 case "$1" in
 	InternetGatewayDevice.)
 	get_ip_interface_ip_address
 	get_ip_interface_netmask
-	for i in `seq 1 $max_num`;do
-		freecwmp_parse_formated_parameter $1"LANDevice.1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.1.WLANConfiguration.{i}." "rc" "num"
-		if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
-			let uci_num=$num-1
-			get_wlan_enable $uci_num
-			get_wlan_status $uci_num
-			get_wlan_bssid $uci_num
-			get_wlan_max_bit_rate $uci_num
-			get_wlan_channel $uci_num
-			get_wlan_ssid $uci_num
-			get_wlan_beacon_type $uci_num
-			get_wlan_mac_control_enable $uci_num
-			get_wlan_standard $uci_num
-			get_wlan_wep_key_index $uci_num
-			get_wlan_key_passphrase $uci_num
-			get_wlan_wep_encryption_level $uci_num
-			get_wlan_basic_encryption_modes $uci_num
-			get_wlan_basic_authentication_mode $uci_num
-			get_wlan_wpa_encryption_modes $uci_num
-			get_wlan_wpa_authentication_mode $uci_num
-			get_wlan_ieee_11i_encryption_modes $uci_num
-			get_wlan_ieee_11i_authentication_mode $uci_num
-			get_wlan_radio_enabled $uci_num
-			get_wlan_device_operation_mode $uci_num
-			get_wlan_authentication_service_mode $uci_num
-			get_wlan_total_associations $uci_num
-			get_wlan_associated_device $uci_num
-			get_wlan_wep_key $uci_num "1"
-			get_wlan_wep_key $uci_num "2"
-			get_wlan_wep_key $uci_num "3"
-			get_wlan_wep_key $uci_num "4"
-			get_wlan_pre_shared_key $uci_num "1"
-			get_wlan_pre_shared_key_key_passphrase $uci_num "1"
-			get_wlan_pre_shared_key_associated_device_MACAddress $uci_num "1"
-		fi
+	for k in `seq 1 $max_lan_device`;do
+		for i in `seq 1 $max_num`;do
+			freecwmp_parse_formated_parameter $1"LANDevice.$k.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.$k.WLANConfiguration.{i}." "rc" "num"
+			if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
+				let uci_num=$num-1
+				get_wlan_enable $uci_num $k
+				get_wlan_status $uci_num $k
+				get_wlan_bssid $uci_num
+				get_wlan_max_bit_rate $uci_num
+				get_wlan_channel $uci_num
+				get_wlan_ssid $uci_num
+				get_wlan_beacon_type $uci_num
+				get_wlan_mac_control_enable $uci_num
+				get_wlan_standard $uci_num
+				get_wlan_wep_key_index $uci_num
+				get_wlan_key_passphrase $uci_num
+				get_wlan_wep_encryption_level $uci_num
+				get_wlan_basic_encryption_modes $uci_num
+				get_wlan_basic_authentication_mode $uci_num
+				get_wlan_wpa_encryption_modes $uci_num
+				get_wlan_wpa_authentication_mode $uci_num
+				get_wlan_ieee_11i_encryption_modes $uci_num
+				get_wlan_ieee_11i_authentication_mode $uci_num
+				get_wlan_radio_enabled $uci_num
+				get_wlan_device_operation_mode $uci_num
+				get_wlan_authentication_service_mode $uci_num
+				get_wlan_total_associations $uci_num
+				get_wlan_associated_device $uci_num
+				get_wlan_wep_key $uci_num "1"
+				get_wlan_wep_key $uci_num "2"
+				get_wlan_wep_key $uci_num "3"
+				get_wlan_wep_key $uci_num "4"
+				get_wlan_pre_shared_key $uci_num "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num "1"
+			fi
+		done
 	done
 	return $FAULT_CPE_NO_FAULT
 	;;
