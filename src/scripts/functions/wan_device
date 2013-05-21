@@ -2,26 +2,9 @@
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
-handle_wan_logical_intf() {
-for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
-	local ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.ifname|cut -f1 -d ' '`"
-	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
-	local logical_intf
-	if [ "$_orig_ifname" != "" ];then
-		logical_intf=$_orig_ifname
-	else
-		logical_intf=$ifname
-	fi
-	
-	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" != "1"  ];then
-		echo $logical_intf
-	fi
-done
-}
-
 get_wan_logical_intf() {
 local intf="$1"
-local list_intf=`handle_wan_logical_intf`
+local list_intf=`handle_wan_interface|sort -u|cut -f1 -d:`
 for i in $list_intf;do
 	if [ "`echo $i|cut -c1-3`" != "`echo $prev_i|cut -c1-3`" ];then
 		n=1
@@ -68,7 +51,7 @@ local next_level="$4"
 local notification="$5"
 local fault_code=$FAULT_CPE_INVALID_PARAMETER_NAME
 local fault_err=$FAULT_CPE_INVALID_PARAMETER_NAME
-local list_interface=`handle_wan_interface`
+local list_interface=`handle_wan_interface|sort -u`
 local logical_intf
 local dev=0
 local wan=0
