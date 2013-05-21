@@ -2130,14 +2130,14 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 	b = mxmlNewElement(t, "StartTime");
 	if (!b) goto fault;
 
-	b = mxmlNewText(b, 0, "0000-00-00T00:00:00+00:00");
+	b = mxmlNewText(b, 0, "0001-01-01T00:00:00+00:00");
 	if (!b) goto fault;
 
 	b = b->parent->parent;
 	b = mxmlNewElement(t, "CompleteTime");
 	if (!b) goto fault;
 
-	b = mxmlNewText(b, 0, "0000-00-00T00:00:00+00:00");
+	b = mxmlNewText(b, 0, "0001-01-01T00:00:00+00:00");
 	if (!b) goto fault;
 
 	if(error == FAULT_CPE_NO_FAULT)
