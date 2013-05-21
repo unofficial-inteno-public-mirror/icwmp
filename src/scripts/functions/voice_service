@@ -2,18 +2,6 @@
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.ProxyServer
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.ProxyServerPort
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.ProxyServerTransport
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.RegistrarServer
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.RegistrarServerPort
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.RegistrarServerTransport
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.UserAgentDomain
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.UserAgentTransport
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.OutbandProxy
-# OPTIONAL: InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.1.SIP.OutbandProxyPort
-
-
 # under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.
 
 get_voice_profile_enable() {
@@ -668,7 +656,7 @@ case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.outboundport="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.sip$num.outboundport="$val"
 	;;
 	set_notification)
 	let num=$num+1
@@ -1277,7 +1265,7 @@ case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.displayname="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.sip$num.displayname="$val"
 	;;
 	set_notification)
 	let num=$num+1
