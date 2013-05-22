@@ -82,7 +82,7 @@ run() {
 }
 
 boot() {
-	rm -f /etc/cwmpd/.cwmpd_boot 2>/dev/null
+	touch /etc/cwmpd/.cwmpd_boot
 }
 
 start() {
@@ -92,11 +92,11 @@ start() {
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
 		else
-			if [ -f /etc/cwmpd/.cwmpd_boot ]; then
+			if [ !-f /etc/cwmpd/.cwmpd_boot ]; then
 				run
 			else
 				run "boot"
-				touch /etc/cwmpd/.cwmpd_boot
+				rm -f /etc/cwmpd/.cwmpd_boot 2>/dev/null
 			fi
 		fi
 	else
