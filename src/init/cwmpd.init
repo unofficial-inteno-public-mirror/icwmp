@@ -92,7 +92,7 @@ start() {
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
 		else
-			if [ !-f /etc/cwmpd/.cwmpd_boot ]; then
+			if [ ! -f /etc/cwmpd/.cwmpd_boot ]; then
 				run
 			else
 				run "boot"
