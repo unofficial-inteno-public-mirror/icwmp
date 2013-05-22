@@ -673,7 +673,7 @@ local type="xsd:unsignedInt"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
+	val=""
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.Organization" "$val" "$permissions"
 	;;
@@ -790,7 +790,7 @@ local type="xsd:unsignedInt"
 local permissions=""
 case "$action" in
 	get_value)
-	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.registertimeout`
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ReInviteExpires" "$val" "$permissions"
 	;;
@@ -812,6 +812,7 @@ local num="$1"
 local val="$2"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.SIP.registertimeout="$val"
 	;;
 	set_notification)
 	let num=$num+1
@@ -1166,8 +1167,8 @@ local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
-	val1="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state -q get asterisk.sip$num.sip_registry_registered"
-	val2="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state -q get asterisk.sip$num.sip_registry_request_sent"
+	val1="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_registered"
+	val2="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_request_sent"
 	if [ "$val1" = "yes" ];then
 		val="Up"
 	else
@@ -1466,7 +1467,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -1513,7 +1514,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -1554,7 +1555,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -1704,6 +1705,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-$max_num].SIP.Organization)
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.Organization" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let profile_num=$num-1
@@ -2130,7 +2132,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -2177,7 +2179,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -2218,7 +2220,7 @@ case "$1" in
 		get_sip_user_agent_transport $profile_num
 		get_sip_outbound_proxy $profile_num
 		get_sip_outbound_proxy_port $profile_num
-		get_sip_organization $profile_num
+		# get_sip_organization $profile_num
 		get_sip_registration_period $profile_num
 		# get_sip_invite_expires $profile_num
 		get_sip_re_invite_expires $profile_num
@@ -2368,6 +2370,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-$max_num].SIP.Organization)
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.Organization" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let profile_num=$num-1
@@ -2798,7 +2801,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -2853,7 +2856,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -2907,7 +2910,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -2959,7 +2962,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -3012,7 +3015,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -3059,7 +3062,7 @@ case "$1" in
 			get_sip_user_agent_transport $profile_num
 			get_sip_outbound_proxy $profile_num
 			get_sip_outbound_proxy_port $profile_num
-			get_sip_organization $profile_num
+			# get_sip_organization $profile_num
 			get_sip_registration_period $profile_num
 			# get_sip_invite_expires $profile_num
 			get_sip_re_invite_expires $profile_num
@@ -3261,6 +3264,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-$max_num].SIP.Organization)
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.Organization" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let profile_num=$num-1
@@ -3751,6 +3755,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-$max_num].SIP.Organization)
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.Organization" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let profile_num=$num-1
@@ -4239,6 +4244,7 @@ case "$1" in
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-$max_num].SIP.Organization)
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.Organization" "rc" "num"
 	if [ $rc -eq 0 ] && [ $num -gt 0 ] && [ $num -le $max_num ]; then
 		let profile_num=$num-1

@@ -123,6 +123,7 @@ ifeq ($(CONFIG_CWMP_SCRIPTS_FULL),y)
 	$(CP) $(PKG_BUILD_DIR)/scripts/functions $(1)/usr/share/freecwmp
 	$(INSTALL_DIR) $(1)/usr/sbin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/scripts/freecwmp.sh $(1)/usr/sbin/freecwmp
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/scripts/wepkeygen $(1)/usr/sbin/wepkeygen
 endif
 endef
 

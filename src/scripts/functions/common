@@ -6,13 +6,13 @@
 uci_remove_list_element() {
 	local option="$1"
 	local value="$2"
-	local list="$(/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get $option)"
+	local list="$(/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get $option)"
 	local elem
 
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete $option
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete $option
 	for elem in $list; do
 		if [ "$elem" != "$value" ]; then
-			/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list $option=$elem
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q  add_list $option=$elem
 		fi
 	done
 }
@@ -272,7 +272,7 @@ freecwmp_config_cwmp() {
 			fi
 		elif [ "set" = "$2" ]; then
 			if [ "value" = "$3" ]; then
-				/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.$1.value=$5 2> /dev/null
+				/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.$1.value=$5 2> /dev/null
 			fi
 		elif [ "check" = "$2" ]; then
 			if [ "parameter" = "$3" ]; then
@@ -340,9 +340,9 @@ freecwmp_set_parameter_value() {
 	local _val="$2"
 	config_foreach freecwmp_config_cwmp "cwmp" "check" "parameter" "$_parm" "_section"
 	if [ ! "$_section" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set cwmp.$_section.value=$_val 2> /dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.$_section.value=$_val 2> /dev/null
 	else
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
 			add cwmp cwmp
 			set cwmp.@cwmp[-1].parameter="$_parm"
 			set cwmp.@cwmp[-1].value="$_val"
@@ -388,20 +388,20 @@ freecwmp_notify() {
 freecwmp_set_parameter_notification() {
 	local _parm="$1"
 	local _val="$2"
-	local tmp=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get cwmp.@notifications[0] 2>/dev/null`
+	local tmp=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@notifications[0] 2>/dev/null`
 	if [ "$tmp" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add cwmp notifications 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add cwmp notifications 2>&1 >/dev/null
 	else
 		uci_remove_list_element "cwmp.@notifications[0].passive" "$_parm" 2>/dev/null
 		uci_remove_list_element "cwmp.@notifications[0].active" "$_parm" 2>/dev/null
 		uci_remove_list_element "cwmp.@notifications[0].disabled" "$_parm" 2>/dev/null
 	fi
 	if [ "$_val" -eq "1" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "2" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "0" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
 	fi
 }
 
@@ -417,9 +417,9 @@ freecwmp_set_parameter_tag() {
 	local _tag="$2"
 	config_foreach freecwmp_config_cwmp "cwmp" "check" "parameter" "$_parm" "_section"
 	if [ ! "$_section" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list cwmp.$_section.tag=$_tag 2> /dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.$_section.tag=$_tag 2> /dev/null
 	else
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
 			add cwmp cwmp
 			set cwmp.@cwmp[-1].parameter="$_parm"
 			add_list cwmp.@cwmp[-1].tag="$_tag"
@@ -471,7 +471,7 @@ return $FAULT_CPE_NO_FAULT
 freecwmp_set_parameter_fault() {
 	local _parm="$1"
 	local _fault="$2"
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state batch << EOF 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state batch << EOF 2>&1 >/dev/null
 			add cwmp fault
 			set cwmp.@fault[-1].parameter="$_parm"
 			set cwmp.@fault[-1].fault_code="$_fault"
@@ -486,7 +486,7 @@ freecwmp_add_lan_device_ip_interface() {
 	else
 		indice=$_instance
 	fi
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch << EOF 2>&1 >/dev/null
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
 			add cwmp object
 			set cwmp.@object[-1].parameter="$_parm"
 			set cwmp.@object[-1].instance="$_instance"
@@ -494,10 +494,10 @@ freecwmp_add_lan_device_ip_interface() {
 EOF
 if [ "$indice" != "" ]; then
 	let i=$indice-1
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice=interface 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.ifname=eth$i 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.type=bridge 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set network.lan$indice.proto=dhcp 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice=interface 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.ifname=eth$i 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.type=bridge 2> /dev/null
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.proto=dhcp 2> /dev/null
 fi
 }
 
@@ -597,9 +597,9 @@ freecwmp_apply_vendor_configuration()
 {
 	local fault_code="9000"
 	
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} import < /tmp/vendor_configuration_file.cfg
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /tmp/vendor_configuration_file.cfg
 	if [ "$?" = "0" ];then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_INTERNAL_ERROR
 			freecwmp_fault_output "" "$fault_code"

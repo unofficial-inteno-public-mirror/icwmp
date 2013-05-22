@@ -431,7 +431,7 @@ fi
 
 if [ "$action" = "set_tag" ]; then
 	freecwmp_set_parameter_tag "$__arg1" "$__arg2"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 fi
 
 if [ "$action" = "download" ]; then
@@ -524,7 +524,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 	let __fault_count=$__fault_count/3
 	if [ "$__fault_count" = "0" ]; then
 		# applying
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 		if [ "$action" = "apply_notification" ]; then
 			freecwmp_output "" "" "" "" "" "" "" "0"
 		elif [ "$action" = "apply_value" ]; then
@@ -535,13 +535,13 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 		let n=$__fault_count-1
 		for i in `seq 0 $n`
 		do
-			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
-			local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
+			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
+			local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
 			freecwmp_fault_output "$parm" "$fault_code"
 			if [ "$action" = "apply_notification" ]; then break; fi
 		done
 		rm -rf /var/state/cwmp 2> /dev/null
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} revert cwmp
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q revert cwmp
 	fi
 fi
 
