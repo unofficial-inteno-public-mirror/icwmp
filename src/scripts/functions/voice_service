@@ -1306,7 +1306,9 @@ esac
 
 set_line_sip_username() {
 local num="$1"
-local val="$2"
+local line_name="$2"
+local line_num="$3"
+local val="$4"
 case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
@@ -1349,7 +1351,9 @@ esac
 
 set_line_sip_password() {
 local num="$1"
-local val="$2"
+local line_name="$2"
+local line_num="$3"
+local val="$4"
 case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
@@ -1399,7 +1403,9 @@ esac
 
 set_line_sip_uri() {
 local num="$1"
-local val="$2"
+local line_name="$2"
+local line_num="$3"
+local val="$4"
 case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
