@@ -466,9 +466,15 @@ local wlan_num="$3"
 local val=""
 local type="xsd:unsignedInt"
 local permissions=""
+local encryption=""
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].key`
+	encryption=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption`
+	if [ "$encryption" = "wep-shared" -o "$encryption" = "wep-open" ]; then
+		val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].key`
+	else
+		val=""
+	fi
 	let num=$num+1
 	freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "$val" "$permissions" "$type"
 	;;
