@@ -316,19 +316,41 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
-	delay_command "wifi" "wifi" "45"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	if [ "$val" = "None" ]; then
 		val="none"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "Basic" ]; then
 		val="wep-open"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "WPA" ]; then
 		val="psk"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "11i" ]; then
 		val="psk2"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "WPAand11i" ]; then
 		val="pskmixedpsk2"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
 	fi
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption=$val
+	delay_command "wifi" "wifi" "45"
 	;;
 	set_notification)
 	let num=$num+1
@@ -630,13 +652,24 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	if [ "$val" = "WEPEncryption" ]; then
 		val="wep-open"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "None" ]; then
-		val="0"
+		val="none"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicEncryptionModes"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -692,13 +725,30 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
-	if [ "$val" = "WEPEncryption" ]; then
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
+	if [ "$val" = "SharedAuthentication" ]; then
 		val="wep-shared"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
+		i=1
+		for key in `/usr/sbin/wepkeygen 64 Inteno`;do
+			/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key$i="$key"
+			let i++
+		done
 	elif [ "$val" = "None" ]; then
-		val="0"
+		val="none"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicAuthenticationMode"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -762,15 +812,32 @@ local val="$4"
 case $action in
 	set_value)
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	if [ "$val" = "TKIPEncryption" ]; then
 		val="psk+tkip"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "AESEncryption" ]; then
 		val="psk+ccmp"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "TKIPandAESEncryption" ]; then
 		val="psk+tkip+ccmp"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAEncryptionModes"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -798,9 +865,9 @@ case "$action" in
 	fi
 	wpa=`echo $(($value))`
 	let num=$num+1
-	if [ "$wpa" = "4" -o "$wpa" = "66" ]; then
+	if [ "$wpa" = "4" -o "$wpa" = "132" ]; then
 			val="PSKAuthentication"
-	elif [ "$wpa" = "2" ];then
+	elif [ "$wpa" = "2" -o "$wpa" = "66" ];then
 			val="EAPAuthentication"
 	else
 		val=""
@@ -827,13 +894,28 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
-	if [ "$val" = "PSKAuthentication" -o "$wpa" = "132" ]; then
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
+	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk"
-	elif [ "$val" = "EAPAuthentication" -o "$wpa" = "66" ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
+	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_server=""
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_port="1812"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_secret=""
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -897,15 +979,35 @@ local val="$4"
 case $action in
 	set_value)
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	if [ "$val" = "TKIPEncryption" ]; then
 		val="psk2+tkip"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "AESEncryption" ]; then
 		val="psk2+ccmp"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "TKIPandAESEncryption" ]; then
 		val="psk2+tkip+ccmp"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -962,13 +1064,29 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk2"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].wps_pbc="1"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa2"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_server=""
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_port="1812"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].radius_secret=""
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -2875,11 +2993,17 @@ case "$1" in
 					get_wlan_authentication_service_mode $uci_num $i $num1
 					get_wlan_total_associations $uci_num $i $num1
 					get_wlan_associated_device $uci_num $i $num1
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey" "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
 					get_wlan_wep_key $uci_num $i $num1 "1"
 					get_wlan_wep_key $uci_num $i $num1 "2"
 					get_wlan_wep_key $uci_num $i $num1 "3"
 					get_wlan_wep_key $uci_num $i $num1 "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 					get_wlan_pre_shared_key $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
@@ -2929,11 +3053,17 @@ case "$1" in
 					get_wlan_authentication_service_mode $uci_num $i $num1
 					get_wlan_total_associations $uci_num $i $num1
 					get_wlan_associated_device $uci_num $i $num1
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey" "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
 					get_wlan_wep_key $uci_num $i $num1 "1"
 					get_wlan_wep_key $uci_num $i $num1 "2"
 					get_wlan_wep_key $uci_num $i $num1 "3"
 					get_wlan_wep_key $uci_num $i $num1 "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 					get_wlan_pre_shared_key $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
@@ -2986,11 +3116,17 @@ case "$1" in
 					get_wlan_authentication_service_mode $uci_num $i $num1
 					get_wlan_total_associations $uci_num $i $num1
 					get_wlan_associated_device $uci_num $i $num1
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey" "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
 					get_wlan_wep_key $uci_num $i $num1 "1"
 					get_wlan_wep_key $uci_num $i $num1 "2"
 					get_wlan_wep_key $uci_num $i $num1 "3"
 					get_wlan_wep_key $uci_num $i $num1 "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 					get_wlan_pre_shared_key $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
@@ -3013,15 +3149,15 @@ case "$1" in
 		fi
 		get_wlan_number_of_entries "max_num" $lan_dev
 		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
-		if [ "$2" = "0" ]; then
-			i=0
-			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-				let "i++"
-				freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
-				local num1=`echo $num | awk '{ print $1 }'`
-				local num2=`echo $num | awk '{ print $2 }'`
-				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
+			local num1=`echo $num | awk '{ print $1 }'`
+			local num2=`echo $num | awk '{ print $2 }'`
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
+				if [ "$2" = "0" ]; then
 					get_wlan_enable $uci_num $i $num1
 					get_wlan_status $uci_num $i $num1
 					get_wlan_bssid $uci_num $i $num1
@@ -3045,17 +3181,23 @@ case "$1" in
 					get_wlan_authentication_service_mode $uci_num $i $num1
 					get_wlan_total_associations $uci_num $i $num1
 					get_wlan_associated_device $uci_num $i $num1
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey" "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
 					get_wlan_wep_key $uci_num $i $num1 "1"
 					get_wlan_wep_key $uci_num $i $num1 "2"
 					get_wlan_wep_key $uci_num $i $num1 "3"
 					get_wlan_wep_key $uci_num $i $num1 "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 					get_wlan_pre_shared_key $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
 				fi
-			done
-		fi
+			fi
+		done
 		if [ $x -eq $lan_num ]; then
 			continue
 		fi
@@ -3074,49 +3216,57 @@ case "$1" in
 			continue
 		fi
 		get_wlan_number_of_entries "max_num" $lan_dev
-		if [ "$2" = "0" ]; then
 		i=0
-			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-				let "i++"
-				if [ $num2 -ne $i ]; then
-					continue
-				fi
-				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-					let uci_num=$num2-1
-					get_wlan_enable $uci_num $i $num1
-					get_wlan_status $uci_num $i $num1
-					get_wlan_bssid $uci_num $i $num1
-					get_wlan_max_bit_rate $uci_num $i $num1
-					get_wlan_channel $uci_num $i $num1
-					get_wlan_ssid $uci_num $i $num1
-					get_wlan_beacon_type $uci_num $i $num1
-					get_wlan_mac_control_enable $uci_num $i $num1
-					get_wlan_standard $uci_num $i $num1
-					get_wlan_wep_key_index $uci_num $i $num1
-					get_wlan_key_passphrase $uci_num $i $num1
-					get_wlan_wep_encryption_level $uci_num $i $num1
-					get_wlan_basic_encryption_modes $uci_num $i $num1
-					get_wlan_basic_authentication_mode $uci_num $i $num1
-					get_wlan_wpa_encryption_modes $uci_num $i $num1
-					get_wlan_wpa_authentication_mode $uci_num $i $num1
-					get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-					get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-					get_wlan_radio_enabled $uci_num $i $num1
-					get_wlan_device_operation_mode $uci_num $i $num1
-					get_wlan_authentication_service_mode $uci_num $i $num1
-					get_wlan_total_associations $uci_num $i $num1
-					get_wlan_associated_device $uci_num $i $num1
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey" "" "0"
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_enable $uci_num $i $num1
+				get_wlan_status $uci_num $i $num1
+				get_wlan_bssid $uci_num $i $num1
+				get_wlan_max_bit_rate $uci_num $i $num1
+				get_wlan_channel $uci_num $i $num1
+				get_wlan_ssid $uci_num $i $num1
+				get_wlan_beacon_type $uci_num $i $num1
+				get_wlan_mac_control_enable $uci_num $i $num1
+				get_wlan_standard $uci_num $i $num1
+				get_wlan_wep_key_index $uci_num $i $num1
+				get_wlan_key_passphrase $uci_num $i $num1
+				get_wlan_wep_encryption_level $uci_num $i $num1
+				get_wlan_basic_encryption_modes $uci_num $i $num1
+				get_wlan_basic_authentication_mode $uci_num $i $num1
+				get_wlan_wpa_encryption_modes $uci_num $i $num1
+				get_wlan_wpa_authentication_mode $uci_num $i $num1
+				get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
+				get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
+				get_wlan_radio_enabled $uci_num $i $num1
+				get_wlan_device_operation_mode $uci_num $i $num1
+				get_wlan_authentication_service_mode $uci_num $i $num1
+				get_wlan_total_associations $uci_num $i $num1
+				get_wlan_associated_device $uci_num $i $num1
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "0"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "0"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "0"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "0"
+				if [ "$2" = "0" ]; then
 					get_wlan_wep_key $uci_num $i $num1 "1"
 					get_wlan_wep_key $uci_num $i $num1 "2"
 					get_wlan_wep_key $uci_num $i $num1 "3"
 					get_wlan_wep_key $uci_num $i $num1 "4"
+				fi
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
+				if [ "$2" = "0" ]; then
 					get_wlan_pre_shared_key $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
 				fi
-			done
-		fi
+			fi
+		done
 	done
 	return $FAULT_CPE_NO_FAULT
 	;;
