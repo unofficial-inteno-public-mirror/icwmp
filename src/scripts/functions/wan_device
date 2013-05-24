@@ -25,16 +25,21 @@ for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 	local _orig_ifname="`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config._orig_ifname|cut -f1 -d ' '`"
 	local logical_intf
 	local instance
-	if [ "$_orig_ifname" != "" ];then
+	local device
+	json_load "$(ifstatus $config)"
+	json_get_var device device
+	if [ "$device" != "" ];then
+		logical_intf=$device
+	elif [ "$_orig_ifname" != "" ];then
 		logical_intf=$_orig_ifname
 	else
 		logical_intf=$ifname
 	fi
-	if [ "`echo $_orig_ifname|grep eth`" != "" -o "`echo $ifname|grep eth`" != "" ];then
+	if [ "`echo $logical_intf|grep eth`" != "" ];then
 		instance=1 
-	elif [ "`echo $_orig_ifname|grep atm`" != "" -o "`echo $ifname|grep atm`" != "" ];then
+	elif [ "`echo $logical_intf|grep atm`" != "" ];then
 		instance=2
-	elif [ "`echo $_orig_ifname|grep ptm`" != "" -o "`echo $ifname|grep ptm`" != "" ];then
+	elif [ "`echo $logical_intf|grep ptm`" != "" ];then
 		instance=3
 	fi
 	if [ "`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$config.is_lan`" != "1"  ];then
@@ -382,17 +387,12 @@ local val=""
 local parm="$1"
 local permissions=""
 local intf="$2"
-local _orig_ifname
-local ifname
+local device
 case "$action" in
 	get_value)
-	_orig_ifname=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$intf._orig_ifname|cut -f1 -d ' '`
-	ifname=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$intf.ifname|cut -f1 -d ' '`
-	if [ "$_orig_ifname" != "" ];then
-		json_load "$(devstatus $_orig_ifname)"
-	else
-		json_load "$(devstatus $ifname)"
-	fi
+	json_load "$(ifstatus $config)"
+	json_get_var device device
+	json_load "$(devstatus $device)"
 	json_get_var macaddr macaddr
 	val="$macaddr"
 	;;
