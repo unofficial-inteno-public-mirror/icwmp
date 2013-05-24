@@ -1084,7 +1084,7 @@ case $action in
 	set_value)
 	delay_command "wifi" "wifi" "45"
 	if [ "$val" = "InfrastructureAccessPoint" ];then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].mode="ap"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].mode="ap"
 	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode"
@@ -1143,9 +1143,9 @@ case $action in
 	set_value)
 	delay_command "wifi" "wifi" "45"
 	if [ "$val" = "None" ];then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption="psk"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="psk"
 	elif [ "$val" = "RadiusClient" ];then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get wireless.@wifi-iface[$num].encryption="wpa"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="wpa"
 	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode"
@@ -1325,7 +1325,7 @@ local val="$5"
 case $action in
 	set_value)
 	delay_command "wifi" "wifi" "45"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q det wireless.@wifi-iface[$num].key=$val
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key=$val
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$key_index.PreSharedKey"
 	freecwmp_notify "$parm" "$2" "xsd:string"
