@@ -400,8 +400,8 @@ freecwmp_set_parameter_notification() {
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "2" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
-	elif [ "$_val" -eq "0" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
+	#elif [ "$_val" -eq "0" ]; then
+		#/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
 	fi
 }
 
