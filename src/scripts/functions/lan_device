@@ -2736,7 +2736,77 @@ case "$1" in
 		fi
 	done
 	return $FAULT_CPE_NO_FAULT
-	;;	
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_wep_key $uci_num $num1 $i "1"
+				get_wlan_wep_key $uci_num $num1 $i "2"
+				get_wlan_wep_key $uci_num $num1 $i "3"
+				get_wlan_wep_key $uci_num $num1 $i "4"
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.[1-4].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.{i}." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	local num3=`echo $num | awk '{ print $3 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_wep_key $uci_num $num1 $i $num3
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	local num1=`echo $num | awk '{ print $1 }'`
@@ -2856,6 +2926,42 @@ case "$1" in
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
 				get_wlan_wep_key $uci_num $num1 $i "4"
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.|\
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.1." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4089,6 +4195,84 @@ case "$1" in
 	done
 	return $FAULT_CPE_NO_FAULT
 	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "0"
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "0"
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "0"
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "0"
+			if [ "$2" = "0" ];then
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					let uci_num=$num2-1
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
+				else
+					return $FAULT_CPE_INVALID_PARAMETER_NAME
+				fi
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.[1-4].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.{i}." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	local num3=`echo $num | awk '{ print $3 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			freecwmp_output "$1" "" "0"
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_wep_key $uci_num $num1 $i $num3
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
@@ -4220,6 +4404,81 @@ case "$1" in
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
 				get_wlan_wep_key $uci_num $num1 $i "4"
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.1." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
+			if [ "$2" = "0" ];then
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					let uci_num=$num2-1
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
+				else
+					return $FAULT_CPE_INVALID_PARAMETER_NAME
+				fi
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.1." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5362,7 +5621,77 @@ case "$1" in
 		fi
 	done
 	return $FAULT_CPE_NO_FAULT
-	;;	
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_wep_key $uci_num $num1 $i "1"
+				get_wlan_wep_key $uci_num $num1 $i "2"
+				get_wlan_wep_key $uci_num $num1 $i "3"
+				get_wlan_wep_key $uci_num $num1 $i "4"
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.[1-4].)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.{i}." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	local num3=`echo $num | awk '{ print $3 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_wep_key $uci_num $num1 $i $num3
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	local num1=`echo $num | awk '{ print $1 }'`
@@ -5482,6 +5811,42 @@ case "$1" in
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
 				get_wlan_wep_key $uci_num $num1 $i "4"
+			else
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			if [ $num2 -eq $i ]; then
+				break
+			fi
+		done
+		if [ $num1 -eq $lan_num ]; then
+			continue
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.|\
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.PreSharedKey.1." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $num1 -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			if [ $num2 -ne $i ]; then
+				continue
+			fi
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				let uci_num=$num2-1
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
