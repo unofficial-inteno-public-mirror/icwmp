@@ -3052,7 +3052,7 @@ case "$1" in
 			i=0
 			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
 				let "i++"
-				freecwmp_parse_formated_parameter $1"1.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
+				freecwmp_parse_formated_parameter $1"$lan_num.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
 				local num1=`echo $num | awk '{ print $1 }'`
 				local num2=`echo $num | awk '{ print $2 }'`
 				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
