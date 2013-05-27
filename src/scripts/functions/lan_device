@@ -520,8 +520,15 @@ local wlan_num="$3"
 local val="$4"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	delay_command "wifi" "wifi" "45"
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="$val"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="wep-shared"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex"
 	freecwmp_notify "$parm" "$2" "xsd:unsignedInt"
@@ -1397,8 +1404,16 @@ local key_index="$4"
 local val="$5"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	delay_command "wifi" "wifi" "45"
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key$key_index=$val
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key="$key_index"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="wep-shared"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.$key_index.WEPKey"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -1443,8 +1458,20 @@ local key_index="$4"
 local val="$5"
 case $action in
 	set_value)
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].gtk_rekey
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].wps_pbc
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key1
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key2
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key3
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].key4
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_server
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_port
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete wireless.@wifi-iface[$num].radius_secret
 	delay_command "wifi" "wifi" "45"
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].key=$val
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].gtk_rekey="3600"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set wireless.@wifi-iface[$num].encryption="$val"
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$key_index.PreSharedKey"
 	freecwmp_notify "$parm" "$2" "xsd:string"
@@ -2003,7 +2030,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_enable $uci_num $i $num1
+				get_wlan_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2036,7 +2063,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_status $uci_num $i $num1
+				get_wlan_status $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2069,7 +2096,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_bssid $uci_num $i $num1
+				get_wlan_bssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2102,7 +2129,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_max_bit_rate $uci_num $i $num1
+				get_wlan_max_bit_rate $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2135,7 +2162,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_channel $uci_num $i $num1
+				get_wlan_channel $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2168,7 +2195,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ssid $uci_num $i $num1
+				get_wlan_ssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2201,7 +2228,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_beacon_type $uci_num $i $num1
+				get_wlan_beacon_type $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2234,7 +2261,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_mac_control_enable $uci_num $i $num1
+				get_wlan_mac_control_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2267,7 +2294,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_standard $uci_num $i $num1
+				get_wlan_standard $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2300,7 +2327,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key_index $uci_num $i $num1
+				get_wlan_wep_key_index $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2333,7 +2360,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_key_passphrase $uci_num $i $num1
+				get_wlan_key_passphrase $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2366,7 +2393,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_encryption_level $uci_num $i $num1
+				get_wlan_wep_encryption_level $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2399,7 +2426,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_encryption_modes $uci_num $i $num1
+				get_wlan_basic_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2432,7 +2459,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_authentication_mode $uci_num $i $num1
+				get_wlan_basic_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2465,7 +2492,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_encryption_modes $uci_num $i $num1
+				get_wlan_wpa_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2498,7 +2525,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_authentication_mode $uci_num $i $num1
+				get_wlan_wpa_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2531,7 +2558,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
+				get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2564,7 +2591,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
+				get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2597,7 +2624,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_device_operation_mode $uci_num $i $num1
+				get_wlan_device_operation_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2630,7 +2657,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_authentication_service_mode $uci_num $i $num1
+				get_wlan_authentication_service_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2663,7 +2690,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_radio_enabled $uci_num $i $num1
+				get_wlan_radio_enabled $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2696,7 +2723,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_total_associations $uci_num $i $num1
+				get_wlan_total_associations $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2729,7 +2756,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "1"
+				get_wlan_wep_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2762,7 +2789,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "2"
+				get_wlan_wep_key $uci_num $num1 $i "2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2795,7 +2822,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "3"
+				get_wlan_wep_key $uci_num $num1 $i "3"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2828,7 +2855,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "4"
+				get_wlan_wep_key $uci_num $num1 $i "4"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2861,7 +2888,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2894,7 +2921,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2927,7 +2954,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -2970,43 +2997,43 @@ case "$1" in
 				local num2=`echo $num | awk '{ print $2 }'`
 				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-					get_wlan_enable $uci_num $i $num1
-					get_wlan_status $uci_num $i $num1
-					get_wlan_bssid $uci_num $i $num1
-					get_wlan_max_bit_rate $uci_num $i $num1
-					get_wlan_channel $uci_num $i $num1
-					get_wlan_ssid $uci_num $i $num1
-					get_wlan_beacon_type $uci_num $i $num1
-					get_wlan_mac_control_enable $uci_num $i $num1
-					get_wlan_standard $uci_num $i $num1
-					get_wlan_wep_key_index $uci_num $i $num1
-					get_wlan_key_passphrase $uci_num $i $num1
-					get_wlan_wep_encryption_level $uci_num $i $num1
-					get_wlan_basic_encryption_modes $uci_num $i $num1
-					get_wlan_basic_authentication_mode $uci_num $i $num1
-					get_wlan_wpa_encryption_modes $uci_num $i $num1
-					get_wlan_wpa_authentication_mode $uci_num $i $num1
-					get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-					get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-					get_wlan_radio_enabled $uci_num $i $num1
-					get_wlan_device_operation_mode $uci_num $i $num1
-					get_wlan_authentication_service_mode $uci_num $i $num1
-					get_wlan_total_associations $uci_num $i $num1
-					get_wlan_associated_device $uci_num $i $num1
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $i $num1 "1"
-					get_wlan_wep_key $uci_num $i $num1 "2"
-					get_wlan_wep_key $uci_num $i $num1 "3"
-					get_wlan_wep_key $uci_num $i $num1 "4"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			done
 		fi
@@ -3030,43 +3057,43 @@ case "$1" in
 				local num2=`echo $num | awk '{ print $2 }'`
 				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-					get_wlan_enable $uci_num $i $num1
-					get_wlan_status $uci_num $i $num1
-					get_wlan_bssid $uci_num $i $num1
-					get_wlan_max_bit_rate $uci_num $i $num1
-					get_wlan_channel $uci_num $i $num1
-					get_wlan_ssid $uci_num $i $num1
-					get_wlan_beacon_type $uci_num $i $num1
-					get_wlan_mac_control_enable $uci_num $i $num1
-					get_wlan_standard $uci_num $i $num1
-					get_wlan_wep_key_index $uci_num $i $num1
-					get_wlan_key_passphrase $uci_num $i $num1
-					get_wlan_wep_encryption_level $uci_num $i $num1
-					get_wlan_basic_encryption_modes $uci_num $i $num1
-					get_wlan_basic_authentication_mode $uci_num $i $num1
-					get_wlan_wpa_encryption_modes $uci_num $i $num1
-					get_wlan_wpa_authentication_mode $uci_num $i $num1
-					get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-					get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-					get_wlan_radio_enabled $uci_num $i $num1
-					get_wlan_device_operation_mode $uci_num $i $num1
-					get_wlan_authentication_service_mode $uci_num $i $num1
-					get_wlan_total_associations $uci_num $i $num1
-					get_wlan_associated_device $uci_num $i $num1
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $i $num1 "1"
-					get_wlan_wep_key $uci_num $i $num1 "2"
-					get_wlan_wep_key $uci_num $i $num1 "3"
-					get_wlan_wep_key $uci_num $i $num1 "4"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			done
 		fi
@@ -3093,43 +3120,43 @@ case "$1" in
 				local num2=`echo $num | awk '{ print $2 }'`
 				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-					get_wlan_enable $uci_num $i $num1
-					get_wlan_status $uci_num $i $num1
-					get_wlan_bssid $uci_num $i $num1
-					get_wlan_max_bit_rate $uci_num $i $num1
-					get_wlan_channel $uci_num $i $num1
-					get_wlan_ssid $uci_num $i $num1
-					get_wlan_beacon_type $uci_num $i $num1
-					get_wlan_mac_control_enable $uci_num $i $num1
-					get_wlan_standard $uci_num $i $num1
-					get_wlan_wep_key_index $uci_num $i $num1
-					get_wlan_key_passphrase $uci_num $i $num1
-					get_wlan_wep_encryption_level $uci_num $i $num1
-					get_wlan_basic_encryption_modes $uci_num $i $num1
-					get_wlan_basic_authentication_mode $uci_num $i $num1
-					get_wlan_wpa_encryption_modes $uci_num $i $num1
-					get_wlan_wpa_authentication_mode $uci_num $i $num1
-					get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-					get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-					get_wlan_radio_enabled $uci_num $i $num1
-					get_wlan_device_operation_mode $uci_num $i $num1
-					get_wlan_authentication_service_mode $uci_num $i $num1
-					get_wlan_total_associations $uci_num $i $num1
-					get_wlan_associated_device $uci_num $i $num1
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $i $num1 "1"
-					get_wlan_wep_key $uci_num $i $num1 "2"
-					get_wlan_wep_key $uci_num $i $num1 "3"
-					get_wlan_wep_key $uci_num $i $num1 "4"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			done
 		fi
@@ -3158,43 +3185,43 @@ case "$1" in
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
 				if [ "$2" = "0" ]; then
-					get_wlan_enable $uci_num $i $num1
-					get_wlan_status $uci_num $i $num1
-					get_wlan_bssid $uci_num $i $num1
-					get_wlan_max_bit_rate $uci_num $i $num1
-					get_wlan_channel $uci_num $i $num1
-					get_wlan_ssid $uci_num $i $num1
-					get_wlan_beacon_type $uci_num $i $num1
-					get_wlan_mac_control_enable $uci_num $i $num1
-					get_wlan_standard $uci_num $i $num1
-					get_wlan_wep_key_index $uci_num $i $num1
-					get_wlan_key_passphrase $uci_num $i $num1
-					get_wlan_wep_encryption_level $uci_num $i $num1
-					get_wlan_basic_encryption_modes $uci_num $i $num1
-					get_wlan_basic_authentication_mode $uci_num $i $num1
-					get_wlan_wpa_encryption_modes $uci_num $i $num1
-					get_wlan_wpa_authentication_mode $uci_num $i $num1
-					get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-					get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-					get_wlan_radio_enabled $uci_num $i $num1
-					get_wlan_device_operation_mode $uci_num $i $num1
-					get_wlan_authentication_service_mode $uci_num $i $num1
-					get_wlan_total_associations $uci_num $i $num1
-					get_wlan_associated_device $uci_num $i $num1
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $i $num1 "1"
-					get_wlan_wep_key $uci_num $i $num1 "2"
-					get_wlan_wep_key $uci_num $i $num1 "3"
-					get_wlan_wep_key $uci_num $i $num1 "4"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			fi
 		done
@@ -3224,46 +3251,46 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_enable $uci_num $i $num1
-				get_wlan_status $uci_num $i $num1
-				get_wlan_bssid $uci_num $i $num1
-				get_wlan_max_bit_rate $uci_num $i $num1
-				get_wlan_channel $uci_num $i $num1
-				get_wlan_ssid $uci_num $i $num1
-				get_wlan_beacon_type $uci_num $i $num1
-				get_wlan_mac_control_enable $uci_num $i $num1
-				get_wlan_standard $uci_num $i $num1
-				get_wlan_wep_key_index $uci_num $i $num1
-				get_wlan_key_passphrase $uci_num $i $num1
-				get_wlan_wep_encryption_level $uci_num $i $num1
-				get_wlan_basic_encryption_modes $uci_num $i $num1
-				get_wlan_basic_authentication_mode $uci_num $i $num1
-				get_wlan_wpa_encryption_modes $uci_num $i $num1
-				get_wlan_wpa_authentication_mode $uci_num $i $num1
-				get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
-				get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
-				get_wlan_radio_enabled $uci_num $i $num1
-				get_wlan_device_operation_mode $uci_num $i $num1
-				get_wlan_authentication_service_mode $uci_num $i $num1
-				get_wlan_total_associations $uci_num $i $num1
-				get_wlan_associated_device $uci_num $i $num1
+				get_wlan_enable $uci_num $num1 $i
+				get_wlan_status $uci_num $num1 $i
+				get_wlan_bssid $uci_num $num1 $i
+				get_wlan_max_bit_rate $uci_num $num1 $i
+				get_wlan_channel $uci_num $num1 $i
+				get_wlan_ssid $uci_num $num1 $i
+				get_wlan_beacon_type $uci_num $num1 $i
+				get_wlan_mac_control_enable $uci_num $num1 $i
+				get_wlan_standard $uci_num $num1 $i
+				get_wlan_wep_key_index $uci_num $num1 $i
+				get_wlan_key_passphrase $uci_num $num1 $i
+				get_wlan_wep_encryption_level $uci_num $num1 $i
+				get_wlan_basic_encryption_modes $uci_num $num1 $i
+				get_wlan_basic_authentication_mode $uci_num $num1 $i
+				get_wlan_wpa_encryption_modes $uci_num $num1 $i
+				get_wlan_wpa_authentication_mode $uci_num $num1 $i
+				get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+				get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+				get_wlan_radio_enabled $uci_num $num1 $i
+				get_wlan_device_operation_mode $uci_num $num1 $i
+				get_wlan_authentication_service_mode $uci_num $num1 $i
+				get_wlan_total_associations $uci_num $num1 $i
+				get_wlan_associated_device $uci_num $num1 $i
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "0"
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "0"
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "0"
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "0"
 				if [ "$2" = "0" ]; then
-					get_wlan_wep_key $uci_num $i $num1 "1"
-					get_wlan_wep_key $uci_num $i $num1 "2"
-					get_wlan_wep_key $uci_num $i $num1 "3"
-					get_wlan_wep_key $uci_num $i $num1 "4"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
 				fi
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 				if [ "$2" = "0" ]; then
-					get_wlan_pre_shared_key $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			fi
 		done
@@ -3292,7 +3319,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_enable $uci_num $i $num1
+				get_wlan_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3328,7 +3355,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_status $uci_num $i $num1
+				get_wlan_status $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3364,7 +3391,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_bssid $uci_num $i $num1
+				get_wlan_bssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3400,7 +3427,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_max_bit_rate $uci_num $i $num1
+				get_wlan_max_bit_rate $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3436,7 +3463,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_channel $uci_num $i $num1
+				get_wlan_channel $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3472,7 +3499,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ssid $uci_num $i $num1
+				get_wlan_ssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3508,7 +3535,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_beacon_type $uci_num $i $num1
+				get_wlan_beacon_type $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3544,7 +3571,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_mac_control_enable $uci_num $i $num1
+				get_wlan_mac_control_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3580,7 +3607,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_standard $uci_num $i $num1
+				get_wlan_standard $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3616,7 +3643,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key_index $uci_num $i $num1
+				get_wlan_wep_key_index $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3652,7 +3679,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_key_passphrase $uci_num $i $num1
+				get_wlan_key_passphrase $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3688,7 +3715,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_encryption_level $uci_num $i $num1
+				get_wlan_wep_encryption_level $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3724,7 +3751,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_encryption_modes $uci_num $i $num1
+				get_wlan_basic_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3760,7 +3787,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_authentication_mode $uci_num $i $num1
+				get_wlan_basic_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3796,7 +3823,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_encryption_modes $uci_num $i $num1
+				get_wlan_wpa_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3832,7 +3859,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_authentication_mode $uci_num $i $num1
+				get_wlan_wpa_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3868,7 +3895,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
+				get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3904,7 +3931,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
+				get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3940,7 +3967,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_device_operation_mode $uci_num $i $num1
+				get_wlan_device_operation_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -3976,7 +4003,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_authentication_service_mode $uci_num $i $num1
+				get_wlan_authentication_service_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4012,7 +4039,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_radio_enabled $uci_num $i $num1
+				get_wlan_radio_enabled $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4048,7 +4075,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_total_associations $uci_num $i $num1
+				get_wlan_total_associations $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4084,7 +4111,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "1"
+				get_wlan_wep_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4120,7 +4147,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "2"
+				get_wlan_wep_key $uci_num $num1 $i "2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4156,7 +4183,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "3"
+				get_wlan_wep_key $uci_num $num1 $i "3"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4192,7 +4219,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "4"
+				get_wlan_wep_key $uci_num $num1 $i "4"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4228,7 +4255,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4264,7 +4291,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4300,7 +4327,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4629,7 +4656,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_enable $uci_num $i $num1
+				get_wlan_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4662,7 +4689,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_status $uci_num $i $num1
+				get_wlan_status $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4695,7 +4722,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_bssid $uci_num $i $num1
+				get_wlan_bssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4728,7 +4755,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_max_bit_rate $uci_num $i $num1
+				get_wlan_max_bit_rate $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4761,7 +4788,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_channel $uci_num $i $num1
+				get_wlan_channel $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4794,7 +4821,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ssid $uci_num $i $num1
+				get_wlan_ssid $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4827,7 +4854,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_beacon_type $uci_num $i $num1
+				get_wlan_beacon_type $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4860,7 +4887,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_mac_control_enable $uci_num $i $num1
+				get_wlan_mac_control_enable $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4893,7 +4920,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_standard $uci_num $i $num1
+				get_wlan_standard $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4926,7 +4953,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key_index $uci_num $i $num1
+				get_wlan_wep_key_index $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4959,7 +4986,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_key_passphrase $uci_num $i $num1
+				get_wlan_key_passphrase $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -4992,7 +5019,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_encryption_level $uci_num $i $num1
+				get_wlan_wep_encryption_level $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5025,7 +5052,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_encryption_modes $uci_num $i $num1
+				get_wlan_basic_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5058,7 +5085,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_basic_authentication_mode $uci_num $i $num1
+				get_wlan_basic_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5091,7 +5118,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_encryption_modes $uci_num $i $num1
+				get_wlan_wpa_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5124,7 +5151,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wpa_authentication_mode $uci_num $i $num1
+				get_wlan_wpa_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5157,7 +5184,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_encryption_modes $uci_num $i $num1
+				get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5190,7 +5217,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_ieee_11i_authentication_mode $uci_num $i $num1
+				get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5223,7 +5250,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_device_operation_mode $uci_num $i $num1
+				get_wlan_device_operation_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5256,7 +5283,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_authentication_service_mode $uci_num $i $num1
+				get_wlan_authentication_service_mode $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5289,7 +5316,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_radio_enabled $uci_num $i $num1
+				get_wlan_radio_enabled $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5322,7 +5349,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_total_associations $uci_num $i $num1
+				get_wlan_total_associations $uci_num $num1 $i
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5355,7 +5382,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "1"
+				get_wlan_wep_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5388,7 +5415,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "2"
+				get_wlan_wep_key $uci_num $num1 $i "2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5421,7 +5448,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "3"
+				get_wlan_wep_key $uci_num $num1 $i "3"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5454,7 +5481,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_wep_key $uci_num $i $num1 "4"
+				get_wlan_wep_key $uci_num $num1 $i "4"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5487,7 +5514,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5520,7 +5547,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5553,7 +5580,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1"
+				get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5598,7 +5625,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_enable $uci_num $i $num1 "$2"
+				set_wlan_enable $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5637,7 +5664,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_max_bit_rate $uci_num $i $num1 "$2"
+				set_wlan_max_bit_rate $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5670,7 +5697,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_channel $uci_num $i $num1 "$2"
+				set_wlan_channel $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5703,7 +5730,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ssid $uci_num $i $num1 "$2"
+				set_wlan_ssid $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5736,7 +5763,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_beacon_type $uci_num $i $num1 "$2"
+				set_wlan_beacon_type $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5769,7 +5796,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_mac_control_enable $uci_num $i $num1 "$2"
+				set_wlan_mac_control_enable $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5802,7 +5829,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_standard $uci_num $i $num1 "$2"
+				set_wlan_standard $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5835,7 +5862,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key_index $uci_num $i $num1 "$2"
+				set_wlan_wep_key_index $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5868,7 +5895,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_key_passphrase $uci_num $i $num1 "$2"
+				set_wlan_key_passphrase $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5904,7 +5931,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_basic_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_basic_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5937,7 +5964,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_basic_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_basic_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -5970,7 +5997,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wpa_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_wpa_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6003,7 +6030,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wpa_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_wpa_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6036,7 +6063,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ieee_11i_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_ieee_11i_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6069,7 +6096,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ieee_11i_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_ieee_11i_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6102,7 +6129,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_device_operation_mode $uci_num $i $num1 "$2"
+				set_wlan_device_operation_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6135,7 +6162,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_authentication_service_mode $uci_num $i $num1 "$2"
+				set_wlan_authentication_service_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6168,7 +6195,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_radio_enabled $uci_num $i $num1 "$2"
+				set_wlan_radio_enabled $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6204,7 +6231,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "1" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6237,7 +6264,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "2" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "2" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6270,7 +6297,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "3" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "3" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6303,7 +6330,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "4" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "4" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6336,7 +6363,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6369,7 +6396,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6402,7 +6429,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6716,7 +6743,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_enable $uci_num $i $num1 "$2"
+				set_wlan_enable $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6755,7 +6782,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_max_bit_rate $uci_num $i $num1 "$2"
+				set_wlan_max_bit_rate $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6788,7 +6815,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_channel $uci_num $i $num1 "$2"
+				set_wlan_channel $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6821,7 +6848,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ssid $uci_num $i $num1 "$2"
+				set_wlan_ssid $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6854,7 +6881,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_beacon_type $uci_num $i $num1 "$2"
+				set_wlan_beacon_type $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6887,7 +6914,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_mac_control_enable $uci_num $i $num1 "$2"
+				set_wlan_mac_control_enable $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6920,7 +6947,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_standard $uci_num $i $num1 "$2"
+				set_wlan_standard $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6953,7 +6980,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key_index $uci_num $i $num1 "$2"
+				set_wlan_wep_key_index $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -6986,7 +7013,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_key_passphrase $uci_num $i $num1 "$2"
+				set_wlan_key_passphrase $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7022,7 +7049,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_basic_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_basic_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7055,7 +7082,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_basic_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_basic_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7088,7 +7115,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wpa_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_wpa_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7121,7 +7148,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wpa_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_wpa_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7154,7 +7181,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ieee_11i_encryption_modes $uci_num $i $num1 "$2"
+				set_wlan_ieee_11i_encryption_modes $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7187,7 +7214,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_ieee_11i_authentication_mode $uci_num $i $num1 "$2"
+				set_wlan_ieee_11i_authentication_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7220,7 +7247,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_device_operation_mode $uci_num $i $num1 "$2"
+				set_wlan_device_operation_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7253,7 +7280,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_authentication_service_mode $uci_num $i $num1 "$2"
+				set_wlan_authentication_service_mode $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7286,7 +7313,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_radio_enabled $uci_num $i $num1 "$2"
+				set_wlan_radio_enabled $uci_num $num1 $i "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7322,7 +7349,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "1" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7355,7 +7382,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "2" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "2" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7388,7 +7415,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "3" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "3" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7421,7 +7448,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_wep_key $uci_num $i $num1 "4" "$2"
+				set_wlan_wep_key $uci_num $num1 $i "4" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7454,7 +7481,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7487,7 +7514,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key_key_passphrase $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -7520,7 +7547,7 @@ case "$1" in
 			fi
 			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 				let uci_num=$num2-1
-				set_wlan_pre_shared_key_associated_device_MACAddress $uci_num $i $num1 "1" "$2"
+				set_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1" "$2"
 			else
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
