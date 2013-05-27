@@ -7694,7 +7694,22 @@ case "$1" in
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].TotalAssociations)
 	return $FAULT_CPE_NOTIFICATION_REJECTED
-	;;	
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.)
+	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey." "rc" "num"
+	local num1=`echo $num | awk '{ print $1 }'`
+	local num2=`echo $num | awk '{ print $2 }'`
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$num2.WEPKey.1.WEPKey" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$num2.WEPKey.2.WEPKey" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$num2.WEPKey.3.WEPKey" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$num2.WEPKey.4.WEPKey" "0"
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.[1-4].)
+	freecwmp_set_parameter_notification "$1" "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.1.WEPKey)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey.1.WEPKey" "rc" "num"
 	local num1=`echo $num | awk '{ print $1 }'`
@@ -7825,6 +7840,14 @@ case "$1" in
 			continue
 		fi
 	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.|\
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.)
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$i.PreSharedKey.1.PreSharedKey" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$i.PreSharedKey.1.KeyPassphrase" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.LANDevice.$num1.WLANConfiguration.$i.PreSharedKey.1.AssociatedDeviceMACAddress" "0"
+	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.PreSharedKey)
