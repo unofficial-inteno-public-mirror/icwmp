@@ -118,6 +118,7 @@ stop() {
 	kill_process "`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
 	kill_process "`ps aux|grep /tmp/freecwmp_action.sh|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
 	kill_process "`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
+	rm -f /tmp/freecwmp_action.sh
 }
 
 restart() {
