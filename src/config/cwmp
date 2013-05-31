@@ -11,12 +11,6 @@ config 'cwmp' 'acs'
 config 'cwmp' 'cpe'
 	option 'interface' 'br-lan'
 	option 'default_wan_interface' 'wan'
-	option 'manufacturer' 'Inteno'
-	option 'oui' '000000'
-	option 'product_class' 'Inteno'
-	option 'serial_number' '0000000000'
-	option 'hardware_version' 'broadcom'
-	option 'software_version' 'OpenWrt'
 	option 'log_to_console' 'disable'
 	option 'log_to_file' 'enable'
 	# log_severity: INFO (Default)	
@@ -58,5 +52,5 @@ config scripts
 	
 	
 config notifications
-        list active 'InternetGatewayDevice.ManagementServer.URL'
-        list active 'InternetGatewayDevice.ManagementServer.ParameterKey'
+	list active 'InternetGatewayDevice.ManagementServer.URL'
+	list active 'InternetGatewayDevice.ManagementServer.ParameterKey'
