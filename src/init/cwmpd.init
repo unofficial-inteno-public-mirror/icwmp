@@ -81,6 +81,9 @@ run() {
 		opt=$opt"-g "
 	fi
 	[ -f /etc/config/cwmp ] && /usr/sbin/cwmpd $opt &
+	while [ "`ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common`" = "" ];do
+		sleep 1
+	done
 }
 
 kill_process() {
