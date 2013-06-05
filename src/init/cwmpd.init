@@ -105,8 +105,10 @@ start() {
 	config_get default_wan_interface cpe default_wan_interface
 	json_load "$(ifstatus $default_wan_interface)"
 	json_get_var device device
-	uci -q set cwmp.cpe.interface="$device"
-	uci commit -q
+	if [ "$device" != "" ];then
+		uci -q set cwmp.cpe.interface="$device"
+		uci commit -q
+	fi
 	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
 	if [ "$run" = "" ]
 	then
