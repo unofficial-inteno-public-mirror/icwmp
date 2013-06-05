@@ -16,6 +16,7 @@
 #include <string.h>
 #include <uci.h>
 #include <unistd.h>
+#include <sys/file.h>
 #include "cwmp.h"
 #include "backupSession.h"
 #include "xml.h"
@@ -709,6 +710,20 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     {
         return error;
     }
+    /* Only One instance should run*/
+    int pid_file = open("/var/run/cwmpd.pid", O_CREAT | O_RDWR, 0666);
+    int rc = flock(pid_file, LOCK_EX | LOCK_NB);
+    if(rc) {
+        if(EWOULDBLOCK != errno)
+        {
+        	char *piderr = "PID file creation failed: Quit the daemon!";
+        	fprintf(stderr, "%s\n", piderr);
+        	CWMP_LOG(ERROR, piderr);
+        	exit(EXIT_FAILURE);
+        }
+        else exit(EXIT_SUCCESS);
+    }
+
     pthread_mutex_init(&cwmp->mutex_periodic, NULL);
     pthread_mutex_init(&cwmp->mutex_session_queue, NULL);
     pthread_mutex_init(&cwmp->mutex_session_send, NULL);
