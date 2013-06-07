@@ -86,15 +86,6 @@ run() {
 	done
 }
 
-kill_process() {
-for pid in "$1"
-do
-	if [ "_$pid" != "_" ];then
-		/bin/kill -9 $pid 2> /dev/null
-	fi
-done
-}
-
 boot() {
 	touch /etc/cwmpd/.cwmpd_boot
 }
@@ -129,9 +120,26 @@ start() {
 
 stop() {
 	echo $stop_msg;printf "\033[A" ;sleep 1
-	kill_process "`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
-	kill_process "`ps aux|grep /tmp/freecwmp_action.sh|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
-	kill_process "`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:`"
+	ubus call tr069 command '{"command": "exit"}' -t 3 &> /dev/null
+	
+	pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	while [ "_$pids" != "_" ];do
+		kill -9 $pids 2> /dev/null
+		pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	done
+	
+	pids="`ps aux|grep /tmp/freecwmp_action.sh|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	while [ "_$pids" != "_" ];do
+		kill -9 $pids 2> /dev/null
+		pids="`ps aux|grep /tmp/freecwmp_action.sh|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	done
+	
+	pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	while [ "_$pids" != "_" ];do
+		kill -9 $pids 2> /dev/null
+		pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	done
+	
 	rm -f /tmp/freecwmp_action.sh
 }
 
