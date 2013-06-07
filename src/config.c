@@ -711,8 +711,8 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
         return error;
     }
     /* Only One instance should run*/
-    int pid_file = open("/var/run/cwmpd.pid", O_CREAT | O_RDWR, 0666);
-    int rc = flock(pid_file, LOCK_EX | LOCK_NB);
+    cwmp->pid_file = open("/var/run/cwmpd.pid", O_CREAT | O_RDWR, 0666);
+    int rc = flock(cwmp->pid_file, LOCK_EX | LOCK_NB);
     if(rc) {
         if(EWOULDBLOCK != errno)
         {

@@ -488,6 +488,13 @@ void *thread_uloop_run (void *v)
 	return NULL;
 }
 
+void *thread_exit_program (void *v)
+{
+	CWMP_LOG(INFO,"EXIT CWMP");
+	pthread_mutex_lock(&mutex_backup_session);
+	exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char **argv)
 {
 

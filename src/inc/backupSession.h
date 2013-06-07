@@ -38,6 +38,8 @@ struct search_keywords {
 	char		*value;
 };
 
+extern pthread_mutex_t mutex_backup_session;
+
 void bkp_session_save();
 int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loading load);
 mxml_node_t *bkp_session_insert_event(int index, char *command_key, int id, char *status);

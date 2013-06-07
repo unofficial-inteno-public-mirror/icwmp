@@ -12,7 +12,7 @@
 
 #include <unistd.h>
 #include <libubus.h>
-
+#include <sys/file.h>
 
 #include "cwmp.h"
 #include "ubus.h"
@@ -115,6 +115,34 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 		blobmsg_add_u32(&b, "status", 0);
 		if (asprintf(&info, "freecwmp will execute the scheduled action commands at the end of the session") == -1)
 			return -1;
+	} else if (!strcmp("exit", cmd)) {
+		pthread_t exit_thread;
+		int error;
+		CWMP_LOG(INFO, "triggered ubus exit");
+		int rc = flock(cwmp_main.pid_file, LOCK_UN | LOCK_NB);
+		if(rc) {
+			char *piderr = "PID file unlock failed!";
+			fprintf(stderr, "%s\n", piderr);
+			CWMP_LOG(ERROR, piderr);
+		}
+		blobmsg_add_u32(&b, "status", 0);
+		if (asprintf(&info, "cwmpd daemon stopped") == -1)
+			return -1;
+		blobmsg_add_string(&b, "info", info);
+		free(info);
+
+		ubus_send_reply(ctx, req, b.head);
+
+		blob_buf_free(&b);
+
+		error = pthread_create(&exit_thread, NULL, &thread_exit_program, NULL);
+		if (error<0)
+		{
+			CWMP_LOG(ERROR,"Error when creating the exit thread!");
+			return -1;
+		}
+		return 0;
+
 	} else {
 		blobmsg_add_u32(&b, "status", -1);
 		if (asprintf(&info, "%s command is not supported", cmd) == -1)

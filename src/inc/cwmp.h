@@ -162,6 +162,7 @@ typedef struct cwmp {
     pthread_cond_t		threshold_periodic;
     int					retry_count_session;
     struct list_head	*head_event_container;
+    int					pid_file;
 } cwmp;
 
 typedef struct session {
@@ -201,5 +202,6 @@ void *thread_event_periodic (void *v);
 void cwmp_add_notification (char *name, char *value, char *attribute, char *type);
 int netlink_init(void);
 char * mix_get_time(void);
+void *thread_exit_program (void *v);
 
 #endif /* _CWMP_H__ */
