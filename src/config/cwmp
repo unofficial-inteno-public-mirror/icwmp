@@ -11,6 +11,7 @@ config 'cwmp' 'acs'
 config 'cwmp' 'cpe'
 	option 'interface' 'br-lan'
 	option 'default_wan_interface' 'wan'
+	option 'manufacturer' 'Inteno'
 	option 'log_to_console' 'disable'
 	option 'log_to_file' 'enable'
 	# log_severity: INFO (Default)	
@@ -49,8 +50,11 @@ config scripts
 	list function device_routing
 	list location /usr/share/freecwmp/functions/voice_service
 	list function voice_service
-	
-	
+
 config notifications
 	list active 'InternetGatewayDevice.ManagementServer.URL'
 	list active 'InternetGatewayDevice.ManagementServer.ParameterKey'
+
+config cwmp
+	option parameter 'InternetGatewayDevice.DeviceInfo.SpecVersion'
+	option value '1.0'
