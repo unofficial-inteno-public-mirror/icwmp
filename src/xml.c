@@ -678,25 +678,22 @@ int cwmp_rpc_acs_prepare_transfer_complete(struct cwmp *cwmp, struct session *se
 	n = mxmlNewText(n, 0, mix_get_time());
 	if (!n) goto error;
 
-	if(p->fault_code != 0)
-	{
-		n = n->parent->parent;
-		n = mxmlNewElement(n, "FaultStruct");
-		if (!n) goto error;
+	n = n->parent->parent;
+	n = mxmlNewElement(n, "FaultStruct");
+	if (!n) goto error;
 
-		n = mxmlNewElement(n, "FaultCode");
-		if (!n) goto error;
+	n = mxmlNewElement(n, "FaultCode");
+	if (!n) goto error;
 
-		n = mxmlNewText(n, 0, FAULT_CPE_ARRAY[p->fault_code].CODE);
-		if (!n) goto error;
+	n = mxmlNewText(n, 0, p->fault_code?FAULT_CPE_ARRAY[p->fault_code].CODE:"0");
+	if (!n) goto error;
 
-		n = n->parent->parent;
-		n = mxmlNewElement(n, "FaultString");
-		if (!n) goto error;
+	n = n->parent->parent;
+	n = mxmlNewElement(n, "FaultString");
+	if (!n) goto error;
 
-		n = mxmlNewText(n, 0, FAULT_CPE_ARRAY [p->fault_code].DESCRIPTION);
-		if (!n) goto error;
-	}
+	n = mxmlNewText(n, 0, p->fault_code?FAULT_CPE_ARRAY [p->fault_code].DESCRIPTION:"");
+	if (!n) goto error;
 
 	session->tree_out = tree;
 
