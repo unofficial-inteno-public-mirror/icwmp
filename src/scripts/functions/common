@@ -430,35 +430,44 @@ EOF
 delay_service_restart() {
 local service="$1"
 local delay="$2"
-local lock="/tmp/freecwmp_$service"
 
-if [ ! -x "$lock" ]; then
-	cat > "$lock" <<EOF
-/etc/init.d/$service stop >/dev/null 2>/dev/null
-sleep $delay
-/etc/init.d/$service start >/dev/null 2>/dev/null
-rm "$lock"
-EOF
-	chmod +x "$lock"
-	sh "$lock" &
+if [ ! -f /tmp/end_session.sh ];then
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "end_session" }' &> /dev/null &
+	echo '#!/bin/sh' > /tmp/end_session.sh
+	chmod +x /tmp/end_session.sh
+else
+	check="`cat /tmp/end_session.sh|grep /etc/init.d/$service`"
+	if [ "$check" != "" ];then
+		return 0
+	fi
 fi
+
+cat << EOF >> /tmp/end_session.sh
+/etc/init.d/$service stop &> /dev/null
+sleep $delay
+/etc/init.d/$service start &> /dev/null
+EOF
 }
 
 delay_command() {
-local name="$1"
-local command="$2"
-local delay="$3"
-local lock="/tmp/freecwmp_command_$name"
+local command="$1"
+local delay="$2"
 
-if [ ! -x "$lock" ]; then
-	cat > "$lock" <<EOF
-sleep $delay
-$command >/dev/null 2>/dev/null
-rm "$lock"
-EOF
-	chmod +x "$lock"
-	sh "$lock" &
+if [ ! -f /tmp/end_session.sh ];then
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "end_session" }' &> /dev/null &
+	echo '#!/bin/sh' > /tmp/end_session.sh
+	chmod +x /tmp/end_session.sh
+else
+	check="`cat /tmp/end_session.sh|grep $command`"
+	if [ "$check" != "" ];then
+		return 0
+	fi
 fi
+
+cat << EOF >> /tmp/end_session.sh
+sleep $delay
+$command &> /dev/null
+EOF
 }
 
 freecwmp_check_fault() {

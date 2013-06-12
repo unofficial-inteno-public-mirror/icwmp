@@ -14,7 +14,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.url 2> /dev/null`
 	;;
 	get_name)
-	permissions="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -30,6 +30,7 @@ case "$action" in
 	set_value)
 	local url=$1
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.url="$url"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	freecwmp_notify "$parm" "$url" "$type"
 	;;
 	set_notification)
@@ -48,7 +49,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.userid 2> /dev/null`
 	;;
 	get_name)
-	permissions="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -63,6 +64,7 @@ local parm="InternetGatewayDevice.ManagementServer.Username"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.userid="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -79,7 +81,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.passwd 2> /dev/null`
 	;;
 	get_name)
-	permissions="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -94,6 +96,7 @@ local parm="InternetGatewayDevice.ManagementServer.Password"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.passwd="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -110,7 +113,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.ParameterKey 2> /dev/null`
 	;;
 	get_name)
-	permissions="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -126,6 +129,7 @@ local val="$1"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.ParameterKey="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	freecwmp_notify "$parm" "$val" "$type"
 	;;
 	set_notification)
@@ -159,6 +163,7 @@ local parm="InternetGatewayDevice.ManagementServer.PeriodicInformEnable"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.periodic_inform_enable="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -191,6 +196,7 @@ local parm="InternetGatewayDevice.ManagementServer.PeriodicInformInterval"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.periodic_inform_interval="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -240,7 +246,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.userid 2> /dev/null`
 	;;
 	get_name)
-	val="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -255,6 +261,7 @@ local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestUsername"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.cpe.userid="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"
@@ -271,7 +278,7 @@ case "$action" in
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.passwd 2> /dev/null`
 	;;
 	get_name)
-	permissions="0"
+	permissions="1"
 	;;
 	get_notification)
 	freecwmp_get_parameter_notification "val" "$parm"
@@ -286,6 +293,7 @@ local parm="InternetGatewayDevice.ManagementServer.ConnectionRequestPassword"
 case "$action" in
 	set_value)
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.cpe.passwd="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 	;;
 	set_notification)
 	freecwmp_set_parameter_notification "$parm" "$val"

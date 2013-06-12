@@ -528,8 +528,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 		if [ "$action" = "apply_notification" ]; then
 			freecwmp_output "" "" "" "" "" "" "" "0"
 		elif [ "$action" = "apply_value" ]; then
-			freecwmp_output "" "" "" "" "" "0"
-			ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &
+			freecwmp_output "" "" "" "" "" "1"
 		fi
 	else
 		let n=$__fault_count-1
@@ -577,9 +576,9 @@ if [ "$action" = "notify" ]; then
 	fi
 fi
 
-if [ "$action" = "end_session" ]; then	
+if [ "$action" = "end_session" ]; then
+	echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
 	/bin/sh /tmp/end_session.sh
-	rm /tmp/end_session.sh
 fi
 
 if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
