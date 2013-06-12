@@ -432,7 +432,7 @@ local service="$1"
 local delay="$2"
 
 if [ ! -f /tmp/end_session.sh ];then
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "end_session" }' &> /dev/null &
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' &> /dev/null &
 	echo '#!/bin/sh' > /tmp/end_session.sh
 	chmod +x /tmp/end_session.sh
 else
