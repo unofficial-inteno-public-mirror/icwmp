@@ -1148,7 +1148,7 @@ case $action in
 	set_value)
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.brcm$num.extension="$val"
+/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.$line_name.extension="$val"
 	;;
 	set_notification)
 	let num=$num+1
