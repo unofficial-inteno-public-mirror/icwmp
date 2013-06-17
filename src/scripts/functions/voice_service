@@ -18,7 +18,7 @@ case "$action" in
 	else
 	    val="Enabled"
 	fi
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Enable" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Enable" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -64,7 +64,7 @@ case "$action" in
 	get_value)
 	val="0"
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Reset" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Reset" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -105,7 +105,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num._title`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Name" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Name" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -146,7 +146,7 @@ case "$action" in
 	get_value)
 	val="SIP"
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SignalingProtocol" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SignalingProtocol" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -186,7 +186,7 @@ case "$action" in
 	sub_channel=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let val=$number_line*$sub_channel
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.MaxSessions" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.MaxSessions" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -210,7 +210,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.NumberOfLines" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.NumberOfLines" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -236,7 +236,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.sip_proxy`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServer" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServer" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -277,7 +277,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServerPort" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServerPort" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -315,7 +315,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Outbound transport"|awk -F' ' '{print $3}'`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServerTransport" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ProxyServerTransport" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -353,7 +353,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.host`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServer" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServer" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -394,7 +394,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.port`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServerPort" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServerPort" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -435,7 +435,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Outbound transport"|awk -F' ' '{print $3}'`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServerTransport" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrarServerTransport" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -467,13 +467,13 @@ esac
 get_sip_user_agent_domain() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.domain`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentDomain" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentDomain" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -514,7 +514,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.bindport`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentPort" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentPort" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -549,13 +549,13 @@ esac
 get_sip_user_agent_transport() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Allowed transports"|awk -F' ' '{print $3}'`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentTransport" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.UserAgentTransport" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -587,13 +587,13 @@ esac
 get_sip_outbound_proxy() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.outboundproxy`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.OutboundProxy" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.OutboundProxy" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -634,7 +634,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.outboundport`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.OutboundProxyPort" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.OutboundProxyPort" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -669,13 +669,13 @@ esac
 get_sip_organization() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=""
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.Organization" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.Organization" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -713,7 +713,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.registertimeout`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrationPeriod" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistrationPeriod" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -754,7 +754,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InviteExpires" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InviteExpires" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -792,7 +792,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.registertimeout`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ReInviteExpires" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.ReInviteExpires" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -831,7 +831,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.registertimeout`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegisterExpires" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegisterExpires" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -872,7 +872,7 @@ case "$action" in
 	get_value)
 	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistersMinExpires" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegistersMinExpires" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -910,7 +910,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.SIP.registertimeout`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegisterRetryInterval" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.RegisterRetryInterval" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -945,14 +945,14 @@ esac
 get_sip_inbound_auth() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	# Digest
 	val="None"
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuth" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuth" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -984,13 +984,13 @@ esac
 get_sip_inbound_auth_username() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=""
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuthUsername" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuthUsername" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1022,13 +1022,13 @@ esac
 get_sip_inbound_auth_password() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
 	val=""
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuthPassword" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.SIP.InboundAuthPassword" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1074,7 +1074,7 @@ case "$action" in
 	else
 	    val="Enabled"
 	fi
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.Enable" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.Enable" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1124,7 +1124,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.$line_name.extension`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.DirectoryNumber" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.DirectoryNumber" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1179,7 +1179,7 @@ case "$action" in
 		fi
 	fi
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.Status" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.Status" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1216,7 +1216,7 @@ case "$action" in
 		val="Ringing"
 	fi
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.CallState" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.CallState" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1242,7 +1242,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.displayname`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.CallingFeatures.CallerIDName" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.CallingFeatures.CallerIDName" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1289,7 +1289,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.authuser 2> /dev/null`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.AuthUserName" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.AuthUserName" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1334,7 +1334,7 @@ case "$action" in
 	get_value)
 	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.secret 2> /dev/null`
 	let num=$num+1
-	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.AuthPassword" "$val" "$permissions"
+	freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.AuthPassword" "$val" "$permissions" "$type"
 	;;
 	get_name)
 	let num=$num+1
@@ -1383,9 +1383,9 @@ case "$action" in
 	username=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.authuser 2> /dev/null`
 	let num=$num+1
 	if [ "$domain" != "" -a "$username" != "" ];then
-		freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.URI" "$username@$domain" "$permissions"
+		freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.URI" "$username@$domain" "$permissions" "$type"
 	else
-		freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.URI" "" "$permissions"
+		freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.URI" "" "$permissions" "$type"
 	fi
 	;;
 	get_name)
