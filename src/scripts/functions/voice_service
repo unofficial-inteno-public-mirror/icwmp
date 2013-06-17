@@ -429,7 +429,7 @@ esac
 get_sip_registrar_server_transport() {
 local num="$1"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
