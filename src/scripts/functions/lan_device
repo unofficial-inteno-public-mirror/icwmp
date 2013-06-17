@@ -185,7 +185,7 @@ get_wlan_channel() {
 local num="$1"
 local lan_num="$2"
 local wlan_num="$3"
-local type="xsd:string"
+local type="xsd:unsignedInt"
 local val=""
 local permissions=""
 case "$action" in
@@ -546,7 +546,7 @@ local num="$1"
 local lan_num="$2"
 local wlan_num="$3"
 local val=""
-local type="xsd:unsignedInt"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
@@ -583,7 +583,7 @@ case $action in
 	done
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase"
-	freecwmp_notify "$parm" "$2" "xsd:unsignedInt"
+	freecwmp_notify "$parm" "$2" "xsd:string"
 	;;
 	set_notification)
 	let num=$num+1
@@ -1177,7 +1177,7 @@ local num="$1"
 local lan_num="$2"
 local wlan_num="$3"
 local val=""
-local type="xsd:boolean"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
@@ -1214,7 +1214,7 @@ case $action in
 	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode"
-	freecwmp_notify "$parm" "$2" "xsd:boolean"
+	freecwmp_notify "$parm" "$2" "xsd:string"
 	;;
 	set_notification)
 	let num=$num+1
@@ -1229,7 +1229,7 @@ local num="$1"
 local lan_num="$2"
 local wlan_num="$3"
 local val=""
-local type="xsd:boolean"
+local type="xsd:string"
 local permissions=""
 case "$action" in
 	get_value)
@@ -1275,7 +1275,7 @@ case $action in
 	fi
 	let num=$num+1
 	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode"
-	freecwmp_notify "$parm" "$2" "xsd:boolean"
+	freecwmp_notify "$parm" "$2" "xsd:string"
 	;;
 	set_notification)
 	let num=$num+1
