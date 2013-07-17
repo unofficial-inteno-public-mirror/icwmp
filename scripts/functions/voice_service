@@ -1380,7 +1380,7 @@ local permissions=""
 case "$action" in
 	get_value)
 	domain=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.domain 2> /dev/null`
-	username=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.authuser 2> /dev/null`
+	username=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get voice_client.sip$num.user 2> /dev/null`
 	let num=$num+1
 	if [ "$domain" != "" -a "$username" != "" ];then
 		freecwmp_output "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$num.Line.$line_num.SIP.URI" "$username@$domain" "$permissions" "$type"
@@ -1413,7 +1413,7 @@ case $action in
 	local authuser=${val%@*}
 	local domain=${val#*@}
 	if [ "$authuser" != "" -a "$domain" != "" ]; then
-	  /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.sip$num.authuser="$authuser"
+	  /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.sip$num.user="$authuser"
 	  /sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set voice_client.sip$num.domain="$domain"
 	fi
 	;;
