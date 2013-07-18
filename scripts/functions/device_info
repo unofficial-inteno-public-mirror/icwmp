@@ -72,9 +72,11 @@ freecwmp_output "InternetGatewayDevice.DeviceInfo.SerialNumber" "$val" "$permiss
 get_device_info_hardware_version() {
 local val=""
 local permissions=""
+local dslAnnex=""
 case "$action" in
 	get_value)
-	val=`cat /etc/iop_iboardid 2> /dev/null`
+	dslAnnex=`cat /proc/nvram/dslAnnex 2> /dev/null`                                                
+        val=`cat /etc/iop_version | cut -d'-' -f1 | sed s/$/"$dslAnnex"/ 2> /dev/null`
 	;;
 	get_name)
 	permissions="0"
