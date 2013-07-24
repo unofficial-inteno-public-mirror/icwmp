@@ -58,3 +58,18 @@ config notifications
 config cwmp
 	option parameter 'InternetGatewayDevice.DeviceInfo.SpecVersion'
 	option value '1.0'
+	
+config DeviceInfo
+	list function 'device_info'
+
+config Services
+	list function 'voice_service'
+
+config LANDevice
+	list function 'lan_device'
+
+config ManagementServer
+	list function 'management_server'
+
+config WANDevice
+	list function 'wan_device'

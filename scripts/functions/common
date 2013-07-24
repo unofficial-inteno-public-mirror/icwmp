@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 # TODO: merge this one somewhere in OpenWrt
 uci_remove_list_element() {
@@ -293,7 +294,7 @@ freecwmp_config_notifications() {
                 if [ "$item" = "$3" ]; then
                         eval "export -- \"$4=0\""
                         return 0
-                elif [ "`echo $3|grep $item`" = "$3" ]; then
+                elif [ "`echo $3|grep $item`" = "$3" -a "`echo $item|grep '\.$'`" != "" ]; then
                         if [ $length -lt ${#item} ]; then
                               eval "export -- \"$4=0\""
                               length="${#item}"
@@ -305,7 +306,7 @@ freecwmp_config_notifications() {
                 if [ "$item" = "$3" ]; then
                         eval "export -- \"$4=2\""
                         return 0
-                elif [ "`echo $3|grep $item`" = "$3" ]; then
+                elif [ "`echo $3|grep $item`" = "$3" -a "`echo $item|grep '\.$'`" != "" ]; then
                         if [ $length -lt ${#item} ]; then
                                 eval "export -- \"$4=2\""
                                 length="${#item}"
@@ -317,7 +318,7 @@ freecwmp_config_notifications() {
                 if [ "$item" = "$3" ]; then
                         eval "export -- \"$4=1\""
                         return 0
-                elif [ "`echo $3|grep $item`" = "$3" ]; then
+                elif [ "`echo $3|grep $item`" = "$3" -a "`echo $item|grep '\.$'`" != "" ]; then
                         if [ $length -lt ${#item} ]; then
                               eval "export -- \"$4=1\""
                               length="${#item}"
@@ -385,6 +386,16 @@ freecwmp_notify() {
 	fi
 }
 
+freecwmp_update_notification() {
+local list="$1"
+local __parm="$2"
+for i in $(/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@notifications[0].$list);do
+        if [ "`echo $i|grep $__parm`" != "" ];then
+                uci_remove_list_element "cwmp.@notifications[0].$list" "$i" 2>/dev/null
+        fi
+done
+}
+
 freecwmp_set_parameter_notification() {
 	local _parm="$1"
 	local _val="$2"
@@ -395,13 +406,24 @@ freecwmp_set_parameter_notification() {
 		uci_remove_list_element "cwmp.@notifications[0].passive" "$_parm" 2>/dev/null
 		uci_remove_list_element "cwmp.@notifications[0].active" "$_parm" 2>/dev/null
 		uci_remove_list_element "cwmp.@notifications[0].disabled" "$_parm" 2>/dev/null
+		
+		freecwmp_update_notification "passive" "$_parm" 2>/dev/null
+		freecwmp_update_notification "active" "$_parm" 2>/dev/null
+		freecwmp_update_notification "disabled" "$_parm" 2>/dev/null
+	fi
+	if [ "`echo $_parm|grep '\.$'`" = "" ]; then
+		_parent="${_parm%.*}."
+		config_foreach freecwmp_config_notifications "notifications" "get" "$_parent" "_val_p"
+	else
+		_parent="${_parm%.*.}."
+		config_foreach freecwmp_config_notifications "notifications" "get" "$_parent" "_val_p"
 	fi
 	if [ "$_val" -eq "1" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].passive="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "2" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
-	#elif [ "$_val" -eq "0" ]; then
-		#/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
+	elif [ "$_val" -eq "0" -a "$_val_p" != "" -a "$_val_p" != "0" ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
 	fi
 }
 
@@ -521,6 +543,9 @@ freecwmp_execute_functions()
 	
 	for function_name in $function_list
 	do
+		func=$(echo "$arg1" | cut -d "." -f 2)
+		func_config=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q cwmp.@$func[0].function`
+		if [ "`echo $function_name|grep \"$func_config\"`" != "" -o "$func" = "" ];then
 		$function_name "$arg1" "$arg2" "$arg3"
 		fault_code="$?"
 		if [ "$fault_code" = "0" ]; then
@@ -528,6 +553,7 @@ freecwmp_execute_functions()
 		fi
 		if [ "$fault_code" != "0" -a "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" ]; then
 			return $fault_code
+			fi
 		fi
 	done
 	if [ "$no_fault" = "1" ]; then fault_code="0"; fi

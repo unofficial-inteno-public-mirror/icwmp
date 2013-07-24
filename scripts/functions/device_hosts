@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_device_hosts_number_of_leases() {
 	local _static=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show dhcp 2> /dev/null | fgrep 'dhcp.' | fgrep '.mac=' | wc -l`

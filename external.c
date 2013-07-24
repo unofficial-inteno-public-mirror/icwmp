@@ -3,31 +3,38 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
- *	Contributed by Inteno Broadband Technology AB
  *
- *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
- *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+ *	Copyright (C) 2013 Inteno Broadband Technology AB
+ *	  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *	Copyright (C) 2011 Luka Perkov <freecwmp@lukaperkov.net>
  */
 
 #include <errno.h>
 #include <malloc.h>
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
 #include <libubox/uloop.h>
+
+#include <json/json.h>
 
 #include "external.h"
 #include "cwmp.h"
 #include "log.h"
 
-static struct uloop_process uproc;
-static pthread_mutex_t external_mutex_exec = PTHREAD_MUTEX_INITIALIZER;
+static int pid;
+static json_object *json_obj_in;
+static int pfds_in[2], pfds_out[2];
+static FILE *fpipe;
 
 LIST_HEAD(external_list_parameter);
 LIST_HEAD(external_list_value_change);
@@ -134,523 +141,259 @@ void external_fetch_delObjectResp (char **status, char **fault)
 	external_MethodFault = NULL;
 }
 
-static void external_action_jshn_parse(int fp, int external_handler(char *msg))
+static void external_read_pipe_input(int (*external_handler)(char *msg))
 {
     char buf[1], *value = NULL, *c = NULL;
     int i=0, len;
-
-    while(read(fp, buf, sizeof(buf))>0) {
+	struct pollfd fd = {
+		.fd	= pfds_in[0],
+		.events	= POLLIN
+	};
+    while(1) {
+    	poll(&fd, 1, 500000);
+    	if (!(fd.revents & POLLIN)) break;
+    	if (read(pfds_in[0], buf, sizeof(buf))<=0) break;
         if (buf[0]!='\n') {
 			if (value)
 				asprintf(&c,"%s%c",value,buf[0]);
 			else
 				asprintf(&c,"%c",buf[0]);
 
-			free(value);
+			FREE(value);
 			value = c;
         } else {
         	if (!value) continue;
-        	external_handler(value);
+        	if (strcmp(value, "EOF")==0) break;
+        	if(external_handler) external_handler(value);
             FREE(value);
         }
     }
 }
 
-int external_get_action(char *action, char *name, char *arg, int external_handler(char *msg))
+static void external_write_pipe_output(const char *msg)
 {
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
-	pthread_mutex_lock(&external_mutex_exec);
+    char *value = NULL;
+    int i=0, len;
+
+    asprintf(&value, "%s\n", msg);
+    if (write(pfds_out[1], value, strlen(value)) == -1) {
+    	CWMP_LOG(ERROR,"Error occured when trying to write to the pipe");
+	}
+    free(value);
+}
+
+static void json_obj_out_add(json_object *json_obj_out, char *name, char *val)
+{
+	json_object *json_obj_tmp;
+
+	json_obj_tmp = json_object_new_string(val);
+	json_object_object_add(json_obj_out, name, json_obj_tmp);
+	}
+
+void external_init()
+{
+	if (pipe(pfds_in) < 0)
+			return;
+
+	if (pipe(pfds_out) < 0)
+		return;
+
+	if ((pid = fork()) == -1)
+		goto error;
+
+	if (pid == 0) {
+		/* child */
+
+		close(pfds_out[1]);
+		close(pfds_in[0]);
+
+		dup2(pfds_out[0], STDIN_FILENO);
+		dup2(pfds_in[1], STDOUT_FILENO);
+
+		const char *argv[5];
+		int i = 0;
+		argv[i++] = "/bin/sh";
+	 	argv[i++] = fc_script;
+	 	argv[i++] = "--json";
+	 	argv[i++] = "json_continuous_input";
+		argv[i++] = NULL;
+		execvp(argv[0], (char **) argv);
+
+		close(pfds_out[0]);
+		close(pfds_in[1]);
+
+		exit(ESRCH);
+	}
+
+	close(pfds_in[1]);
+    close(pfds_out[0]);
+
+	external_read_pipe_input(NULL);
+
+	DD(INFO, "freecwmp script is listening");
+	return;
+
+error:
+	CWMP_LOG(ERROR,"freecwmp script intialization failed");
+	exit(EXIT_FAILURE);
+}
+
+void external_exit()
+{
+    int status;
+
+	json_object *json_obj_out;
+
+	json_obj_out = json_object_new_object();
+
+	json_obj_out_add(json_obj_out, "command", "exit");
+
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
+
+	json_object_put(json_obj_out);
+
+	while (wait(&status) != pid) {
+		DD(DEBUG, "waiting for child to exit");
+		}
+
+	close(pfds_in[0]);
+    close(pfds_out[1]);
+	}
+
+int external_handle_action(int (*external_handler)(char *msg))
+{
+	json_object *json_obj_out;
+
+	json_obj_out = json_object_new_object();
+	json_obj_out_add(json_obj_out, "command", "end");
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
+	json_object_put(json_obj_out);
+	external_read_pipe_input(external_handler);
+	return 0;
+}
+
+
+int external_get_action(char *action, char *name, char *next_level)
+{
 	DD(INFO,"executing get %s '%s'", action, name);
 
-	if ((uproc.pid = fork()) == -1)
-		goto error;
+	json_object *json_obj_out;
 
-	if (uproc.pid == 0) {
-		/* child */
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
 
-		const char *argv[8];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script;
-		argv[i++] = "--json";
-		argv[i++] = "get";
-		argv[i++] = action;
-		argv[i++] = name;
-		if(arg) argv[i++] = arg;
-		argv[i++] = NULL;
+	json_obj_out_add(json_obj_out, "command", "get");
+	json_obj_out_add(json_obj_out, "action", action);
+	json_obj_out_add(json_obj_out, "parameter", name);
+	if (next_level) json_obj_out_add(json_obj_out, "next_level", next_level);
 
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
+	json_object_put(json_obj_out);
 
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(DEBUG,"waiting for child to exit");
+	return 0;
 	}
 
-	external_action_jshn_parse(pfds[0], external_handler);
+int external_set_action(char *action, char *name, char *value, char *change)
+{
+	DD(INFO,"executing set %s '%s'", action, name);
 
-    close(pfds[0]);
+	json_object *json_obj_out;
 
-    pthread_mutex_unlock(&external_mutex_exec);
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
+
+	json_obj_out_add(json_obj_out, "command", "set");
+	json_obj_out_add(json_obj_out, "action", action);
+	json_obj_out_add(json_obj_out, "parameter", name);
+	json_obj_out_add(json_obj_out, "value", value);
+	if (change) json_obj_out_add(json_obj_out, "change", change);
+
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
+
+	json_object_put(json_obj_out);
+
 	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
 }
 
-int external_get_action_write(char *action, char *name, char *arg)
+int external_object_action(char *command, char *name)
 {
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"adding to get %s script '%s'", action, name);
+	DD(INFO,"executing %s object '%s'", action, name);
 
-	FILE *fp;
+	json_object *json_obj_out;
 
-	if (access(fc_script_actions, R_OK | W_OK | X_OK) != -1) {
-		fp = fopen(fc_script_actions, "a");
-		if (!fp) goto error;
-	} else {
-		fp = fopen(fc_script_actions, "w");
-		if (!fp) goto error;
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
 
-		fprintf(fp, "#!/bin/sh\n");
+	json_obj_out_add(json_obj_out, "command", command);
+	json_obj_out_add(json_obj_out, "action", "object");
+	json_obj_out_add(json_obj_out, "parameter", name);
 
-		if (chmod(fc_script_actions,
-			strtol("0700", 0, 8)) < 0) {
-			goto error;
-		}
-	}
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
-#ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s --json get %s %s %s\n", fc_script, action, name, arg?arg:"");
-#else
-	fprintf(fp, "/bin/sh %s --json get %s %s %s\n", fc_script, action, name, arg?arg:"");
-#endif
+	json_object_put(json_obj_out);
 
-	fclose(fp);
-
-	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
-
-error:
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
 }
 
-int external_get_action_execute(int external_handler(char *msg))
+int external_simple(char *command)
 {
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
+	DD(INFO,"executing %s request", command);
 
-	pthread_mutex_lock(&external_mutex_exec);
+	json_object *json_obj_out;
 
-	if (access(fc_script_actions, F_OK) == -1)
-		goto success;
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
 
-	DD(INFO,"executing get script");
+	json_obj_out_add(json_obj_out, "command", command);
 
-	if ((uproc.pid = fork()) == -1) {
-		goto error;
-	}
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
-	if (uproc.pid == 0) {
-		/* child */
+	json_object_put(json_obj_out);
 
-		const char *argv[3];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script_actions;
-		argv[i++] = NULL;
-
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
-
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
-
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(DEBUG,"waiting for child to exit");
-	}
-
-	external_action_jshn_parse(pfds[0], external_handler);
-	remove(fc_script_actions);
-
-success:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
 }
 
-
-int external_set_action_write(char *action, char *name, char *value, char *change)
+int external_download(char *url, char *size, char *type, char *user, char *pass)
 {
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"adding to set %s script '%s'", action, name);
-
-	FILE *fp;
-
-	if (access(fc_script_actions, R_OK | W_OK | X_OK) != -1) {
-		fp = fopen(fc_script_actions, "a");
-		if (!fp) goto error;
-	} else {
-		fp = fopen(fc_script_actions, "w");
-		if (!fp) goto error;
-
-		fprintf(fp, "#!/bin/sh\n");
-
-		if (chmod(fc_script_actions,
-			strtol("0700", 0, 8)) < 0) {
-			goto error;
-		}
-	}
-#ifdef DUMMY_MODE
-		fprintf(fp, "/bin/sh `pwd`/%s --json set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
-#else
-		fprintf(fp, "/bin/sh %s --json set %s %s %s %s\n", fc_script, action, name, value, change ? change : "");
-#endif
-
-
-	fclose(fp);
-
-	pthread_mutex_unlock(&external_mutex_exec);
-	return 0;
-
-error:
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
-}
-
-int external_set_action_execute(char *action, int external_handler(char *msg))
-{
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
-
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"executing set script");
-
-	FILE *fp;
-
-	if (access(fc_script_actions, R_OK | W_OK | F_OK) == -1)
-		goto error;
-
-	fp = fopen(fc_script_actions, "a");
-	if (!fp) goto error;
-
-#ifdef DUMMY_MODE
-	fprintf(fp, "/bin/sh `pwd`/%s --json apply %s\n", fc_script, action);
-#else
-	fprintf(fp, "/bin/sh %s --json apply %s\n", fc_script, action);
-#endif
-
-	fclose(fp);
-
-	if ((uproc.pid = fork()) == -1) {
-		goto error;
-	}
-
-	if (uproc.pid == 0) {
-		/* child */
-
-		const char *argv[3];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script_actions;
-		argv[i++] = NULL;
-
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
-
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
-
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(DEBUG,"waiting for child to exit");
-	}
-
- 	external_action_jshn_parse(pfds[0], external_handler);
-
-	if (remove(fc_script_actions) != 0)
-		goto error;
-
-    close(pfds[0]);
-
-    pthread_mutex_unlock(&external_mutex_exec);
-	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
-}
-
-int external_object_action(char *action, char *name, int external_handler(char *msg))
-{
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
-
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"executing object %s '%s'", action, name);
-
-	if ((uproc.pid = fork()) == -1)
-		goto error;
-
-	if (uproc.pid == 0) {
-		/* child */
-
-		const char *argv[8];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script;
-		argv[i++] = "--json";
-		argv[i++] = action;
-		argv[i++] = "object";
-		argv[i++] = name;
-		argv[i++] = NULL;
-
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
-
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
-
-	} else if (uproc.pid < 0)
-		goto error;
-
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(DEBUG, "waiting for child to exit");
-	}
-
- 	external_action_jshn_parse(pfds[0], external_handler);
-
-	close(pfds[0]);
-
-	pthread_mutex_unlock(&external_mutex_exec);
-	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
-}
-
-int external_simple(char *arg, int external_handler(char *msg))
-{
-
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
-
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"executing %s request", arg);
-
-	if ((uproc.pid = fork()) == -1)
-		goto error;
-
-	if (uproc.pid == 0) {
-		/* child */
-
-		const char *argv[6];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script;
-		argv[i++] = "--json";
-		argv[i++] = arg;
-		argv[i++] = NULL;
-
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
-
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
-
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(DEBUG,"waiting for child to exit");
-	}
-
- 	if (external_handler)
- 		external_action_jshn_parse(pfds[0], external_handler);
-    close(pfds[0]);
-
-    pthread_mutex_unlock(&external_mutex_exec);
-	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
-}
-
-int external_download(char *url, char *size, char *type, char *user, char *pass, int external_handler(char *msg))
-{
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
-
-	pthread_mutex_lock(&external_mutex_exec);
 	DD(INFO,"executing download url '%s'", url);
 
-	if ((uproc.pid = fork()) == -1)
-		goto error;
+	json_object *json_obj_out;
 
-	if (uproc.pid == 0) {
-		/* child */
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
 
-		const char *argv[20];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script;
-		argv[i++] = "download";
-		argv[i++] = "--json";
-		argv[i++] = "--url";
-		argv[i++] = url;
-		argv[i++] = "--size";
-		argv[i++] = size;
-		argv[i++] = "--type";
-		argv[i++] = type;
-		if(user)
-		{
-			argv[i++] = "--user";
-			argv[i++] = user;
-		}
-		if(pass)
-		{
-			argv[i++] = "--pass";
-			argv[i++] = pass;
-		}
-		argv[i++] = NULL;
+	json_obj_out_add(json_obj_out, "command", "download");
+	json_obj_out_add(json_obj_out, "url", url);
+	json_obj_out_add(json_obj_out, "size", size);
+	json_obj_out_add(json_obj_out, "type", type);
+	if(user) json_obj_out_add(json_obj_out, "user", user);
+	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
 
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
+	json_object_put(json_obj_out);
 
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(INFO,"waiting for child to exit");
-	}
-
- 	external_action_jshn_parse(pfds[0], external_handler);
-    close(pfds[0]);
-
-    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
 }
 
-int external_apply_download(char *type, int external_handler(char *msg))
+int external_apply(char *action, char *type)
 {
-	int pfds[2];
-	if (pipe(pfds) < 0)
-		return -1;
+	DD(INFO,"executing apply %s", action);
 
-	pthread_mutex_lock(&external_mutex_exec);
-	DD(INFO,"applying downloaded file");
+	json_object *json_obj_out;
 
-	if ((uproc.pid = fork()) == -1)
-		goto error;
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
 
-	if (uproc.pid == 0) {
-		/* child */
+	json_obj_out_add(json_obj_out, "command", "apply");
+	json_obj_out_add(json_obj_out, "action", action);
+	if (type) json_obj_out_add(json_obj_out, "type", type);
 
-		const char *argv[8];
-		int i = 0;
-		argv[i++] = "/bin/sh";
-		argv[i++] = fc_script;
-		argv[i++] = "--json";
-		argv[i++] = "apply";
-		argv[i++] = "download";
-		argv[i++] = "--type";
-		argv[i++] = type;
-		argv[i++] = NULL;
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
-		close(pfds[0]);
-		dup2(pfds[1], 1);
-		close(pfds[1]);
+	json_object_put(json_obj_out);
 
-		execvp(argv[0], (char **) argv);
-		exit(ESRCH);
-
-	} else if (uproc.pid < 0)
-		goto error;
-
-	/* parent */
-	close(pfds[1]);
-
-	int status;
-	while (wait(&status) != uproc.pid) {
-		DD(INFO,"waiting for child to exit");
-	}
-
- 	external_action_jshn_parse(pfds[0], external_handler);
-    close(pfds[0]);
-
-    pthread_mutex_unlock(&external_mutex_exec);
 	return 0;
-
-error:
-	close(pfds[0]);
-	pthread_mutex_unlock(&external_mutex_exec);
-	return -1;
 }
 

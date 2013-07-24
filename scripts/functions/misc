@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_misc_cpu_usage() {
 local val=`uptime | awk -F'average: ' '{ print $2 }' | awk -F',' '{ print $1 }' | awk -F'.' '{ print $2 }'`

@@ -3,10 +3,10 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
- *	Powered by Inteno Broadband Technology AB
  *
- *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
- *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+ *	Copyright (C) 2013 Inteno Broadband Technology AB
+ *	  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *
  */
 
@@ -136,10 +136,12 @@ void cwmp_schedule_session (struct cwmp *cwmp)
             CWMP_LOG(EMERG,"FATAL error in the mutex process in the session scheduler!");
             exit(EXIT_FAILURE);
         }
+        external_init();
         CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");
         run_session_end_func(session);
+        external_exit();
         if (session->error == CWMP_RETRY_SESSION)
         {
             error = cwmp_move_session_to_session_queue (cwmp, session);
@@ -440,20 +442,20 @@ int run_session_end_func (struct session *session)
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");
-		external_simple("end_session", NULL);
+		external_simple("end_session");
 	}
 
 	if (session->end_session & END_SESSION_FACTORY_RESET)
 	{
 		CWMP_LOG (INFO,"Executing factory reset: end session request");
-		external_simple("factory_reset", NULL);
+		external_simple("factory_reset");
 		exit(EXIT_SUCCESS);
 	}
 
 	if (session->end_session & END_SESSION_REBOOT)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");
-		external_simple("reboot", NULL);
+		external_simple("reboot");
 		exit(EXIT_SUCCESS);
 	}
 

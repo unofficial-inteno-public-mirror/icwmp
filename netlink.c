@@ -3,10 +3,10 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
- *	Contributed by Inteno Broadband Technology AB
  *
- *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
- *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+ *	Copyright (C) 2013 Inteno Broadband Technology AB
+ *	  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *	Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
  *
  */

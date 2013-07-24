@@ -3,10 +3,10 @@
  *	it under the terms of the GNU General Public License as published by
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
- *	Powered by Inteno Broadband Technology AB
  *
- *	Copyright (C) 2013 Mohamed Kallel <mohamed.kallel@pivasoftware.com>
- *	Copyright (C) 2013 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+ *	Copyright (C) 2013 Inteno Broadband Technology AB
+ *	  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+ *	  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
  *
  */
 
@@ -108,14 +108,13 @@ void puts_log(int severity, const char *fmt, ...)
     gettimeofday(&tv, 0);
     t   = time((time_t*)NULL);
     Tm= localtime(&tv.tv_sec);
-    i   = sprintf(buf,"%02d-%02d-%4d, %02d:%02d:%02d.%03d %s ",
+    i   = sprintf(buf,"%02d-%02d-%4d, %02d:%02d:%02d %s ",
                     Tm->tm_mday,
                     Tm->tm_mon+1,
                     Tm->tm_year+1900,
                     Tm->tm_hour,
                     Tm->tm_min,
                     Tm->tm_sec,
-                    (int)tv.tv_usec%1000,
                     SEVERITY_NAMES[severity]);
 
     if(strlen(log_file_name) == 0)

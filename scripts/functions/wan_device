@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_wan_logical_intf() {
 local intf="$1"
@@ -86,6 +87,41 @@ for intf in $list_interface;do
 		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface" 
 		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
 		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
+		
+		
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "get_wan_device_object_ro_name" "" "$value" "$notification" "$next_level" "$iface"
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "get_wan_device_wan_access_type" "" "$value" "$notification" "$next_level" "$iface"
+		fault_code="$?"
+		if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			fault_err=$FAULT_CPE_NO_FAULT
+		fi
+		if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		fi
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "get_wan_device_object_ro_name" "" "$value" "$notification" "$next_level" "$iface"
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "get_wan_device_wan_dsl_interface_config_status" "" "$value" "$notification" "$next_level" "$iface"
+		fault_code="$?"
+		if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			fault_err=$FAULT_CPE_NO_FAULT
+		fi
+		if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		fi
+		$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "get_wan_device_wan_dsl_interface_config_modulation_type" "" "$value" "$notification" "$next_level" "$iface"
+		fault_code="$?"
+		if [ "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			fault_err=$FAULT_CPE_NO_FAULT
+		fi
+		if [ \( "`echo $parameter|grep '\.$'`" = "" -o "$populate" = "get_pop_inform" \) -a "$fault_code" = "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		elif [ "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" -a "$fault_code" != "$FAULT_CPE_NO_FAULT" ];then
+			return $fault_code
+		fi
+		
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
 				$populate "$parameter" "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "get_wan_device_object_name" "" "$value" "$notification" "$next_level" "$iface"
 				fault_code="$?"
@@ -228,6 +264,109 @@ done
 return $fault_err
 }
 
+get_wan_device_wan_access_type() {
+local val=""
+local type="xsd:string"
+local parm="$1"
+local permissions=""
+local intf="$2"
+case "$action" in
+	get_value)
+	json_load "$(ifstatus $intf)"
+	json_get_var device device
+	if [ "${device:0:3}" = "eth" ];then
+		val="Ethernet"
+	elif [ "${device:0:3}" = "atm" -o "${device:3:3}" = "ptm" ];then
+		val="DSL"
+	fi
+	;;
+	get_name)
+	permissions="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+freecwmp_output "$parm" "$val" "$permissions" "$type"
+}
+
+get_wan_device_wan_dsl_interface_config_status() {
+local val=""
+local type="xsd:string"
+local parm="$1"
+local permissions=""
+local intf="$2"
+case "$action" in
+	get_value)
+	adsl_shown=`adsl info --stats|grep "^Status:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|sed 's/ *$//g'`
+	case "$adsl_shown" in
+	"Showtime")
+	val="Up"
+	;;
+	"Training")
+	val="Initializing"
+	;;
+	"Channel Analysis")
+	val="EstablishingLink"
+	;;
+	"Disabled")
+	val="Disabled"
+	;;
+	esac
+	;;
+	get_name)
+	permissions="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+freecwmp_output "$parm" "$val" "$permissions" "$type"
+}
+
+get_wan_device_wan_dsl_interface_config_modulation_type() {
+local val=""
+local type="xsd:string"
+local parm="$1"
+local permissions=""
+local intf="$2"
+case "$action" in
+	get_value)
+	adsl_shown=`adsl info --stats|grep "Mode:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|cut -f1 -d ' '`
+	case "$adsl_shown" in
+	G.Dmt)
+	val="ADSL_G.dmt"
+	;;
+	G.lite)
+	val="ADSL_G.lite"
+	;;
+	T1.413)
+	val="ADSL_ANSI_T1 .413"
+	;;
+	ADSL2)
+	val="ADSL_G.dmt.bis"
+	;;
+	AnnexL)
+	val="ADSL_re-adsl"
+	;;
+	ADSL2+)
+	val="ADSL_2plus"
+	;;
+	*)
+	val="$adsl_shown"
+	;;
+	esac
+	;;
+	get_name)
+	permissions="0"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+freecwmp_output "$parm" "$val" "$permissions" "$type"
+}
+
 get_wan_device_wan_mng_enable() {
 local val=""
 local type="xsd:boolean"
@@ -286,7 +425,7 @@ case "$action" in
 	fi
 	if [ $uptime -gt 0 ];then
 		val="Connected"
-	elif [ $pending = 1 ];then
+	elif [ "$pending" = "1" ];then
 		val="Pending Disconnect"
 	else
 		val="Disconnected"
@@ -486,7 +625,8 @@ local permissions=""
 local intf="$2"
 case "$action" in
 	get_value)
-	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get network.$intf.password 2> /dev/null`
+	# returned value must be empty
+	val=""
 	;;
 	get_name)
 	permissions="1"
@@ -534,6 +674,11 @@ freecwmp_output "$parm" "" "1"
 return $FAULT_CPE_NO_FAULT
 }
 
+get_wan_device_object_ro_name() {
+local parm="$1"
+freecwmp_output "$parm" "" "0"
+return $FAULT_CPE_NO_FAULT
+}
 get_pop_inform() {
 local parameter="$1"
 local parm="$2"

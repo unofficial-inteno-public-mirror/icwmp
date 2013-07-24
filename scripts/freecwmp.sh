@@ -1,6 +1,8 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2012 Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 . /lib/functions.sh
 . /usr/share/libubox/jshn.sh
@@ -10,17 +12,12 @@
 # define a 'name' command-line string flag
 DEFINE_boolean 'newline' false 'do not output the trailing newline' 'n'
 DEFINE_boolean 'value' false 'output values only' 'v'
-DEFINE_boolean 'json' false 'send values using ubus' 'j'
+DEFINE_boolean 'json' false 'send values using json' 'j'
 DEFINE_boolean 'empty' false 'output empty parameters' 'e'
 DEFINE_boolean 'last' false 'output only last line ; for parameters that tend to have huge output' 'l'
 DEFINE_boolean 'debug' false 'give debug output' 'd'
 DEFINE_boolean 'dummy' false 'echo system commands' 'D'
 DEFINE_boolean 'force' false 'force getting values for certain parameters' 'f'
-DEFINE_string 'url' '' 'file to download [download only]' 'u'
-DEFINE_string 'size' '' 'size of file to download [download only]' 's'
-DEFINE_string 'type' '' 'type of file to download [download only]' 't'
-DEFINE_string 'user' '' 'username for downloading file [download only]' 'U'
-DEFINE_string 'pass' '' 'password for downloading file [download only]' 'P'
 
 FLAGS_HELP=`cat << EOF
 USAGE: $0 [flags] command [parameter] [values]
@@ -28,11 +25,15 @@ command:
   get [value|notification|tags|name|all]
   set [value|notification|tag]
   apply [value|notification|download]
+  add [object]
+  delete [object]
   download
   factory_reset
   reboot
   notify
   end_session
+  inform
+  json_continuous_input
 EOF`
 
 FLAGS "$@" || exit 1
@@ -90,6 +91,11 @@ case "$1" in
 		fi
 		;;
 	download)
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
+		__arg4="$5"
+		__arg5="$6"
 		action="download"
 		;;
 	factory_reset)
@@ -104,28 +110,19 @@ case "$1" in
 		elif [ "$2" = "value" ]; then
 			action="apply_value"
 		elif [ "$2" = "download" ]; then
+			__arg1="$3"
 			action="apply_download"
 		else
 			action="apply_value"
 		fi
 		;;
 	add)
-		if [ "$2" = "object" ]; then
-			action="add_object"
 			__arg1="$3"
-		else
 			action="add_object"
-			__arg1="$3"
-		fi
 		;;
 	delete)
-		if [ "$2" = "object" ]; then
-			action="delete_object"
 			__arg1="$3"
-		else
 			action="delete_object"
-			__arg1="$3"
-		fi
 		;;
 	inform)
 		action="inform"
@@ -139,6 +136,15 @@ case "$1" in
 	end_session)
 		action="end_session"
 		;;
+	json_continuous_input)
+		action="json_continuous_input"
+		;;
+	end)
+		echo "EOF"
+		;;
+	exit)
+		exit 0
+	;;
 esac
 
 if [ -z "$action" ]; then
@@ -181,6 +187,8 @@ handle_scripts() {
 
 config_load cwmp
 config_foreach handle_scripts "scripts"
+# load instance number for TR104
+load_voice
 
 # Fault code
 
@@ -205,6 +213,7 @@ FAULT_CPE_DOWNLOAD_FAIL_COMPLETE_DOWNLOAD="17"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION="19"
 
+handle_action() {
 if [ "$action" = "get_value" -o "$action" = "get_all" ]; then
 	if [ ${FLAGS_force} -eq ${FLAGS_FALSE} ]; then
 		__tmp_arg="Device."
@@ -436,15 +445,15 @@ fi
 
 if [ "$action" = "download" ]; then
 	local fault_code="9000"
-	if [ "${FLAGS_user}" = "" -o "${FLAGS_pass}" = "" ];then
-		wget -O /tmp/freecwmp_download "${FLAGS_url}" > /dev/null
+		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
+			wget -O /tmp/freecwmp_download "$__arg1" > /dev/null
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 			freecwmp_fault_output "" "$fault_code"
 			exit 1
 		fi
 	else
-		local url="http://${FLAGS_user}:${FLAGS_pass}@`echo ${FLAGS_url}|sed 's/http:\/\///g'`"
+			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
 		wget -O /tmp/freecwmp_download "$url" > /dev/null
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
@@ -455,12 +464,12 @@ if [ "$action" = "download" ]; then
 
 	local flashsize="`freecwmp_check_flash_size`"
 	local filesize=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
-	if [ $flashsize -gt 0 -a $flashsize -lt ${FLAGS_size} ]; then
+		if [ $flashsize -gt 0 -a $flashsize -lt $__arg2 ]; then
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 		rm /tmp/freecwmp_download 2> /dev/null
 		freecwmp_fault_output "" "$fault_code"
 	else
-		if [ "${FLAGS_type}" = "1" ];then
+			if [ "$__arg3" = "1" ];then
 			mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
 			freecwmp_check_image
 			if [ "$?" = "0" ];then
@@ -478,10 +487,10 @@ if [ "$action" = "download" ]; then
 				rm /tmp/firmware_upgrade_image 2> /dev/null
 				freecwmp_fault_output "" "$fault_code"
 			fi
-		elif [ "${FLAGS_type}" = "2" ];then
+			elif [ "$__arg3" = "2" ];then
 			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
-		elif [ "${FLAGS_type}" = "3" ];then
+			elif [ "$__arg3" = "3" ];then
 			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
 			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 		else
@@ -493,7 +502,7 @@ if [ "$action" = "download" ]; then
 fi
 
 if [ "$action" = "apply_download" ]; then
-	case "${FLAGS_type}" in
+		case "$__arg1" in
 		1) freecwmp_apply_firmware ;;
 		2) freecwmp_apply_web_content ;;
 		3) freecwmp_apply_vendor_configuration ;;
@@ -580,6 +589,106 @@ if [ "$action" = "end_session" ]; then
 	echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
 	/bin/sh /tmp/end_session.sh
 fi
+	if [ "$action" = "json_continuous_input" ]; then
+		echo "EOF"
+		while read CMD; do
+			[ -z "$CMD" ] && continue
+			result=""
+			json_init
+			json_load "$CMD"
+			json_get_var command command
+			json_get_var  action action
+			case "$command" in
+				set)
+					if [ "$action" = "notification" ]; then
+						json_get_var __arg1 parameter
+						json_get_var __arg2 value
+						json_get_var __arg3 change
+						action="set_notification"
+					elif [ "$action" = "value" ]; then
+						json_get_var __arg1 parameter
+						json_get_var __arg2 value
+						action="set_value"
+					else
+						json_get_var __arg1 parameter
+						json_get_var __arg2 value
+						action="set_value"
+					fi
+					;;
+				get)
+					if [ "$action" = "notification" ]; then
+						json_get_var __arg1 parameter
+						action="get_notification"
+					elif [ "$action" = "value" ]; then
+						json_get_var __arg1 parameter
+						action="get_value"
+					elif [ "$action" = "name" ]; then
+						json_get_var __arg1 parameter
+						json_get_var __arg2 next_level
+						action="get_name"
+					else
+						json_get_var __arg1 parameter
+						action="get_value"
+					fi
+					;;
+				download)
+					json_get_var __arg1 url
+					json_get_var __arg2 size
+					json_get_var __arg3 type
+					json_get_var __arg4 user
+					json_get_var __arg5 pass
+					action="download"
+					;;
+				factory_reset)
+					action="factory_reset"
+					;;
+				reboot)
+					action="reboot"
+					;;
+				apply)
+					if [ "$action" = "notification" ]; then
+						action="apply_notification"
+					elif [ "$action" = "value" ]; then
+						action="apply_value"
+					elif [ "$action" = "download" ]; then
+						json_get_var __arg1 type
+						action="apply_download"
+					else
+						action="apply_value"
+					fi
+					;;
+				add)
+					json_get_var __arg1 parameter
+					action="add_object"
+					;;
+				delete)
+					json_get_var __arg1 parameter
+					action="delete_object"
+					;;
+				inform)
+					action="inform"
+					;;
+				end_session)
+					action="end_session"
+					;;
+				end)
+					echo "EOF"
+					;;
+				exit)
+					exit 0
+					;;
+				*)
+					continue
+					;;
+			esac
+			handle_action
+		done
+	
+		exit 0;
+	fi
+}
+
+handle_action
 
 if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] exited at \"`date`\""
