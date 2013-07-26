@@ -276,7 +276,7 @@ case "$action" in
 	json_get_var device device
 	if [ "${device:0:3}" = "eth" ];then
 		val="Ethernet"
-	elif [ "${device:0:3}" = "atm" -o "${device:3:3}" = "ptm" ];then
+	elif [ "${device:0:3}" = "atm" -o "${device:0:3}" = "ptm" ];then
 		val="DSL"
 	fi
 	;;
