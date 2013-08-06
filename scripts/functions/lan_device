@@ -47,7 +47,7 @@ for lan in `get_lan_device_interface`;do
 		fi
 		if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 			let uci_num=$num2-1
-			$function $uci_num $num1 $i $args
+			$function "$uci_num" "$num1" "$i" $args
 		else
 			return $FAULT_CPE_INVALID_PARAMETER_NAME
 		fi
@@ -84,7 +84,7 @@ for lan in `get_lan_device_interface`;do
 		fi
 		if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 			let uci_num=$num2-1
-			get_wlan_associated_device $uci_num $num1 $i $num3 "$partial_parameter_name"
+			get_wlan_associated_device "$uci_num" "$num1" "$i" "$num3" "$partial_parameter_name"
 			if [ "$?" != "0" ];then
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
@@ -1311,27 +1311,27 @@ case "$action" in
 	for mac in $assoclist;do
 		let i=$i+1
 		if [ "$i" = "$id_tab" -o "$id_tab" = "" ]; then
-		mac_lower=`echo $mac|tr '[A-F]' '[a-f]'`
-		ip=`cat /proc/net/arp|grep $mac_lower|awk -F' ' '{print $1}'`
+			mac_lower=`echo $mac|tr '[A-F]' '[a-f]'`
+			ip=`cat /proc/net/arp|grep $mac_lower|awk -F' ' '{print $1}'`
 			if [ "$param_name" = "AssociatedDeviceMACAddress" -o "$param_name" = "" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "$permissions"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "$permissions"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceIPAddress" -o "$param_name" = "" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "$permissions"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "$permissions"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceAuthenticationState" -o "$param_name" = "" ]; then
-		if [ "$num" = "0" ];then
-			is_authenticated=`/usr/sbin/wlctl -i wl$num authe_sta_list|grep $mac`
-		else
-			is_authenticated=`/usr/sbin/wlctl -i wl0.$num authe_sta_list|grep $mac`
-		fi
-		if [ "$is_authenticated" = "" ];then
-			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "0" "$permissions" "xsd:boolean"
-		else
-			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "1" "$permissions" "xsd:boolean"
-		fi
+				if [ "$num" = "0" ];then
+					is_authenticated=`/usr/sbin/wlctl -i wl$num authe_sta_list|grep $mac`
+				else
+					is_authenticated=`/usr/sbin/wlctl -i wl0.$num authe_sta_list|grep $mac`
+				fi
+				if [ "$is_authenticated" = "" ];then
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "0" "$permissions" "xsd:boolean"
+				else
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "1" "$permissions" "xsd:boolean"
+				fi
 				found=1
 			fi
 			if [ "$i" = "$id_tab" ];then
@@ -1349,15 +1349,15 @@ case "$action" in
 		fi
 		if [ "$i" = "$id_tab" -o "$id_tab" = "" ]; then
 			if [ "$param_name" = "AssociatedDeviceMACAddress" -o "$param_name" = "" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "" "$permissions"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "" "$permissions"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceIPAddress" -o "$param_name" = "" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "" "$permissions"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "" "$permissions"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceAuthenticationState" -o "$param_name" = "" ]; then
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "" "$permissions"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "" "$permissions"
 				found=1
 			fi
 			if [ "$i" = "$id_tab" ];then
@@ -1371,18 +1371,18 @@ case "$action" in
 		let i=$i+1
 		if [ "$i" = "$id_tab" -o "$id_tab" = "" ]; then
 			if [ "$param_name" = "AssociatedDeviceMACAddress" -o "$param_name" = "" ]; then
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress"
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$val"
+				freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$val"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceIPAddress" -o "$param_name" = "" ]; then
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress"
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$val"
+				freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$val"
 				found=1
 			fi
 			if [ "$param_name" = "AssociatedDeviceMACAddress" -o "$param_name" = "" ]; then
-		freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState"
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$val"
+				freecwmp_get_parameter_notification "val" "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState"
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$val"
 				found=1
 			fi
 			if [ "$i" = "$id_tab" ];then
@@ -2239,7 +2239,7 @@ case "$1" in
 		fi
 	done
 	return $FAULT_CPE_NO_FAULT
-	;;	
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].PreSharedKey.1.PreSharedKey)
 	get_set_lan_device_parameter "$1" "get_wlan_pre_shared_key" "PreSharedKey.1.PreSharedKey" "1"
 	return $?
@@ -2254,7 +2254,6 @@ case "$1" in
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].AssociatedDevice.*.AssociatedDeviceMACAddress)
 	get_associated_device_parameter "$1" "AssociatedDeviceMACAddress"
-	echo $fault_error
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].AssociatedDevice.*.AssociatedDeviceIPAddress)
@@ -2301,143 +2300,20 @@ case "$1" in
 		if [ "$2" = "0" ]; then
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num." "" "1"
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
-		i=0
-		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-			let "i++"
+			i=0
+			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+				let "i++"
 				freecwmp_parse_formated_parameter $1"LANDevice.$lan_num.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
 				local num1=`echo $num | awk '{ print $1 }'`
 				local num2=`echo $num | awk '{ print $2 }'`
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-					get_wlan_enable $uci_num $num1 $i
-					get_wlan_status $uci_num $num1 $i
-					get_wlan_bssid $uci_num $num1 $i
-				get_wlan_max_bit_rate $uci_num $num1 $i
-					get_wlan_channel $uci_num $num1 $i
-					get_wlan_ssid $uci_num $num1 $i
-					get_wlan_beacon_type $uci_num $num1 $i
-					get_wlan_mac_control_enable $uci_num $num1 $i
-					get_wlan_standard $uci_num $num1 $i
-					get_wlan_wep_key_index $uci_num $num1 $i
-					get_wlan_key_passphrase $uci_num $num1 $i
-					get_wlan_wep_encryption_level $uci_num $num1 $i
-					get_wlan_basic_encryption_modes $uci_num $num1 $i
-					get_wlan_basic_authentication_mode $uci_num $num1 $i
-					get_wlan_wpa_encryption_modes $uci_num $num1 $i
-					get_wlan_wpa_authentication_mode $uci_num $num1 $i
-					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
-					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
-					get_wlan_radio_enabled $uci_num $num1 $i
-					get_wlan_device_operation_mode $uci_num $num1 $i
-					get_wlan_authentication_service_mode $uci_num $num1 $i
-					get_wlan_total_associations $uci_num $num1 $i
-					get_wlan_associated_device $uci_num $num1 $i
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $num1 $i "1"
-					get_wlan_wep_key $uci_num $num1 $i "2"
-					get_wlan_wep_key $uci_num $num1 $i "3"
-					get_wlan_wep_key $uci_num $num1 $i "4"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $num1 $i "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
-			fi
-		done
-		fi
-	done
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.)
-	freecwmp_output "InternetGatewayDevice.LANDevice." "" "1"
-	for lan in `get_lan_device_interface`;do
-		lan_num=`echo $lan|cut -f2 -d:`
-		lan_dev=`echo $lan|cut -f1 -d:`
-		get_wlan_number_of_entries "max_num" $lan_dev
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num." "" "1"
-		if [ "$2" = "0" ]; then
-			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
-		i=0
-		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-			let "i++"
-				freecwmp_parse_formated_parameter $1"$lan_num.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
-				local num1=`echo $num | awk '{ print $1 }'`
-				local num2=`echo $num | awk '{ print $2 }'`
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-					get_wlan_enable $uci_num $num1 $i
-					get_wlan_status $uci_num $num1 $i
-					get_wlan_bssid $uci_num $num1 $i
-					get_wlan_max_bit_rate $uci_num $num1 $i
-				get_wlan_channel $uci_num $num1 $i
-					get_wlan_ssid $uci_num $num1 $i
-					get_wlan_beacon_type $uci_num $num1 $i
-					get_wlan_mac_control_enable $uci_num $num1 $i
-					get_wlan_standard $uci_num $num1 $i
-					get_wlan_wep_key_index $uci_num $num1 $i
-					get_wlan_key_passphrase $uci_num $num1 $i
-					get_wlan_wep_encryption_level $uci_num $num1 $i
-					get_wlan_basic_encryption_modes $uci_num $num1 $i
-					get_wlan_basic_authentication_mode $uci_num $num1 $i
-					get_wlan_wpa_encryption_modes $uci_num $num1 $i
-					get_wlan_wpa_authentication_mode $uci_num $num1 $i
-					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
-					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
-					get_wlan_radio_enabled $uci_num $num1 $i
-					get_wlan_device_operation_mode $uci_num $num1 $i
-					get_wlan_authentication_service_mode $uci_num $num1 $i
-					get_wlan_total_associations $uci_num $num1 $i
-					get_wlan_associated_device $uci_num $num1 $i
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
-					get_wlan_wep_key $uci_num $num1 $i "1"
-					get_wlan_wep_key $uci_num $num1 $i "2"
-					get_wlan_wep_key $uci_num $num1 $i "3"
-					get_wlan_wep_key $uci_num $num1 $i "4"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
-					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
-					get_wlan_pre_shared_key $uci_num $num1 $i "1"
-					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
-					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
-			fi
-		done
-		fi
-	done
-	return $FAULT_CPE_NO_FAULT
-	;;
-	InternetGatewayDevice.LANDevice.[1-$max_lan_num].)
-	freecwmp_parse_formated_parameter $1 "InternetGatewayDevice.LANDevice.{i}." "rc" "x"
-	for lan in `get_lan_device_interface`;do
-		lan_num=`echo $lan|cut -f2 -d:`
-		lan_dev=`echo $lan|cut -f1 -d:`
-		if [ $x -ne $lan_num ]; then
-			continue
-		fi
-		get_wlan_number_of_entries "max_num" $lan_dev
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num." "" "1"
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
-		if [ "$2" = "0" ]; then
-		i=0
-		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-			let "i++"
-				freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
-				local num1=`echo $num | awk '{ print $1 }'`
-				local num2=`echo $num | awk '{ print $2 }'`
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
 					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
 					get_wlan_enable $uci_num $num1 $i
 					get_wlan_status $uci_num $num1 $i
 					get_wlan_bssid $uci_num $num1 $i
 					get_wlan_max_bit_rate $uci_num $num1 $i
 					get_wlan_channel $uci_num $num1 $i
-				get_wlan_ssid $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
 					get_wlan_beacon_type $uci_num $num1 $i
 					get_wlan_mac_control_enable $uci_num $num1 $i
 					get_wlan_standard $uci_num $num1 $i
@@ -2471,39 +2347,34 @@ case "$1" in
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
 				fi
 			done
-			fi
-		if [ $x -eq $lan_num ]; then
-				break
-			fi
-		done
+		fi
+	done
 	return $FAULT_CPE_NO_FAULT
 	;;
-	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.)
-	freecwmp_parse_formated_parameter $1 "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration." "rc" "x"
+	InternetGatewayDevice.LANDevice.)
+	freecwmp_output "InternetGatewayDevice.LANDevice." "" "1"
 	for lan in `get_lan_device_interface`;do
 		lan_num=`echo $lan|cut -f2 -d:`
 		lan_dev=`echo $lan|cut -f1 -d:`
-		if [ $x -ne $lan_num ]; then
-			continue
-		fi
 		get_wlan_number_of_entries "max_num" $lan_dev
-		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
-		i=0
-		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-			let "i++"
-			freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
-			local num1=`echo $num | awk '{ print $1 }'`
-			local num2=`echo $num | awk '{ print $2 }'`
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
-				if [ "$2" = "0" ]; then
+		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num." "" "1"
+		if [ "$2" = "0" ]; then
+			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
+			i=0
+			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+				let "i++"
+				freecwmp_parse_formated_parameter $1"$lan_num.WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
+				local num1=`echo $num | awk '{ print $1 }'`
+				local num2=`echo $num | awk '{ print $2 }'`
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
 					get_wlan_enable $uci_num $num1 $i
 					get_wlan_status $uci_num $num1 $i
 					get_wlan_bssid $uci_num $num1 $i
 					get_wlan_max_bit_rate $uci_num $num1 $i
 					get_wlan_channel $uci_num $num1 $i
 					get_wlan_ssid $uci_num $num1 $i
-				get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
 					get_wlan_mac_control_enable $uci_num $num1 $i
 					get_wlan_standard $uci_num $num1 $i
 					get_wlan_wep_key_index $uci_num $num1 $i
@@ -2534,7 +2405,135 @@ case "$1" in
 					get_wlan_pre_shared_key $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
-			fi
+				fi
+			done
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].)
+	freecwmp_parse_formated_parameter $1 "InternetGatewayDevice.LANDevice.{i}." "rc" "x"
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $x -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num." "" "1"
+		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
+		if [ "$2" = "0" ]; then
+			i=0
+			for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+				let "i++"
+				freecwmp_parse_formated_parameter $1"WLANConfiguration.$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
+				local num1=`echo $num | awk '{ print $1 }'`
+				local num2=`echo $num | awk '{ print $2 }'`
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
+				fi
+			done
+		fi
+		if [ $x -eq $lan_num ]; then
+			break
+		fi
+	done
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.)
+	freecwmp_parse_formated_parameter $1 "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration." "rc" "x"
+	for lan in `get_lan_device_interface`;do
+		lan_num=`echo $lan|cut -f2 -d:`
+		lan_dev=`echo $lan|cut -f1 -d:`
+		if [ $x -ne $lan_num ]; then
+			continue
+		fi
+		get_wlan_number_of_entries "max_num" $lan_dev
+		freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "" "1"
+		i=0
+		for uci_num in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			let "i++"
+			freecwmp_parse_formated_parameter "$1$i." "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "num"
+			local num1=`echo $num | awk '{ print $1 }'`
+			local num2=`echo $num | awk '{ print $2 }'`
+			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+				freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i." "" "1"
+				if [ "$2" = "0" ]; then
+					get_wlan_enable $uci_num $num1 $i
+					get_wlan_status $uci_num $num1 $i
+					get_wlan_bssid $uci_num $num1 $i
+					get_wlan_max_bit_rate $uci_num $num1 $i
+					get_wlan_channel $uci_num $num1 $i
+					get_wlan_ssid $uci_num $num1 $i
+					get_wlan_beacon_type $uci_num $num1 $i
+					get_wlan_mac_control_enable $uci_num $num1 $i
+					get_wlan_standard $uci_num $num1 $i
+					get_wlan_wep_key_index $uci_num $num1 $i
+					get_wlan_key_passphrase $uci_num $num1 $i
+					get_wlan_wep_encryption_level $uci_num $num1 $i
+					get_wlan_basic_encryption_modes $uci_num $num1 $i
+					get_wlan_basic_authentication_mode $uci_num $num1 $i
+					get_wlan_wpa_encryption_modes $uci_num $num1 $i
+					get_wlan_wpa_authentication_mode $uci_num $num1 $i
+					get_wlan_ieee_11i_encryption_modes $uci_num $num1 $i
+					get_wlan_ieee_11i_authentication_mode $uci_num $num1 $i
+					get_wlan_radio_enabled $uci_num $num1 $i
+					get_wlan_device_operation_mode $uci_num $num1 $i
+					get_wlan_authentication_service_mode $uci_num $num1 $i
+					get_wlan_total_associations $uci_num $num1 $i
+					get_wlan_associated_device $uci_num $num1 $i
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.1." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.2." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "1"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "1"
+					get_wlan_wep_key $uci_num $num1 $i "1"
+					get_wlan_wep_key $uci_num $num1 $i "2"
+					get_wlan_wep_key $uci_num $num1 $i "3"
+					get_wlan_wep_key $uci_num $num1 $i "4"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
+					freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
+					get_wlan_pre_shared_key $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
+					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
+				fi
 			fi
 		done
 		if [ $x -eq $lan_num ]; then
@@ -2603,7 +2602,7 @@ case "$1" in
 					get_wlan_pre_shared_key $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
-			fi
+				fi
 			fi
 		done
 	done
@@ -2612,91 +2611,91 @@ case "$1" in
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].Enable)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_enable" "Enable"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].Status)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_status" "Status"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].BSSID)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_bssid" "BSSID"
 	return $?
 	;;	
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].MaxBitRate)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_max_bit_rate" "MaxBitRate"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].Channel)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_channel" "Channel"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].SSID)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_ssid" "SSID"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].BeaconType)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_beacon_type" "BeaconType"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].MACAddressControlEnabled)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_mac_control_enable" "MACAddressControlEnabled"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].Standard)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_standard" "Standard"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKeyIndex)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_wep_key_index" "WEPKeyIndex"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].KeyPassphrase)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_key_passphrase" "KeyPassphrase"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPEncryptionLevel)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_wep_encryption_level" "WEPEncryptionLevel"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].BasicEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_basic_encryption_modes" "BasicEncryptionModes"
 	return $?
 	;;
@@ -2710,59 +2709,59 @@ case "$1" in
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WPAEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_wpa_encryption_modes" "WPAEncryptionModes"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WPAAuthenticationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_wpa_authentication_mode" "WPAAuthenticationMode"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].IEEE11iEncryptionModes)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_ieee_11i_encryption_modes" "IEEE11iEncryptionModes"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].IEEE11iAuthenticationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_ieee_11i_authentication_mode" "IEEE11iAuthenticationMode"
 	return $?
 	;;	
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].DeviceOperationMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_device_operation_mode" "DeviceOperationMode"
 	return $?
 	;;	
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].AuthenticationServiceMode)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_authentication_service_mode" "AuthenticationServiceMode"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].RadioEnabled)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-			fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_radio_enabled" "RadioEnabled"
 	return $?
 	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].TotalAssociations)
 	if [ "$2" = "1" ]; then
 		return $FAULT_CPE_INVALID_ARGUMENTS
-		fi
+	fi
 	get_set_lan_device_parameter "$1" "get_wlan_total_associations" "TotalAssociations"
 	return $?
-	;;	
+	;;
 	InternetGatewayDevice.LANDevice.[1-$max_lan_num].WLANConfiguration.[1-$max_num].WEPKey.)
 	freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}.WEPKey." "rc" "num"
 	local num1=`echo $num | awk '{ print $1 }'`
@@ -2786,15 +2785,15 @@ case "$1" in
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.3." "" "0"
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.WEPKey.4." "" "0"
 			if [ "$2" = "0" ];then
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-				let uci_num=$num2-1
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					let uci_num=$num2-1
 					get_wlan_wep_key $uci_num $num1 $i "1"
 					get_wlan_wep_key $uci_num $num1 $i "2"
 					get_wlan_wep_key $uci_num $num1 $i "3"
 					get_wlan_wep_key $uci_num $num1 $i "4"
-			else
-				return $FAULT_CPE_INVALID_PARAMETER_NAME
-			fi
+				else
+					return $FAULT_CPE_INVALID_PARAMETER_NAME
+				fi
 			fi
 			if [ $num2 -eq $i ]; then
 				break
@@ -2889,14 +2888,14 @@ case "$1" in
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey." "" "0"
 			freecwmp_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$i.PreSharedKey.1." "" "0"
 			if [ "$2" = "0" ];then
-			if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
-				let uci_num=$num2-1
+				if [ $rc -eq 0 ] && [ $num2 -gt 0 ] && [ $num2 -le $max_num ]; then
+					let uci_num=$num2-1
 					get_wlan_pre_shared_key $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_key_passphrase $uci_num $num1 $i "1"
 					get_wlan_pre_shared_key_associated_device_MACAddress $uci_num $num1 $i "1"
-			else
-				return $FAULT_CPE_INVALID_PARAMETER_NAME
-			fi
+				else
+					return $FAULT_CPE_INVALID_PARAMETER_NAME
+				fi
 			fi
 			if [ $num2 -eq $i ]; then
 				break
@@ -3295,9 +3294,9 @@ case "$1" in
 			fi
 		done
 		if [ $x -eq $lan_num ]; then
-				break
-			fi
-		done
+			break
+		fi
+	done
 	freecwmp_set_parameter_notification "$1" "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
