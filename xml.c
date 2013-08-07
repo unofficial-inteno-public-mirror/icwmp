@@ -115,6 +115,10 @@ static int xml_recreate_namespace(mxml_node_t *tree)
 	FREE(ns.xsi);
 	FREE(ns.cwmp);
 
+	if (tree->type == MXML_ELEMENT && strstr(tree->value.element.name,"?xml") != NULL) {
+		tree = mxmlWalkNext(tree, tree, MXML_DESCEND);
+	}
+
 	c = (char *) mxmlElementGetAttrName(tree, soap_env_url);
 	if (c && *(c + 5) == ':') {
 		ns.soap_env = strdup((c + 6));
@@ -297,15 +301,20 @@ int xml_handle_message(struct session *session)
 
 	/* get method */
 
-	if (asprintf(&c, "%s:%s", ns.soap_env, "Body") == -1)
-		goto error;
+	if (asprintf(&c, "%s:%s", ns.soap_env, "Body") == -1) {
+		CWMP_LOG (INFO,"Internal error");
+		session->fault_code = FAULT_CPE_INTERNAL_ERROR;
+		goto fault;
+	}
 
 	b = mxmlFindElement(session->tree_in, session->tree_in, c, NULL, NULL, MXML_DESCEND);
 	FREE(c);
 
-	if(!b)
-		goto error;
-
+	if(!b) {
+		CWMP_LOG (INFO,"Invalid received message");
+		session->fault_code = FAULT_CPE_REQUEST_DENIED;
+		goto fault;
+	}
 	session->body_in = b;
 
 	while (1) {
@@ -320,15 +329,23 @@ int xml_handle_message(struct session *session)
 		char *tmp = strchr(c, ':');
 		size_t ns_len = tmp - c;
 
-		if (strlen(ns.cwmp) != ns_len)
-			goto error;
+		if (strlen(ns.cwmp) != ns_len) {
+			CWMP_LOG (INFO,"Invalid received message");
+			session->fault_code = FAULT_CPE_REQUEST_DENIED;
+			goto fault;
+		}
 
-		if (strncmp(ns.cwmp, c, ns_len))
-			goto error;
+		if (strncmp(ns.cwmp, c, ns_len)){
+			CWMP_LOG (INFO,"Invalid received message");
+			session->fault_code = FAULT_CPE_REQUEST_DENIED;
+			goto fault;
+		}
 
 		c = tmp + 1;
 	} else {
-		goto error;
+		CWMP_LOG (INFO,"Invalid received message");
+		session->fault_code = FAULT_CPE_REQUEST_DENIED;
+		goto fault;
 	}
 	CWMP_LOG (INFO,"SOAP RPC message: %s", c);
 	rpc_cpe = NULL;
@@ -343,11 +360,13 @@ int xml_handle_message(struct session *session)
 	if (!rpc_cpe) {
 		CWMP_LOG (INFO,"%s RPC is not supported",c);
 		session->fault_code = FAULT_CPE_METHOD_NOT_SUPPORTED;
-		rpc_cpe = cwmp_add_session_rpc_cpe(session, RPC_CPE_FAULT);
-		if (rpc_cpe == NULL) goto error;
+		goto fault;
 	}
 	return 0;
-
+fault:
+	rpc_cpe = cwmp_add_session_rpc_cpe(session, RPC_CPE_FAULT);
+	if (rpc_cpe == NULL) goto error;
+	return 0;
 error:
 	return -1;
 }
