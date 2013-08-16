@@ -34,6 +34,7 @@
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
 #define UCI_DHCP_ACS_URL_PATH				"cwmp.acs.dhcp_url_path"
 #define UCI_ACS_URL_PATH					"cwmp.acs.url"
+#define UCI_PERIODIC_INFORM_TIME_PATH		"cwmp.acs.periodic_inform_time"
 #define UCI_PERIODIC_INFORM_INTERVAL_PATH	"cwmp.acs.periodic_inform_interval"
 #define UCI_PERIODIC_INFORM_ENABLE_PATH		"cwmp.acs.periodic_inform_enable"
 #define UCI_ACS_USERID_PATH					"cwmp.acs.userid"
@@ -136,6 +137,7 @@ typedef struct config {
     char                                *ubus_socket;
     int                                 connection_request_port;
     int                                 period;
+    time_t                              time;
     bool                                periodic_enable;
 } config;
 

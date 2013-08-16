@@ -593,6 +593,22 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+     if((error = uci_get_value(UCI_PERIODIC_INFORM_TIME_PATH,&value)) == CWMP_OK)
+    {
+        int a = 0;
+
+        if(value != NULL)
+        {
+            a = atol(value);
+            free(value);
+            value = NULL;
+        }
+        conf->time = a;
+    }
+    else
+    {
+        return error;
+    }
     if((error = uci_get_value(UCI_PERIODIC_INFORM_INTERVAL_PATH,&value)) == CWMP_OK)
     {
         int a = 0;
