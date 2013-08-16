@@ -317,15 +317,45 @@ void *thread_event_periodic (void *v)
     struct event_container      *event_container;
     static int                  periodic_interval;
     static bool 				periodic_enable;
+    static time_t				periodic_time;
     static struct timespec      periodic_timeout = {0, 0};
+    time_t						current_time = 0;
+    long int					delta_time;
 
     periodic_interval 	= cwmp->conf.period;
     periodic_enable		= cwmp->conf.periodic_enable;
+    periodic_time		= cwmp->conf.time;
 
     for(;;)
     {
         pthread_mutex_lock (&(cwmp->mutex_periodic));
-        periodic_timeout.tv_sec = time(NULL) + periodic_interval;
+        if(periodic_time != 0)
+        {
+        	if (periodic_time != cwmp->conf.time)
+	        	periodic_time = cwmp->conf.time;
+	        if(periodic_time == 0)
+        	{
+        		pthread_mutex_unlock (&(cwmp->mutex_periodic));
+		        continue;
+	        }
+        	if ((periodic_timeout.tv_sec == current_time) && (current_time == time(NULL)))
+        	{
+		        pthread_mutex_unlock (&(cwmp->mutex_periodic));
+		        continue;
+	        }
+        	current_time = time(NULL);
+        	delta_time = current_time - periodic_time;
+        	if (delta_time % periodic_interval != 0)
+		    {
+		        pthread_mutex_unlock (&(cwmp->mutex_periodic));
+		        continue;
+	        }
+	        periodic_timeout.tv_sec = current_time;
+        }
+        else
+        {
+        	periodic_timeout.tv_sec = time(NULL) + periodic_interval;
+        }
         if (cwmp->conf.periodic_enable)
         {
         	pthread_cond_timedwait(&(cwmp->threshold_periodic), &(cwmp->mutex_periodic), &periodic_timeout);
@@ -335,10 +365,11 @@ void *thread_event_periodic (void *v)
         	pthread_cond_wait(&(cwmp->threshold_periodic), &(cwmp->mutex_periodic));
         }
         pthread_mutex_unlock (&(cwmp->mutex_periodic));
-        if (periodic_interval != cwmp->conf.period || periodic_enable != cwmp->conf.periodic_enable)
+        if (periodic_interval != cwmp->conf.period || periodic_enable != cwmp->conf.periodic_enable || periodic_time != cwmp->conf.time)
         {
         	periodic_enable		= cwmp->conf.periodic_enable;
         	periodic_interval	= cwmp->conf.period;
+        	periodic_time		= cwmp->conf.time;
             continue;
         }
         CWMP_LOG(INFO,"Periodic thread: add periodic event in the queue");
@@ -360,14 +391,33 @@ int cwmp_root_cause_event_periodic (struct cwmp *cwmp)
 {
     static int      period = 0;
     static bool		periodic_enable = false;
-    if (period==cwmp->conf.period && periodic_enable==cwmp->conf.periodic_enable)
+    static time_t	periodic_time = 0;
+    char 			local_time[26] = {0};
+    struct tm 		*t_tm;
+    
+    if (period==cwmp->conf.period && periodic_enable==cwmp->conf.periodic_enable && periodic_time==cwmp->conf.time)
     {
         return CWMP_OK;
     }
     pthread_mutex_lock (&(cwmp->mutex_periodic));
     period  		= cwmp->conf.period;
     periodic_enable = cwmp->conf.periodic_enable;
+    periodic_time	= cwmp->conf.time;
     CWMP_LOG(INFO,periodic_enable?"Periodic event is enabled. Interval period = %ds":"Periodic event is disabled", period);
+	
+	t_tm = localtime(&periodic_time);
+	if (t_tm == NULL)
+		return CWMP_GEN_ERR;
+
+	if(strftime(local_time, sizeof(local_time), "%FT%T%z", t_tm) == 0)
+		return CWMP_GEN_ERR;
+	
+	local_time[25] = local_time[24];
+	local_time[24] = local_time[23];
+	local_time[22] = ':';
+	local_time[26] = '\0';
+	
+    CWMP_LOG(INFO,periodic_time?"Periodic time is %s":"Periodic time is Unknown", local_time);
     pthread_mutex_unlock (&(cwmp->mutex_periodic));
     pthread_cond_signal(&(cwmp->threshold_periodic));
     return CWMP_OK;

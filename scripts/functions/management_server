@@ -306,6 +306,52 @@ esac
 
 # TODO: InternetGatewayDevice.ManagementServer.PeriodicInformTime
 
+get_management_server_periodic_inform_time() {
+local val=""
+local type="xsd:dateTime"
+local parm="InternetGatewayDevice.ManagementServer.PeriodicInformTime"
+local permissions=""
+case "$action" in
+	get_value)
+	val=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.acs.periodic_inform_time`
+	if [ "$val" != "0" -a "$val" != "" ];then
+		val=`date -d @$val +"%Y-%m-%dT%H:%M:%S.000Z"`
+	else
+		val="0001-01-01T00:00:00Z"
+	fi
+	;;
+	get_name)
+	permissions="1"
+	;;
+	get_notification)
+	freecwmp_get_parameter_notification "val" "$parm"
+	;;
+esac
+freecwmp_output "$parm" "$val" "$permissions" "$type"
+}
+
+set_management_server_periodic_inform_time() {
+local val=$1
+local parm="InternetGatewayDevice.ManagementServer.PeriodicInformTime"
+case "$action" in
+	set_value)
+	if [ "$val" != "0001-01-01T00:00:00Z" ];then
+		val=`echo $val|sed 's/Z//g'`
+		val=`echo $val|sed 's/T/ /g'`
+		val=${val%%.*}
+		val=`date -d "$val" "+%s"`
+	else
+		val=0
+	fi
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set cwmp.acs.periodic_inform_time="$val"
+	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
+	;;
+	set_notification)
+	freecwmp_set_parameter_notification "$parm" "$val"
+	;;
+esac
+}
+
 get_management_server_x_freecwmp_org__acs_scheme() {
 local val=""
 local permissions=""
@@ -473,6 +519,7 @@ case "$1" in
 	get_management_server_password
 	get_management_server_periodic_inform_enable
 	get_management_server_periodic_inform_interval
+	get_management_server_periodic_inform_time
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
@@ -485,6 +532,7 @@ case "$1" in
 	get_management_server_password
 	get_management_server_periodic_inform_enable
 	get_management_server_periodic_inform_interval
+	get_management_server_periodic_inform_time
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
@@ -509,6 +557,10 @@ case "$1" in
 	;;
 	InternetGatewayDevice.ManagementServer.PeriodicInformInterval)
 	get_management_server_periodic_inform_interval
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.ManagementServer.PeriodicInformTime)
+	get_management_server_periodic_inform_time
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.ConnectionRequestURL)
@@ -541,6 +593,7 @@ case "$1" in
 		get_management_server_password
 		get_management_server_periodic_inform_enable
 		get_management_server_periodic_inform_interval
+		get_management_server_periodic_inform_time
 		get_management_server_connection_request_url
 		get_management_server_connection_request_username
 		get_management_server_connection_request_password
@@ -555,6 +608,7 @@ case "$1" in
 	get_management_server_password
 	get_management_server_periodic_inform_enable
 	get_management_server_periodic_inform_interval
+	get_management_server_periodic_inform_time
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
@@ -594,6 +648,13 @@ case "$1" in
 		return $FAULT_CPE_INVALID_ARGUMENTS
 	fi
 	get_management_server_periodic_inform_interval
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.ManagementServer.PeriodicInformTime)
+	if [ "$2" = "1" ]; then
+		return $FAULT_CPE_INVALID_ARGUMENTS
+	fi
+	get_management_server_periodic_inform_time
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.ConnectionRequestURL)
@@ -636,6 +697,7 @@ case "$1" in
 	get_management_server_password
 	get_management_server_periodic_inform_enable
 	get_management_server_periodic_inform_interval
+	get_management_server_periodic_inform_time
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
@@ -648,6 +710,7 @@ case "$1" in
 	get_management_server_password
 	get_management_server_periodic_inform_enable
 	get_management_server_periodic_inform_interval
+	get_management_server_periodic_inform_time
 	get_management_server_connection_request_url
 	get_management_server_connection_request_username
 	get_management_server_connection_request_password
@@ -672,6 +735,10 @@ case "$1" in
 	;;
 	InternetGatewayDevice.ManagementServer.PeriodicInformInterval)
 	get_management_server_periodic_inform_interval
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.ManagementServer.PeriodicInformTime)
+	get_management_server_periodic_inform_time
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.ConnectionRequestURL)
@@ -716,6 +783,10 @@ case "$1" in
 	set_management_server_periodic_inform_interval "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
+	InternetGatewayDevice.ManagementServer.PeriodicInformTime)
+	set_management_server_periodic_inform_time "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
 	InternetGatewayDevice.ManagementServer.ConnectionRequestURL)
 	set_management_server_connection_request_url "$2"
 	return $FAULT_CPE_NO_FAULT
@@ -744,6 +815,7 @@ case "$1" in
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.Password" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformEnable" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformInterval" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformTime" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestURL" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestUsername" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestPassword" "0"
@@ -756,6 +828,7 @@ case "$1" in
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.Password" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformEnable" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformInterval" "0"
+	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.PeriodicInformTime" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestURL" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestUsername" "0"
 	freecwmp_set_parameter_notification "InternetGatewayDevice.ManagementServer.ConnectionRequestPassword" "0"
@@ -781,6 +854,10 @@ case "$1" in
 	;;
 	InternetGatewayDevice.ManagementServer.PeriodicInformInterval)
 	set_management_server_periodic_inform_interval "$2"
+	return $FAULT_CPE_NO_FAULT
+	;;
+	InternetGatewayDevice.ManagementServer.PeriodicInformTime)
+	set_management_server_periodic_inform_time "$2"
 	return $FAULT_CPE_NO_FAULT
 	;;
 	InternetGatewayDevice.ManagementServer.ConnectionRequestURL)
