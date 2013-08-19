@@ -319,7 +319,7 @@ void *thread_event_periodic (void *v)
     static bool 				periodic_enable;
     static time_t				periodic_time;
     static struct timespec      periodic_timeout = {0, 0};
-    time_t						current_time = 0;
+    time_t						current_time;
     long int					delta_time;
 
     periodic_interval 	= cwmp->conf.period;
@@ -329,35 +329,21 @@ void *thread_event_periodic (void *v)
     for(;;)
     {
         pthread_mutex_lock (&(cwmp->mutex_periodic));
-        if(periodic_time != 0)
-        {
-        	if (periodic_time != cwmp->conf.time)
-	        	periodic_time = cwmp->conf.time;
-	        if(periodic_time == 0)
-        	{
-        		pthread_mutex_unlock (&(cwmp->mutex_periodic));
-		        continue;
-	        }
-        	if ((periodic_timeout.tv_sec == current_time) && (current_time == time(NULL)))
-        	{
-		        pthread_mutex_unlock (&(cwmp->mutex_periodic));
-		        continue;
-	        }
-        	current_time = time(NULL);
-        	delta_time = current_time - periodic_time;
-        	if (delta_time % periodic_interval != 0)
-		    {
-		        pthread_mutex_unlock (&(cwmp->mutex_periodic));
-		        continue;
-	        }
-	        periodic_timeout.tv_sec = current_time;
-        }
-        else
-        {
-        	periodic_timeout.tv_sec = time(NULL) + periodic_interval;
-        }
         if (cwmp->conf.periodic_enable)
         {
+	        current_time = time(NULL);
+		    if(periodic_time != 0)
+		    {
+		    	delta_time = (current_time - periodic_time) % periodic_interval;
+		    	if (delta_time >= 0)
+		    		periodic_timeout.tv_sec = current_time + periodic_interval - delta_time;
+	    		else
+	    			periodic_timeout.tv_sec = current_time - delta_time;
+		    }
+		    else
+		    {
+		    	periodic_timeout.tv_sec = current_time + periodic_interval;
+		    }
         	pthread_cond_timedwait(&(cwmp->threshold_periodic), &(cwmp->mutex_periodic), &periodic_timeout);
         }
         else
