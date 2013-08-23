@@ -3116,6 +3116,40 @@ let max_num=$max_profile+1
 get_voice_service_max_line max_line
 
 case "$1" in
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.Enable)
+	get_set_line_parameter "$1" "set_line_enable" "Enable" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.DirectoryNumber)
+	get_set_line_parameter "$1" "set_line_directory_number" "DirectoryNumber" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.Status)
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.CallState)
+	return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.CallingFeatures.CallerIDName)
+	get_set_line_parameter "$1" "set_line_calling_features_caller_id_name" "CallingFeatures.CallerIDName" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.X_002207_LineProfile)
+	get_set_line_parameter "$1" "set_line_x_002207_line_profile" "X_002207_LineProfile" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.AuthUserName)
+	get_set_line_parameter "$1" "set_line_sip_username" "SIP.AuthUserName" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.AuthPassword)
+	get_set_line_parameter "$1" "set_line_sip_password" "SIP.AuthPassword" "$max_num" "$2"
+	return $?
+	;;
+	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.URI)
+	get_set_line_parameter "$1" "set_line_sip_uri" "SIP.URI" "$max_num" "$2"
+	return $?
+	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Enable)
 	get_set_voice_service_parameter "$1" "set_voice_profile_enable" "Enable" "$max_num" "$2" 
 	return $?
@@ -3229,40 +3263,6 @@ case "$1" in
 	;;
 	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.SIP.X_002207_CallLines)
 	get_set_voice_service_parameter "$1" "set_sip_x_002207_call_lines" "SIP.X_002207_CallLines" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.Enable)
-	get_set_line_parameter "$1" "set_line_enable" "Enable" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.DirectoryNumber)
-	get_set_line_parameter "$1" "set_line_directory_number" "DirectoryNumber" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.Status)
-	return $FAULT_CPE_NON_WRITABLE_PARAMETER
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.CallState)
-	return $FAULT_CPE_NON_WRITABLE_PARAMETER
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.CallingFeatures.CallerIDName)
-	get_set_line_parameter "$1" "set_line_calling_features_caller_id_name" "CallingFeatures.CallerIDName" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.X_002207_LineProfile)
-	get_set_line_parameter "$1" "set_line_x_002207_line_profile" "X_002207_LineProfile" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.AuthUserName)
-	get_set_line_parameter "$1" "set_line_sip_username" "SIP.AuthUserName" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.AuthPassword)
-	get_set_line_parameter "$1" "set_line_sip_password" "SIP.AuthPassword" "$max_num" "$2"
-	return $?
-	;;
-	InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.*.Line.*.SIP.URI)
-	get_set_line_parameter "$1" "set_line_sip_uri" "SIP.URI" "$max_num" "$2"
 	return $?
 	;;
 esac
