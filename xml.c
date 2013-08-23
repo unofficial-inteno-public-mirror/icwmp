@@ -1908,6 +1908,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
         if((timeout >= 0)&&(timeout <= time_of_grace))
         {
         	pthread_mutex_lock (&(cwmp->mutex_session_send));
+        	external_init();
             CWMP_LOG(INFO,"Launch download file %s",pdownload->url);
             error = cwmp_launch_download(pdownload,&ptransfer_complete);
     		if(error != FAULT_CPE_NO_FAULT)
@@ -1923,6 +1924,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 				external_fetch_downloadFaultResp(&fault_code);
 				if(fault_code != NULL)
 				{
+					external_exit();
 					if(fault_code[0]=='9')
 					{
 						for(i=1;i<__FAULT_CPE_MAX;i++)
