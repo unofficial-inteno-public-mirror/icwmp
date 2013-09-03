@@ -108,58 +108,59 @@ static int xml_recreate_namespace(mxml_node_t *tree)
 	const char *cwmp_urn;
 	char *c;
 	int i;
+	mxml_node_t *b = tree;
 
-	FREE(ns.soap_env);
-	FREE(ns.soap_enc);
-	FREE(ns.xsd);
-	FREE(ns.xsi);
-	FREE(ns.cwmp);
+	do
+	{
+		FREE(ns.soap_env);
+		FREE(ns.soap_enc);
+		FREE(ns.xsd);
+		FREE(ns.xsi);
+		FREE(ns.cwmp);
 
-	if (tree->type == MXML_ELEMENT && strstr(tree->value.element.name,"?xml") != NULL) {
-		tree = mxmlWalkNext(tree, tree, MXML_DESCEND);
-	}
-
-	c = (char *) mxmlElementGetAttrName(tree, soap_env_url);
-	if (c && *(c + 5) == ':') {
-		ns.soap_env = strdup((c + 6));
-	} else {
-		return -1;
-	}
-
-	c = (char *) mxmlElementGetAttrName(tree, soap_enc_url);
-	if (c && *(c + 5) == ':') {
-		ns.soap_enc = strdup((c + 6));
-	} else {
-		return -1;
-	}
-
-	c = (char *) mxmlElementGetAttrName(tree, xsd_url);
-	if (c && *(c + 5) == ':') {
-		ns.xsd = strdup((c + 6));
-	} else {
-		return -1;
-	}
-
-	c = (char *) mxmlElementGetAttrName(tree, xsi_url);
-	if (c && *(c + 5) == ':') {
-		ns.xsi = strdup((c + 6));
-	} else {
-		return -1;
-	}
-
-	for (i = 0; cwmp_urls[i] != NULL; i++) {
-		cwmp_urn = cwmp_urls[i];
-		c = (char *) mxmlElementGetAttrName(tree, cwmp_urn);
+		c = (char *) mxmlElementGetAttrName(b, soap_env_url);
 		if (c && *(c + 5) == ':') {
-			ns.cwmp = strdup((c + 6));
-			break;
+			ns.soap_env = strdup((c + 6));
+		} else {
+			continue;
 		}
-	}
 
-	if (!ns.cwmp) return -1;
+		c = (char *) mxmlElementGetAttrName(b, soap_enc_url);
+		if (c && *(c + 5) == ':') {
+			ns.soap_enc = strdup((c + 6));
+		} else {
+			continue;
+		}
 
-	return 0;
+		c = (char *) mxmlElementGetAttrName(b, xsd_url);
+		if (c && *(c + 5) == ':') {
+			ns.xsd = strdup((c + 6));
+		} else {
+			continue;
+		}
 
+		c = (char *) mxmlElementGetAttrName(b, xsi_url);
+		if (c && *(c + 5) == ':') {
+			ns.xsi = strdup((c + 6));
+		} else {
+			continue;
+		}
+
+		for (i = 0; cwmp_urls[i] != NULL; i++) {
+			cwmp_urn = cwmp_urls[i];
+			c = (char *) mxmlElementGetAttrName(b, cwmp_urn);
+			if (c && *(c + 5) == ':') {
+				ns.cwmp = strdup((c + 6));
+				break;
+			}
+		}
+
+		if (!ns.cwmp) continue;
+
+		return 0;
+	} while(b = mxmlWalkNext(b, tree, MXML_DESCEND));
+
+	return -1;
 }
 
 void xml_exit(void)
@@ -221,7 +222,7 @@ int xml_send_message(struct cwmp *cwmp, struct session *session, struct rpc *rpc
 	FREE(c);
 	if (b) {
 		b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
-		if (b && b->value.text.string)
+		if (b && b->type == MXML_TEXT  && b->value.text.string)
 			session->hold_request = atoi(b->value.text.string);
 	} else {
 		if (asprintf(&c, "%s:%s", ns.cwmp, "HoldRequests") == -1)
@@ -231,7 +232,7 @@ int xml_send_message(struct cwmp *cwmp, struct session *session, struct rpc *rpc
 		FREE(c);
 		if (b) {
 			b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
-			if (b && b->value.text.string)
+			if (b && b->type == MXML_TEXT && b->value.text.string)
 				session->hold_request = atoi(b->value.text.string);
 		}
 	}
@@ -278,7 +279,7 @@ int xml_set_cwmp_id(struct session *session)
 	if (b) {
 
 		b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
-		if (!b || !b->value.text.string) return 0;
+		if (!b || b->type != MXML_TEXT || !b->value.text.string) return 0;
 		c = strdup(b->value.text.string);
 
 		b = mxmlFindElement(session->tree_out, session->tree_out, "cwmp:ID", NULL, NULL, MXML_DESCEND);
@@ -318,7 +319,7 @@ int xml_handle_message(struct session *session)
 	session->body_in = b;
 
 	while (1) {
-		b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
+		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND_FIRST);
 		if (!b) goto error;
 		if (b->type == MXML_ELEMENT) break;
 	}
@@ -600,7 +601,7 @@ int cwmp_rpc_acs_parse_response_inform (struct cwmp *cwmp, struct session *sessi
 	b = mxmlFindElement(tree, tree, "MaxEnvelopes", NULL, NULL, MXML_DESCEND);
 	if (!b) goto error;
 	b = mxmlWalkNext(b, tree, MXML_DESCEND_FIRST);
-	if (!b || !b->value.text.string)
+	if (!b || b->type != MXML_TEXT || !b->value.text.string)
 		goto error;
 	return 0;
 
@@ -645,7 +646,7 @@ int cwmp_rpc_acs_parse_response_get_rpc_methods (struct cwmp *cwmp, struct sessi
 	b = mxmlFindElement(tree, tree, "MethodList", NULL, NULL, MXML_DESCEND);
 	if (!b) goto error;
 	b = mxmlWalkNext(b, tree, MXML_DESCEND_FIRST);
-	if (!b || !b->value.text.string)
+	if (!b || b->type != MXML_TEXT || !b->value.text.string)
 		goto error;
 	return 0;
 
@@ -1133,7 +1134,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 	}
 
 	b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
-	if (b && b->value.text.string)
+	if (b && b->type == MXML_TEXT && b->value.text.string)
 		parameter_key = b->value.text.string;
 
 	if (external_apply("value", NULL))
