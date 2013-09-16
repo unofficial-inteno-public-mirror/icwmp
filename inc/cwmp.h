@@ -50,6 +50,8 @@
 #define UCI_CPE_LOG_MAX_SIZE				"cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
+#define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+
 
 enum end_session {
 	END_SESSION_REBOOT = 1,

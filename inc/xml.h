@@ -128,6 +128,7 @@ typedef struct transfer_complete {
 	char 								*command_key;
 	char 								*start_time;
 	char 								*complete_time;
+	char 								*old_software_version;
 } transfer_complete;
 
 #define MXML_DELETE(X)  do {if (X) { mxmlDelete(X); X = NULL; } } while(0)

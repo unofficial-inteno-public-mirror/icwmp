@@ -1,5 +1,8 @@
 #!/bin/sh /etc/rc.common
-# Copyright (C) 2012 Inteno
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+
 include /lib/network
 . /usr/share/libubox/jshn.sh
 
@@ -103,10 +106,13 @@ boot() {
 	touch /etc/cwmpd/.cwmpd_boot
 }
 
-start() {
+start_cwmpd() {
 	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
-	if [ "$run" = "" ]
-	then
+	if [ "$run" = "" ];then
+		stop_freecwmp_cache
+		echo "Building cache. This action may take time..."
+		/bin/sh /usr/sbin/freecwmp get cache ""
+		printf "\033[A"
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
 		else
@@ -122,21 +128,102 @@ start() {
 	fi
 }
 
-stop() {
-	echo $stop_msg;printf "\033[A" ;sleep 1
-	ubus call tr069 command '{"command": "exit"}' -t 3 &> /dev/null
+get_process_childs() {
+	local pid_list="$1"
+	local proc="" line="" pt="" ppid="" pid="" pid_tmp="" pid_grep=""
+	pid_grep=${pid_list// /\\|}
+
+	while [ "_$pid_grep" != "_" ];do
+		proc=`cat /proc/[0-9]*/stat | grep "$pid_grep"`
+		proc=${proc// /;;;;;}
+		pid_tmp=""
+		for line in $proc; do
+			pid="${line%%;;;;;*}"
+			ppid="${line#*;;;;;*;;;;;*;;;;;}"; ppid="${ppid%%;;;;;*}"
+			pt=`echo "$pid" | grep "$pid_grep"`
+			if [ "_$pt" != "_" -a "$pt" = "$pid" ]; then
+				continue
+			fi
+			pt=`echo "$ppid" | grep "$pid_grep"`
+			if [ "$pt" != "$ppid" -o "_$pid" = "_" ]; then
+				continue
+			fi
+			pid_list="$pid_list $pid"
+			if [  "_$pid_tmp" = "_" ]; then
+				pid_tmp="$pid"
+			else
+				pid_tmp="$pid_tmp\|$pid"
+			fi
+		done
+		pid_grep="$pid_tmp"
+	done
+	echo "$pid_list"
+}
 	
+pidof_cwmp() {
+	local pids=""
 	pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
-	while [ "_$pids" != "_" ];do
-		kill -9 $pids 2> /dev/null
-		pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
-	done
-	
+	pids=${pids% }
+	pids=${pids# }
+	echo "$pids"
+}
+
+pidof_freecwmp() {
+	local pids=""
 	pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
-	while [ "_$pids" != "_" ];do
-		kill -9 $pids 2> /dev/null
-		pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	pids=${pids% }
+	pids=${pids# }
+	echo "$pids"
+}
+
+stop_freecwmp_cache() {
+	local pid_list="" pid="" pids="" found="1" p name state ppid rest cmd
+
+	while [ "$found" = "1" ]; do
+		found="0"
+		pid_list="`pidof_freecwmp`"
+		for pid in $pid_list; do
+			read p name state ppid rest < /proc/$pid/stat
+			cmd=`cat /proc/$ppid/cmdline | grep /etc/init.d/cwmpd`
+			if [ "_$cmd" = "_" ]; then
+				continue
+			fi
+			kill -stop $ppid
+			found="1"
+			pids=`get_process_childs $ppid`
+			kill -9 "$pids"
+		done
 	done
+}
+
+stop_cwmpd() {
+	echo $stop_msg;printf "\033[A"
+	local pid_list=""  pids="" str=""
+	pid_list=`pidof_cwmp`
+	if [ "_$pid_list" != "_" ]; then
+		pid_list=`get_process_childs "$pid_list"`
+		ubus call tr069 command '{"command": "exit"}' -t 3 &> /dev/null
+		kill -9 $pid_list
+	
+		pids="`pidof_cwmp`"
+		local cnt=0
+		while [ "_$pids" != "_" -a $cnt -lt 100 ];do
+			pid_list="$pid_list $pids"
+			kill -stop $pid_list
+			pid_list=`get_process_childs "$pid_list"`
+			kill -9 $pid_list
+			pids="`pidof_cwmp`"
+	done
+	fi
+	stop_freecwmp_cache
+}
+
+start() {
+	start_cwmpd 2> /dev/null
+}
+
+stop() {
+	stop_cwmpd 2> /dev/null
 }
 
 restart() {

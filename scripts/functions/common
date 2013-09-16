@@ -2,6 +2,7 @@
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
 # TODO: merge this one somewhere in OpenWrt
 uci_remove_list_element() {
@@ -19,65 +20,25 @@ uci_remove_list_element() {
 }
 
 freecwmp_output() {
-	if [ "$FLAGS_value" = "${FLAGS_TRUE}" ]; then
-		local parameter="$1"
-		local value="$2"
-		local delimiter="$3"
-	
-		if [ "$delimiter" = "" ]; then
-			delimiter=":"
-		fi
-		if [ -n "$value" -o ${FLAGS_empty} -eq ${FLAGS_TRUE} ]; then
-			if [ ${FLAGS_value} -eq ${FLAGS_TRUE} ]; then
-				echo $ECHO_newline $value
-			else
-				echo $ECHO_newline $parameter "$delimiter" $value
-			fi
-		fi
-	fi
-	
-	if [ ${FLAGS_empty} -eq ${FLAGS_TRUE} ]; then
-		local parameter="$1"
-		echo $ECHO_newline $parameter
-	fi
-	
-	if [ "$FLAGS_json" = "${FLAGS_TRUE}" ]; then
-		local parameter="$1"
-		local value="$2"
-		local permissions="$3"
-		local type="$4"
-		local fault_code="$5"
-		local status="$6"
-		local instance="$7"
-		local success="$8"
-		
-		echo `freecwmp_json_output "$parameter" "$value" "$permissions" "$type" "$fault_code" "$status" "$instance" "$success"`
-	fi
-}
-
-freecwmp_json_output() {
 
 	local MSG=""
 	local parameter="$1"
 	local value="$2"
 	local permissions="$3"
-	local type="$4"
-	local fault_code="$5"
-	local status="$6"
-	local instance="$7"
-	local success="$8"
-
-	if [ "$type" = "" ]; then
-		type="xsd:string"
-	fi
+	local notification="$4"
+	local type="$5"
+	local fault_code="$6"
+	local status="$7"
+	local instance="$8"
+	local success="$9"
 		
 	case "$action" in
-		get_value)
+		get_value|inform)
 		json_init
 		json_add_string "parameter" "$parameter"
 		json_add_string "value" "$value"
-		json_add_string "type" "$type"
 		json_add_string "fault_code" "$fault_code"
+		if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
 		json_close_object
 		MSG=`json_dump`
 		;;
@@ -92,7 +53,7 @@ freecwmp_json_output() {
 		get_notification)
 		json_init
 		json_add_string "parameter" "$parameter"
-		json_add_string "notification" "$value"
+		if [ "$notification" != "" ]; then json_add_string "notification" "$notification"; fi
 		json_add_string "fault_code" "$fault_code"
 		json_close_object
 		MSG=`json_dump`
@@ -130,6 +91,36 @@ freecwmp_json_output() {
 	echo "$MSG"
 }
 
+freecwmp_cache_output() {
+
+	local MSG=""
+	local parameter="$1"
+	local value="$2"
+	local permission="$3"
+	local notification="$4"
+	local type="$5"
+	local set_cmd="$6"
+	local get_cmd="$7"
+	local notif_permission="$8"
+	local forced_inform="$9"
+	
+	json_init
+	json_add_string "parameter" "$parameter"
+	json_add_string "writable" "$permission"
+	if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
+	if [ "$get_cmd" != "" ]; then json_add_string "get_cmd" "$get_cmd"; fi
+	if [ "$set_cmd" != "" ]; then json_add_string "set_cmd" "$set_cmd"; fi
+	if [ "$notif_permission" != "" ]; then json_add_string "notif_permission" "$notif_permission"; fi
+	if [ "$notification" != "" ]; then
+		json_add_string "notification" "$notification"
+		json_add_string "value" "$value"
+	fi
+	if [ "$forced_inform" != "" ]; then json_add_string "forced_inform" "$forced_inform"; fi
+	json_close_object
+	MSG=`json_dump`
+	echo "$MSG"
+}
+
 freecwmp_fault_output() {
 	
 	local MSG=""
@@ -163,94 +154,50 @@ freecwmp_fault_output() {
 	echo "$MSG"
 }
 
-freecwmp_value_output() {
-	local tmp_value=${FLAGS_value}
-	FLAGS_value=${FLAGS_TRUE}
-	local tmp_json=${FLAGS_json}
-	FLAGS_json=${FLAGS_FALSE}
-	
-	freecwmp_output "$1" "$2" "V"
-	
-	FLAGS_value=$tmp_value
-	FLAGS_json=$tmp_json
-}
-
-freecwmp_notification_output() {
-	local tmp_value=${FLAGS_value}
-	FLAGS_value=${FLAGS_TRUE}
-	local tmp_json=${FLAGS_json}
-	FLAGS_json=${FLAGS_FALSE}
-
-	freecwmp_output "$1" "$2" "N"
-	
-	FLAGS_value=$tmp_value
-	FLAGS_json=$tmp_json
-}
-
-freecwmp_tags_output() {
-	local tmp_value=${FLAGS_value}
-	FLAGS_value=${FLAGS_TRUE}
-	local tmp_json=${FLAGS_json}
-	FLAGS_json=${FLAGS_FALSE}
-	
-	freecwmp_output "$1" "$2" "T"
-	
-	FLAGS_value=$tmp_value
-	FLAGS_json=$tmp_json
-}
-
-freecwmp_not_implemented() {
-	local tmp_value=${FLAGS_value}
-	FLAGS_value=${FLAGS_TRUE}
-	local tmp_json=${FLAGS_json}
-	FLAGS_json=${FLAGS_FALSE}
-	
-	freecwmp_output "$1" "NOT_IMPLEMENTED"
-	
-	FLAGS_value=$tmp_value
-	FLAGS_json=$tmp_json
-}
-
 freecwmp_parse_formated_parameter() {
-	local _clean_parameter="$1"
-	local _formated_parameter="$2"
-	local _values
-
-	local _clean_parameter_array=`echo $_clean_parameter | sed 's/\./ /g'`
-	local _formated_parameter_array=`echo $_formated_parameter | sed 's/\./ /g'`
+	local parameter="$1"
+	local pattern="$2"
+	local p="" q=""
+	local _values="" n=""
 
 	local i
 	local j=0
-	for i in $_formated_parameter_array
-	do
-		let j=$j+1
-		if [ "x$i" == "x{i}" ]; then
-			# get value for sections maked as {i}
-			local m
-			local n=0
-			for m in $_clean_parameter_array
-			do
-				let n=$n+1
-				if [ $n -eq $j ]; then
-					if [ "x$_values" == "x" ]; then
-						_values="$m"
+	while [ true ]; do
+		if [ "_" = "_$parameter" -o "_" = "_$pattern" ]; then 
+			if [ "_$parameter" != "_$pattern" ]; then 
+				eval "export -- \"$3=-1\""
+				return
 					else
-						_values="$_values $m"
+				break
 					fi
 				fi
-			done
+		split_param=${parameter%%.*}
+		split_pattr=${pattern%%.*}
+		p="$parameter"; q="$pattern"
+		parameter=${parameter#*.}
+		pattern=${pattern#*.}
+		if [ "$p" = "$parameter" -o "$q" = "$pattern" ]; then 
+			if [ "$parameter" != "$pattern" -a "_$pattern" != "_{i}" ]; then 
+				eval "export -- \"$3=-1\""
+				return
 		else
-			# check if sections not marked as {i} match
-			local m
-			local n=0
-			for m in $_clean_parameter_array
-			do
-				let n=$n+1
-				if [ $n -eq $j -a "x$m" != "x$i" ]; then
+				break
+			fi
+		fi
+		if [ "_$split_pattr" = "_{i}" ]; then
+			let n=$split_param-1
+			if [ $n -lt 0 ]; then
 					eval "export -- \"$3=-1\""
 					return
 				fi
-			done
+			if [ "_$_values" == "_" ]; then
+				_values="$split_param"
+			else
+				_values="$_values $split_param"
+			fi
+		elif [ "_$split_param" != "_$split_pattr" ]; then
+			eval "export -- \"$3=-1\""
+			return
 		fi
 	done
 
@@ -333,7 +280,7 @@ freecwmp_get_parameter_value() {
 	local _parm="$2"
 	local _val
 	config_foreach freecwmp_config_cwmp "cwmp" "get" "value" "$_parm" "_val"
-	eval "export -- \"$_dest=\"\"$_val\"\"\""
+	echo "$_val"
 }
 
 freecwmp_set_parameter_value() {
@@ -349,10 +296,6 @@ freecwmp_set_parameter_value() {
 			set cwmp.@cwmp[-1].value="$_val"
 EOF
 	fi
-	config_foreach freecwmp_config_notifications "notifications" "get" "$_parm" "tmp"
-	# TODO: notify freecwmpd about the change
-	# if [ "$tmp" -eq "2" ]; then
-	# fi
 }
 
 freecwmp_get_parameter_notification() {
@@ -377,11 +320,20 @@ freecwmp_get_parameter_notification() {
 freecwmp_notify() {
 	local parm="$1"
 	local val="$2"
-	local attribute
-	local type="$3"
+	local attribute="$3"
+	local type="$4"
+	local param_check="$parm"
 	
-	freecwmp_get_parameter_notification "attribute" "$parm"
-	if [ "$attribute" != "0" ];then
+	
+	if [ "_$attribute" = "_" ]; then
+		json_msg=`get_param_notification_generic "$parm" | head -1`
+		json_init
+		json_load "$json_msg"
+		json_get_var attribute notification
+		json_get_var param_check parameter
+		json_get_var type type
+	fi
+	if [ "$param_check" = "$parm" -a "_$attribute" != "_0" ]; then
 		ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 notify '{ "parameter": "'$parm'", "value": "'$val'", "attribute": "'$attribute'", "type": "'$type'" }' &
 	fi
 }
@@ -424,28 +376,6 @@ freecwmp_set_parameter_notification() {
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].active="$_parm" 2>&1 >/dev/null
 	elif [ "$_val" -eq "0" -a "$_val_p" != "" -a "$_val_p" != "0" ]; then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.@notifications[0].disabled="$_parm" 2>&1 >/dev/null
-	fi
-}
-
-freecwmp_get_parameter_tags() {
-	local _dest="$1"
-	local _parm="$2"
-	config_foreach freecwmp_config_cwmp "cwmp" "get" "tags" "$_parm" "_tags"
-	eval "export -- \"$_dest=\"\"$_tags\"\"\""
-}
-
-freecwmp_set_parameter_tag() {
-	local _parm="$1"
-	local _tag="$2"
-	config_foreach freecwmp_config_cwmp "cwmp" "check" "parameter" "$_parm" "_section"
-	if [ ! "$_section" = "" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list cwmp.$_section.tag=$_tag 2> /dev/null
-	else
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
-			add cwmp cwmp
-			set cwmp.@cwmp[-1].parameter="$_parm"
-			add_list cwmp.@cwmp[-1].tag="$_tag"
-EOF
 	fi
 }
 
@@ -492,13 +422,6 @@ $command &> /dev/null
 EOF
 }
 
-freecwmp_check_fault() {
-if [ "$1" = "." ]; then
-	return $FAULT_CPE_INVALID_PARAMETER_NAME
-fi
-return $FAULT_CPE_NO_FAULT
-}
-
 freecwmp_set_parameter_fault() {
 	local _parm="$1"
 	local _fault="$2"
@@ -507,57 +430,6 @@ freecwmp_set_parameter_fault() {
 			set cwmp.@fault[-1].parameter="$_parm"
 			set cwmp.@fault[-1].fault_code="$_fault"
 EOF
-}
-
-freecwmp_add_lan_device_ip_interface() {
-	local _parm="$1"
-	local _instance="$2"
-	if [ "$_instance" = "1" ];then 
-		indice=""
-	else
-		indice=$_instance
-	fi
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
-			add cwmp object
-			set cwmp.@object[-1].parameter="$_parm"
-			set cwmp.@object[-1].instance="$_instance"
-			set cwmp.@object[-1].interface="lan$indice"
-EOF
-if [ "$indice" != "" ]; then
-	let i=$indice-1
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice=interface 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.ifname=eth$i 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.type=bridge 2> /dev/null
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q set network.lan$indice.proto=dhcp 2> /dev/null
-fi
-}
-
-freecwmp_execute_functions()
-{
-	local function_list="$1"
-	local arg1="$2"
-	local arg2="$3"
-	local arg3="$4"
-	local no_fault="0"
-	local fault_code=""
-	
-	for function_name in $function_list
-	do
-		func=$(echo "$arg1" | cut -d "." -f 2)
-		func_config=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q cwmp.@$func[0].function`
-		if [ "`echo $function_name|grep \"$func_config\"`" != "" -o "$func" = "" ];then
-		$function_name "$arg1" "$arg2" "$arg3"
-		fault_code="$?"
-		if [ "$fault_code" = "0" ]; then
-			no_fault="1"
-		fi
-		if [ "$fault_code" != "0" -a "$fault_code" != "$FAULT_CPE_INVALID_PARAMETER_NAME" ]; then
-			return $fault_code
-			fi
-		fi
-	done
-	if [ "$no_fault" = "1" ]; then fault_code="0"; fi
-	return $fault_code
 }
 
 freecwmp_check_image()
@@ -648,4 +520,343 @@ freecwmp_apply_vendor_configuration()
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 		freecwmp_fault_output "" "$fault_code"
 	fi
+}
+
+get_param_cache_generic() {
+	local param="$1"
+	local permission="$2"
+	local val_cmd="$3"
+	local set_cmd="$4"
+	local get_cmd="$5"
+	local type="$6"
+	local notif_permission="$7"
+	local forced_inform="$8"
+	local forced_notify="$9"
+	
+	local val=""
+	local notification="0"
+	
+	if [ "$val_cmd" != "" ]; then
+		val=`eval "$val_cmd"`
+	fi
+	
+	if [ "_$forced_notify" = "_" ]; then
+		freecwmp_get_parameter_notification "notification" $param
+	else
+		notification="$forced_notify"
+	fi
+	
+	freecwmp_cache_output "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform"
+}
+
+get_object_cache_generic() {
+	local param=$1
+	local permission=$2
+	local notif_permission=$3
+		
+	freecwmp_cache_output "$param" "" "$permission" "" "" "" "" "$notif_permission"
+}
+
+
+
+get_generic_dynamic() {
+	local found_prefix="$1"
+	local param="$2"
+	local prefix="" get_func=""
+
+	for prefix in $prefix_list; do
+		case  "$prefix" in "$found_prefix"*)
+			get_func=${prefix%.}
+			get_func=${get_func//./_}
+			get_func="get_dynamic_""$get_func"
+			$get_func "$param" >"$cache_path/$prefix""_dynamic"
+		esac
+	done
+}
+
+cat_cache_filter_param() {
+	cat "$1"* | grep "$2"
+}
+
+get_param_prefix() {
+	local parameter="$1"
+	local max_len=0
+	local found="" prefix="" len=0
+	
+	if [ "$parameter" != "" ]; then
+		for prefix in $prefix_list; do
+			case  "$parameter" in "$prefix"*)
+				if [ "$parameter" = "$prefix"]; then
+					found="$prefix"
+					break
+				fi
+				len=${#prefix}
+				if [ $len -gt $max_len ]; then
+					max_len=$len
+					found="$prefix"
+				fi
+			esac
+		done
+		if [ "$found" = "" ]; then
+			return $FAULT_CPE_INVALID_PARAMETER_NAME
+		fi
+	fi
+	
+	eval "export -- $2='$found'"
+	return $FAULT_CPE_NO_FAULT
+}
+	
+get_generic_cmd() {
+	local parameter="$1"
+	local found="$2"
+	local msgs="" command=""
+	
+
+	if [ "$parameter" != "" -a "$parameter" != "$found" ]; then
+		msgs=`cat "$cache_path/$found"* | grep "\"$parameter\""`
+		if [ "$msgs" = "" ]; then
+			return $FAULT_CPE_INVALID_PARAMETER_NAME
+		fi
+		l=${#parameter}
+		let l--
+		if [ "${parameter:$l:1}" != "." ]; then
+			command="echo $msgs"
+		else
+			command="cat_cache_filter_param $cache_path/$found $parameter"
+		fi
+	else
+		command="cat $cache_path/$found*"
+	fi
+	
+	eval "export -- $3='$command'"
+	return $FAULT_CPE_NO_FAULT	
+}
+
+get_param_value_generic() {
+
+	local parameter=$1
+	local param="" val="" type="" found_prefix="" cmd=""
+	
+	get_param_prefix "$parameter" "found_prefix"
+	local ret="$?"
+	if [ "$ret" != $FAULT_CPE_NO_FAULT ]; then
+		return "$ret"
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	get_generic_dynamic "$found_prefix" "$parameter"
+	
+	get_generic_cmd "$parameter" "$found_prefix" "cmd"
+	ret="$?"
+	if [ "$ret" = $FAULT_CPE_NO_FAULT ]; then
+		eval '$cmd' | grep "\"value\"" | grep -v "\"get_cmd\""
+		eval '$cmd' | grep "\"get_cmd\"" | while read line; do
+			json_init
+			json_load "$line"
+			json_get_var exec_get_cmd get_cmd
+			json_get_var param parameter
+			json_get_var type type
+			val=`eval "$exec_get_cmd"`
+			freecwmp_output "$param" "$val" "" "$type"
+		done
+	fi
+		
+	rm -f "$cache_path/"*"_dynamic"
+	return "$ret"	
+}
+
+get_param_name_generic() {
+
+	local parameter=$1
+	local next_level=$2
+	local found_prefix="" cmd=""
+	
+	get_param_prefix "$parameter" "found_prefix"
+	local ret="$?"
+	if [ "$ret" != $FAULT_CPE_NO_FAULT ]; then
+		return "$ret"
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	get_generic_dynamic "$found_prefix" "$parameter"
+	
+	get_generic_cmd "$parameter" "$found_prefix" "cmd"
+	ret="$?"
+	if [ "$ret" = "$FAULT_CPE_NO_FAULT" ]; then
+		if [ "$next_level" = "0" ]; then
+			eval '$cmd'
+		else
+			local len=${#parameter}
+			let len--
+			if [ "${parameter:$len:1}" != "." ]; then
+				return $FAULT_CPE_INVALID_ARGUMENTS
+			fi
+			eval '$cmd' | grep -v "$parameter[A-Za-z_0-9]\+\.[A-Za-z_0-9]"
+		fi
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	return $ret	
+}
+
+get_param_notification_generic() {
+
+	local parameter=$1
+	local  found_prefix="" cmd=""
+	
+	get_param_prefix "$parameter" "found_prefix"
+	local ret="$?"
+	if [ "$ret" != $FAULT_CPE_NO_FAULT ]; then
+		return "$ret"
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	get_generic_dynamic "$found_prefix" "$parameter"
+	
+	get_generic_cmd "$parameter" "$found_prefix" "cmd"
+	ret="$?"
+	
+	if [ "$ret" = "$FAULT_CPE_NO_FAULT" ]; then
+		eval '$cmd' | grep "\"notification\""
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	return $ret	
+}
+
+set_param_value_generic() {
+	local param="$1"
+	local val="$2"
+	local max_len=0
+	local found_prefix="" msgs="" prefix="" len="" permission="" set_cmd=""
+
+	if [ "$param" = "" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	for prefix in $prefix_list; do
+		case "$param" in "$prefix"*)
+			if [ "$param" = "$prefix" ]; then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
+			len=${#prefix}
+			if [ $len -gt $max_len ]; then
+				max_len=$len
+				found_prefix="$prefix"
+			fi
+		esac
+	done
+	if [ "$found_prefix" = "" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	
+	rm -f "$cache_path/"*"_dynamic"
+	get_generic_dynamic "$found_prefix" "$param"
+
+	msgs=`cat "$cache_path/$found_prefix"* | grep "\"$param\"" | grep "\"value\"" | head -1`
+	rm -f "$cache_path/"*"_dynamic"
+	if [ "$msgs" = "" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+
+	json_init
+	json_load "$msgs"
+
+	json_get_var writable writable
+	if [ "$writable" != "1" ];then
+		return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	fi
+
+	json_get_var set_cmd set_cmd
+	if [ "$set_cmd" = "" ];then
+		return $FAULT_CPE_NON_WRITABLE_PARAMETER
+	fi
+	eval "$set_cmd"
+
+	json_add_string "value" "$val"
+	json_close_object
+	echo "`json_dump`" >> $set_tmp_file
+	return $FAULT_CPE_NO_FAULT
+}
+
+set_param_notification_generic() {
+	local param="$1"
+	local notification="$2"
+	local max_len=0
+	local same="0"
+	local found_prefix="" msgs="" cmd="" prefix="" len="" line="" notif_permission=""
+	
+	if [ "$param" != "" ]; then
+		for prefix in $prefix_list; do
+			case  "$param" in "$prefix"*)
+				if [ "$param" = "$prefix"]; then
+					same="1"
+					found_prefix="$prefix"
+					break
+				fi
+				len=${#prefix}
+				if [ $len -gt $max_len ]; then
+					max_len=$len
+					found_prefix="$prefix"
+				fi
+			esac
+		done
+		if [ "$found_prefix" = "" ]; then
+			return $FAULT_CPE_INVALID_PARAMETER_NAME
+		fi
+		rm -f "$cache_path/"*"_dynamic"
+		get_generic_dynamic "$found_prefix" "$param"
+		msgs=`cat "$cache_path/$found_prefix"* | grep "\"$param\""`
+		rm -f "$cache_path/"*"_dynamic"
+		if [ "$msgs" = "" ]; then
+			return $FAULT_CPE_INVALID_PARAMETER_NAME
+		fi
+	else
+		rm -f "$cache_path/"*"_dynamic"
+		get_generic_dynamic "$found_prefix" "$param"
+		msgs=`cat "$cache_path/"* | grep "\"[A-Za-z_0-9]\+\.\""`
+		rm -f "$cache_path/"*"_dynamic"
+	fi
+
+	echo "$msgs" | while read line; do
+		json_init
+		json_load "$line"
+		json_get_var notif_permission notif_permission
+		if [ "$notif_permission" = "0" ]; then
+			return $FAULT_CPE_NOTIFICATION_REJECTED
+		fi
+		json_get_var param parameter
+		freecwmp_set_parameter_notification "$param" "$notification"
+		json_add_string "notification" "$notification"
+		json_close_object
+		echo "`json_dump`" >> $set_tmp_file
+	done
+	return $?
+}
+
+object_fn_generic() {
+	local object="$1"
+	local prefix=""
+	local found=""
+	local max_len=0
+	local len=0
+	
+	for prefix in $prefix_list; do
+		case  "$object" in "$prefix"*)
+			len=${#prefix}
+			if [ $len -gt $max_len ]; then
+				max_len=$len
+				found="$prefix"
+			fi
+		esac
+	done
+	
+	if [ "$found" = "" ];then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+
+	local fn=${found%.}
+	fn=${fn//./_}
+	local f="$action"_"$fn"
+	$f "$1" "$found"
+	return $?
 }

@@ -32,45 +32,18 @@ config scripts
 	list location /usr/share/freecwmp/functions/common
 	# freecwmp specific functions
 	list location /usr/share/freecwmp/functions/device_info
-	list function device_info
-	list function device_info_generic
+	list prefix InternetGatewayDevice.DeviceInfo.
 	list location /usr/share/freecwmp/functions/lan_device
-	list function lan_device
+	list prefix InternetGatewayDevice.LANDevice.
 	list location /usr/share/freecwmp/functions/management_server
-	list function management_server
-	list function management_server_generic
+	list prefix InternetGatewayDevice.ManagementServer.
 	list location /usr/share/freecwmp/functions/wan_device
-	list function wan_device
-	list location /usr/share/freecwmp/functions/misc
-	list function misc
-	list location /usr/share/freecwmp/functions/device_users
-	list function device_users
-	list location /usr/share/freecwmp/functions/device_hosts
-	list function device_hosts
-	list location /usr/share/freecwmp/functions/device_routing
-	list function device_routing
+	list prefix InternetGatewayDevice.WANDevice.
 	list location /usr/share/freecwmp/functions/voice_service
-	list function voice_service
-
-config notifications
-	list active 'InternetGatewayDevice.ManagementServer.URL'
-	list active 'InternetGatewayDevice.ManagementServer.ParameterKey'
+	list prefix InternetGatewayDevice.Services.
+	list location /usr/share/freecwmp/functions/models
+	list prefix InternetGatewayDevice.
 
 config cwmp
 	option parameter 'InternetGatewayDevice.DeviceInfo.SpecVersion'
 	option value '1.0'
-	
-config DeviceInfo
-	list function 'device_info'
-
-config Services
-	list function 'voice_service'
-
-config LANDevice
-	list function 'lan_device'
-
-config ManagementServer
-	list function 'management_server'
-
-config WANDevice
-	list function 'wan_device'

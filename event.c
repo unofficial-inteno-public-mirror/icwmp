@@ -16,6 +16,7 @@
 #include "backupSession.h"
 #include "log.h"
 #include "jshn.h"
+#include "external.h"
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_0BOOTSTRAP]                      = {"0 BOOTSTRAP",                       EVENT_TYPE_SINGLE,  EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
@@ -409,6 +410,31 @@ int cwmp_root_cause_event_periodic (struct cwmp *cwmp)
     return CWMP_OK;
 }
 
+void sotfware_version_value_change(struct cwmp *cwmp, struct transfer_complete *p)
+{
+	struct parameter_container *parameter_container;
+	char *current_software_version = NULL;
+
+	external_init();
+	external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
+	external_handle_action(cwmp_handle_getParamValues);
+	parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
+	if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
+		strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
+	{
+		current_software_version = strdup(parameter_container->data);
+	}
+	external_free_list_parameter();
+	external_exit();
+	if (p->old_software_version && current_software_version &&
+		strcmp(p->old_software_version, current_software_version) != 0) {
+		pthread_mutex_lock (&(cwmp->mutex_session_queue));
+		cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+	}
+}
+
+
 void connection_request_ip_value_change(struct cwmp *cwmp)
 {
 	char *bip = NULL;
@@ -432,8 +458,6 @@ void connection_request_ip_value_change(struct cwmp *cwmp)
 			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 			return;
 		}
-		parameter_container_add(&(event_container->head_parameter_container),
-				"InternetGatewayDevice.ManagementServer.ConnectionRequestURL", NULL, NULL, NULL);
 		cwmp_save_event_container (cwmp,event_container);
 		bkp_session_simple_insert("connection_request", "ip", cwmp->conf.ip);
 		bkp_session_save();

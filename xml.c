@@ -729,6 +729,7 @@ int cwmp_rpc_acs_destroy_data_transfer_complete(struct session *session, struct 
 		FREE(p->command_key);
 		FREE(p->start_time);
 		FREE(p->complete_time);
+		FREE(p->old_software_version);
 	}
 	FREE(rpc->extra_data);
 	return 0;
@@ -1857,7 +1858,6 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 		p->fault_code 		= error;
 	}
 
-	bkp_session_insert_transfer_complete(p);
 	*ptransfer_complete = p;
 
     return error;
@@ -1873,6 +1873,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     struct transfer_complete					*ptransfer_complete;
     long int									time_of_grace = 3600,timeout;
     char										*fault_code;
+    struct parameter_container 					*parameter_container;
 
     thread_download_is_working = true;
     while (list_download.next!=&(list_download))
@@ -1914,18 +1915,29 @@ void *thread_cwmp_rpc_cpe_download (void *v)
             error = cwmp_launch_download(pdownload,&ptransfer_complete);
     		if(error != FAULT_CPE_NO_FAULT)
     		{
+    			bkp_session_insert_transfer_complete(ptransfer_complete);
+    			bkp_session_save();
     			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
     			bkp_session_delete_transfer_complete(ptransfer_complete);
     		}
     		else
     		{
+    			external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
+    			external_handle_action(cwmp_handle_getParamValues);
+    			parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
+				if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
+					strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
+				{
+					ptransfer_complete->old_software_version = strdup(parameter_container->data);
+				}
+				external_free_list_parameter();
+				bkp_session_insert_transfer_complete(ptransfer_complete);
 				bkp_session_save();
 				external_apply("download", pdownload->file_type);
 				external_handle_action(cwmp_handle_downloadFault);
 				external_fetch_downloadFaultResp(&fault_code);
 				if(fault_code != NULL)
 				{
-					external_exit();
 					if(fault_code[0]=='9')
 					{
 						for(i=1;i<__FAULT_CPE_MAX;i++)
@@ -1950,6 +1962,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
 					cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
 				}
     		}
+        	external_exit();
     		pthread_mutex_unlock (&(cwmp->mutex_session_send));
 			pthread_cond_signal (&(cwmp->threshold_session_send));
 			pthread_mutex_lock (&mutex_download);
