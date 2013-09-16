@@ -310,6 +310,7 @@ void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_co
 		bkp_session_insert(b,"command_key",ptransfer_complete->command_key);
 		bkp_session_insert(b,"start_time",ptransfer_complete->start_time);
 		bkp_session_insert(b,"complete_time",ptransfer_complete->complete_time);
+		bkp_session_insert(b,"old_software_version",ptransfer_complete->old_software_version);
 		bkp_session_insert(b,"fault_code",fault_code);
 	}
 	pthread_mutex_unlock (&mutex_backup_session);
@@ -641,6 +642,17 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 					}
 				}
 			}
+			else if (strcmp(b->value.element.name,"old_software_version") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						ptransfer_complete->old_software_version = strdup(c->value.text.string);
+					}
+				}
+			}
 			else if (strcmp(b->value.element.name,"fault_code") == 0)
 			{
 				c = mxmlWalkNext(b, b, MXML_DESCEND);
@@ -656,6 +668,7 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
 	}
 	cwmp_root_cause_TransferComplete (cwmp, ptransfer_complete);
+	sotfware_version_value_change(cwmp, ptransfer_complete);
 }
 
 void bkp_session_create_file()

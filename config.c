@@ -419,7 +419,7 @@ int get_global_config(struct config *conf)
     }
 
     error 	= uci_get_value(UCI_DHCP_DISCOVERY_PATH,&value);
-    error2 	= uci_get_value(UCI_ACS_URL_PATH,&value2);
+    error2 	= uci_get_state_value(UCI_ACS_URL_PATH,&value2);
     error3 	= uci_get_state_value(conf->dhcp_url_path,&value3);
 
     if ((((error == CWMP_OK) && (value != NULL) && (strcmp(value,"enable") == 0)) ||

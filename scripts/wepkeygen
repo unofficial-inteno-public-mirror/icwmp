@@ -4,7 +4,7 @@
 usage()
 {
 	echo "Usage: $0 <strength> <passphrase>"
-	echo "-<strength>	Indicate the WEP KEY strength to generate. Should be 64 or 128"
+	echo "<strength>	Indicate the WEP KEY strength to generate. Should be 64 or 128"
 	echo "<passphrase>	Indicate the passphrase used to generate the WEP KEY"
 	echo "$0 -h display this help"
 }
