@@ -1922,15 +1922,17 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     		}
     		else
     		{
-    			external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
-    			external_handle_action(cwmp_handle_getParamValues);
-    			parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
-				if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
-					strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
-				{
-					ptransfer_complete->old_software_version = strdup(parameter_container->data);
-				}
-				external_free_list_parameter();
+    			if (pdownload->file_type[0] == '1') {
+					external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
+					external_handle_action(cwmp_handle_getParamValues);
+					parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
+					if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
+						strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
+					{
+						ptransfer_complete->old_software_version = strdup(parameter_container->data);
+					}
+					external_free_list_parameter();
+    			}
 				bkp_session_insert_transfer_complete(ptransfer_complete);
 				bkp_session_save();
 				external_apply("download", pdownload->file_type);

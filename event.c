@@ -415,6 +415,9 @@ void sotfware_version_value_change(struct cwmp *cwmp, struct transfer_complete *
 	struct parameter_container *parameter_container;
 	char *current_software_version = NULL;
 
+	if (!p->old_software_version || p->old_software_version[0] == 0)
+		return;
+
 	external_init();
 	external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
 	external_handle_action(cwmp_handle_getParamValues);
