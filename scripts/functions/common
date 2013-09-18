@@ -14,7 +14,7 @@ uci_remove_list_element() {
 	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete $option
 	for elem in $list; do
 		if [ "$elem" != "$value" ]; then
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q  add_list $option=$elem
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q add_list $option=$elem
 		fi
 	done
 }
@@ -31,7 +31,7 @@ freecwmp_output() {
 	local status="$7"
 	local instance="$8"
 	local success="$9"
-		
+	
 	case "$action" in
 		get_value|inform)
 		json_init
@@ -167,10 +167,10 @@ freecwmp_parse_formated_parameter() {
 			if [ "_$parameter" != "_$pattern" ]; then 
 				eval "export -- \"$3=-1\""
 				return
-					else
+			else
 				break
-					fi
-				fi
+			fi
+		fi
 		split_param=${parameter%%.*}
 		split_pattr=${pattern%%.*}
 		p="$parameter"; q="$pattern"
@@ -180,16 +180,16 @@ freecwmp_parse_formated_parameter() {
 			if [ "$parameter" != "$pattern" -a "_$pattern" != "_{i}" ]; then 
 				eval "export -- \"$3=-1\""
 				return
-		else
+			else
 				break
 			fi
 		fi
 		if [ "_$split_pattr" = "_{i}" ]; then
 			let n=$split_param-1
 			if [ $n -lt 0 ]; then
-					eval "export -- \"$3=-1\""
-					return
-				fi
+				eval "export -- \"$3=-1\""
+				return
+			fi
 			if [ "_$_values" == "_" ]; then
 				_values="$split_param"
 			else
@@ -339,13 +339,13 @@ freecwmp_notify() {
 }
 
 freecwmp_update_notification() {
-local list="$1"
-local __parm="$2"
-for i in $(/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@notifications[0].$list);do
+	local list="$1"
+	local __parm="$2"
+	for i in $(/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.@notifications[0].$list);do
         if [ "`echo $i|grep $__parm`" != "" ];then
                 uci_remove_list_element "cwmp.@notifications[0].$list" "$i" 2>/dev/null
         fi
-done
+	done
 }
 
 freecwmp_set_parameter_notification() {

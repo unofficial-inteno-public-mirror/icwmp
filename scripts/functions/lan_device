@@ -14,14 +14,14 @@ done
 }
 
 get_wlan_enable() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET wireless.@wifi-device[$num].disabled 2> /dev/null`
 	let val^=1
 	echo "$val"
 }
 
 set_wlan_enable() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	let val^=1
@@ -30,7 +30,7 @@ local num="$1"
 }
 
 get_wlan_status() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET wireless.@wifi-device[$num].disabled 2> /dev/null`
 	if [ "$val" = "1" ]; then
 		val="Disabled"
@@ -41,7 +41,7 @@ local num="$1"
 }
 
 get_wlan_bssid() {
-local num="$1"
+	local num="$1"
 	if [ "$num" = "0" ];then
 		val=`/usr/sbin/wlctl -i wl$num bssid`
 	else
@@ -51,7 +51,7 @@ local num="$1"
 }
 
 set_wlan_max_bit_rate() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -59,7 +59,7 @@ local num="$1"
 }
 
 set_wlan_channel() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -67,7 +67,7 @@ local num="$1"
 }
 
 set_wlan_ssid() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -75,7 +75,7 @@ local num="$1"
 }
 
 get_wlan_beacon_type() {
-local num="$1"
+	local num="$1"
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "none" ]; then
 		val="None"
@@ -106,7 +106,7 @@ reset_wlan() {
 }
 
 set_wlan_beacon_type() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	reset_wlan "$num"
@@ -138,7 +138,7 @@ local num="$1"
 }
 
 get_wlan_mac_control_enable() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET wireless.@wifi-device[$num].macfilter 2> /dev/null`
 	if [ "$val" = "2" ]; then
 		val="1"
@@ -149,7 +149,7 @@ local num="$1"
 }
 
 set_wlan_mac_control_enable() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	if [ "$val" = "1" ]; then
@@ -162,7 +162,7 @@ local num="$1"
 }
 
 get_wlan_standard() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET wireless.wl0.hwmode`
 	if [ "$val" = "11b" ]; then
 		val="b"
@@ -177,7 +177,7 @@ local num="$1"
 }
 
 set_wlan_standard() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	if [ "$val" = "b" ]; then
@@ -194,7 +194,7 @@ local num="$1"
 }
 
 get_wlan_wep_key_index() {
-local num="$1"
+	local num="$1"
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "wep-shared" ]; then
 		val=`$UCI_GET wireless.@wifi-iface[$num].key`
@@ -205,7 +205,7 @@ local num="$1"
 }
 
 set_wlan_wep_key_index() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
@@ -221,7 +221,7 @@ local num="$1"
 }
 
 set_wlan_key_passphrase() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -235,13 +235,13 @@ local num="$1"
 }
 
 get_wlan_wep_encryption_level() {
-local num="$1"
+	local num="$1"
 	val="40-bit, 104-bit"
 	echo "$val"
 }
 
 get_wlan_basic_encryption_modes() {
-local num="$1"
+	local num="$1"
 	wep=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$wep" = "1" ]; then
 		val="WEPEncryption"
@@ -252,7 +252,7 @@ local num="$1"
 }
 
 set_wlan_basic_encryption_modes() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	reset_wlan "$num"
@@ -267,7 +267,7 @@ local num="$1"
 }
 
 get_wlan_basic_authentication_mode() {
-local num="$1"
+	local num="$1"
 	wep=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$wep" = "wep-shared" ]; then
 		val="SharedAuthentication"
@@ -278,7 +278,7 @@ local num="$1"
 }
 
 set_wlan_basic_authentication_mode() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	reset_wlan "$num"
@@ -300,15 +300,15 @@ local num="$1"
 }
 
 get_wlan_wpa_encryption_modes() {
-local num="$1"
+	local num="$1"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-		if [ "$encryption" = "psk+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
-			val="TKIPEncryption"
-		elif [ "$encryption" = "psk+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
-			val="AESEncryption"
-		elif [ "$encryption" = "psk+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp"  ];then
-			val="TKIPandAESEncryption"
+	if [ "$encryption" = "psk+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
+		val="TKIPEncryption"
+	elif [ "$encryption" = "psk+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
+		val="AESEncryption"
+	elif [ "$encryption" = "psk+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp"  ];then
+		val="TKIPandAESEncryption"
 	else
 		val=""
 	fi
@@ -316,7 +316,7 @@ local num="$1"
 }
 
 set_wlan_wpa_encryption_modes() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
@@ -341,7 +341,7 @@ local num="$1"
 }
 
 get_wlan_wpa_authentication_mode() {
-local num="$1"
+	local num="$1"
 	wpa=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$wpa" = "psk" ]; then
 			val="PSKAuthentication"
@@ -354,7 +354,7 @@ local num="$1"
 }
 
 set_wlan_wpa_authentication_mode() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	reset_wlan "$num"
@@ -374,15 +374,15 @@ local num="$1"
 }
 
 get_wlan_ieee_11i_encryption_modes() {
-local num="$1"
+	local num="$1"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-		if [ "$encryption" = "psk2+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
-			val="TKIPEncryption"
-		elif [ "$encryption" = "psk2+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
-			val="AESEncryption"
-		elif [ "$encryption" = "psk2+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp" ];then
-			val="TKIPandAESEncryption"
+	if [ "$encryption" = "psk2+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
+		val="TKIPEncryption"
+	elif [ "$encryption" = "psk2+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
+		val="AESEncryption"
+	elif [ "$encryption" = "psk2+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp" ];then
+		val="TKIPandAESEncryption"
 	else
 		val=""
 	fi
@@ -390,7 +390,7 @@ local num="$1"
 }
 
 set_wlan_ieee_11i_encryption_modes() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
@@ -418,7 +418,7 @@ local num="$1"
 }
 
 get_wlan_ieee_11i_authentication_mode() {
-local num="$1"
+	local num="$1"
 	if [ "$num" = "0" ];then
 		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
 	else
@@ -436,7 +436,7 @@ local num="$1"
 }
 
 set_wlan_ieee_11i_authentication_mode() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	reset_wlan "$num"
@@ -457,7 +457,7 @@ local num="$1"
 }
 
 get_wlan_radio_enabled() {
-local num="$1"
+	local num="$1"
 	if [ "$num" = "0" ];then
 		radio=`/usr/sbin/wlctl -i wl$num radio`
 	else
@@ -473,7 +473,7 @@ local num="$1"
 }
 
 set_wlan_radio_enabled() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -490,7 +490,7 @@ local num="$1"
 }
 
 get_wlan_device_operation_mode() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET wireless.@wifi-iface[$num].mode`
 	if [ "$val" = "ap" ];then
 		val="InfrastructureAccessPoint"
@@ -499,7 +499,7 @@ local num="$1"
 }
 
 set_wlan_device_operation_mode() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -509,7 +509,7 @@ local num="$1"
 }
 
 get_wlan_authentication_service_mode() {
-local num="$1"
+	local num="$1"
 	value=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$value" = "wpa" ]; then
 		val="RadiusClient"
@@ -520,7 +520,7 @@ local num="$1"
 }
 
 set_wlan_authentication_service_mode() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -532,7 +532,7 @@ local num="$1"
 }
 
 get_wlan_total_associations() {
-local num="$1"
+	local num="$1"
 	if [ "$num" = "0" ];then
 		val=`/usr/sbin/wlctl -i wl$num assoclist | grep -c 'assoclist'`
 	else
@@ -542,7 +542,7 @@ local num="$1"
 }
 
 set_wlan_wep_key() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	local notification="$4"
@@ -559,7 +559,7 @@ local num="$1"
 }
 
 set_wlan_pre_shared_key() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	local notification="$4"
@@ -571,14 +571,14 @@ local num="$1"
 }
 
 set_wlan_pre_shared_key_key_passphrase() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
 }
 
 set_wlan_pre_shared_key_associated_device_MACAddress() {
-local num="$1"
+	local num="$1"
 	local param="$2"
 	local val="$3"
 	delay_command "wifi" "5"
@@ -671,10 +671,10 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 				let "wlan_num++"
 				if [ "$num" = "0" ];then
 					assoclist=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
-			else
+				else
 					assoclist=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
-		fi
-		i=0
+				fi
+				i=0
 				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice." "" "0" "" "" "" "" "0"
 				for mac in $assoclist;do
 					let i++
@@ -685,29 +685,29 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 						ip=`cat /proc/net/arp|grep "$mac_lower"|awk -F' ' '{print $1}'`
 						if [ "$num" = "0" ];then
 							is_authenticated=`/usr/sbin/wlctl -i wl$num authe_sta_list|grep $mac`
-			else
+						else
 							is_authenticated=`/usr/sbin/wlctl -i wl0.$num authe_sta_list|grep $mac`
-			fi
+						fi
 						if [ "$is_authenticated" = "" ];then
 							is_authenticated="0"
-			else
+						else
 							is_authenticated="1"
-			fi
-		fi
+						fi
+					fi
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "" "0" "" "" "" "" "0"
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
-	done
+				done
+			done
 		done
-	done
-esac
+	esac
 }
 
 add_object_InternetGatewayDevice_LANDevice() { 
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 delete_object_InternetGatewayDevice_LANDevice() {
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

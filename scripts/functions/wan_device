@@ -5,8 +5,8 @@
 
 get_wan_device_wan_mng_enable() {
 	local val=""
-local intf="$1"
-
+	local intf="$1"
+	
 	json_load "$(ifstatus $intf)"
 	json_get_var up up
 	val="$up"
@@ -25,7 +25,7 @@ set_wan_device_wan_mng_enable() {
 
 get_wan_device_mng_status() {
 # TODO: Unconfigured ; Connecting ; Connected ; PendingDisconnect ; Disconneting ; Disconnected 
-local val=""
+	local val=""
 	local intf="$1"
 	
 	json_load "$(ifstatus $intf)"
@@ -48,7 +48,7 @@ local val=""
 
 get_wan_device_ppp_status() {
 # TODO: Unconfigured ; Connecting ; Connected ; PendingDisconnect ; Disconneting ; Disconnected 
-local val=""
+	local val=""
 	local intf="$1"
 	
 	json_load "$(ifstatus $intf)"
@@ -70,7 +70,7 @@ local val=""
 }
 
 get_wan_device_mng_interface_ip() {
-local val=""
+	local val=""
 	local intf="$1"
 	
 	if [ -z "$default_wan_device_mng_interface_ip" ]; then
@@ -82,7 +82,7 @@ local val=""
 }
 
 get_wan_device_ppp_interface_ip() {
-local val=""
+	local val=""
 	local intf="$1"
 	
 	if [ -z "$default_wan_device_mng_interface_ip" ]; then
@@ -94,9 +94,9 @@ local val=""
 }
 
 get_wan_device_mng_interface_mac() {
-local val=""
+	local val=""
 	local intf="$1"
-local device
+	local device
 	
 	json_load "$(ifstatus $intf)"
 	json_get_var device device
@@ -107,7 +107,7 @@ local device
 }
 
 get_wan_device_wan_ppp_enable() {
-local val=""
+	local val=""
 	local intf="$1"
 	local up
 	
@@ -142,28 +142,28 @@ get_wan_device_wan_access_type() {
 }
 
 get_wan_device_wan_dsl_interface_config_status() {
-local val=""
+	local val=""
 	local intf="$1"
 	adsl_shown=`adsl info --stats|grep "^Status:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|sed 's/ *$//g'`
 	case "$adsl_shown" in
 		"Showtime")
 		val="Up"
-	;;
+		;;
 		"Training")
 		val="Initializing"
-	;;
+		;;
 		"Channel Analysis")
 		val="EstablishingLink"
-	;;
+		;;
 		"Disabled")
 		val="Disabled"
-	;;
-esac
+		;;
+	esac
 	echo $val
 }
 
 get_wan_device_wan_dsl_interface_config_modulation_type() {
-local val=""
+	local val=""
 	local intf="$1"
 	adsl_shown=`adsl info --stats|grep "Mode:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|cut -f1 -d ' '`
 	case "$adsl_shown" in
@@ -172,23 +172,23 @@ local val=""
 		;;
 		G.lite)
 		val="ADSL_G.lite"
-	;;
+		;;
 		T1.413)
 		val="ADSL_ANSI_T1 .413"
-	;;
+		;;
 		ADSL2)
 		val="ADSL_G.dmt.bis"
-	;;
+		;;
 		AnnexL)
 		val="ADSL_re-adsl"
 		;;
 		ADSL2+)
 		val="ADSL_2plus"
-	;;
+		;;
 		*)
 		val="$adsl_shown"
-	;;
-esac
+		;;
+	esac
 	echo $val
 }
 
@@ -200,11 +200,11 @@ for i in $list_intf;do
 		n=1
 	elif [ "$i" != "$prev_i" ];then
 		let n=$n+1
-			fi
+	fi
 	if [ "$i" = "$intf" ];then
 		echo $n
 		return 0
-		fi
+	fi
 	prev_i=$i
 done
 }
@@ -231,10 +231,10 @@ for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 		instance=2
 	elif [ "`echo $logical_intf|grep ptm`" != "" ];then
 		instance=3
-fi
+	fi
 	if [ "`$UCI_GET network.$config.is_lan`" != "1"  ];then
 		echo $logical_intf:$instance:$config
-fi
+	fi
 done
 }
 
@@ -276,7 +276,7 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0" "1"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "get_wan_device_wan_dsl_interface_config_status" ""
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "get_wan_device_wan_dsl_interface_config_modulation_type"
-
+		
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
 				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "1" "1"
 				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "1" "0"

@@ -6,27 +6,27 @@
 
 get_management_server_connection_request_url() {
 local val
-	if [ -z "$default_management_server_connection_request_url" ]; then
-		local tmp_value=${FLAGS_value}
-		FLAGS_value=${FLAGS_TRUE}
-		local tmp_json=${FLAGS_json}
-		FLAGS_json=${FLAGS_FALSE}
-		local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.cpe.ip`
-		local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.port`
-		FLAGS_value=$tmp_value
-		FLAGS_json=$tmp_json
-	
-		if [ -n "$ip" -a -n "$port" ]; then
-			val="http://$ip:$port/"
-		fi
-	else
-		val=$default_management_server_connection_request_url
+if [ -z "$default_management_server_connection_request_url" ]; then
+	local tmp_value=${FLAGS_value}
+	FLAGS_value=${FLAGS_TRUE}
+	local tmp_json=${FLAGS_json}
+	FLAGS_json=${FLAGS_FALSE}
+	local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.cpe.ip`
+	local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.port`
+	FLAGS_value=$tmp_value
+	FLAGS_json=$tmp_json
+
+	if [ -n "$ip" -a -n "$port" ]; then
+		val="http://$ip:$port/"
 	fi
+else
+	val=$default_management_server_connection_request_url
+fi
 echo $val
 }
 
 get_management_server_periodic_inform_time() {
-local val=""
+	local val=""
 	val=`$UCI_GET cwmp.acs.periodic_inform_time`
 	if [ "$val" != "0" -a "$val" != "" ];then
 		val=`date -d @$val +"%Y-%m-%dT%H:%M:%S.000Z"`
@@ -76,9 +76,9 @@ get_dynamic_InternetGatewayDevice_ManagementServer() {
 }
 
 add_object_InternetGatewayDevice_ManagementServer() { 
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 delete_object_InternetGatewayDevice_ManagementServer() {
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

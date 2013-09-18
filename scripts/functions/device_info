@@ -5,8 +5,8 @@
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
 get_device_info_hardware_version() {
-local val=""
-local dslAnnex=""
+	local val=""
+	local dslAnnex=""
 	dslAnnex=`cat /proc/nvram/dslAnnex 2> /dev/null`                                                
 	val=`cat /etc/iop_version | cut -d'-' -f1 | sed s/$/"$dslAnnex"/ 2> /dev/null`
 	echo "$val"
@@ -31,9 +31,9 @@ get_dynamic_InternetGatewayDevice_DeviceInfo() {
 }
 
 add_object_InternetGatewayDevice_DeviceInfo() { 
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 delete_object_InternetGatewayDevice_DeviceInfo() {
-return $FAULT_CPE_INVALID_PARAMETER_NAME
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
