@@ -12,8 +12,12 @@
 
 #include <unistd.h>
 #include <libubus.h>
-#include <json/json.h>
 
+#ifdef _AA
+#include <json-c/json.h>
+#else
+#include <json/json.h>
+#endif
 
 #include "cwmp.h"
 #include "external.h"
