@@ -263,35 +263,37 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		fi
 		local forced_inform_eip=""
 		local forced_notify=""
+		local notif_permission=""
 		if [ "$default_wan" = "$iface" ];then
 			forced_inform_eip="1"
 			forced_notify="2"
+			notif_permission="0"
 		fi
 		proto=`$UCI_GET network.$iface.proto`
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "1" "1" 
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "1" "1"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "1" "1"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0" "1"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "get_wan_device_wan_access_type"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0" "1"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "get_wan_device_wan_dsl_interface_config_status" ""
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "get_wan_device_wan_dsl_interface_config_modulation_type"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "0" "0" 
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "0" "0"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "0"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "get_wan_device_wan_dsl_interface_config_status"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
 		
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "1" "1"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "1"
 				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "1" "0"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable" "1" "get_wan_device_wan_mng_enable $iface" "set_wan_device_wan_mng_enable \$val $iface" "" "xsd:boolean"
+				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable" "1" "get_wan_device_wan_mng_enable $iface" "set_wan_device_wan_mng_enable \"\$val\" $iface" "" "xsd:boolean"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ConnectionStatus" "0" "get_wan_device_mng_status $iface"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "" "$forced_inform_eip" "$forced_notify"
+				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.MACAddress" "0" "get_wan_device_mng_interface_mac $iface"
 				let wan_ip=$wan_ip+1
 		fi
 		if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "1" "1"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "1"
 				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp." "1" "0"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable" "1" "get_wan_device_wan_ppp_enable $iface" "set_wan_device_wan_ppp_enable \$val $iface" "" "xsd:boolean"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ConnectionStatus" "0" "get_wan_device_ppp_status $iface"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "" "$forced_inform_eip" "$forced_notify"
+				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username" "1" "$UCI_GET network.$iface.username=\"\$val\"" "$UCI_SET network.$iface.username=\"\$val\""
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "1" "" "$UCI_SET network.$iface.password=\"\$val\""
 				let wan_ppp=$wan_ppp+1

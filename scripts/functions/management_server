@@ -59,16 +59,16 @@ set_management_server() {
 
 get_cache_InternetGatewayDevice_ManagementServer() {
 	get_object_cache_generic "InternetGatewayDevice.ManagementServer." "0" "0"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.URL" "1" "$UCI_GET cwmp.acs.url" "set_management_server cwmp.acs.url \$val"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Username" "1" "$UCI_GET cwmp.acs.userid" "set_management_server cwmp.acs.userid \$val"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Password" "1" "" "set_management_server cwmp.acs.passwd \$val"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ParameterKey" "1" "$UCI_GET cwmp.acs.ParameterKey" "set_management_server cwmp.acs.ParameterKey \$val" "" "" "0" "1"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformEnable" "1" "$UCI_GET cwmp.acs.periodic_inform_enable" "set_management_server cwmp.acs.periodic_inform_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformInterval" "1" "$UCI_GET cwmp.acs.periodic_inform_interval" "set_management_server cwmp.acs.periodic_inform_interval \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformTime" "1" "get_management_server_periodic_inform_time" "set_management_server_periodic_inform_time \$val" "" "xsd:dateTime"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestURL" "0" "get_management_server_connection_request_url" "" "" "" "" "1" "2"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestUsername" "1" "$UCI_GET cwmp.cpe.userid" "set_management_server cwmp.cpe.userid \$val"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestPassword" "1" "" "set_management_server cwmp.cpe.passwd \$val"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.URL" "1" "$UCI_GET cwmp.acs.url" "set_management_server cwmp.acs.url \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Username" "1" "$UCI_GET cwmp.acs.userid" "set_management_server cwmp.acs.userid \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Password" "1" "" "set_management_server cwmp.acs.passwd \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ParameterKey" "1" "$UCI_GET cwmp.acs.ParameterKey" "set_management_server cwmp.acs.ParameterKey \"\$val\"" "" "" "0" "1"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformEnable" "1" "$UCI_GET cwmp.acs.periodic_inform_enable" "set_management_server cwmp.acs.periodic_inform_enable \"\$val\"" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformInterval" "1" "$UCI_GET cwmp.acs.periodic_inform_interval" "set_management_server cwmp.acs.periodic_inform_interval \"\$val\"" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.PeriodicInformTime" "1" "get_management_server_periodic_inform_time" "set_management_server_periodic_inform_time \"\$val\"" "" "xsd:dateTime"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestURL" "0" "get_management_server_connection_request_url" "" "" "" "0" "1" "2"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestUsername" "1" "$UCI_GET cwmp.cpe.userid" "set_management_server cwmp.cpe.userid \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ConnectionRequestPassword" "1" "" "set_management_server cwmp.cpe.passwd \"\$val\""
 }
 
 get_dynamic_InternetGatewayDevice_ManagementServer() {
