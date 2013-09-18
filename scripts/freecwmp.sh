@@ -126,12 +126,12 @@ case "$1" in
 		fi
 		;;
 	add)
-			__arg1="$3"
-			action="add_object"
+		__arg1="$3"
+		action="add_object"
 		;;
 	delete)
-			__arg1="$3"
-			action="delete_object"
+		__arg1="$3"
+		action="delete_object"
 		;;
 	inform)
 		action="inform"
@@ -214,9 +214,9 @@ handle_action() {
 			local c=${__arg1:$l:1}
 			if [ "$c" != "." ];then
 				echo "Invalid prefix argument"
-			exit -1
+				exit -1
+			fi
 		fi
-	fi
 		local tmp_cache="/tmp/.freecwmp_dm"
 		local ls_cache=`ls $tmp_cache`
 		local pid=""
@@ -251,166 +251,166 @@ handle_action() {
 		if [ "_$ls_cache" = "_" ]; then
 			rm -rf "$tmp_cache"
 		fi
-		fi
+	fi
 	
 	if [ "$action" = "get_value" ]; then
 		get_param_value_generic "$__arg1"
 		fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
+		fi
 	fi
-fi
 
 	if [ "$action" = "get_name" ]; then
 		if [ "$__arg2" != "0" -a "$__arg2" != "1" ]; then
 			fault_code="$FAULT_CPE_INVALID_ARGUMENTS"
-			else
+		else
 			get_param_name_generic "$__arg1" "$__arg2"
 			fault_code="$?"
 		fi
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
+		fi
 	fi
-fi
 
 	if [ "$action" = "get_notification" ]; then
 		get_param_notification_generic "$__arg1"
 		fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
+		fi
 	fi
-fi
 
 	if [ "$action" = "set_value" ]; then	
 		set_param_value_generic "$__arg1" "$__arg2"
 		fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+		fi
 	fi
-fi
-
+	
 	if [ "$action" = "set_notification" -a "$__arg3" = "1" ]; then
 		set_param_notification_generic "$__arg1" "$__arg2"
-			fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		fault_code="$?"
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+		fi
 	fi
-fi
 
 
-if [ "$action" = "add_object" ]; then
-		object_fn_generic "$__arg1"
-	fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
-			freecwmp_output "" "" "" "" "" "$fault_code"
-	fi
-fi
-
-if [ "$action" = "delete_object" ]; then
+	if [ "$action" = "add_object" ]; then
 		object_fn_generic "$__arg1"
 		fault_code="$?"
-	if [ "$fault_code" != "0" ]; then
-		let fault_code=$fault_code+9000
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
 			freecwmp_output "" "" "" "" "" "$fault_code"
-fi
-fi
-
-if [ "$action" = "download" ]; then
-	local fault_code="9000"
-		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
-			wget -O /tmp/freecwmp_download "$__arg1" 2> /dev/null
-		if [ "$?" != "0" ];then
-			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			freecwmp_fault_output "" "$fault_code"
-			exit 1
-		fi
-	else
-			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
-			wget -O /tmp/freecwmp_download "$url" 2> /dev/null
-		if [ "$?" != "0" ];then
-			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			freecwmp_fault_output "" "$fault_code"
-			exit 1
 		fi
 	fi
 
-	local flashsize="`freecwmp_check_flash_size`"
-	local filesize=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
+	if [ "$action" = "delete_object" ]; then
+		object_fn_generic "$__arg1"
+		fault_code="$?"
+		if [ "$fault_code" != "0" ]; then
+			let fault_code=$fault_code+9000
+			freecwmp_output "" "" "" "" "" "$fault_code"
+		fi
+	fi
+
+	if [ "$action" = "download" ]; then
+		local fault_code="9000"
+		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
+			wget -O /tmp/freecwmp_download "$__arg1" 2> /dev/null
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				freecwmp_fault_output "" "$fault_code"
+				exit 1
+			fi
+		else
+			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
+			wget -O /tmp/freecwmp_download "$url" 2> /dev/null
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				freecwmp_fault_output "" "$fault_code"
+				exit 1
+			fi
+		fi
+
+		local flashsize="`freecwmp_check_flash_size`"
+		local filesize=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
 		if [ $flashsize -gt 0 -a $flashsize -lt $__arg2 ]; then
-		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-		rm /tmp/freecwmp_download 2> /dev/null
-		freecwmp_fault_output "" "$fault_code"
-	else
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			rm /tmp/freecwmp_download 2> /dev/null
+			freecwmp_fault_output "" "$fault_code"
+		else
 			if [ "$__arg3" = "1" ];then
-			mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
-			freecwmp_check_image
-			if [ "$?" = "0" ];then
-				if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
+				mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
+				freecwmp_check_image
+				if [ "$?" = "0" ];then
+					if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
+						let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+						rm /tmp/firmware_upgrade_image 2> /dev/null
+						freecwmp_fault_output "" "$fault_code"
+					else
+						rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
+						mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
+						freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+					fi
+				else
 					let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 					rm /tmp/firmware_upgrade_image 2> /dev/null
 					freecwmp_fault_output "" "$fault_code"
-				else
-					rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
-					mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
-					freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 				fi
-			else
-				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-				rm /tmp/firmware_upgrade_image 2> /dev/null
-				freecwmp_fault_output "" "$fault_code"
-			fi
 			elif [ "$__arg3" = "2" ];then
-			mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
-			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+				mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
+				freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			elif [ "$__arg3" = "3" ];then
-			mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
-			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
-		else
-			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			freecwmp_fault_output "" "$fault_code"
-			rm /tmp/freecwmp_download 2> /dev/null
+				mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+				freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			else
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				freecwmp_fault_output "" "$fault_code"
+				rm /tmp/freecwmp_download 2> /dev/null
+			fi
 		fi
 	fi
-fi
 
-if [ "$action" = "apply_download" ]; then
+	if [ "$action" = "apply_download" ]; then
 		case "$__arg1" in
-		1) freecwmp_apply_firmware ;;
-		2) freecwmp_apply_web_content ;;
-		3) freecwmp_apply_vendor_configuration ;;
-	esac
-fi
-
-if [ "$action" = "factory_reset" ]; then
-	if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
-		echo "# factory_reset"
-	else
-		jffs2_mark_erase "rootfs_data"
-		sync
-		reboot
+			1) freecwmp_apply_firmware ;;
+			2) freecwmp_apply_web_content ;;
+			3) freecwmp_apply_vendor_configuration ;;
+		esac
 	fi
-fi
 
-if [ "$action" = "reboot" ]; then
-	if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
-		echo "# reboot"
-	else
-		sync
-		reboot
+	if [ "$action" = "factory_reset" ]; then
+		if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
+			echo "# factory_reset"
+		else
+			jffs2_mark_erase "rootfs_data"
+			sync
+			reboot
+		fi
 	fi
-fi
 
-if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
-	__fault_count=`cat /var/state/cwmp 2> /dev/null |wc -l 2> /dev/null`
-	let __fault_count=$__fault_count/3
-	if [ "$__fault_count" = "0" ]; then
-		# applying
+	if [ "$action" = "reboot" ]; then
+		if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
+			echo "# reboot"
+		else
+			sync
+			reboot
+		fi
+	fi
+
+	if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
+		__fault_count=`cat /var/state/cwmp 2> /dev/null |wc -l 2> /dev/null`
+		let __fault_count=$__fault_count/3
+		if [ "$__fault_count" = "0" ]; then
+			# applying
 			$UCI_COMMIT
 			local prefix=""
 			local filename=""
@@ -431,7 +431,7 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 							if [ $len -gt $max_len ]; then
 								max_len=$len
 								filename="$prefix"
-		fi
+							fi
 						esac
 					done
 					local l=${#parameter}
@@ -476,22 +476,22 @@ if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 				freecwmp_output "" "" "" "" "" "" "1"
 				;;
 			esac
-	else
-		let n=$__fault_count-1
-		for i in `seq 0 $n`
-		do
-			local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
-			local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
-			freecwmp_fault_output "$parm" "$fault_code"
-			if [ "$action" = "apply_notification" ]; then break; fi
-		done
-		rm -rf /var/state/cwmp 2> /dev/null
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q revert cwmp
-	fi
+		else
+			let n=$__fault_count-1
+			for i in `seq 0 $n`
+			do
+				local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
+				local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
+				freecwmp_fault_output "$parm" "$fault_code"
+				if [ "$action" = "apply_notification" ]; then break; fi
+			done
+			rm -rf /var/state/cwmp 2> /dev/null
+			/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q revert cwmp
+		fi
 		rm -f $set_tmp_file
-fi
+	fi
 
-if [ "$action" = "inform" ]; then
+	if [ "$action" = "inform" ]; then
 		cat "$cache_path/"* | grep "\"forced_inform\"" | grep -v "\"get_cmd\""
 		cat "$cache_path/"* | grep "\"forced_inform\"" | grep "\"get_cmd\"" | while read line; do
 			json_init
@@ -502,16 +502,16 @@ if [ "$action" = "inform" ]; then
 			val=`eval "$exec_get_cmd"`
 			freecwmp_output "$param" "$val" "" "$type"
 		done
-fi
+	fi
 
-if [ "$action" = "notify" ]; then
+	if [ "$action" = "notify" ]; then
 		freecwmp_notify "$__arg1" "$__arg2"
-fi
+	fi
 
-if [ "$action" = "end_session" ]; then
-	echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
-	/bin/sh /tmp/end_session.sh
-fi
+	if [ "$action" = "end_session" ]; then	
+		echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
+		/bin/sh /tmp/end_session.sh
+	fi
 	if [ "$action" = "json_continuous_input" ]; then
 		echo "EOF"
 		while read CMD; do
@@ -520,7 +520,7 @@ fi
 			json_init
 			json_load "$CMD"
 			json_get_var command command
-			json_get_var  action action
+			json_get_var action action
 			case "$command" in
 				set)
 					if [ "$action" = "notification" ]; then

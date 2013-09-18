@@ -34,7 +34,7 @@ voice_service_save_instance_config() {
 load_voice() {
 	local max_profile_number=`$UCI_SHOW voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sort -u|sed 's/sip//g'|sort -n|tail -1`
 	let max_profile_number++
-	for sip in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q show voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sort -u`;do
+	for sip in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q  show voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sort -u`;do
 		sip_number=`echo $sip|sed 's/sip//g'`
 		let profile_number=$sip_number+1
 		# Line
@@ -61,7 +61,7 @@ load_voice() {
 # under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.
 
 get_voice_profile_enable() {
-local num="$1"
+	local num="$1"
 	val=`$UCI_GET voice_client.sip$num.enabled`
 	if [ "$val" = "0" ]; then
 	    val="Disabled"
@@ -72,8 +72,8 @@ local num="$1"
 }
 
 set_voice_profile_enable() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	if [ "$val" = "Enabled" ]; then
 	    val="1"
 	else
@@ -85,8 +85,8 @@ local val="$2"
 }
 
 set_voice_profile_reset() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	if [ "$val" = "1" ];then
 		/etc/init.d/asterisk reload
 	fi
@@ -98,8 +98,8 @@ local val="$2"
 }
 
 get_voice_profile_max_sessions() {
-local num="$1"
-local val=""
+	local num="$1"
+	local val=""
 	local number_line=`/usr/sbin/asterisk -rx "brcm show status"|grep "Subchannel:"|sort -u|wc -l`
 	local sub_channel=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	let val=$number_line*$sub_channel
@@ -107,8 +107,8 @@ local val=""
 }
 
 get_voice_profile_number_of_lines() {
-local num="$1"
-local val=""
+	local num="$1"
+	local val=""
 	val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Default context     : sip$num"`
 	echo $val
 }
@@ -116,88 +116,88 @@ local val=""
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.
 
 set_sip_proxy_server() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.sip_proxy="$val"
 }
 
 set_sip_proxy_server_port() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 get_sip_proxy_server_transport() {
-local num="$1"
-local val=""
+	local num="$1"
+	local val=""
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Outbound transport"|awk -F' ' '{print $3}'`
 	echo $val
 }
 
 set_sip_proxy_server_transport() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_registrar_server() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.host="$val"
 }
 
 set_sip_registrar_server_port() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.port="$val"
 }
 
 get_sip_registrar_server_transport() {
-local num="$1"
-local val=""
+	local num="$1"
+	local val=""
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Outbound transport"|awk -F' ' '{print $3}'`
 	echo $val
 }
 
 set_sip_registrar_server_transport() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_user_agent_domain() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.domain="$val"
 }
 
 set_sip_user_agent_port() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.bindport="$val"
 }
 
 get_sip_user_agent_transport() {
-local num="$1"
-local val=""
+	local num="$1"
+	local val=""
 	val=`/usr/sbin/asterisk -rx "sip show settings"|grep "Allowed transports"|awk -F' ' '{print $3}'`
 	echo $val
 }
 
 set_sip_user_agent_transport() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_outbound_proxy() {
-local num="$1"
+	local num="$1"
 	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
@@ -205,78 +205,78 @@ local num="$1"
 }
 
 set_sip_outbound_proxy_port() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.outboundport="$val"
 }
 
 set_sip_organization() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_registration_period() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
 set_sip_invite_expires() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_re_invite_expires() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
 set_sip_register_expires() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
 set_sip_registers_min_expires() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_register_retry_interval() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
 set_sip_inbound_auth() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_inbound_auth_username() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_inbound_auth_password() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 set_sip_x_002207_call_lines() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.call_lines="$val"
@@ -285,10 +285,10 @@ local val="$2"
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line.{i}.
 
 get_line_enable() {
-local num="$1"
-local line_name="$2"
-local line_num=""
-local val=""
+	local num="$1"
+	local line_name="$2"
+	local line_num=""
+	local val=""
 	val=`$UCI_GET voice_client.sip$num.enabled 2> /dev/null`
 	let num=$num+1
 	line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$num`
@@ -303,7 +303,7 @@ local val=""
 set_line_enable() {
 local num="$1"
 local line_name="$2"
-local val="$3" 
+local val="$3"
 	if [ "$val" = "Enabled" ]; then
 	    val="1"
 	else
@@ -315,18 +315,18 @@ local val="$3"
 }
 
 set_line_directory_number() {
-local num="$1"
-local line_name="$2"
-local val="$3" 
+	local num="$1"
+	local line_name="$2"
+	local val="$3"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.$line_name.extension="$val"
 }
 
 get_line_status() {
-local num="$1"
-local line_name="$2"
-local val=""
+	local num="$1"
+	local line_name="$2"
+	local val=""
 	val1="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_registered"
 	val2="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_request_sent"
 	if [ "$val1" = "yes" ];then
@@ -342,9 +342,9 @@ local val=""
 }
 
 get_line_call_state() {
-local num="$1"
-local line_name="$2"
-local val=""
+	local num="$1"
+	local line_name="$2"
+	local val=""
 	state=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state -q get chan_brcm.$line_name.subchannel_0`
 	if [ "$state" = "ONHOOK" ];then
 		val="Idle"
@@ -361,8 +361,8 @@ local val=""
 }
 
 set_line_calling_features_caller_id_name() {
-local num="$1"
-local line_name="$2"
+	local num="$1"
+	local line_name="$2"
 	local val="$3"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
@@ -370,17 +370,17 @@ local line_name="$2"
 }
 
 get_line_x_002207_line_profile() {
-local num="$1"
-local line_name="$2"
+	local num="$1"
+	local line_name="$2"
 	local val=""	
 	let val=$num+1
 	echo $val
 }
 
 set_line_x_002207_line_profile() {
-local num="$1"
-local line_name="$2"
-local val="$3" 
+	local num="$1"
+	local line_name="$2"
+	local val="$3"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	delete_line $line_name
@@ -403,19 +403,19 @@ local val="$3"
 			else
 				if [ "$instances" = "" ];then
 					instances=$instance
-		else
+				else
 					instances=$instances:$instance
-		fi
-	fi
+				fi
+			fi
 		done
 		$UCI_SET voice_client.$line_name.instances="$instances"
-		fi
+	fi
 	call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
 	if [ "$call_lines" != "" ];then
 		$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines $i"
 	else
 		$UCI_SET voice_client.sip$sip_id.call_lines="$i"
-		fi
+	fi
 }
 
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line.{i}.SIP.
@@ -535,7 +535,7 @@ get_cache_InternetGatewayDevice_Services() {
 	local max_line
 	# load instance numbers
 	load_voice
-get_voice_service_max_line max_line
+	get_voice_service_max_line max_line
 	get_object_cache_generic "InternetGatewayDevice.Services." "1" "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService." "1" "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1." "1" "0"
@@ -552,7 +552,7 @@ get_voice_service_max_line max_line
 			line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$profile_num`
 			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
 		done
-		done
+	done
 }
 
 get_voice_profile_max_instance() {
@@ -664,53 +664,53 @@ add_object_InternetGatewayDevice_Services() {
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.Line.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line." "rc" "num"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
-		let sip_id=$num-1
+			let sip_id=$num-1
 			local exist=`$UCI_GET voice_client.sip$sip_id`
-		if [ "$exist" = "" ];then
-			return $FAULT_CPE_INVALID_PARAMETER_NAME
-		fi
+			if [ "$exist" = "" ];then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME
+			fi
 			local i=`get_line_max_instance`
-		if [ "$i" = "" ];then
-			return $FAULT_CPE_RESOURCES_EXCEEDED
-		fi
-		add_line "$i" "$sip_id"
+			if [ "$i" = "" ];then
+				return $FAULT_CPE_RESOURCES_EXCEEDED
+			fi
+			add_line "$i" "$sip_id"
 			local instance=`$UCI_GET voice_client.brcm$i.instances|cut -f $num -d :`
-		if [ "$instance" = "0" ];then
+			if [ "$instance" = "0" ];then
 				max_line_instance=`$UCI_SHOW voice_client|grep instances|awk -F '=' '{print$2}'|cut -f $num -d:|sort -un|tail -1`
-			let instance=$max_line_instance+1
-			local j=0
+				let instance=$max_line_instance+1
+				local j=0
 				for k in `$UCI_GET voice_client.brcm$i.instances|sed 's/:/ /g'`;do
-				let j++
-				if [ "$j" != "$num" ];then
-					if [ "$instances" = "" ];then
-						instances=$k
+					let j++
+					if [ "$j" != "$num" ];then
+						if [ "$instances" = "" ];then
+							instances=$k
+						else
+							instances=$instances:$k
+						fi
 					else
-						instances=$instances:$k
+						if [ "$instances" = "" ];then
+							instances=$instance
+						else
+							instances=$instances:$instance
+						fi
 					fi
-				else
-					if [ "$instances" = "" ];then
-						instances=$instance
-					else
-						instances=$instances:$instance
-					fi
-				fi
-			done
+				done
 				$UCI_SET voice_client.brcm$i.instances="$instances"
-		fi
+			fi
 			call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
-		if [ "$call_lines" != "" ];then
+			if [ "$call_lines" != "" ];then
 				$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines $i"
-		else
+			else
 				$UCI_SET voice_client.sip$sip_id.call_lines="$i"
-		fi
-		freecwmp_set_parameter_notification "$1$instance." "0"
+			fi
+			freecwmp_set_parameter_notification "$1$instance." "0"
 			$UCI_COMMIT
 			let profile_num=$sip_id+1
 			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$instance"  >> $cache_path/$filename
 			freecwmp_output "" "" "" "" "" "" "1" "$instance"
-		delay_service_restart "voice_client" "5"
-		delay_service_restart "asterisk" "6"
-		return $FAULT_CPE_NO_FAULT
+			delay_service_restart "voice_client" "5"
+			delay_service_restart "asterisk" "6"
+			return $FAULT_CPE_NO_FAULT
 		;;
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.)
 			local instance=`get_voice_profile_max_instance`
@@ -721,12 +721,12 @@ add_object_InternetGatewayDevice_Services() {
 			freecwmp_output "" "" "" "" "" "" "1" "$instance"
 			freecwmp_set_parameter_notification "$1$instance." "0"
 			get_services_voice_service_generic "$instance" "$sip_id" >> $cache_path/$filename
-		delay_service_restart "voice_client" "5"
-		delay_service_restart "asterisk" "6"
-		return $FAULT_CPE_NO_FAULT
+			delay_service_restart "voice_client" "5"
+			delay_service_restart "asterisk" "6"
+			return $FAULT_CPE_NO_FAULT
 		;;
 		InternetGatewayDevice.Services.VoiceService.)
-		return $FAULT_CPE_RESOURCES_EXCEEDED
+			return $FAULT_CPE_RESOURCES_EXCEEDED
 		;;
 	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
