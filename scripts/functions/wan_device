@@ -238,6 +238,13 @@ for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 done
 }
 
+get_wandevice_dev_parent_objects() {
+	local dev="$1"
+	local notif_permission="$2"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "0" "$notif_permission"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "0" "$notif_permission"
+}
+
 get_cache_InternetGatewayDevice_WANDevice() {
 	local list_interface=`handle_wan_interface|sort -u`
 	local logical_intf
@@ -246,21 +253,16 @@ get_cache_InternetGatewayDevice_WANDevice() {
 	local wan_ppp=1
 	local wan_ip=1
 	local default_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
+	local dev_notif_permission=""
+	local prev_wan=""
+	local prev_dev=""
 	
-	get_object_cache_generic "InternetGatewayDevice.WANDevice." "1" "1"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice." "0" "0"
 	for intf in $list_interface;do
 		iface=`echo $intf|cut -f3 -d:`
 		dev=`echo $intf|cut -f2 -d:`
 		logical_intf=`echo $intf|cut -f1 -d:`
 		wan=`get_wan_logical_intf $logical_intf`
-		if [ "$prev_wan" != "$wan" -a "$prev_wan" != "" ];then
-			wan_ip=1
-			wan_ppp=1
-		fi
-		if [ "$prev_dev" != "$dev" -a "$prev_dev" != "" ];then
-			wan_ip=1
-			wan_ppp=1
-		fi
 		local forced_inform_eip=""
 		local forced_notify=""
 		local notif_permission=""
@@ -268,11 +270,20 @@ get_cache_InternetGatewayDevice_WANDevice() {
 			forced_inform_eip="1"
 			forced_notify="2"
 			notif_permission="0"
+			dev_notif_permission="0"
+		fi
+		if [ "$prev_dev" != "$dev" -a "$prev_dev" != "" ];then
+			wan_ip=1
+			wan_ppp=1
+			get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
+			dev_notif_permission=""
+		fi
+		if [ "$prev_wan" != "$wan" -a "$prev_wan" != "" ];then
+			wan_ip=1
+			wan_ppp=1
 		fi
 		proto=`$UCI_GET network.$iface.proto`
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "0" "0" 
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "0" "0"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "0"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "$notif_permission"
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type"
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
@@ -280,8 +291,8 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
 		
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "1"
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "1" "0"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "0" "$notif_permission"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "0" "$notif_permission"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable" "1" "get_wan_device_wan_mng_enable $iface" "set_wan_device_wan_mng_enable \"\$val\" $iface" "" "xsd:boolean"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ConnectionStatus" "0" "get_wan_device_mng_status $iface"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
@@ -289,8 +300,8 @@ get_cache_InternetGatewayDevice_WANDevice() {
 				let wan_ip=$wan_ip+1
 		fi
 		if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "1"
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp." "1" "0"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "0" "$notif_permission"
+				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp." "0" "$notif_permission"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable" "1" "get_wan_device_wan_ppp_enable $iface" "set_wan_device_wan_ppp_enable \$val $iface" "" "xsd:boolean"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ConnectionStatus" "0" "get_wan_device_ppp_status $iface"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
@@ -298,9 +309,10 @@ get_cache_InternetGatewayDevice_WANDevice() {
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "1" "" "$UCI_SET network.$iface.password=\"\$val\""
 				let wan_ppp=$wan_ppp+1
 		fi
-		prev_wan=$wan
-		prev_dev=$dev
+		prev_wan="$wan"
+		prev_dev="$dev"
 	done
+	get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
 }
 
 get_dynamic_InternetGatewayDevice_WANDevice() {
