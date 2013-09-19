@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <libubus.h>
 
-#ifdef _AA
+#ifdef _AADJ
 #include <json-c/json.h>
 #else
 #include <json/json.h>
