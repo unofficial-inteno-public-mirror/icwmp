@@ -94,7 +94,7 @@ run() {
 		opt=$opt"-g "
 	fi
 	[ -f /etc/config/cwmp ] && /usr/sbin/cwmpd $opt &
-	while [ "`ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common`" = "" ];do
+	while [ "`ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common`" = "" ]; do
 		sleep 1
 	done
 }
@@ -104,7 +104,7 @@ boot() {
 }
 
 start() {
-	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
+	run=$(ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common)
 	if [ "$run" = "" ]
 	then
 		if [ "$1" = "GetRPCMethods" ];then
@@ -126,16 +126,16 @@ stop() {
 	echo $stop_msg;printf "\033[A" ;sleep 1
 	ubus call tr069 command '{"command": "exit"}' -t 3 &> /dev/null
 	
-	pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/cwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d:|tr '\n' ' '`"
 	while [ "_$pids" != "_" ];do
 		kill -9 $pids 2> /dev/null
-		pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+		pids="`ps | grep /usr/sbin/cwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d:|tr '\n' ' '`"
 	done
 	
-	pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/freecwmp | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	while [ "_$pids" != "_" ];do
 		kill -9 $pids 2> /dev/null
-		pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+		pids="`ps | grep /usr/sbin/freecwmp | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	done
 }
 
