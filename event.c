@@ -106,11 +106,22 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_c
     return event_container;
 }
 
-void parameter_container_add(struct list_head *list, char *param_name, char *param_data, char *param_type, char *fault_code)
+void parameter_container_add(struct list_head *head, char *param_name, char *param_data, char *param_type, char *fault_code)
 {
 	struct parameter_container *parameter_container;
+	struct list_head *ilist;
+	int cmp;
+	list_for_each (ilist, head) {
+		parameter_container = list_entry(ilist, struct parameter_container, list);
+		cmp = strcmp(parameter_container->name, param_name);
+		if (cmp == 0) {
+			return;
+		} else if (cmp > 0) {
+			break;
+		}
+	}
 	parameter_container = calloc(1, sizeof(struct parameter_container));
-	list_add_tail(&parameter_container->list,list);
+	_list_add(&parameter_container->list, ilist->prev, ilist);
 	if (param_name) parameter_container->name = strdup(param_name);
 	if (param_data) parameter_container->data = strdup(param_data);
 	if (param_type) parameter_container->type = strdup(param_type);
