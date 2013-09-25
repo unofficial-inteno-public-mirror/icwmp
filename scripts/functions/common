@@ -423,12 +423,12 @@ EOF
 }
 
 freecwmp_set_parameter_fault() {
-	local _parm="$1"
+	local _parm="-$1"
 	local _fault="$2"
-		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state batch << EOF 2>&1 >/dev/null
-			add cwmp fault
-			set cwmp.@fault[-1].parameter="$_parm"
-			set cwmp.@fault[-1].fault_code="$_fault"
+	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state batch << EOF 2>&1 >/dev/null
+		add cwmp fault
+		set cwmp.@fault[-1].parameter="$_parm"
+		set cwmp.@fault[-1].fault_code="$_fault"
 EOF
 }
 
@@ -686,12 +686,16 @@ get_param_name_generic() {
 		if [ "$next_level" = "0" ]; then
 			eval '$cmd'
 		else
-			local len=${#parameter}
-			let len--
-			if [ "${parameter:$len:1}" != "." ]; then
-				return $FAULT_CPE_INVALID_ARGUMENTS
+			if [ "$parameter" != "" ]; then
+				local len=${#parameter}
+				let len--
+				if [ "${parameter:$len:1}" != "." ]; then
+					return $FAULT_CPE_INVALID_ARGUMENTS
+				fi
+				eval '$cmd' | grep -v "$parameter[A-Za-z_0-9]\+\.[A-Za-z_0-9]" | grep -v "\"$parameter\""
+			else
+				eval '$cmd' | grep -v "$parameter[A-Za-z_0-9]\+\.[A-Za-z_0-9]"
 			fi
-			eval '$cmd' | grep -v "$parameter[A-Za-z_0-9]\+\.[A-Za-z_0-9]"
 		fi
 	fi
 	

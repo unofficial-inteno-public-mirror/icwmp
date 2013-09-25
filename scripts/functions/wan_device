@@ -312,7 +312,9 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		prev_wan="$wan"
 		prev_dev="$dev"
 	done
-	get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
+	if [ "$prev_dev" != "" ]; then
+		get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
+	fi
 }
 
 get_dynamic_InternetGatewayDevice_WANDevice() {
