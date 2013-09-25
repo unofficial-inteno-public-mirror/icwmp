@@ -1731,6 +1731,12 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 	}
 
+    if (delay_seconds <= 0) {
+    	fault = FAULT_CPE_INVALID_ARGUMENTS;
+		pthread_mutex_unlock (&mutex_schedule_inform);
+		goto fault;
+    }
+
     if(count_schedule_inform_queue>=MAX_SCHEDULE_INFORM_QUEUE)
 	{
 		fault = FAULT_CPE_RESOURCES_EXCEEDED;

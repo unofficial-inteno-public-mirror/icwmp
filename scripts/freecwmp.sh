@@ -481,6 +481,7 @@ handle_action() {
 			for i in `seq 0 $n`
 			do
 				local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
+				parm=${parm#-}
 				local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
 				freecwmp_fault_output "$parm" "$fault_code"
 				if [ "$action" = "apply_notification" ]; then break; fi
