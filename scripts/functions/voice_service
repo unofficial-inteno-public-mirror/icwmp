@@ -209,7 +209,7 @@ set_sip_outbound_proxy_port() {
 	local val="$2"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
-	$UCI_SET voice_client.sip$num.outboundport="$val"
+	$UCI_SET voice_client.sip$num.outboundproxyport="$val"
 }
 
 set_sip_organization() {
@@ -276,7 +276,8 @@ set_sip_inbound_auth_password() {
 
 set_sip_x_002207_call_lines() {
 	local num="$1"
-	local val="$2"
+	shift
+	local val="$*"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.call_lines="$val"
@@ -381,11 +382,14 @@ set_line_x_002207_line_profile() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
+	let sip_id=$val-1
+	if [ "`$UCI_GET voice_client.sip$sip_id`" = "" ];then
+		return 0
+	fi
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
 	delete_line $line_name
 	i=`echo $line_name|sed 's/brcm//g'`
-	let sip_id=$val-1
 	add_line "$i" "$sip_id"
 	instance=`$UCI_GET voice_client.$line_name.instances|cut -f $val -d :`
 	if [ "$instance" = "0" ];then
@@ -420,7 +424,7 @@ set_line_x_002207_line_profile() {
 
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line.{i}.SIP.
 
-set_line_sip_username() {
+set_line_sip_auth_username() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
@@ -429,7 +433,7 @@ set_line_sip_username() {
 	$UCI_SET voice_client.sip$num.authuser="$val"
 }
 
-set_line_sip_password() {
+set_line_sip_auth_password() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
@@ -442,10 +446,10 @@ get_line_sip_uri() {
 	local num="$1"
 	local line_name="$2"
 	local domain=""
-	local username=""
-	domain=`$UCI_GET voice_client.sip$num.domain 2> /dev/null`
-	username=`$UCI_GET voice_client.sip$num.user 2> /dev/null`
-	echo "$username@$domain"
+	local user=""
+	domain=`$UCI_GET voice_client.sip$num.domain`
+	user=`$UCI_GET voice_client.sip$num.user`
+	echo "$user@$domain"
 }
 
 set_line_sip_uri() {
@@ -454,10 +458,10 @@ set_line_sip_uri() {
 	local val="$3"
 	delay_service_restart "voice_client" "5"
 	delay_service_restart "asterisk" "6"
-	local authuser=${val%@*}
+	local user=${val%@*}
 	local domain=${val#*@}
-	if [ "$authuser" != "" -a "$domain" != "" ]; then
-	  $UCI_SET voice_client.sip$num.user="$authuser"
+	if [ "$user" != "" -a "$domain" != "" ]; then
+	  $UCI_SET voice_client.sip$num.user="$user"
 	  $UCI_SET voice_client.sip$num.domain="$domain"
 	fi
 }
@@ -481,35 +485,35 @@ get_services_voice_service_generic() {
 	local sip_id="$2"
 	
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num." "1"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \"\$val\"" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Reset" "1" "echo 0" "set_voice_profile_reset $sip_id \"\$val\"" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Reset" "1" "echo 0" "set_voice_profile_reset $sip_id \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Name" "0" "$UCI_GET voice_client.sip$sip_id.name"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SignalingProtocol" "1" "echo SIP" "set_voice_profile_signaling_protocol $sip_id \"\$val\"" 
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SignalingProtocol" "1" "echo SIP" "set_voice_profile_signaling_protocol $sip_id \$val" 
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.MaxSessions" "0" "get_voice_profile_max_sessions $sip_id" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.NumberOfLines" "0" "get_voice_profile_number_of_lines $sip_id" "" "" "xsd:unsignedInt"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServer" "1" "$UCI_GET voice_client.SIP.sip_proxy" "set_sip_proxy_server $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServerPort" "1" "" "set_sip_proxy_server_port $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServerTransport" "1" "get_sip_proxy_server_transport $sip_id" "set_sip_proxy_server_transport $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServer" "1" "$UCI_GET voice_client.sip$sip_id.host" "set_sip_registrar_server $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServerPort" "1" "$UCI_GET voice_client.sip$sip_id.port" "set_sip_registrar_server_port $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServerTransport" "1" "get_sip_registrar_server_transport $sip_id" "set_sip_registrar_server_transport $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentDomain" "1" "$UCI_GET voice_client.sip$sip_id.domain" "set_sip_user_agent_domain $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentPort" "1" "$UCI_GET voice_client.SIP.bindport" "set_sip_user_agent_port $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentTransport" "1" "get_sip_user_agent_transport $sip_id" "set_sip_user_agent_transport $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxy" "1" "$UCI_GET voice_client.sip$sip_id.outboundproxy" "set_sip_outbound_proxy $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxyPort" "1" "$UCI_GET voice_client.sip$sip_id.outboundport" "set_sip_outbound_proxy_port $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.Organization" "1" "" "set_sip_organization $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrationPeriod" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_registration_period $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InviteExpires" "1" "" "set_sip_invite_expires $sip_id \"\$val\"" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ReInviteExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_re_invite_expires $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_expires $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistersMinExpires" "1" "" "set_sip_registers_min_expires $sip_id \"\$val\"" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterRetryInterval" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_retry_interval $sip_id \"\$val\"" "" "xsd:unsignedInt"
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuth" "1" "" "set_sip_inbound_auth $sip_id \"\$val\""
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthUsername" "1" "" "set_sip_inbound_auth_username $sip_id \"\$val\""
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.X_002207_CallLines" "1" "$UCI_GET voice_client.sip$sip_id.call_lines" "set_sip_x_002207_call_lines $sip_id \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServer" "1" "$UCI_GET voice_client.SIP.sip_proxy" "set_sip_proxy_server $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServerPort" "1" "" "set_sip_proxy_server_port $sip_id \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ProxyServerTransport" "1" "get_sip_proxy_server_transport $sip_id" "set_sip_proxy_server_transport $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServer" "1" "$UCI_GET voice_client.sip$sip_id.host" "set_sip_registrar_server $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServerPort" "1" "$UCI_GET voice_client.sip$sip_id.port" "set_sip_registrar_server_port $sip_id \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrarServerTransport" "1" "get_sip_registrar_server_transport $sip_id" "set_sip_registrar_server_transport $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentDomain" "1" "$UCI_GET voice_client.sip$sip_id.domain" "set_sip_user_agent_domain $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentPort" "1" "$UCI_GET voice_client.SIP.bindport" "set_sip_user_agent_port $sip_id \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.UserAgentTransport" "1" "get_sip_user_agent_transport $sip_id" "set_sip_user_agent_transport $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxy" "1" "$UCI_GET voice_client.sip$sip_id.outboundproxy" "set_sip_outbound_proxy $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxyPort" "1" "$UCI_GET voice_client.sip$sip_id.outboundport" "set_sip_outbound_proxy_port $sip_id \$val" "" "xsd:unsignedInt"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.Organization" "1" "" "set_sip_organization $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrationPeriod" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_registration_period $sip_id \$val" "" "xsd:unsignedInt"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InviteExpires" "1" "" "set_sip_invite_expires $sip_id \$val" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ReInviteExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_re_invite_expires $sip_id \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_expires $sip_id \$val" "" "xsd:unsignedInt"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistersMinExpires" "1" "" "set_sip_registers_min_expires $sip_id \$val" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterRetryInterval" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_retry_interval $sip_id \$val" "" "xsd:unsignedInt"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuth" "1" "" "set_sip_inbound_auth $sip_id \$val"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthUsername" "1" "" "set_sip_inbound_auth_username $sip_id \$val"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.X_002207_CallLines" "1" "$UCI_GET voice_client.sip$sip_id.call_lines" "set_sip_x_002207_call_lines $sip_id \$val"
 }
 
 get_services_voice_service_line_generic() {
@@ -518,17 +522,17 @@ get_services_voice_service_line_generic() {
 	local line_num="$3"
 	
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num." "1"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Enable" "1" "get_line_enable $sip_id $line_name" "set_line_enable $sip_id $line_name \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.DirectoryNumber" "1" "$UCI_GET voice_client.$line_name.extension" "set_line_directory_number $sip_id $line_name \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Status" "0" "get_line_status $sip_id $line_name" ""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallState" "0" "get_line_call_state $sip_id $line_name" ""
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Enable" "1" "get_line_enable $sip_id $line_name" "set_line_enable $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.DirectoryNumber" "1" "$UCI_GET voice_client.$line_name.extension" "set_line_directory_number $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Status" "0" "" "" "get_line_status $sip_id $line_name"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallState" "0" "" "" "get_line_call_state $sip_id $line_name"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id $line_name \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "get_line_x_002207_line_profile $sip_id $line_name" "set_line_x_002207_line_profile $sip_id $line_name \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "get_line_x_002207_line_profile $sip_id $line_name" "set_line_x_002207_line_profile $sip_id $line_name \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_password $sip_id $line_name \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \$val"
 }
 
 get_cache_InternetGatewayDevice_Services() {
@@ -550,6 +554,7 @@ get_cache_InternetGatewayDevice_Services() {
 				continue
 			fi
 			line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$profile_num`
+			get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line." "1"
 			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
 		done
 	done

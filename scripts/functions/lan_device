@@ -22,8 +22,7 @@ get_wlan_enable() {
 
 set_wlan_enable() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	let val^=1
 	$UCI_SET wireless.@wifi-device[$num].disabled="$val"
 	delay_command "wifi" "5"
@@ -52,31 +51,42 @@ get_wlan_bssid() {
 
 set_wlan_max_bit_rate() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	$UCI_SET wireless.wl0.hwmode="auto"
 }
 
+get_wlan_channel() {
+	local num="$1"
+	local val=`$UCI_GET wireless.@wifi-iface[$num].channel`
+	if [ "$val" = "auto" ];then
+		if [ "$num" = "0" ];then
+			val=`/usr/sbin/wlctl -i wl$num channel|grep "target channel"|awk -F ' ' '{print$3}'`
+		else
+			val=`/usr/sbin/wlctl -i wl0.$num channel|grep "target channel"|awk -F ' ' '{print$3}'`
+		fi
+	fi
+	echo $val
+}
+
 set_wlan_channel() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	$UCI_SET wireless.@wifi-iface[$num].channel="$val"
 }
 
 set_wlan_ssid() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	$UCI_SET wireless.@wifi-iface[$num].ssid="$val"
 }
 
 get_wlan_beacon_type() {
 	local num="$1"
-	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "none" ]; then
 		val="None"
 	elif [ "$encryption" = "wep-shared" -o "$encryption" = "wep-open" ]; then
@@ -107,8 +117,7 @@ reset_wlan() {
 
 set_wlan_beacon_type() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	reset_wlan "$num"
 	if [ "$val" = "None" ]; then
 		val="none"
@@ -139,7 +148,7 @@ set_wlan_beacon_type() {
 
 get_wlan_mac_control_enable() {
 	local num="$1"
-	val=`$UCI_GET wireless.@wifi-device[$num].macfilter 2> /dev/null`
+	local val=`$UCI_GET wireless.@wifi-device[$num].macfilter 2> /dev/null`
 	if [ "$val" = "2" ]; then
 		val="1"
 	else
@@ -150,8 +159,7 @@ get_wlan_mac_control_enable() {
 
 set_wlan_mac_control_enable() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	if [ "$val" = "1" ]; then
 		val="2"
 	else
@@ -178,8 +186,7 @@ get_wlan_standard() {
 
 set_wlan_standard() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	if [ "$val" = "b" ]; then
 		val="11b"
 	elif [ "$val" = "g" ]; then
@@ -206,8 +213,7 @@ get_wlan_wep_key_index() {
 
 set_wlan_wep_key_index() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
 	UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
 	UCI_DELETE wireless.@wifi-iface[$num].key
@@ -217,13 +223,11 @@ set_wlan_wep_key_index() {
 	delay_command "wifi" "5"
 	$UCI_SET wireless.@wifi-iface[$num].key="$val"
 	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
-	local parm="InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex"
 }
 
 set_wlan_key_passphrase() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	$UCI_SET wireless.@wifi-iface[$num].encryption=wep-shared
 	$UCI_SET wireless.@wifi-iface[$num].key="1"
@@ -242,8 +246,9 @@ get_wlan_wep_encryption_level() {
 
 get_wlan_basic_encryption_modes() {
 	local num="$1"
-	wep=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$wep" = "1" ]; then
+	local encryption==`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	if [ "$encryption" = "wep-open" -o "$encryption" = "wep-shared" ]; then
 		val="WEPEncryption"
 	else
 		val="None"
@@ -253,8 +258,7 @@ get_wlan_basic_encryption_modes() {
 
 set_wlan_basic_encryption_modes() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	reset_wlan "$num"
 	if [ "$val" = "WEPEncryption" ]; then
 		val="wep-open"
@@ -268,8 +272,9 @@ set_wlan_basic_encryption_modes() {
 
 get_wlan_basic_authentication_mode() {
 	local num="$1"
-	wep=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$wep" = "wep-shared" ]; then
+	local encryption==`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	if [ "$encryption" = "wep-shared" ]; then
 		val="SharedAuthentication"
 	else
 		val="None"
@@ -279,8 +284,7 @@ get_wlan_basic_authentication_mode() {
 
 set_wlan_basic_authentication_mode() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	reset_wlan "$num"
 	if [ "$val" = "SharedAuthentication" ]; then
 		val="wep-shared"
@@ -301,6 +305,7 @@ set_wlan_basic_authentication_mode() {
 
 get_wlan_wpa_encryption_modes() {
 	local num="$1"
+	local val=""
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "psk+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
@@ -309,16 +314,13 @@ get_wlan_wpa_encryption_modes() {
 		val="AESEncryption"
 	elif [ "$encryption" = "psk+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp"  ];then
 		val="TKIPandAESEncryption"
-	else
-		val=""
 	fi
 	echo "$val"
 }
 
 set_wlan_wpa_encryption_modes() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	reset_wlan "$num"
 	if [ "$val" = "TKIPEncryption" ]; then
@@ -342,21 +344,19 @@ set_wlan_wpa_encryption_modes() {
 
 get_wlan_wpa_authentication_mode() {
 	local num="$1"
-	wpa=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$wpa" = "psk" ]; then
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	if [ "$encryption" = "psk" -o "$encryption" = "pskmixedpsk2+tkip" ]; then
 			val="PSKAuthentication"
-	elif [ "$wpa" = "wpa" ];then
+	elif [ "$encryption" = "wpa" -o "$encryption" = "wpamixedwpa2" ];then
 			val="EAPAuthentication"
-	else
-		val=""
 	fi
 	echo "$val"
 }
 
 set_wlan_wpa_authentication_mode() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	reset_wlan "$num"
 	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk"
@@ -375,6 +375,7 @@ set_wlan_wpa_authentication_mode() {
 
 get_wlan_ieee_11i_encryption_modes() {
 	local num="$1"
+	local val=""
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "psk2+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
@@ -383,16 +384,13 @@ get_wlan_ieee_11i_encryption_modes() {
 		val="AESEncryption"
 	elif [ "$encryption" = "psk2+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp" ];then
 		val="TKIPandAESEncryption"
-	else
-		val=""
 	fi
 	echo "$val"
 }
 
 set_wlan_ieee_11i_encryption_modes() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	reset_wlan "$num"
 	if [ "$val" = "TKIPEncryption" ]; then
@@ -419,26 +417,19 @@ set_wlan_ieee_11i_encryption_modes() {
 
 get_wlan_ieee_11i_authentication_mode() {
 	local num="$1"
-	if [ "$num" = "0" ];then
-		value=`/usr/sbin/wlctl -i wl$num wpa_auth | awk -F' ' '{print$1}'`
-	else
-		value=`/usr/sbin/wlctl -i wl0.$num wpa_auth | awk -F' ' '{print$1}'`
-	fi
-	wpa=`echo $(($value))`
-	if [ "$wpa" = "128" -o "$wpa" = "132" ]; then
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	if [ "$encryption" = "psk2" -o "$encryption" = "pskmixedpsk2+tkip" ]; then
 			val="PSKAuthentication"
-	elif [ "$wpa" = "64" -o "$wpa" = "66" ];then
+	elif [ "$encryption" = "wpa2" -o "$encryption" = "wpamixedwpa2" ];then
 			val="EAPAuthentication"
-	else
-		val=""
 	fi
 	echo "$val"
 }
 
 set_wlan_ieee_11i_authentication_mode() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	reset_wlan "$num"
 	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk2"
@@ -458,6 +449,7 @@ set_wlan_ieee_11i_authentication_mode() {
 
 get_wlan_radio_enabled() {
 	local num="$1"
+	local val=""
 	if [ "$num" = "0" ];then
 		radio=`/usr/sbin/wlctl -i wl$num radio`
 	else
@@ -474,8 +466,7 @@ get_wlan_radio_enabled() {
 
 set_wlan_radio_enabled() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	if [ "$val" = "0" ];then
 		val="off"
@@ -491,17 +482,18 @@ set_wlan_radio_enabled() {
 
 get_wlan_device_operation_mode() {
 	local num="$1"
-	val=`$UCI_GET wireless.@wifi-iface[$num].mode`
+	local val=`$UCI_GET wireless.@wifi-iface[$num].mode`
 	if [ "$val" = "ap" ];then
 		val="InfrastructureAccessPoint"
+	else
+		val=""
 	fi
 	echo "$val"
 }
 
 set_wlan_device_operation_mode() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	if [ "$val" = "InfrastructureAccessPoint" ];then
 		$UCI_SET wireless.@wifi-iface[$num].mode="ap"
@@ -510,8 +502,9 @@ set_wlan_device_operation_mode() {
 
 get_wlan_authentication_service_mode() {
 	local num="$1"
-	value=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$value" = "wpa" ]; then
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local val=""
+	if [ "$encryption" = "wpa" -o "$encryption" = "wpa2" -o "$encryption" = "wpamixedwpa2" ]; then
 		val="RadiusClient"
 	else
 		val="None"
@@ -521,8 +514,7 @@ get_wlan_authentication_service_mode() {
 
 set_wlan_authentication_service_mode() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 	if [ "$val" = "None" ];then
 		$UCI_SET wireless.@wifi-iface[$num].encryption="psk"
@@ -543,9 +535,7 @@ get_wlan_total_associations() {
 
 set_wlan_wep_key() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
-	local notification="$4"
+	local val="$2"
 	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
 	UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
 	UCI_DELETE wireless.@wifi-iface[$num].key
@@ -560,9 +550,7 @@ set_wlan_wep_key() {
 
 set_wlan_pre_shared_key() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
-	local notification="$4"
+	local val="$2"
 	reset_wlan $num
 	delay_command "wifi" "5"
 	$UCI_SET wireless.@wifi-iface[$num].key=$val
@@ -579,8 +567,7 @@ set_wlan_pre_shared_key_key_passphrase() {
 
 set_wlan_pre_shared_key_associated_device_MACAddress() {
 	local num="$1"
-	local param="$2"
-	local val="$3"
+	local val="$2"
 	delay_command "wifi" "5"
 }
 
@@ -592,42 +579,42 @@ get_landevice_wlanconfiguration_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \"\$val\"" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "1" "get_wlan_status $uci_num" "set_wlan_status $uci_num \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "1" "" "set_wlan_status $uci_num \$val" "get_wlan_status $uci_num"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $uci_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "$UCI_SET wireless.wl0.hwmode=\"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "$UCI_GET wireless.@wifi-iface[$num].channel" "set_wlan_channel $uci_num \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$num].ssid" "$UCI_SET wireless.@wifi-iface[$uci_num].ssid=\"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "$UCI_GET wireless.@wifi-device[$uci_num].macfilter" "$UCI_SET wireless.@wifi-device[$uci_num].macfilter=\"\$val\"" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $uci_num" "set_wlan_standard $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "1" "get_wlan_wep_key_index $uci_num" "set_wlan_wep_key_index $uci_num \"\$val\"" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPEncryptionLevel" "0" "$UCI_GET wireless.wl0.hwmode" "$UCI_SET wireless.wl0.hwmode=\"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicEncryptionModes" "1" "get_wlan_basic_encryption_modes $uci_num" "set_wlan_basic_encryption_modes $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicAuthenticationMode" "1" "get_wlan_basic_authentication_mode $uci_num" "set_wlan_basic_authentication_mode $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAEncryptionModes" "1" "get_wlan_wpa_encryption_modes $uci_num" "set_wlan_wpa_encryption_modes $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode" "1" "get_wlan_wpa_authentication_mode $uci_num" "set_wlan_wpa_authentication_mode $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes" "1" "get_wlan_ieee_11i_encryption_modes $uci_num" "set_wlan_ieee_11i_encryption_modes $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode" "1" "get_wlan_ieee_11i_authentication_mode $uci_num" "set_wlan_ieee_11i_authentication_mode $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "get_wlan_radio_enabled $uci_num" "set_wlan_radio_enabled $uci_num \"\$val\"" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "set_wlan_max_bit_rate $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$num].ssid" "set_wlan_ssid $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $uci_num" "set_wlan_standard $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "1" "get_wlan_wep_key_index $uci_num" "set_wlan_wep_key_index $uci_num \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPEncryptionLevel" "0" "get_wlan_wep_encryption_level $uci_num"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicEncryptionModes" "1" "get_wlan_basic_encryption_modes $uci_num" "set_wlan_basic_encryption_modes $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicAuthenticationMode" "1" "get_wlan_basic_authentication_mode $uci_num" "set_wlan_basic_authentication_mode $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAEncryptionModes" "1" "get_wlan_wpa_encryption_modes $uci_num" "set_wlan_wpa_encryption_modes $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode" "1" "get_wlan_wpa_authentication_mode $uci_num" "set_wlan_wpa_authentication_mode $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes" "1" "get_wlan_ieee_11i_encryption_modes $uci_num" "set_wlan_ieee_11i_encryption_modes $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode" "1" "get_wlan_ieee_11i_authentication_mode $uci_num" "set_wlan_ieee_11i_authentication_mode $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "" "set_wlan_radio_enabled $uci_num \$val" "get_wlan_radio_enabled $uci_num" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "" "" "get_wlan_total_associations $uci_num" "xsd:unsignedInt"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1.WEPKey" "1" "" "set_wlan_wep_key $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2.WEPKey" "1" "" "set_wlan_wep_key $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3.WEPKey" "1" "" "set_wlan_wep_key $uci_num \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1.WEPKey" "1" "" "set_wlan_wep_key $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2.WEPKey" "1" "" "set_wlan_wep_key $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3.WEPKey" "1" "" "set_wlan_wep_key $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num \$val"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num 1 \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.KeyPassphrase" "1" "" "set_wlan_pre_shared_key_key_passphrase $uci_num 1 \"\$val\""
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num 1 \"\$val\""
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num 1 \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.KeyPassphrase" "1" "" "set_wlan_pre_shared_key_key_passphrase $uci_num 1 \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num 1 \$val"
 }
 
 get_cache_InternetGatewayDevice_LANDevice() {
