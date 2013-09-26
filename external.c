@@ -228,6 +228,9 @@ void external_init()
 	close(pfds_in[1]);
     close(pfds_out[0]);
 
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    	DD(ERROR, "freecwmp script intialization: signal ignoring error");
+
 	external_read_pipe_input(NULL);
 
 	DD(INFO, "freecwmp script is listening");
@@ -254,11 +257,11 @@ void external_exit()
 
 	while (wait(&status) != pid) {
 		DD(DEBUG, "waiting for child to exit");
-		}
+	}
 
 	close(pfds_in[0]);
     close(pfds_out[1]);
-	}
+}
 
 int external_handle_action(int (*external_handler)(char *msg))
 {
@@ -292,7 +295,7 @@ int external_get_action(char *action, char *name, char *next_level)
 	json_object_put(json_obj_out);
 
 	return 0;
-	}
+}
 
 int external_set_action(char *action, char *name, char *value, char *change)
 {
