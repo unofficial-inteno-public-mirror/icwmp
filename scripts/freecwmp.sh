@@ -328,7 +328,7 @@ handle_action() {
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 				freecwmp_fault_output "" "$fault_code"
-				exit 1
+				return 1
 			fi
 		else
 			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
@@ -336,7 +336,7 @@ handle_action() {
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 				freecwmp_fault_output "" "$fault_code"
-				exit 1
+				return 1
 			fi
 		fi
 
