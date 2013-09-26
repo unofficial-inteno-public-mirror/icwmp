@@ -446,7 +446,7 @@ handle_action() {
 							json_add_string "notification" "$notification"
 							json_close_object
 							param=`json_dump`
-							sed -i "/\<$parameter_name\>/s/.*/$param/" $cache_path/$filename
+							sed -i "/\<$parameter_name\>/s%.*%$param%" $cache_path/$filename
 						done
 					fi
 				done
@@ -470,7 +470,7 @@ handle_action() {
 							fi
 						esac
 					done
-					sed -i "/\<$parameter\>/s/.*/$line/" $cache_path/$filename
+					sed -i "/\<$parameter\>/s%.*%$line%" $cache_path/$filename
 					freecwmp_notify "$parameter" "$value" "$notification" "$type"
 				done
 				freecwmp_output "" "" "" "" "" "" "1"
