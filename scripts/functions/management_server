@@ -50,6 +50,12 @@ set_management_server_periodic_inform_time() {
 	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "reload_end_session" }' &> /dev/null &
 }
 
+set_management_server_url() {
+	local val=$1
+	$UCI_SET cwmp.acs.url="disable"
+	set_management_server "cwmp.acs.url" "$val"
+}
+
 set_management_server() {
 	local uci_name=$1
 	local val=$2
@@ -59,7 +65,7 @@ set_management_server() {
 
 get_cache_InternetGatewayDevice_ManagementServer() {
 	get_object_cache_generic "InternetGatewayDevice.ManagementServer." "0" "0"
-	get_param_cache_generic "InternetGatewayDevice.ManagementServer.URL" "1" "$UCI_GET cwmp.acs.url" "set_management_server cwmp.acs.url \$val"
+	get_param_cache_generic "InternetGatewayDevice.ManagementServer.URL" "1" "$UCI_GET cwmp.acs.url" "set_management_server_url \$val"
 	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Username" "1" "$UCI_GET cwmp.acs.userid" "set_management_server cwmp.acs.userid \$val"
 	get_param_cache_generic "InternetGatewayDevice.ManagementServer.Password" "1" "" "set_management_server cwmp.acs.passwd \$val"
 	get_param_cache_generic "InternetGatewayDevice.ManagementServer.ParameterKey" "1" "$UCI_GET cwmp.acs.ParameterKey" "set_management_server cwmp.acs.ParameterKey \$val" "" "" "0" "1"
