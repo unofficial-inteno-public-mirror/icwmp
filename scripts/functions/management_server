@@ -52,7 +52,7 @@ set_management_server_periodic_inform_time() {
 
 set_management_server_url() {
 	local val=$1
-	$UCI_SET cwmp.acs.url="disable"
+	$UCI_SET cwmp.acs.dhcp_discovery="disable"
 	set_management_server "cwmp.acs.url" "$val"
 }
 
