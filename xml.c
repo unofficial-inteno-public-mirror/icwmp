@@ -1112,11 +1112,23 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 			parameter_value = NULL;
 		}
 
+		if (b && b->type == MXML_ELEMENT &&
+			!strcmp(b->value.element.name, "Name") &&
+			!b->child) {
+			parameter_name = "";
+		}
+
 		if (b && b->type == MXML_TEXT &&
 			b->value.text.string &&
 			b->parent->type == MXML_ELEMENT &&
 			!strcmp(b->parent->value.element.name, "Value")) {
 			parameter_value = b->value.text.string;
+		}
+
+		if (b && b->type == MXML_ELEMENT &&
+			!strcmp(b->value.element.name, "Value") &&
+			!b->child) {
+			parameter_value = "";
 		}
 
 		if (parameter_name && parameter_value) {
@@ -1226,17 +1238,32 @@ int cwmp_handle_rpc_cpe_set_parameter_attributes(struct session *session, struct
 			!strcmp(b->parent->value.element.name, "Name")) {
 			parameter_name = b->value.text.string;
 		}
+		if (b && b->type == MXML_ELEMENT &&
+			!strcmp(b->value.element.name, "Name") &&
+			!b->child) {
+			parameter_name = "";
+		}
 		if (b && b->type == MXML_TEXT &&
 			b->value.text.string &&
 			b->parent->type == MXML_ELEMENT &&
 			!strcmp(b->parent->value.element.name, "NotificationChange")) {
 			attr_notification_update = b->value.text.string;
 		}
+		if (b && b->type == MXML_ELEMENT &&
+			!strcmp(b->value.element.name, "NotificationChange") &&
+			!b->child) {
+			attr_notification_update = "";
+		}
 		if (b && b->type == MXML_TEXT &&
 			b->value.text.string &&
 			b->parent->type == MXML_ELEMENT &&
 			!strcmp(b->parent->value.element.name, "Notification")) {
 			parameter_notification = b->value.text.string;
+		}
+		if (b && b->type == MXML_ELEMENT &&
+			!strcmp(b->value.element.name, "Notification") &&
+			!b->child) {
+			parameter_notification = "";
 		}
 		if (attr_notification_update && parameter_name && parameter_notification) {
 			if (external_set_action("notification", parameter_name,
