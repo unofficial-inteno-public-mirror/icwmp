@@ -508,6 +508,19 @@ handle_action() {
 	if [ "$action" = "notify" ]; then
 		freecwmp_notify "$__arg1" "$__arg2"
 	fi
+	
+	if [ "$action" = "wanup" ]; then
+		cat "$cache_path/InternetGatewayDevice.WANDevice." | grep "InternetGatewayDevice.WANDevice.[0-9]\+.WANConnectionDevice.[0-9]\+.WAN[IP]\+Connection.[0-9]\+.ConnectionStatus" | while read line; do
+			json_init
+			json_load "$line"
+			json_get_var notif_permission notif_permission
+			json_get_var notification notification
+			if [ "$notif_permission" != "0" -o "$notification" != "2" ]; then continue; fi
+			json_get_var parameter parameter
+			json_get_var type type
+			freecwmp_notify "$parameter" "Connected" "$notification" "$type"
+		done
+	fi
 
 	if [ "$action" = "end_session" ]; then	
 		echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
