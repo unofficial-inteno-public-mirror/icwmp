@@ -285,7 +285,7 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		proto=`$UCI_GET network.$iface.proto`
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "$notif_permission"
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $iface"
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
