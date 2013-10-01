@@ -104,14 +104,15 @@ run() {
 
 boot() {
 	touch /etc/cwmpd/.cwmpd_boot
+	/bin/sh /usr/sbin/freecwmp clean cache
 }
 
 start_cwmpd() {
 	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
 	if [ "$run" = "" ];then
 		stop_freecwmp_cache
-		echo "Building cache. This action may take time..."
-		/bin/sh /usr/sbin/freecwmp get cache ""
+		echo "Check if the whole cache is built. Wait if the whole cache is not built yet..."
+		/bin/sh /usr/sbin/freecwmp wait cache
 		printf "\033[A"
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"

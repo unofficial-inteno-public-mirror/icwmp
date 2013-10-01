@@ -22,7 +22,7 @@ DEFINE_boolean 'force' false 'force getting values for certain parameters' 'f'
 FLAGS_HELP=`cat << EOF
 USAGE: $0 [flags] command [parameter] [values]
 command:
-get [value|notification|name|cache]
+  get [value|notification|name|cache]
   set [value|notification]
   apply [value|notification|download]
   add [object]
@@ -33,6 +33,8 @@ get [value|notification|name|cache]
   notify
   end_session
   inform
+  wait [cache]
+  clean [cache]
   json_continuous_input
 EOF`
 
@@ -151,6 +153,16 @@ case "$1" in
 	end)
 		echo "EOF"
 		;;
+	wait)
+		if [ "$2" = "cache" ]; then
+			action="wait_cache"
+		fi
+		;;
+	clean)
+		if [ "$2" = "cache" ]; then
+			action="clean_cache"
+		fi
+		;;
 	exit)
 		exit 0
 	;;
@@ -205,52 +217,89 @@ FAULT_CPE_DOWNLOAD_FAIL_COMPLETE_DOWNLOAD="17"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION="19"
 
+handle_get_cache() {
+	local param="$1"
+	local exact="$2"
+	local tmp_cache="/tmp/.freecwmp_dm"
+	local pid=""
+	local ls_cache=`ls $tmp_cache`
+	for pid in $ls_cache; do
+		if [ ! -d /proc/$pid ]; then
+			rm -rf "$tmp_cache/$pid"
+		fi
+	done
+	pid="$$"
+	mkdir -p "$tmp_cache/$pid"
+
+	for prefix in $prefix_list; do
+		case $prefix in $param*)
+			if [ "$exact" = "1" -a "$param" != "$prefix" ]; then continue; fi
+			local f=${prefix%.}
+			f=${f//./_}
+			f="get_cache_""$f"
+			$f > "$tmp_cache/$pid/$prefix"
+			mv "$tmp_cache/$pid/$prefix" "$cache_path/$prefix"
+			;;
+		esac
+	done
+	
+	rm -rf "$tmp_cache/$pid"
+	ls_cache=`ls $tmp_cache`
+	for pid in $ls_cache; do
+		if [ ! -d /proc/$pid ]; then
+			rm -rf "$tmp_cache/$pid"
+		fi
+	done
+	ls_cache=`ls $tmp_cache`
+	if [ "_$ls_cache" = "_" ]; then
+		rm -rf "$tmp_cache"
+	fi
+}
+
+
 handle_action() {
 	local fault_code=$FAULT_CPE_NO_FAULT
 	if [ "$action" = "get_cache" ]; then
-		if [ "$__arg1" != "" ];then
-			local l=${#__arg1}
-			let l--
-			local c=${__arg1:$l:1}
-			if [ "$c" != "." ];then
-				echo "Invalid prefix argument"
-				exit -1
+		if [ "$__arg1" != "" ]; then
+			local found=0
+			for prefix in $prefix_list; do
+				if [ "$prefix" = "$__arg1" ]; then
+					found=1
+					break
+				fi
+			done
+			if [ "$found" != "1" ]; then 
+				echo "Invalid object argument"
+				return
 			fi
 		fi
-		local tmp_cache="/tmp/.freecwmp_dm"
-		local ls_cache=`ls $tmp_cache`
-		local pid=""
-		for pid in $ls_cache; do
-			if [ ! -d /proc/$pid ]; then
-				rm -rf "$tmp_cache/$pid"
-			fi
+		handle_get_cache "$__arg1"
+	fi
+	if [ "$action" = "wait_cache" ]; then
+		local found=0
+		handle_get_cache "InternetGatewayDevice." "1"
+		handle_get_cache "InternetGatewayDevice.ManagementServer."
+		handle_get_cache "InternetGatewayDevice.DeviceInfo."
+		while [ "$found" = "0" ]; do
+			ls_prefix=`ls $cache_path`
+			for prefix in $prefix_list; do
+				found=0
+				for ls_p in $ls_prefix; do
+					if [ "$prefix" = "$ls_p" ]; then
+						found=1
+						break
+					fi
+				done
+				if [ "$found" = "0" ]; then 
+					sleep 1
+					break
+				fi
+			done
 		done
-		pid="$$"
-		mkdir -p "$tmp_cache/$pid"
+	fi
 	
-		for prefix in $prefix_list; do
-			case $prefix in $__arg1*)
-				local found=1
-				local f=${prefix%.}
-				f=${f//./_}
-				f="get_cache_""$f"
-				$f > "$tmp_cache/$pid/$prefix"
-				mv "$tmp_cache/$pid/$prefix" "$cache_path/$prefix"
-				;;
-			esac
-		done
-		
-		rm -rf "$tmp_cache/$pid"
-		ls_cache=`ls $tmp_cache`
-		for pid in $ls_cache; do
-			if [ ! -d /proc/$pid ]; then
-				rm -rf "$tmp_cache/$pid"
-			fi
-		done
-		ls_cache=`ls $tmp_cache`
-		if [ "_$ls_cache" = "_" ]; then
-			rm -rf "$tmp_cache"
-		fi
+	if [ "$action" = "clean_cache" ]; then
+		rm -rf "$cache_path/*"
 	fi
 	
 	if [ "$action" = "get_value" ]; then
@@ -509,23 +558,11 @@ handle_action() {
 		freecwmp_notify "$__arg1" "$__arg2"
 	fi
 	
-	if [ "$action" = "wanup" ]; then
-		cat "$cache_path/InternetGatewayDevice.WANDevice." | grep "InternetGatewayDevice.WANDevice.[0-9]\+.WANConnectionDevice.[0-9]\+.WAN[IP]\+Connection.[0-9]\+.ConnectionStatus" | while read line; do
-			json_init
-			json_load "$line"
-			json_get_var notif_permission notif_permission
-			json_get_var notification notification
-			if [ "$notif_permission" != "0" -o "$notification" != "2" ]; then continue; fi
-			json_get_var parameter parameter
-			json_get_var type type
-			freecwmp_notify "$parameter" "Connected" "$notification" "$type"
-		done
-	fi
-
 	if [ "$action" = "end_session" ]; then	
 		echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
 		/bin/sh /tmp/end_session.sh
 	fi
+	
 	if [ "$action" = "json_continuous_input" ]; then
 		echo "EOF"
 		while read CMD; do
