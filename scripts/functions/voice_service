@@ -512,7 +512,7 @@ get_services_voice_service_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterRetryInterval" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_retry_interval $sip_id \$val" "" "xsd:unsignedInt"
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuth" "1" "" "set_sip_inbound_auth $sip_id \$val"
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthUsername" "1" "" "set_sip_inbound_auth_username $sip_id \$val"
-	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \$val"
+	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.X_002207_CallLines" "1" "$UCI_GET voice_client.sip$sip_id.call_lines" "set_sip_x_002207_call_lines $sip_id \$val"
 }
 
@@ -531,7 +531,7 @@ get_services_voice_service_line_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "get_line_x_002207_line_profile $sip_id $line_name" "set_line_x_002207_line_profile $sip_id $line_name \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \$val"
 }
 
