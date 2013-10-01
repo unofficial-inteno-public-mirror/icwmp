@@ -1083,12 +1083,13 @@ static int is_duplicated_parameter(mxml_node_t *param_node, struct session *sess
 
 int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc *rpc)
 {
-	mxml_node_t *b;
+	mxml_node_t *b, *n;
 	struct parameter_container *parameter_container;
 	char *parameter_name = NULL;
 	char *parameter_value = NULL;
 	char *parameter_key = NULL;
 	char *status = NULL;
+	char *v, *c = NULL;
 	char buf[128];
 	int fault_code = FAULT_CPE_INTERNAL_ERROR;
 
@@ -1109,7 +1110,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 				fault_code = FAULT_CPE_INVALID_ARGUMENTS;
 				goto fault;
 			}
-			parameter_value = NULL;
+			FREE(parameter_value);
 		}
 
 		if (b && b->type == MXML_ELEMENT &&
@@ -1122,20 +1123,29 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 			b->value.text.string &&
 			b->parent->type == MXML_ELEMENT &&
 			!strcmp(b->parent->value.element.name, "Value")) {
-			parameter_value = b->value.text.string;
+			int whitespace;
+			parameter_value = strdup((char *)mxmlGetText(b, &whitespace));
+			n = b->parent;
+			while (b = mxmlWalkNext(b, n, MXML_DESCEND)) {
+				v = (char *)mxmlGetText(b, &whitespace);
+				if (!whitespace) break;
+				asprintf(&c, "%s %s", parameter_value, v);
+				FREE(parameter_value);
+				parameter_value = c;
+			}
+			b = n->last_child;
 		}
 
 		if (b && b->type == MXML_ELEMENT &&
 			!strcmp(b->value.element.name, "Value") &&
 			!b->child) {
-			parameter_value = "";
+			parameter_value = strdup("");
 		}
-
 		if (parameter_name && parameter_value) {
 			if (external_set_action("value", parameter_name, parameter_value, NULL))
 				goto fault;
 			parameter_name = NULL;
-			parameter_value = NULL;
+			FREE(parameter_value);
 		}
 		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
 	}
