@@ -280,6 +280,7 @@ handle_action() {
 		handle_get_cache "InternetGatewayDevice." "1"
 		handle_get_cache "InternetGatewayDevice.ManagementServer."
 		handle_get_cache "InternetGatewayDevice.DeviceInfo."
+		local ls_cache=""
 		while [ "$found" = "0" ]; do
 			ls_prefix=`ls $cache_path`
 			for prefix in $prefix_list; do
@@ -295,6 +296,20 @@ handle_action() {
 					break
 				fi
 			done
+			if [ "$found" = "1" ]; then
+				local cache_running=1
+				while [ "$cache_running" = "1" ]; do
+					ls_cache=`ls $tmp_cache`
+					cache_running=0
+					for pid in $ls_cache; do
+						if [ -d /proc/$pid ]; then
+							cache_running=1
+							sleep 1
+							break
+						fi
+					done
+				done
+			fi
 		done
 	fi
 	
