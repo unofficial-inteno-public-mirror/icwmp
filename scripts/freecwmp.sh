@@ -299,7 +299,7 @@ handle_action() {
 	fi
 	
 	if [ "$action" = "clean_cache" ]; then
-		rm -rf "$cache_path/*"
+		rm -rf "$cache_path/"*
 	fi
 	
 	if [ "$action" = "get_value" ]; then
