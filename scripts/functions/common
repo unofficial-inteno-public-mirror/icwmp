@@ -534,6 +534,7 @@ get_param_cache_generic() {
 	local notif_permission="$7"
 	local forced_inform="$8"
 	local forced_notify="$9"
+	local secret_value="$10"
 	
 	local val=""
 	local notification="0"
@@ -548,7 +549,7 @@ get_param_cache_generic() {
 		notification="$forced_notify"
 	fi
 	
-	freecwmp_cache_output "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform"
+	freecwmp_cache_output "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform" "$secret_value"
 }
 
 get_object_cache_generic() {
