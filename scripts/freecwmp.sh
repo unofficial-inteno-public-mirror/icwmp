@@ -61,7 +61,6 @@ NEW_LINE='\n'
 cache_path="/etc/cwmpd/.cache"
 tmp_cache="/tmp/.freecwmp_dm"
 set_tmp_file="/etc/cwmpd/.set_tmp_file"
-prefix_list=""
 	
 mkdir -p $cache_path
 rm -f "$cache_path/"*"_dynamic"
@@ -178,22 +177,25 @@ if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] started at \"`date`\""
 fi
 
-load_script() {
-	. $1 
-}
+. /lib/functions/network.sh
+. /usr/share/freecwmp/functions/common
+. /usr/share/freecwmp/functions/device_info
+. /usr/share/freecwmp/functions/lan_device
+. /usr/share/freecwmp/functions/management_server
+. /usr/share/freecwmp/functions/wan_device
+. /usr/share/freecwmp/functions/voice_service
+. /usr/share/freecwmp/functions/models
 
-load_prefix() {
-	prefix_list="$prefix_list $1"
-}
+prefix_list="\
+InternetGatewayDevice. \
+InternetGatewayDevice.DeviceInfo. \
+InternetGatewayDevice.LANDevice. \
+InternetGatewayDevice.ManagementServer. \
+InternetGatewayDevice.WANDevice. \
+InternetGatewayDevice.Services."
 
-handle_scripts() {
-	local section="$1"
-	config_list_foreach "$section" 'location' load_script
-	config_list_foreach "$section" 'prefix' load_prefix
-}
 
 config_load cwmp
-config_foreach handle_scripts "scripts"
 
 # Fault code
 

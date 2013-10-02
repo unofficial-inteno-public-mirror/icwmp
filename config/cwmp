@@ -25,25 +25,6 @@ config 'cwmp' 'cpe'
 	option 'port' '7547'
 	option 'ubus_socket' '/var/run/ubus.sock'
 
-config scripts
-	# load OpenWrt generic network functions
-	list location /lib/functions/network.sh
-	# load freecwmp common functions
-	list location /usr/share/freecwmp/functions/common
-	# freecwmp specific functions
-	list location /usr/share/freecwmp/functions/device_info
-	list prefix InternetGatewayDevice.DeviceInfo.
-	list location /usr/share/freecwmp/functions/lan_device
-	list prefix InternetGatewayDevice.LANDevice.
-	list location /usr/share/freecwmp/functions/management_server
-	list prefix InternetGatewayDevice.ManagementServer.
-	list location /usr/share/freecwmp/functions/wan_device
-	list prefix InternetGatewayDevice.WANDevice.
-	list location /usr/share/freecwmp/functions/voice_service
-	list prefix InternetGatewayDevice.Services.
-	list location /usr/share/freecwmp/functions/models
-	list prefix InternetGatewayDevice.
-
 config cwmp
 	option parameter 'InternetGatewayDevice.DeviceInfo.SpecVersion'
 	option value '1.0'
