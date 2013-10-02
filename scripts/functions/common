@@ -381,7 +381,7 @@ freecwmp_set_parameter_notification() {
 	fi
 }
 
-delay_service {
+delay_service() {
 local action="$1"
 local service="$2"
 local delay="$3"
@@ -396,21 +396,19 @@ else
 		return 0
 	fi
 fi
-case "$action" in
-	restart)
+if [ "$action" = "restart" ]; then
 cat << EOF >> /tmp/end_session.sh
 /etc/init.d/$service stop &> /dev/null
 sleep $delay
 /etc/init.d/$service start &> /dev/null
 EOF
-	;;
-	reload)
+fi
+if [ "$action" = "reload" ]; then
 cat << EOF >> /tmp/end_session.sh
 sleep $delay
 /etc/init.d/$service reload &> /dev/null
 EOF	
-	;;
-esac
+fi
 }
 
 freecwmp_set_parameter_fault() {
