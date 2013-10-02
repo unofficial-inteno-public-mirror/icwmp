@@ -25,7 +25,7 @@ set_wlan_enable() {
 	local val="$2"
 	let val^=1
 	$UCI_SET wireless.@wifi-device[$num].disabled="$val"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_status() {
@@ -52,7 +52,7 @@ get_wlan_bssid() {
 set_wlan_max_bit_rate() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.wl0.hwmode="auto"
 }
 
@@ -72,14 +72,14 @@ get_wlan_channel() {
 set_wlan_channel() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].channel="$val"
 }
 
 set_wlan_ssid() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].ssid="$val"
 }
 
@@ -143,7 +143,7 @@ set_wlan_beacon_type() {
 		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_mac_control_enable() {
@@ -165,7 +165,7 @@ set_wlan_mac_control_enable() {
 	else
 		val="0"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-device[$num].macfilter="$val"
 }
 
@@ -196,7 +196,7 @@ set_wlan_standard() {
 	elif [ "$val" = "n"  ]; then
 		val="auto"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.wl0.hwmode="$val"
 }
 
@@ -220,7 +220,7 @@ set_wlan_wep_key_index() {
 	UCI_DELETE wireless.@wifi-iface[$num].radius_server
 	UCI_DELETE wireless.@wifi-iface[$num].radius_port
 	UCI_DELETE wireless.@wifi-iface[$num].radius_secret
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key="$val"
 	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
 }
@@ -228,7 +228,7 @@ set_wlan_wep_key_index() {
 set_wlan_key_passphrase() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].encryption=wep-shared
 	$UCI_SET wireless.@wifi-iface[$num].key="1"
 	i=1
@@ -267,7 +267,7 @@ set_wlan_basic_encryption_modes() {
 		val="none"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_basic_authentication_mode() {
@@ -300,7 +300,7 @@ set_wlan_basic_authentication_mode() {
 		$UCI_SET wireless.@wifi-iface[$num].key="1"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_wpa_encryption_modes() {
@@ -339,7 +339,7 @@ set_wlan_wpa_encryption_modes() {
 		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_wpa_authentication_mode() {
@@ -370,7 +370,7 @@ set_wlan_wpa_authentication_mode() {
 		$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_ieee_11i_encryption_modes() {
@@ -412,7 +412,7 @@ set_wlan_ieee_11i_encryption_modes() {
 		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_ieee_11i_authentication_mode() {
@@ -444,7 +444,7 @@ set_wlan_ieee_11i_authentication_mode() {
 		$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_wlan_radio_enabled() {
@@ -467,7 +467,7 @@ get_wlan_radio_enabled() {
 set_wlan_radio_enabled() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	if [ "$val" = "0" ];then
 		val="off"
 	elif [ "$val" = "1" ];then
@@ -494,7 +494,7 @@ get_wlan_device_operation_mode() {
 set_wlan_device_operation_mode() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	if [ "$val" = "InfrastructureAccessPoint" ];then
 		$UCI_SET wireless.@wifi-iface[$num].mode="ap"
 	fi
@@ -515,7 +515,7 @@ get_wlan_authentication_service_mode() {
 set_wlan_authentication_service_mode() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	if [ "$val" = "None" ];then
 		$UCI_SET wireless.@wifi-iface[$num].encryption="psk"
 	elif [ "$val" = "RadiusClient" ];then
@@ -542,7 +542,7 @@ set_wlan_wep_key() {
 	UCI_DELETE wireless.@wifi-iface[$num].radius_server
 	UCI_DELETE wireless.@wifi-iface[$num].radius_port
 	UCI_DELETE wireless.@wifi-iface[$num].radius_secret
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key$key_index=$val
 	$UCI_SET wireless.@wifi-iface[$num].key="$key_index"
 	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
@@ -552,7 +552,7 @@ set_wlan_pre_shared_key() {
 	local num="$1"
 	local val="$2"
 	reset_wlan $num
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key=$val
 	$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
 	$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
@@ -562,13 +562,13 @@ set_wlan_pre_shared_key_key_passphrase() {
 	local num="$1"
 	local param="$2"
 	local val="$3"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 set_wlan_pre_shared_key_associated_device_MACAddress() {
 	local num="$1"
 	local val="$2"
-	delay_command "wifi" "5"
+	delay_service reload "network" "1"
 }
 
 get_landevice_wlanconfiguration_generic() {

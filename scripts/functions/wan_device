@@ -209,6 +209,13 @@ for i in $list_intf;do
 done
 }
 
+set_wan_device() {
+	local uci_name=$1
+	local val=$2
+	$UCI_SET $uci_name="$val"
+	delay_service reload "network" "1"
+}
+
 handle_wan_interface() {
 for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 	local ifname="`$UCI_GET network.$config.ifname|cut -f1 -d ' '`"
@@ -305,8 +312,8 @@ get_cache_InternetGatewayDevice_WANDevice() {
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable" "1" "" "set_wan_device_wan_ppp_enable \$val $iface" "get_wan_device_wan_ppp_enable $iface" "xsd:boolean"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ConnectionStatus" "0" "" "" "get_wan_device_ppp_status $iface"
 				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username" "1" "$UCI_GET network.$iface.username" "$UCI_SET network.$iface.username=\$val"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "1" "" "$UCI_SET network.$iface.password=\$val" "" "" "" "" "" "1"
+				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username" "1" "$UCI_GET network.$iface.username" "set_wan_device network.$iface.username \$val"
+				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "1" "" "set_wan_device network.$iface.password \$val" "" "" "" "" "" "1"
 				let wan_ppp=$wan_ppp+1
 		fi
 		prev_wan="$wan"
