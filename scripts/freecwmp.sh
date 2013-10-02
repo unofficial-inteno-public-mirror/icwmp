@@ -59,6 +59,7 @@ UCI_DELETE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete -q"
 UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
 NEW_LINE='\n'
 cache_path="/etc/cwmpd/.cache"
+tmp_cache="/tmp/.freecwmp_dm"
 set_tmp_file="/etc/cwmpd/.set_tmp_file"
 prefix_list=""
 	
@@ -220,7 +221,6 @@ FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION="19"
 handle_get_cache() {
 	local param="$1"
 	local exact="$2"
-	local tmp_cache="/tmp/.freecwmp_dm"
 	local pid=""
 	local ls_cache=`ls $tmp_cache`
 	for pid in $ls_cache; do
