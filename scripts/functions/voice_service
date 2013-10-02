@@ -79,8 +79,8 @@ set_voice_profile_enable() {
 	else
 	    val="0"
 	fi
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.enabled="$val"
 }
 
@@ -118,8 +118,8 @@ get_voice_profile_number_of_lines() {
 set_sip_proxy_server() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.sip_proxy="$val"
 }
 
@@ -143,16 +143,16 @@ set_sip_proxy_server_transport() {
 set_sip_registrar_server() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.host="$val"
 }
 
 set_sip_registrar_server_port() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.port="$val"
 }
 
@@ -171,16 +171,16 @@ set_sip_registrar_server_transport() {
 set_sip_user_agent_domain() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.domain="$val"
 }
 
 set_sip_user_agent_port() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.bindport="$val"
 }
 
@@ -199,16 +199,16 @@ set_sip_user_agent_transport() {
 set_sip_outbound_proxy() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.outboundproxy="$val"
 }
 
 set_sip_outbound_proxy_port() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.outboundproxyport="$val"
 }
 
@@ -220,8 +220,8 @@ set_sip_organization() {
 set_sip_registration_period() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
@@ -233,16 +233,16 @@ set_sip_invite_expires() {
 set_sip_re_invite_expires() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
 set_sip_register_expires() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
@@ -254,8 +254,8 @@ set_sip_registers_min_expires() {
 set_sip_register_retry_interval() {
 	local num="$1"
 	local val="$2"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.SIP.registertimeout="$val"
 }
 
@@ -278,8 +278,8 @@ set_sip_x_002207_call_lines() {
 	local num="$1"
 	shift
 	local val="$*"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.call_lines="$val"
 }
 
@@ -310,8 +310,8 @@ local val="$3"
 	else
 	    val="0"
 	fi
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.enabled="$val"
 }
 
@@ -319,8 +319,8 @@ set_line_directory_number() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.$line_name.extension="$val"
 }
 
@@ -365,8 +365,8 @@ set_line_calling_features_caller_id_name() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.displayname="$val"
 }
 
@@ -386,8 +386,8 @@ set_line_x_002207_line_profile() {
 	if [ "`$UCI_GET voice_client.sip$sip_id`" = "" ];then
 		return 0
 	fi
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	delete_line $line_name
 	i=`echo $line_name|sed 's/brcm//g'`
 	add_line "$i" "$sip_id"
@@ -428,8 +428,8 @@ set_line_sip_auth_username() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.authuser="$val"
 }
 
@@ -437,8 +437,8 @@ set_line_sip_auth_password() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.secret="$val"
 }
 
@@ -456,8 +456,8 @@ set_line_sip_uri() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	delay_service_restart "voice_client" "5"
-	delay_service_restart "asterisk" "6"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
 	local user=${val%@*}
 	local domain=${val#*@}
 	if [ "$user" != "" -a "$domain" != "" ]; then
@@ -713,8 +713,8 @@ add_object_InternetGatewayDevice_Services() {
 			let profile_num=$sip_id+1
 			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$instance"  >> $cache_path/$filename
 			freecwmp_output "" "" "" "" "" "" "1" "$instance"
-			delay_service_restart "voice_client" "5"
-			delay_service_restart "asterisk" "6"
+			delay_service restart "voice_client" "5"
+			delay_service restart "asterisk" "6"
 			return $FAULT_CPE_NO_FAULT
 		;;
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.)
@@ -726,8 +726,8 @@ add_object_InternetGatewayDevice_Services() {
 			freecwmp_output "" "" "" "" "" "" "1" "$instance"
 			freecwmp_set_parameter_notification "$1$instance." "0"
 			get_services_voice_service_generic "$instance" "$sip_id" >> $cache_path/$filename
-			delay_service_restart "voice_client" "5"
-			delay_service_restart "asterisk" "6"
+			delay_service restart "voice_client" "5"
+			delay_service restart "asterisk" "6"
 			return $FAULT_CPE_NO_FAULT
 		;;
 		InternetGatewayDevice.Services.VoiceService.)
@@ -775,8 +775,8 @@ delete_object_InternetGatewayDevice_Services() {
 			$UCI_COMMIT
 			freecwmp_output "" "" "" "" "" "" "1"
 			sed -i "/$1/d" $cache_path/$filename
-			delay_service_restart "voice_client" "5"
-			delay_service_restart "asterisk" "6"
+			delay_service restart "voice_client" "5"
+			delay_service restart "asterisk" "6"
 			return $FAULT_CPE_NO_FAULT
 		fi
 		return $FAULT_CPE_INVALID_PARAMETER_NAME
@@ -787,8 +787,8 @@ delete_object_InternetGatewayDevice_Services() {
 		$UCI_COMMIT
 		freecwmp_output "" "" "" "" "" "" "1"
 		sed -i "/$1/d" $cache_path/$filename
-		delay_service_restart "voice_client" "5"
-		delay_service_restart "asterisk" "6"
+		delay_service restart "voice_client" "5"
+		delay_service restart "asterisk" "6"
 		return $FAULT_CPE_NO_FAULT
 		;;
 	esac

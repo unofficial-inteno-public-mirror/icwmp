@@ -381,9 +381,10 @@ freecwmp_set_parameter_notification() {
 	fi
 }
 
-delay_service_restart() {
-local service="$1"
-local delay="$2"
+delay_service {
+local action="$1"
+local service="$2"
+local delay="$3"
 
 if [ ! -f /tmp/end_session.sh ];then
 	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' &> /dev/null &
@@ -395,33 +396,21 @@ else
 		return 0
 	fi
 fi
-
+case "$action" in
+	restart)
 cat << EOF >> /tmp/end_session.sh
 /etc/init.d/$service stop &> /dev/null
 sleep $delay
 /etc/init.d/$service start &> /dev/null
 EOF
-}
-
-delay_command() {
-local command="$1"
-local delay="$2"
-
-if [ ! -f /tmp/end_session.sh ];then
-	ubus ${UBUS_SOCKET:+-s $UBUS_SOCKET} call tr069 command '{ "command": "action_end_session" }' &> /dev/null &
-	echo '#!/bin/sh' > /tmp/end_session.sh
-	chmod +x /tmp/end_session.sh
-else
-	check="`cat /tmp/end_session.sh|grep $command`"
-	if [ "$check" != "" ];then
-		return 0
-	fi
-fi
-
+	;;
+	reload)
 cat << EOF >> /tmp/end_session.sh
 sleep $delay
-$command &> /dev/null
-EOF
+/etc/init.d/$service reload &> /dev/null
+EOF	
+	;;
+esac
 }
 
 freecwmp_set_parameter_fault() {
