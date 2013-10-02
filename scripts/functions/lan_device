@@ -580,7 +580,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "1" "" "set_wlan_status $uci_num \$val" "get_wlan_status $uci_num"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "0" "" "" "get_wlan_status $uci_num"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $uci_num"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "set_wlan_max_bit_rate $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val" "" "xsd:unsignedInt"
