@@ -103,16 +103,16 @@ get_wlan_beacon_type() {
 
 reset_wlan() {
 	local num="$1"
-	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
-	UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
-	UCI_DELETE wireless.@wifi-iface[$num].key
-	UCI_DELETE wireless.@wifi-iface[$num].key1
-	UCI_DELETE wireless.@wifi-iface[$num].key2
-	UCI_DELETE wireless.@wifi-iface[$num].key3
-	UCI_DELETE wireless.@wifi-iface[$num].key4
-	UCI_DELETE wireless.@wifi-iface[$num].radius_server
-	UCI_DELETE wireless.@wifi-iface[$num].radius_port
-	UCI_DELETE wireless.@wifi-iface[$num].radius_secret
+	$UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
+	$UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
+	$UCI_DELETE wireless.@wifi-iface[$num].key
+	$UCI_DELETE wireless.@wifi-iface[$num].key1
+	$UCI_DELETE wireless.@wifi-iface[$num].key2
+	$UCI_DELETE wireless.@wifi-iface[$num].key3
+	$UCI_DELETE wireless.@wifi-iface[$num].key4
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_server
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_port
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_secret
 }
 
 set_wlan_beacon_type() {
@@ -214,12 +214,12 @@ get_wlan_wep_key_index() {
 set_wlan_wep_key_index() {
 	local num="$1"
 	local val="$2"
-	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
-	UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
-	UCI_DELETE wireless.@wifi-iface[$num].key
-	UCI_DELETE wireless.@wifi-iface[$num].radius_server
-	UCI_DELETE wireless.@wifi-iface[$num].radius_port
-	UCI_DELETE wireless.@wifi-iface[$num].radius_secret
+	$UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
+	$UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
+	$UCI_DELETE wireless.@wifi-iface[$num].key
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_server
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_port
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_secret
 	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key="$val"
 	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
@@ -536,12 +536,12 @@ get_wlan_total_associations() {
 set_wlan_wep_key() {
 	local num="$1"
 	local val="$2"
-	UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
-	UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
-	UCI_DELETE wireless.@wifi-iface[$num].key
-	UCI_DELETE wireless.@wifi-iface[$num].radius_server
-	UCI_DELETE wireless.@wifi-iface[$num].radius_port
-	UCI_DELETE wireless.@wifi-iface[$num].radius_secret
+	$UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
+	$UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
+	$UCI_DELETE wireless.@wifi-iface[$num].key
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_server
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_port
+	$UCI_DELETE wireless.@wifi-iface[$num].radius_secret
 	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key$key_index=$val
 	$UCI_SET wireless.@wifi-iface[$num].key="$key_index"
