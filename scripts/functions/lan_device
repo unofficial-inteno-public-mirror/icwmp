@@ -15,7 +15,7 @@ done
 
 get_wlan_enable() {
 	local num="$1"
-	val=`$UCI_GET wireless.@wifi-device[$num].disabled 2> /dev/null`
+	val=`$UCI_GET wireless.@wifi-iface[$num].disabled 2> /dev/null`
 	let val^=1
 	echo "$val"
 }
@@ -24,13 +24,13 @@ set_wlan_enable() {
 	local num="$1"
 	local val="$2"
 	let val^=1
-	$UCI_SET wireless.@wifi-device[$num].disabled="$val"
+	$UCI_SET wireless.@wifi-iface[$num].disabled="$val"
 	delay_service reload "network" "1"
 }
 
 get_wlan_status() {
 	local num="$1"
-	val=`$UCI_GET wireless.@wifi-device[$num].disabled 2> /dev/null`
+	val=`$UCI_GET wireless.@wifi-iface[$num].disabled 2> /dev/null`
 	if [ "$val" = "1" ]; then
 		val="Disabled"
 	else
