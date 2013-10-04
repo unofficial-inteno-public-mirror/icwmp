@@ -457,11 +457,13 @@ set_line_sip_uri() {
 	local line_name="$2"
 	local val="$3"
 	delay_service restart "voice_client" "5"
-	delay_service restart "asterisk" "6"
+	delay_service restart "asterisk" "6"q
 	local user=${val%@*}
 	local domain=${val#*@}
-	if [ "$user" != "" -a "$domain" != "" ]; then
+	if [ "$user" != "" ] ; then
 	  $UCI_SET voice_client.sip$num.user="$user"
+	fi
+	if [ "$domain" != "" -a "$domain" != "$user" ] ; then
 	  $UCI_SET voice_client.sip$num.domain="$domain"
 	fi
 }
