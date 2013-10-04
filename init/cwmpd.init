@@ -9,7 +9,7 @@ include /lib/network
 START=20
 STOP=40
 
-EXTRA_HELP="		start [GetRPCMethods] Start cwmpd service and send GetRPCMethods"
+EXTRA_HELP="	start	[GetRPCMethods] Start cwmpd service and send GetRPCMethods"
 
 check_url_format() {
 	# SCHEMA_LIST: contain list of possible schemas that could be present in the acs url
@@ -220,7 +220,7 @@ stop_cwmpd() {
 }
 
 start() {
-	start_cwmpd 2> /dev/null
+	start_cwmpd "$1" 2> /dev/null
 }
 
 stop() {
