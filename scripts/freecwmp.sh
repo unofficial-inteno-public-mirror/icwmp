@@ -329,7 +329,13 @@ handle_action() {
 	fi
 
 	if [ "$action" = "get_name" ]; then
-		if [ "$__arg2" != "0" -a "$__arg2" != "1" ]; then
+		__arg2=`echo $__arg2|tr '[A-Z]' '[a-z]'`
+		if [ "$__arg2" = "true" ]; then
+			__arg2=1
+		elif [ "$__arg2" = "false" ]; then
+			__arg2=0
+		fi
+		if [ "$__arg2" != "0" -a "$__arg2" != "1"  ]; then
 			fault_code="$FAULT_CPE_INVALID_ARGUMENTS"
 		else
 			get_param_name_generic "$__arg1" "$__arg2"
