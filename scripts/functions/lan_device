@@ -550,12 +550,12 @@ set_wlan_wep_key() {
 
 set_wlan_pre_shared_key() {
 	local num="$1"
-	local val="$2"
+	local val="$3"
 	reset_wlan $num
 	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].key=$val
 	$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-	$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
+	#$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 }
 
 set_wlan_pre_shared_key_key_passphrase() {
