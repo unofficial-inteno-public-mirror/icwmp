@@ -158,6 +158,9 @@ get_wan_device_wan_dsl_interface_config_status() {
 		"Disabled")
 		val="Disabled"
 		;;
+		*)
+		val="NoSignal"
+		;;
 	esac
 	echo $val
 }

@@ -93,8 +93,8 @@ set_voice_profile_reset() {
 }
 
 set_voice_profile_signaling_protocol() {
-local num="$1"
-local val="$2"
+	local num="$1"
+	local val="$2"
 }
 
 get_voice_profile_max_sessions() {
@@ -302,9 +302,9 @@ get_line_enable() {
 }
 
 set_line_enable() {
-local num="$1"
-local line_name="$2"
-local val="$3"
+	local num="$1"
+	local line_name="$2"
+	local val="$3"
 	if [ "$val" = "Enabled" ]; then
 	    val="1"
 	else
@@ -487,7 +487,7 @@ get_services_voice_service_generic() {
 	local sip_id="$2"
 	
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num." "1"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Reset" "1" "echo 0" "set_voice_profile_reset $sip_id \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Name" "0" "$UCI_GET voice_client.sip$sip_id.name"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SignalingProtocol" "1" "echo SIP" "set_voice_profile_signaling_protocol $sip_id \$val" 
@@ -550,13 +550,13 @@ get_cache_InternetGatewayDevice_Services() {
 		let profile_num=$sip_id+1
 		get_services_voice_service_generic "$profile_num" "$sip_id"
 		# Line
+		get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line." "1"
 		for line_name in `$UCI_SHOW voice_client|grep sip_account|grep sip$sip_id$|awk -F'.' '{print$2}'`;do
 			line_id=`echo $line_name|sed 's/brcm//g'`
 			if [ $line_id -gt $max_line ];then
 				continue
 			fi
 			line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$profile_num`
-			get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line." "1"
 			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
 		done
 	done
@@ -800,3 +800,4 @@ delete_object_InternetGatewayDevice_Services() {
 get_dynamic_InternetGatewayDevice_Services() {
 	return $FAULT_CPE_NO_FAULT
 }
+

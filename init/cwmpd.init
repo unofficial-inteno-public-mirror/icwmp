@@ -17,7 +17,7 @@ check_url_format() {
 	SCHEMA_LIST="http"
 	
 	for schema in $SCHEMA_LIST;	do
-		dest=`echo $1|sed 's/$schema:\/\///g'|cut -f1 -d \/|cut -f1 -d:`
+		dest=`echo $1 | sed 's/$schema:\/\///g' | cut -f1 -d \/ | cut -f1 -d:`
 		if [ "_$dest" != "_" ]; then
 			return 0
 		fi
@@ -108,7 +108,7 @@ boot() {
 }
 
 start_cwmpd() {
-	run=$(ps aux|grep /usr/sbin/cwmpd|grep -v grep|grep -v rc.common)
+	run=$(ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common)
 	if [ "$run" = "" ];then
 		stop_freecwmp_cache
 		echo "Check if the whole cache is built. Wait if the whole cache is not built yet..."
@@ -163,7 +163,7 @@ get_process_childs() {
 	
 pidof_cwmp() {
 	local pids=""
-	pids="`ps aux|grep /usr/sbin/cwmpd|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v \" Z \"|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/cwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	pids=${pids% }
 	pids=${pids# }
 	echo "$pids"
@@ -171,7 +171,7 @@ pidof_cwmp() {
 
 pidof_freecwmp() {
 	local pids=""
-	pids="`ps aux|grep /usr/sbin/freecwmp|sed 's/^ \+//g'|sed 's/ \+/:/g'|grep -v grep|cut -f1 -d:|tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/freecwmp | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	pids=${pids% }
 	pids=${pids# }
 	echo "$pids"

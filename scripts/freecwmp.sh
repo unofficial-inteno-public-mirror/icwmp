@@ -573,7 +573,7 @@ handle_action() {
 			json_get_var param parameter
 			json_get_var type type
 			val=`eval "$exec_get_cmd"`
-			freecwmp_output "$param" "$val" "" "$type"
+			freecwmp_output "$param" "$val" "" "" "$type"
 		done
 	fi
 
