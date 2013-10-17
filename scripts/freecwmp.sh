@@ -465,6 +465,7 @@ handle_action() {
 		else
 			jffs2_mark_erase "rootfs_data"
 			sync
+			ACTION=add INTERFACE=resetbutton /sbin/hotplug-call button
 			reboot
 		fi
 	fi

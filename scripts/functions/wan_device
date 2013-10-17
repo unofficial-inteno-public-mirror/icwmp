@@ -216,7 +216,9 @@ set_wan_device() {
 	local uci_name=$1
 	local val=$2
 	$UCI_SET $uci_name="$val"
+        [ -f /etc/init.d/ppp_password ]  && delay_service reload "ppp_password" "1"
 	delay_service reload "network" "1"
+	
 }
 
 handle_wan_interface() {
