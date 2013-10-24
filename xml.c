@@ -487,7 +487,7 @@ create_value:
 	if (!b) return -1;
 
 #ifdef ACS_MULTI
-	mxmlElementSetAttr(b, "xsi:type", parameter_container->type? parameter_container->type : "xsd:string");
+	mxmlElementSetAttr(b, "xsi:type", (parameter_container->type && parameter_container->type[0] != '\0')? parameter_container->type : "xsd:string");
 #endif
 	b = mxmlNewText(b, 0, parameter_container->data);
 	if (!b) return -1;
