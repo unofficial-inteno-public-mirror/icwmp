@@ -243,6 +243,8 @@ for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
 		instance=2
 	elif [ "`echo $logical_intf|grep ptm`" != "" ];then
 		instance=3
+	else
+		continue
 	fi
 	if [ "`$UCI_GET network.$config.is_lan`" != "1"  ];then
 		echo $logical_intf:$instance:$config
@@ -253,8 +255,14 @@ done
 get_wandevice_dev_parent_objects() {
 	local dev="$1"
 	local notif_permission="$2"
+	local iface="$3"
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "0" "$notif_permission"
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "0" "$notif_permission"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $iface"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
 }
 
 get_cache_InternetGatewayDevice_WANDevice() {
@@ -272,6 +280,10 @@ get_cache_InternetGatewayDevice_WANDevice() {
 	get_object_cache_generic "InternetGatewayDevice.WANDevice." "0" "0"
 	for intf in $list_interface;do
 		iface=`echo $intf|cut -f3 -d:`
+		proto=`$UCI_GET network.$iface.proto`
+		if [ "$proto" != "dhcp" -a "$proto" != "static" -a "$proto" != "pppoa" -a "$proto" != "pppoe" ];then
+			continue
+		fi
 		dev=`echo $intf|cut -f2 -d:`
 		logical_intf=`echo $intf|cut -f1 -d:`
 		wan=`get_wan_logical_intf $logical_intf`
@@ -287,20 +299,14 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		if [ "$prev_dev" != "$dev" -a "$prev_dev" != "" ];then
 			wan_ip=1
 			wan_ppp=1
-			get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
+			get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission" "$iface"
 			dev_notif_permission=""
 		fi
 		if [ "$prev_wan" != "$wan" -a "$prev_wan" != "" ];then
 			wan_ip=1
 			wan_ppp=1
 		fi
-		proto=`$UCI_GET network.$iface.proto`
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "$notif_permission"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $iface"
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
 		
 		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
 				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "0" "$notif_permission"
@@ -325,7 +331,7 @@ get_cache_InternetGatewayDevice_WANDevice() {
 		prev_dev="$dev"
 	done
 	if [ "$prev_dev" != "" ]; then
-		get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission"
+		get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission" "$iface"
 	fi
 }
 
