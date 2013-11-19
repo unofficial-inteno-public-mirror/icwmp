@@ -222,7 +222,7 @@ set_sip_registration_period() {
 	local val="$2"
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
-	$UCI_SET voice_client.SIP.registertimeout="$val"
+	$UCI_SET voice_client.SIP.defaultexpiry="$val"
 }
 
 set_sip_invite_expires() {
@@ -506,7 +506,7 @@ get_services_voice_service_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxy" "1" "$UCI_GET voice_client.sip$sip_id.outboundproxy" "set_sip_outbound_proxy $sip_id \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.OutboundProxyPort" "1" "$UCI_GET voice_client.sip$sip_id.outboundport" "set_sip_outbound_proxy_port $sip_id \$val" "" "xsd:unsignedInt"
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.Organization" "1" "" "set_sip_organization $sip_id \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrationPeriod" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_registration_period $sip_id \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegistrationPeriod" "1" "$UCI_GET voice_client.SIP.defaultexpiry" "set_sip_registration_period $sip_id \$val" "" "xsd:unsignedInt"
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InviteExpires" "1" "" "set_sip_invite_expires $sip_id \$val" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.ReInviteExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_re_invite_expires $sip_id \$val" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.RegisterExpires" "1" "$UCI_GET voice_client.SIP.registertimeout" "set_sip_register_expires $sip_id \$val" "" "xsd:unsignedInt"
