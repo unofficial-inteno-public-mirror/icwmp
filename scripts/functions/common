@@ -131,14 +131,14 @@ freecwmp_fault_output() {
 	local success="$3"
 
 	case "$action" in
-		apply_value)
+		set_value|apply_value)
 		json_init
 		json_add_string "parameter" "$parameter"
 		json_add_string "fault_code" "$fault_code"
 		json_close_object
 		MSG=`json_dump`
 		;;
-		apply_notification)
+		set_notification|apply_notification)
 		json_init
 		json_add_string "success" "$success"
 		json_add_string "fault_code" "$fault_code"
@@ -414,13 +414,9 @@ fi
 }
 
 freecwmp_set_parameter_fault() {
-	local _parm="-$1"
-	local _fault="$2"
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state batch << EOF 2>&1 >/dev/null
-		add cwmp fault
-		set cwmp.@fault[-1].parameter="$_parm"
-		set cwmp.@fault[-1].fault_code="$_fault"
-EOF
+	local parm="-$1"
+	local fault="$2"
+	freecwmp_fault_output "$parm" "$fault" >> $set_fault_tmp_file
 }
 
 freecwmp_check_image()

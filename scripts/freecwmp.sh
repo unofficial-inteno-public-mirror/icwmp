@@ -60,7 +60,8 @@ UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
 NEW_LINE='\n'
 cache_path="/etc/cwmpd/.cache"
 tmp_cache="/tmp/.freecwmp_dm"
-set_tmp_file="/etc/cwmpd/.set_tmp_file"
+set_tmp_file="/tmp/.set_tmp_file"
+set_fault_tmp_file="/tmp/.set_fault_tmp_file"
 	
 mkdir -p $cache_path
 rm -f "$cache_path/"*"_dynamic"
@@ -480,9 +481,7 @@ handle_action() {
 	fi
 
 	if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
-		__fault_count=`cat /var/state/cwmp 2> /dev/null |wc -l 2> /dev/null`
-		let __fault_count=$__fault_count/3
-		if [ "$__fault_count" = "0" ]; then
+		if [ ! -f $set_fault_tmp_file ]; then
 			# applying
 			$UCI_COMMIT
 			local prefix=""
@@ -544,22 +543,17 @@ handle_action() {
 						esac
 					done
 					sed -i "/\<$parameter\>/s%.*%$line%" $cache_path/$filename
-					freecwmp_notify "$parameter" "$value" "$notification" "$type"
 				done
 				freecwmp_output "" "" "" "" "" "" "1"
 				;;
 			esac
 		else
-			let n=$__fault_count-1
-			for i in `seq 0 $n`
-			do
-				local parm=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].parameter 2> /dev/null`
-				parm=${parm#-}
-				local fault_code=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.@fault[$i].fault_code 2> /dev/null`
-				freecwmp_fault_output "$parm" "$fault_code"
-				if [ "$action" = "apply_notification" ]; then break; fi
-			done
-			rm -rf /var/state/cwmp 2> /dev/null
+			if [ "$action" = "apply_notification" ]; then
+				cat $set_fault_tmp_file | head -1 
+			else
+				cat $set_fault_tmp_file
+			fi
+			rm -f $set_fault_tmp_file
 			/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q revert cwmp
 		fi
 		rm -f $set_tmp_file
