@@ -118,29 +118,48 @@ reset_wlan() {
 set_wlan_beacon_type() {
 	local num="$1"
 	local val="$2"
-	reset_wlan "$num"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "None" ]; then
 		val="none"
+		reset_wlan "$num"
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "Basic" ]; then
 		val="wep-open"
+		if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="1"
+			local i=1
+			for key in `/usr/sbin/wepkeygen 64 Inteno`; do
+				$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+				let i++
+			done
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "WPA" ]; then
 		val="psk"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "11i" ]; then
 		val="psk2"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "WPAand11i" ]; then
 		val="pskmixedpsk2"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ]; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	fi
 	delay_service reload "network" "1"
@@ -202,7 +221,7 @@ set_wlan_standard() {
 
 get_wlan_wep_key_index() {
 	local num="$1"
-	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "wep-shared" ]; then
 		val=`$UCI_GET wireless.@wifi-iface[$num].key`
 	else
@@ -214,24 +233,31 @@ get_wlan_wep_key_index() {
 set_wlan_wep_key_index() {
 	local num="$1"
 	local val="$2"
-	$UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
-	$UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
-	$UCI_DELETE wireless.@wifi-iface[$num].key
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_server
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_port
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_secret
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	delay_service reload "network" "1"
+	if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+		reset_wlan $nums
+		$UCI_SET wireless.@wifi-iface[$num].encryption="wep-open"
+		local i=1
+		for key in `/usr/sbin/wepkeygen 64 Inteno`;do
+			$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+			let i++
+		done
+	fi
 	$UCI_SET wireless.@wifi-iface[$num].key="$val"
-	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
 }
 
 set_wlan_key_passphrase() {
 	local num="$1"
 	local val="$2"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	delay_service reload "network" "1"
-	$UCI_SET wireless.@wifi-iface[$num].encryption=wep-shared
-	$UCI_SET wireless.@wifi-iface[$num].key="1"
-	i=1
+	if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+		reset_wlan $nums
+		$UCI_SET wireless.@wifi-iface[$num].encryption="wep-open"
+		$UCI_SET wireless.@wifi-iface[$num].key="1"
+	fi
+	local i=1
 	for key in `/usr/sbin/wepkeygen 64 $val`;do
 		$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
 		let i++
@@ -259,12 +285,22 @@ get_wlan_basic_encryption_modes() {
 set_wlan_basic_encryption_modes() {
 	local num="$1"
 	local val="$2"
-	reset_wlan "$num"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "WEPEncryption" ]; then
 		val="wep-open"
+		if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+			reset_wlan $nums
+			$UCI_SET wireless.@wifi-iface[$num].key="1"
+			local i=1
+			for key in `/usr/sbin/wepkeygen 64 Inteno`;do
+				$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+				let i++
+			done
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "None" ]; then
 		val="none"
+		reset_wlan "$num"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -285,19 +321,22 @@ get_wlan_basic_authentication_mode() {
 set_wlan_basic_authentication_mode() {
 	local num="$1"
 	local val="$2"
-	reset_wlan "$num"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "SharedAuthentication" ]; then
-		val="wep-shared"
-		$UCI_SET wireless.@wifi-iface[$num].key="1"
+		val="wep-open"
+		if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+			reset_wlan $nums
+			$UCI_SET wireless.@wifi-iface[$num].key="1"
+			local i=1
+			for key in `/usr/sbin/wepkeygen 64 Inteno`;do
+				$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+				let i++
+			done
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
-		i=1
-		for key in `/usr/sbin/wepkeygen 64 Inteno`;do
-			$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
-			let i++
-		done
 	elif [ "$val" = "None" ]; then
 		val="none"
-		$UCI_SET wireless.@wifi-iface[$num].key="1"
+		reset_wlan $nums
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -322,21 +361,29 @@ set_wlan_wpa_encryption_modes() {
 	local num="$1"
 	local val="$2"
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
-	reset_wlan "$num"
 	if [ "$val" = "TKIPEncryption" ]; then
 		val="psk+tkip"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "AESEncryption" ]; then
 		val="psk+ccmp"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "TKIPandAESEncryption" ]; then
 		val="psk+tkip+ccmp"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -347,9 +394,9 @@ get_wlan_wpa_authentication_mode() {
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	local val=""
 	if [ "`echo $encryption|grep ^psk$`" != "" -o "`echo $encryption|grep ^psk+`" != "" -o "`echo $encryption|grep ^pskmixedpsk2`" != "" ]; then
-			val="PSKAuthentication"
+		val="PSKAuthentication"
 	elif [ "$encryption" = "wpa" -o "$encryption" = "wpamixedwpa2" ];then
-			val="EAPAuthentication"
+		val="EAPAuthentication"
 	fi
 	echo "$val"
 }
@@ -357,17 +404,23 @@ get_wlan_wpa_authentication_mode() {
 set_wlan_wpa_authentication_mode() {
 	local num="$1"
 	local val="$2"
-	reset_wlan "$num"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa"
-		$UCI_SET wireless.@wifi-iface[$num].radius_server=""
-		$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
-		$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
+		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "wpamixedwpa2" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
+			$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
+			$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -377,7 +430,7 @@ get_wlan_ieee_11i_encryption_modes() {
 	local num="$1"
 	local val=""
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
-	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$encryption" = "psk2+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
 		val="TKIPEncryption"
 	elif [ "$encryption" = "psk2+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
@@ -391,25 +444,34 @@ get_wlan_ieee_11i_encryption_modes() {
 set_wlan_ieee_11i_encryption_modes() {
 	local num="$1"
 	local val="$2"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
-	reset_wlan "$num"
 	if [ "$val" = "TKIPEncryption" ]; then
 		val="psk2+tkip"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "AESEncryption" ]; then
 		val="psk2+ccmp"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "TKIPandAESEncryption" ]; then
 		val="psk2+tkip+ccmp"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -420,9 +482,9 @@ get_wlan_ieee_11i_authentication_mode() {
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	local val=""
 	if [ "`echo $encryption|grep ^psk2$`" != "" -o "`echo $encryption|grep ^psk2+`" != "" -o "`echo $encryption|grep ^pskmixedpsk2`" != "" ]; then
-			val="PSKAuthentication"
+		val="PSKAuthentication"
 	elif [ "$encryption" = "wpa2" -o "$encryption" = "wpamixedwpa2" ];then
-			val="EAPAuthentication"
+		val="EAPAuthentication"
 	fi
 	echo "$val"
 }
@@ -430,18 +492,24 @@ get_wlan_ieee_11i_authentication_mode() {
 set_wlan_ieee_11i_authentication_mode() {
 	local num="$1"
 	local val="$2"
-	reset_wlan "$num"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "PSKAuthentication" ]; then
 		val="psk2"
-		$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
-		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-		$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		if [ "`echo $encryption |grep psk`" = "" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
+			$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+			$UCI_SET wireless.@wifi-iface[$num].wps_pbc="1"
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa2"
-		$UCI_SET wireless.@wifi-iface[$num].radius_server=""
-		$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
-		$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
+		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "wpamixedwpa2" ] ; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
+			$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
+			$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
+		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	fi
 	delay_service reload "network" "1"
@@ -515,12 +583,20 @@ get_wlan_authentication_service_mode() {
 set_wlan_authentication_service_mode() {
 	local num="$1"
 	local val="$2"
-	delay_service reload "network" "1"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "$val" = "None" ];then
-		$UCI_SET wireless.@wifi-iface[$num].encryption="psk"
+		reset_wlan "$num"
+		$UCI_SET wireless.@wifi-iface[$num].encryption="none"
 	elif [ "$val" = "RadiusClient" ];then
-		$UCI_SET wireless.@wifi-iface[$num].encryption="wpa"
+		if [ "$encryption" != "wpa" -a "$encryption" != "wpa2" -a "$encryption" != "wpamixedwpa2" ]; then
+			reset_wlan "$num"
+			$UCI_SET wireless.@wifi-iface[$num].encryption="wpa"
+			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
+			$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
+			$UCI_SET wireless.@wifi-iface[$num].radius_secret=""
+		fi
 	fi
+	delay_service reload "network" "1"
 }
 
 get_wlan_total_associations() {
@@ -537,31 +613,31 @@ set_wlan_wep_key() {
 	local num="$1"
 	local key_index="$2"
 	local val="$3"
-	$UCI_DELETE wireless.@wifi-iface[$num].gtk_rekey
-	$UCI_DELETE wireless.@wifi-iface[$num].wps_pbc
-	$UCI_DELETE wireless.@wifi-iface[$num].key
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_server
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_port
-	$UCI_DELETE wireless.@wifi-iface[$num].radius_secret
-	delay_service reload "network" "1"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
+		reset_wlan "$num"
+		$UCI_SET wireless.@wifi-iface[$num].encryption="wep-open"
+		local i=1
+		for key in `/usr/sbin/wepkeygen 64 Inteno`;do
+			$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+			let i++
+		done
+		$UCI_SET wireless.@wifi-iface[$num].key="1"
+	fi
 	$UCI_SET wireless.@wifi-iface[$num].key$key_index=$val
-	$UCI_SET wireless.@wifi-iface[$num].key="$key_index"
-	$UCI_SET wireless.@wifi-iface[$num].encryption="wep-shared"
+	delay_service reload "network" "1"
 }
 
 set_wlan_pre_shared_key() {
 	local num="$1"
 	local val="$2"
-	reset_wlan $num
-	delay_service reload "network" "1"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	if [ "`echo $encryption |grep psk`" = "" ] ; then
+		reset_wlan "$num"
+		$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
+		$UCI_SET wireless.@wifi-iface[$num].encryption="psk"
+	fi
 	$UCI_SET wireless.@wifi-iface[$num].key=$val
-	$UCI_SET wireless.@wifi-iface[$num].gtk_rekey="3600"
-	$UCI_SET wireless.@wifi-iface[$num].encryption="psk"
-}
-
-set_wlan_pre_shared_key_key_passphrase() {
-	local num="$1"
-	local val="$2"
 	delay_service reload "network" "1"
 }
 
@@ -613,7 +689,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.KeyPassphrase" "1" "" "set_wlan_pre_shared_key_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num \$val"
 }
 
