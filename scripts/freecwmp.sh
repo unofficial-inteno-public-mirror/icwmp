@@ -366,12 +366,18 @@ handle_action() {
 		fi
 	fi
 	
-	if [ "$action" = "set_notification" -a "$__arg3" = "1" ]; then
-		set_param_notification_generic "$__arg1" "$__arg2"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+	if [ "$action" = "set_notification" ]; then
+		__arg3=`echo $__arg3|tr '[A-Z]' '[a-z]'`
+		if [ "$__arg3" = "true" ]; then
+			__arg3=1
+		fi
+		if [ "$__arg3" = "1" ]; then
+			set_param_notification_generic "$__arg1" "$__arg2"
+			fault_code="$?"
+			if [ "$fault_code" != "0" ]; then
+				let fault_code=$fault_code+9000
+				freecwmp_set_parameter_fault "$__arg1" "$fault_code"
+			fi
 		fi
 	fi
 
