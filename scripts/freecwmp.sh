@@ -184,16 +184,27 @@ fi
 . /usr/share/freecwmp/functions/lan_device
 . /usr/share/freecwmp/functions/management_server
 . /usr/share/freecwmp/functions/wan_device
+if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 . /usr/share/freecwmp/functions/voice_service
-. /usr/share/freecwmp/functions/models
-
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
+fi                                                                     
+. /usr/share/freecwmp/functions/models               
+                                                        
+if [ $(db get hw.board.hasVoice) -eq 1 ]; then            
+prefix_list="\                                                                                        
+InternetGatewayDevice. \                            
+InternetGatewayDevice.DeviceInfo. \                    
+InternetGatewayDevice.LANDevice. \                                            
+InternetGatewayDevice.ManagementServer. \     
+InternetGatewayDevice.WANDevice. \            
+InternetGatewayDevice.Services."              
+else                                          
+prefix_list="\                                
+InternetGatewayDevice. \                 
+InternetGatewayDevice.DeviceInfo. \      
+InternetGatewayDevice.LANDevice. \       
 InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.Services."
+InternetGatewayDevice.WANDevice."        
+fi        
 
 
 config_load cwmp
