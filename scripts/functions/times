@@ -1,0 +1,62 @@
+#!/bin/sh
+# Copyright (C) 2013 Inteno Broadband Technology AB
+#   Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+
+get_time_ntpserver() {
+	local ntp_servers val
+	ntp_servers=`$UCI_GET system.ntp.server`
+	val=${ntp_servers%% *}
+	echo $val
+}
+
+set_time_ntpserver() {
+	[ "$1" = "" ] && return
+	local val="$1"
+	local ntp_servers serv
+	ntp_servers=`$UCI_GET system.ntp.server`
+	ntp_servers="$ntp_servers "
+	ntp_servers=${ntp_servers#* }
+	ntp_servers="$val $ntp_servers"
+	$UCI_DELETE system.ntp.server
+	for serv in $ntp_servers; do
+		$UCI_ADD_LIST system.ntp.server="$serv"
+	done
+	if [ -f /etc/rc.d/*sysntpd ]; then delay_service restart "sysntpd" "1"; fi
+}
+
+get_time_enable() {
+	if [ -f /etc/rc.d/*sysntpd ]; then echo "true"
+	else echo "false"; fi
+	echo $val
+}
+
+set_time_enable() {
+	local val="$1"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o  "$val" = "1" ]; then
+		delay_service restart "sysntpd" "1"
+		/etc/init.d/sysntpd enable
+	elif [ "$val" = "false" -o  "$val" = "0" ]; then
+		if [ "`pidof ntpd`" != "" ]; then /etc/init.d/sysntpd stop; fi
+		/etc/init.d/sysntpd disable
+	fi
+}
+
+ 
+get_cache_InternetGatewayDevice_Time() {
+	get_object_cache_generic "InternetGatewayDevice.Time." "0"
+	get_param_cache_generic "InternetGatewayDevice.Time.Enable" "1" "get_time_enable" "set_time_enable \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer1" "1" "get_time_ntpserver" "set_time_ntpserver \$val" 
+}
+
+get_dynamic_InternetGatewayDevice_Time() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_Time() { 
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_Time() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}

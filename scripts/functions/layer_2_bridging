@@ -1,0 +1,171 @@
+#!/bin/sh
+# Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+# Author Feten Besbes <feten.besbes@pivasoftware.com>
+
+
+#TODO be completed by
+
+set_bridge_bridgename() {
+	$UCI_RENAME network.$1=$2
+	delay_service reload "network" "1"
+}
+
+set_bridge_x_inteno_com_associatedinterfaces() {
+	local iface="$1"
+	shift
+	local val="$*"
+	$UCI_SET network.$iface.ifname="$val"
+	delay_service reload "network" "1"
+}
+
+get_bridge_bridgekey() {
+	local bkey=`brctl show | grep "br-$1" | cut -d. -f2 | cut -d$'\t' -f1`
+	[ "$bkey" != "" ] && printf '%u' "0x$bkey"
+}
+
+get_bridge_vlanid() {
+	local ifname vid
+	local ifnames=`$UCI_GET network.$1.ifname`
+	for ifname in $ifnames; do
+		local tmp=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.[^.]\+\.ifname=$ifname" | cut -f2 -d.`
+		vid=`$UCI_GET layer2_interface_vlan.$tmp.vlan8021q`
+		if [ "$vid" != "" ]; then echo $vid; return; fi
+	done
+}
+
+set_bridge_vlanid() {
+	local val="$2"
+	local ifname nifname vid dev idev
+	local ifnames=`$UCI_GET network.$1.ifname`
+	for ifname in $ifnames; do
+		local tmp=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.[^.]\+\.ifname=$ifname" | cut -f2 -d.`
+		vid=`$UCI_GET layer2_interface_vlan.$tmp.vlan8021q`
+		if [ "$vid" != "" ]; then
+			idev=${ifname%.*}
+			break
+		fi
+	done
+	
+	if [ "$vid" = "" ]; then
+		for idev in atm ptm eth0; do
+			dev=${ifnames#*$idev};
+			[ "$dev" = "$ifnames" ] && continue
+			idev="$idev${dev%%.*}"
+			break
+		done
+	fi
+	local nifname=`add_bridge_vlan_interface $idev $val`
+	if [ "$vid" = "" ]; then
+		$UCI_SET network.$1.ifname="$ifnames $nifname"
+	else
+		$UCI_SET network.$1.ifname="${ifnames//$ifname/$nifname}"
+	fi
+	delay_service restart "layer2_interface_vlan" "1"
+	delay_service reload "network" "1"
+}
+
+update_bridge_instance() {
+	local iface="$1"
+	
+	local inst=`$UCI_GET network.$iface.bridge_instance`
+	if [ "$inst" != "" ]; then
+		echo "$inst"
+	else
+		local inst=`$UCI_SHOW network |sed -n "s/network\.[^.]\+\.bridge_instance=//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET network.$iface.bridge_instance="$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
+get_cache_object_bridge() {
+	local iface="$1"
+	local ib="$2"
+	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib." "1"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeEnable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeKey" "0" "get_bridge_bridgekey $iface" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeName" "1" "echo $iface" "set_bridge_bridgename $iface \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLANID" "1" "get_bridge_vlanid $iface" "set_bridge_vlanid $iface \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "$UCI_GET network.$iface.ifname" "set_bridge_x_inteno_com_associatedinterfaces $iface \$val" 
+}
+	
+get_cache_InternetGatewayDevice_Layer2Bridging() {
+	local ib=0 iface
+	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging." "0"
+	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge." "1"
+	local ifaces=`$UCI_SHOW network | grep "network\.[^=]\+=interface" | cut -d. -f2 | cut -d= -f1`
+	for iface in $ifaces; do
+		if [ "`$UCI_GET network.$iface.type`" = "bridge" ]; then
+			ib=`update_bridge_instance $iface`
+			get_cache_object_bridge "$iface" "$ib"
+		fi
+	done
+}
+
+add_layer2bridging_bridge() {
+	local filename="$1"
+	local ib=`$UCI_SHOW network |sed -n "s/network\.[^.]\+\.bridge_instance=//p" | sort -rn | head -n1`
+	ib=${ib:-0}
+	iface="bridge_0_$((++ib))"
+	$UCI_SET network.$iface=interface
+	$UCI_SET network.$iface.bridge_instance=$ib
+	$UCI_SET network.$iface.type=bridge
+	$UCI_SET network.$iface.proto=dhcp
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	
+	get_cache_object_bridge "$iface" "$ib" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$ib"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_layer2bridging_bridge() {
+	local instance="$2"
+	local filename="$3"
+	local tmp=`$UCI_SHOW network |grep "network\.[^.]\+\.bridge_instance=$instance[^0-9]*" | cut -d. -f2`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	$UCI_SET network.$tmp.type=
+	$UCI_SET network.$tmp.bridge_instance=
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_Layer2Bridging() {
+	local filename="$2"
+	local fault_code
+	case $1 in
+		InternetGatewayDevice.Layer2Bridging.Bridge.)
+			add_layer2bridging_bridge "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_Layer2Bridging() {
+	local filename="$2"
+	local fault_code instances
+	case $1 in
+		InternetGatewayDevice.Layer2Bridging.Bridge.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Layer2Bridging.Bridge.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_layer2bridging_bridge "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+			
+		;;
+	esac
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+get_dynamic_InternetGatewayDevice_Layer2Bridging() {
+	return $FAULT_CPE_NO_FAULT
+}
