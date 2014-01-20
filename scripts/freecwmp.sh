@@ -53,10 +53,12 @@ UCI_GET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q"
 UCI_SET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set -q"
 UCI_BATCH="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch -q"
 UCI_ADD="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add -q"
+UCI_ADD_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list -q"
 UCI_GET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get -q"
 UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
 UCI_DELETE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete -q"
 UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
+UCI_RENAME="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} rename -q"
 NEW_LINE='\n'
 cache_path="/etc/cwmpd/.cache"
 tmp_cache="/tmp/.freecwmp_dm"
@@ -184,6 +186,12 @@ InternetGatewayDevice.DeviceInfo. \
 InternetGatewayDevice.LANDevice. \
 InternetGatewayDevice.ManagementServer. \
 InternetGatewayDevice.WANDevice."
+InternetGatewayDevice.Layer2Bridging. \
+InternetGatewayDevice.ManagementServer. \
+InternetGatewayDevice.Time. \
+InternetGatewayDevice.WANDevice. \
+InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg. \
+InternetGatewayDevice.X_BROADCOM_COM_LoginCfg."
 
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
@@ -191,11 +199,16 @@ InternetGatewayDevice.WANDevice."
 . /usr/share/freecwmp/functions/lan_device
 . /usr/share/freecwmp/functions/management_server
 . /usr/share/freecwmp/functions/wan_device
+. /usr/share/freecwmp/functions/x_broadcom_com_logincfg
+. /usr/share/freecwmp/functions/x_broadcom_com_ipacccfg
+. /usr/share/freecwmp/functions/layer_2_bridging
+. /usr/share/freecwmp/functions/models
+. /usr/share/freecwmp/functions/times
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 	. /usr/share/freecwmp/functions/voice_service
 	prefix_list="$prefix_list InternetGatewayDevice.Services."
 fi
-. /usr/share/freecwmp/functions/models
+
 if [ -e "/etc/config/ice" ]; then
 	. /usr/share/freecwmp/functions/x_inteno_se_ice
 	prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
@@ -288,6 +301,7 @@ handle_action() {
 		handle_get_cache "InternetGatewayDevice." "1"
 		handle_get_cache "InternetGatewayDevice.ManagementServer."
 		handle_get_cache "InternetGatewayDevice.DeviceInfo."
+		handle_get_cache "InternetGatewayDevice.X_BROADCOM_COM_LoginCfg."
 		local ls_cache=""
 		while [ "$found" = "0" ]; do
 			ls_prefix=`ls $cache_path`
@@ -494,7 +508,6 @@ handle_action() {
 	if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
 		if [ ! -f $set_fault_tmp_file ]; then
 			# applying
-			$UCI_COMMIT
 			local prefix=""
 			local filename=""
 			local max_len=0
@@ -536,16 +549,21 @@ handle_action() {
 				freecwmp_output "" "" "" "" "" "" "" "" "0"
 				;;
 				apply_value)
+				local val
+				local param
 				cat $set_tmp_file | while read line; do
 					json_init
 					json_load "$line"
-					json_get_var parameter parameter
-					json_get_var value value
+					json_get_var param parameter
+					json_get_var val value
+					json_get_var secret_value secret_value
 					json_get_var notification notification
 					json_get_var type type
+					json_get_var set_cmd set_cmd
+					eval "$set_cmd"
 					max_len=0
 					for prefix in $prefix_list; do
-						case  "$parameter" in "$prefix"*)
+						case  "$param" in "$prefix"*)
 							len=${#prefix}
 							if [ $len -gt $max_len ]; then
 								max_len=$len
@@ -553,11 +571,14 @@ handle_action() {
 							fi
 						esac
 					done
-					sed -i "/\<$parameter\>/s%.*%$line%" $cache_path/$filename
+					if [ "$secret_value" != "1" ]; then
+						sed -i "/\<$param\>/s%.*%$line%" $cache_path/$filename
+					fi
 				done
 				freecwmp_output "" "" "" "" "" "" "1"
 				;;
 			esac
+			$UCI_COMMIT
 		else
 			if [ "$action" = "apply_notification" ]; then
 				cat $set_fault_tmp_file | head -1 

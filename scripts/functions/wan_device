@@ -3,25 +3,12 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
-get_wan_device_wan_mng_enable() {
-	local val=""
-	local intf="$1"
-	
-	json_load "$(ifstatus $intf)"
-	json_get_var up up
-	val="$up"
-	echo $val
-}
-
-set_wan_device_wan_mng_enable() {
-	local val="$1"
-	local intf="$2"
-	if [ "$val" -eq 0 ]; then
-		ubus call network.interface.wan down '{}' &
-	elif [ "$val" -eq 1 ]; then
-		ubus call network.interface.wan up '{}' &
-	fi
-}
+WAN_INST_ETH=1
+WAN_INST_ATM=2
+WAN_INST_PTM=3
+WAN_IP_CONNECTION=1
+WAN_PPP_CONNECTION=2
+default_wan=""
 
 get_wan_device_mng_status() {
 # TODO: Unconfigured ; Connecting ; Connected ; PendingDisconnect ; Disconneting ; Disconnected 
@@ -106,243 +93,751 @@ get_wan_device_mng_interface_mac() {
 	echo $val
 }
 
-get_wan_device_wan_ppp_enable() {
-	local val=""
-	local intf="$1"
-	local up
-	
-	json_load "$(ifstatus $intf)"
-	json_get_var up up
-	val="$up"
-	echo $val
-}
-
-set_wan_device_wan_ppp_enable() {
-	local val="$1"
-	local intf="$2"
-	if [ "$val" -eq 0 ]; then
-		ubus call network.interface.wan down '{}' &
-	elif [ "$val" -eq 1 ]; then
-		ubus call network.interface.wan up '{}' &
-	fi
-}
-
 get_wan_device_wan_access_type() {
-	local val=""
-	local intf="$1"
-
-	json_load "$(ifstatus $intf)"
-	json_get_var device device
-	if [ "${device:0:3}" = "eth" ];then
-		val="Ethernet"
-	elif [ "${device:0:3}" = "atm" -o "${device:0:3}" = "ptm" ];then
-		val="DSL"
-	fi
-	echo $val
+	case $1 in
+		$WAN_INST_ETH) echo "Ethernet";;
+		$WAN_INST_ATM|$WAN_INST_PTM) echo "DSL";;
+	esac
 }
 
 get_wan_device_wan_dsl_interface_config_status() {
 	local val=""
-	local intf="$1"
-	adsl_shown=`adsl info --stats|grep "^Status:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|sed 's/ *$//g'`
-	case "$adsl_shown" in
-		"Showtime")
-		val="Up"
-		;;
-		"Training")
-		val="Initializing"
-		;;
-		"Channel Analysis")
-		val="EstablishingLink"
-		;;
-		"Disabled")
-		val="Disabled"
-		;;
-		*)
-		val="NoSignal"
-		;;
-	esac
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		adsl_shown=`adsl info --stats|grep "^Status:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|sed 's/ *$//g'`
+		case "$adsl_shown" in
+			"Showtime")
+			val="Up"
+			;;
+			"Training")
+			val="Initializing"
+			;;
+			"Channel Analysis")
+			val="EstablishingLink"
+			;;
+			"Disabled")
+			val="Disabled"
+			;;
+			*)
+			val="NoSignal"
+			;;
+		esac
+	fi
 	echo $val
 }
 
 get_wan_device_wan_dsl_interface_config_modulation_type() {
 	local val=""
-	local intf="$1"
-	adsl_shown=`adsl info --stats|grep "Mode:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|cut -f1 -d ' '`
-	case "$adsl_shown" in
-		G.Dmt)
-		val="ADSL_G.dmt"
-		;;
-		G.lite)
-		val="ADSL_G.lite"
-		;;
-		T1.413)
-		val="ADSL_ANSI_T1 .413"
-		;;
-		ADSL2)
-		val="ADSL_G.dmt.bis"
-		;;
-		AnnexL)
-		val="ADSL_re-adsl"
-		;;
-		ADSL2+)
-		val="ADSL_2plus"
-		;;
-		*)
-		val="$adsl_shown"
-		;;
-	esac
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		local adsl_shown=`adsl info --stats|grep "Mode:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|cut -f1 -d ' '`
+		case "$adsl_shown" in
+			G.Dmt)
+			val="ADSL_G.dmt"
+			;;
+			G.lite)
+			val="ADSL_G.lite"
+			;;
+			T1.413)
+			val="ADSL_ANSI_T1 .413"
+			;;
+			ADSL2)
+			val="ADSL_G.dmt.bis"
+			;;
+			AnnexL)
+			val="ADSL_re-adsl"
+			;;
+			ADSL2+)
+			val="ADSL_2plus"
+			;;
+			*)
+			val="$adsl_shown"
+			;;
+		esac
+	else
+		val="VDSL"
+	fi
 	echo $val
-}
-
-get_wan_logical_intf() {
-local intf="$1"
-local list_intf=`handle_wan_interface|sort -u|cut -f1 -d:`
-for i in $list_intf;do
-	if [ "`echo $i|cut -c1-3`" != "`echo $prev_i|cut -c1-3`" ];then
-		n=1
-	elif [ "$i" != "$prev_i" ];then
-		let n=$n+1
-	fi
-	if [ "$i" = "$intf" ];then
-		echo $n
-		return 0
-	fi
-	prev_i=$i
-done
 }
 
 set_wan_device() {
 	local uci_name=$1
 	local val=$2
 	$UCI_SET $uci_name="$val"
-        [ -f /etc/init.d/ppp_password ]  && delay_service reload "ppp_password" "1"
+    [ -f /etc/init.d/ppp_password ]  && delay_service reload "ppp_password" "1"
 	delay_service reload "network" "1"
-	
 }
 
-handle_wan_interface() {
-for config in `ubus list|sed -n 's/network\.interface\.//p'`;do
-	local ifname="`$UCI_GET network.$config.ifname|cut -f1 -d ' '`"
-	local _orig_ifname="`$UCI_GET network.$config._orig_ifname|cut -f1 -d ' '`"
-	local logical_intf
-	local instance
-	local device
-	json_load "$(ifstatus $config)"
-	json_get_var device device
-	if [ "$device" != "" ];then
-		logical_intf=$device
-	elif [ "$_orig_ifname" != "" ];then
-		logical_intf=$_orig_ifname
-	else
-		logical_intf=$ifname
-	fi
-	if [ "`echo $logical_intf|grep eth`" != "" ];then
-		instance=1 
-	elif [ "`echo $logical_intf|grep atm`" != "" ];then
-		instance=2
-	elif [ "`echo $logical_intf|grep ptm`" != "" ];then
-		instance=3
-	else
-		continue
-	fi
-	if [ "`$UCI_GET network.$config.is_lan`" != "1"  ];then
-		echo $logical_intf:$instance:$config
-	fi
-done
+get_wan_dsl_link_config_destination_address() {
+	local if_atm="$1"
+	local atmbridge=`$UCI_SHOW layer2_interface_adsl|grep "layer2_interface_adsl\.[^.]\+\.ifname=$if_atm"| cut -f2 -d'.'`
+	if [ "$atmbridge" = "" ]; then return; fi
+	local vpi="`$UCI_GET layer2_interface_adsl.$atmbridge.vpi`"
+	local vci="`$UCI_GET layer2_interface_adsl.$atmbridge.vci`"
+	echo "PVC: $vpi/$vci"
 }
 
-get_wandevice_dev_parent_objects() {
+set_wan_dsl_link_config_destination_address() {
+	local if_atm="$1"
+	shift
+	local val="$*"
+	local atmbridge=`$UCI_SHOW layer2_interface_adsl|grep "layer2_interface_adsl\.[^.]\+\.ifname=$if_atm"| cut -f2 -d'.'`
+	if [ "$atmbridge" = "" ]; then return; fi
+	local val=${val#PVC:}
+	local vpi=${val%/*}; vpi=${vpi/ /}
+	local vci=${val#*/}; vci=${vci/ /}
+	$UCI_SET layer2_interface_adsl.$atmbridge.vpi="$vpi"
+	$UCI_SET layer2_interface_adsl.$atmbridge.vci="$vci"
+	delay_service restart "layer2_interface_adsl" "1"
+	delay_service restart "layer2_interface" "1"
+}
+
+get_wan_dsl_link_config_atm_encapsulation() {
+	local if_atm="$1"
+	local encaptype
+	local atmbridge=`$UCI_SHOW layer2_interface_adsl|grep "layer2_interface_adsl\.[^.]\+\.ifname=$if_atm"| cut -f2 -d'.'`
+	if [ "$atmbridge" = "" ]; then return; fi
+	type="`uci get layer2_interface_adsl.$atmbridge.link_type`"
+	case $type in 
+		"EoA") encaptype="eoa";;
+		"PPPoA") encaptype="pppoa";;
+		"IPoA") encaptype="ipoa";;
+	esac
+	local encapsulation="`$UCI_GET layer2_interface_adsl.$atmbridge.encaps$encaptype`"
+	case $encapsulation in 
+		vcmux*) echo "VCMUX";;
+		llc*) echo "LLC";;
+	esac
+}
+
+set_wan_dsl_link_config_atm_encapsulation() {
+	local val="$1"
+	local if_atm="$2"
+	local encaptype encapsulation
+	local atmbridge=`$UCI_SHOW layer2_interface_adsl|grep "layer2_interface_adsl\.[^.]\+\.ifname=$if_atm"| cut -f2 -d'.'`
+	if [ "$atmbridge" = "" ]; then return; fi
+	type="`uci get layer2_interface_adsl.$atmbridge.link_type`"
+	case $type in 
+		"EoA") encaptype="eoa"; encapsulation="vcmux_eth:llcsnap_eth";;
+		"PPPoA") encaptype="pppoa"; encapsulation="vcmux_pppoa:llcencaps_ppp";;
+		"IPoA") encaptype="ipoa"; encapsulation="vcmux_ipoa:llcsnap_rtip";;
+	esac
+	case $val in 
+		"VCMUX") encapsulation=${encapsulation%:*};;
+		"LLC") encapsulation=${encapsulation#*:};;
+		*) return;;
+	esac
+	$UCI_SET layer2_interface_adsl.$atmbridge.encaps$encaptype="$encapsulation"
+	delay_service restart "layer2_interface_adsl" "1"
+	delay_service restart "layer2_interface" "1"
+}
+
+
+get_wan_ip_link_connection_addressing_type() {
+	local iface="$1"
+	local proto="`$UCI_GET network.$iface.proto`"
+	case $proto in
+		"dhcp") echo "DHCP";;
+		"static") echo "Static";;
+		*) echo "$proto";;
+	esac
+}
+
+set_wan_ip_link_connection_addressing_type() {
+	local val="$1"
+	local iface="$2"
+	local proto
+	case $val in
+		"DHCP") proto="dhcp";;
+		"Static") proto="static";;
+		*) return;;
+	esac
+	$UCI_SET network.$iface.proto="$proto"
+	delay_service reload "network" "1"
+}
+
+get_wan_ip_link_connection_connection_type() {
+	local iface="$1"
+	local type="`$UCI_GET network.$iface.type`"
+	case $type in
+		"bridge"|"alias") echo "IP_Bridged";;
+		*) echo "IP_Routed";;
+	esac
+}
+
+set_wan_ip_link_connection_connection_type() {
+	local val="$1"
+	local iface="$2"
+	local type="`$UCI_GET network.$iface.type`"
+	case $val in
+		"IP_Bridged") 
+			[ "$type" = "bridge" -o "$type" = "alias" ] && return
+			type="bridge"
+		;;
+		"IP_Routed") 
+			[ "$type" != "bridge" -a "$type" != "alias" ] && return
+			type=""
+		;;
+		*) return;;
+	esac
+	$UCI_SET network.$iface.type="$type"
+	delay_service reload "network" "1"
+}
+
+get_wan_ip_link_connection_nat_enabled() {
+	local iface="$1"
+	local i=0
+	while [ "`$UCI_GET firewall.@zone[$i]`" != "" ]; do
+		if [ "`$UCI_GET firewall.@zone[$i].masq`" = "1" ]; then
+			if [ "`$UCI_GET firewall.@zone[$i].network| grep $iface`" != "" ]; then
+				echo 1; return
+			fi
+		fi
+		let i++
+	done
+	echo "0"
+}
+
+set_wan_ip_link_connection_nat_enabled() {
+	local val="$1"
+	local iface="$2"
+	local cnt=0
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="1"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val=""
+	else
+		return
+	fi
+	local i=0
+	while [ "`$UCI_GET firewall.@zone[$i]`" != "" ]; do
+		if [  "`$UCI_GET firewall.@zone[$i].network| grep $iface`" != "" ]; then
+			$UCI_SET firewall.@zone[$i].masq=$val
+			let cnt++
+			if [ "$val" != "" ]; then break; fi
+		fi
+		let i++
+	done
+	if [ "$cnt" = "0" -a "$val" != "" ]; then
+		local obj=`create_firewall_zone_config nat $iface`
+		$UCI_SET firewall.$obj.masq=$val
+	fi
+	delay_service reload "firewall" "1"
+}
+
+get_wan_igmp_rule_idx() {
+	local iface="$1"
+	local izone irule izname __rule __zone __zname __enable
+	for izone in `$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$iface" | cut -d. -f2`; do
+		izname=`$UCI_GET firewall.$izone.name`
+		if [ "`$UCI_GET firewall.$izone.network`" = "$iface" -a "$__rule" = "" ]; then
+			__zone="$izone"
+			__zname="$izname"
+		fi
+		[ "`$UCI_GET firewall.$izone.input`" = "DROP" ] && __enable="0"
+		for irule in `$UCI_SHOW firewall | grep "firewall\.@rule\[[0-9]\+\]\.src=.*$izname" | cut -d. -f2`; do
+			if [ "`$UCI_GET firewall.$irule.proto`" = "igmp" ]; then
+				__rule="$irule"
+				__zone="$izone"
+				__zname="$izname"
+				[ "`$UCI_GET firewall.$irule.enabled`" = "0" ] && break
+				[ "`$UCI_GET firewall.$irule.target`" =  "DROP" ] && __enable="0" || __enable="1"
+				break
+			fi
+		done
+		[ "$__rule" != "" ] && break
+	done
+	__enable=${__enable:-1}
+	eval "export -- \"$2=\"\"$__rule\"\"\""
+	eval "export -- \"$3=\"\"$__zone\"\"\""
+	eval "export -- \"$4=\"\"$__zname\"\"\""
+	eval "export -- \"$5=\"\"$__enable\"\"\""
+}
+
+get_wan_ip_link_connection_igmp_enabled() {
+	local iface="$1"
+	local rule zone zname enable
+	get_wan_igmp_rule_idx $iface rule zone zname enable
+	echo "$enable"
+}
+
+set_wan_ip_link_connection_igmp_enabled() {
+	local val="$1"
+	local iface="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="ACCEPT"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val="DROP"
+	else
+		return
+	fi
+	local rule zone enable zname
+	get_wan_igmp_rule_idx $iface rule zone zname enable
+	if [ "$zone" = "" ]; then
+		zone=`create_firewall_zone_config igmp $iface`
+		zname="igmp_$iface"
+	fi
+	if [ "$rule" = "" ]; then
+		rule=`$UCI_ADD firewall rule`
+		$UCI_SET firewall.$rule.src=$zname
+		$UCI_SET firewall.$rule.proto=igmp
+	fi
+
+	$UCI_SET firewall.$rule.target=$val
+	$UCI_SET firewall.$rule.enabled=1
+	delay_service reload "firewall" "1"
+}
+
+get_wan_ip_link_connection_dns_enabled() {
+	local iface="$1"
+	local val=`$UCI_GET network.$iface.peerdns`
+	echo ${val:-1}
+}
+
+set_wan_ip_link_connection_dns_enabled() {
+	local val="$1"
+	local iface="$2"
+	local obj
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val=""
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val="0"
+	else
+		return
+	fi
+	$UCI_SET network.$iface.peerdns=$val
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
+get_max_pcon_instance() {
+	$UCI_SHOW network |sed -n "s/network\.[^.]\+\.wan_instance=$1\.//p" | sort -rn | head -n1
+}
+
+get_max_layer2_interface_index() {
+	$UCI_SHOW layer2_interface_$2 | sed -n "s/layer2_interface_$2\.[^.]\+\.baseifname=$1//p" | sort -rn | head -n1
+}
+
+update_wan_instance() {
 	local dev="$1"
-	local notif_permission="$2"
+	local wan="$2"
 	local iface="$3"
+	local proto="$4"
+	local iproto
+	
+	if [ "$proto" = "dhcp" -o "$proto" = "static" ]; then
+		iproto=$WAN_IP_CONNECTION
+	elif [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
+		iproto=$WAN_PPP_CONNECTION
+	else
+		return
+	fi
+	
+	local inst=`$UCI_GET network.$iface.wan_instance`
+	if [ "$dev.$wan.$iproto" = ${inst%.*} ]; then
+		echo ${inst##*.}
+	else
+		local iconp=`get_max_pcon_instance $dev.$wan.$iproto`
+		iconp=${iconp:-0}
+		let iconp++
+		$UCI_SET network.$iface.wan_instance="$dev.$wan.$iproto.$iconp"
+		$UCI_COMMIT
+		echo $iconp
+	fi
+}
+
+check_multiwan_interface() {
+	local iface="$1"
+	local cnt=0
+	local allwans=""
+	local ifnames=`$UCI_GET network.$iface.ifname`
+	for ifname in $ifnames; do
+		case $ifname in
+			atm*|ptm*|eth0*)
+			ifname=${ifname%.*}
+			if [ "${allwans/$ifname/}" = "$allwans" ]; then
+				let cnt++
+				allwans="$allwans $ifname"
+			fi
+			;;
+		esac
+	done
+	if [ "`$UCI_GET network.$iface.type`" != "" -a $cnt -gt 1 ]; then echo "$cnt"; fi
+}
+
+get_multiwan_instance() {
+	local iface="$1"
+	local __iwan __idev ifname
+	local ifnames=`$UCI_GET network.$iface.ifname`
+	json_load "$(ifstatus $iface)"
+	json_get_var device device
+	ifnames="$device $ifnames"
+	for ifname in $ifnames; do
+		case $ifname in
+			atm*)
+			__idev=$WAN_INST_ATM
+			__iwan=${ifname#atm}; __iwan=${__iwan%.*}; let __iwan++
+			break
+			;;
+			ptm*)
+			__idev=$WAN_INST_PTM
+			__iwan=${ifname#ptm}; __iwan=${__iwan%.*}; let __iwan++
+			break
+			;;
+			eth0*)
+			__idev=$WAN_INST_ETH
+			__iwan=1
+			break
+			;;
+		esac
+	done
+	eval "export -- \"$2=\"\"$__idev\"\"\""
+	eval "export -- \"$3=\"\"$__iwan\"\"\""
+}
+
+get_wan_device_by_instance() {
+	local __pref __layer2
+	case $1 in
+		$WAN_INST_ETH) __pref="eth"; __layer2=ethernet;;
+		$WAN_INST_ATM) __pref="atm"; __layer2=adsl;;
+		$WAN_INST_PTM) __pref="ptm"; __layer2=vdsl;;
+	esac
+	eval "export -- \"$2=\"\"$__pref\"\"\""
+	eval "export -- \"$3=\"\"$__layer2\"\"\""
+}
+
+get_wandevice_wandevice_parameters() {
+	local dev="$1"
+	local fdev="$2"
+	local notif_permission=`$UCI_SHOW network |grep "network\.$default_wan\.ifname=.*$fdev"`
+	local cwritable=1
+	[ "$dev" = "$WAN_INST_ETH" ] && cwritable=0
+	[ "$notif_permission" != "" ] && notif_permission=0
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev." "0" "$notif_permission"
-	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "0" "$notif_permission"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "$cwritable" "$notif_permission"
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
-	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $iface"
-	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
-	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status"
-	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $dev"
+	if [ "$dev" = "$WAN_INST_ATM" -o "$dev" = "$WAN_INST_PTM" ]; then
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status $dev"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type $dev"
+	fi
+}
+
+get_wandevice_wanconnectiondevice_parameters() {
+	local dev="$1"
+	local wan="$2"
+	local fwan="$3"
+		
+	local notif_permission=`$UCI_SHOW network |grep "network\.$default_wan\.ifname=.*$fwan"`
+	local ipn_perm pppn_perm cwritable=1
+	[ "$dev" = "$WAN_INST_ETH" ] && cwritable=0
+	if [ "$notif_permission" != "" ]; then
+		notif_permission="0"
+		local proto=`$UCI_GET network.$default_wan.proto`
+		[ "$proto" = "dhcp" -o "$proto" = "static" ] && ipn_perm="0"
+		[ "$proto" = "pppoa" -o "$proto" = "pppoe" ] && pppn_perm="0"
+	fi
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "$cwritable" "$notif_permission"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "1" "$ipn_perm"
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "1" "$pppn_perm"
+	if [ "$dev" = $WAN_INST_ATM ]; then
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANDSLLinkConfig." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANDSLLinkConfig.Enable" "0" "echo 1" "" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANDSLLinkConfig.DestinationAddress" "1" "get_wan_dsl_link_config_destination_address $fwan" "set_wan_dsl_link_config_destination_address $fwan \$val"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANDSLLinkConfig.ATMEncapsulation" "1" "get_wan_dsl_link_config_atm_encapsulation $fwan" "set_wan_dsl_link_config_atm_encapsulation \$val $fwan"
+	fi
+}
+
+get_wandevice_wanprotoclconnection_parameters() {
+	local dev="$1"
+	local wan="$2"
+	local conp="$3"
+	local iface="$4"
+	local proto="$5"
+	
+	local forced_inform_eip=""
+	local forced_notify=""
+	local notif_permission=""
+	
+	if [ "$default_wan" = "$iface" ];then
+		forced_inform_eip="1"
+		forced_notify="2"
+		notif_permission="0"
+	fi
+	if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp." "1" "$notif_permission"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.Enable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.ConnectionStatus" "0" "" "" "get_wan_device_mng_status $iface"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.MACAddress" "0" "get_wan_device_mng_interface_mac $iface"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.ConnectionType" "1" "get_wan_ip_link_connection_connection_type $iface" "set_wan_ip_link_connection_connection_type \$val $iface" "" 
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.AddressingType" "1" "get_wan_ip_link_connection_addressing_type $iface" "set_wan_ip_link_connection_addressing_type \$val $iface"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.NATEnabled" "1" "get_wan_ip_link_connection_nat_enabled $iface" "set_wan_ip_link_connection_nat_enabled \$val $iface" "" "xsd:boolean"		
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $iface" "set_interface_firewall_enabled $iface \$val" "" "xsd:boolean" 
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.X_BROADCOM_COM_IGMPEnabled" "1" "get_wan_ip_link_connection_igmp_enabled $iface" "set_wan_ip_link_connection_igmp_enabled \$val $iface" "" "xsd:boolean" 
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.DNSEnabled" "1" "get_wan_ip_link_connection_dns_enabled $iface" "set_wan_ip_link_connection_dns_enabled \$val $iface" "" "xsd:boolean"
+		#get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.DNSOverrideAllowed" "0" "" 
+	fi
+	if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp." "1" "$notif_permission"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Enable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ConnectionStatus" "0" "" "" "get_wan_device_ppp_status $iface"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Username" "1" "$UCI_GET network.$iface.username" "set_wan_device network.$iface.username \$val"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Password" "1" "" "set_wan_device network.$iface.password \$val" "" "" "" "" "" "1"
+	fi
 }
 
 get_cache_InternetGatewayDevice_WANDevice() {
-	local list_interface=`handle_wan_interface|sort -u`
-	local logical_intf
-	local dev=0
-	local wan=0
-	local wan_ppp=1
-	local wan_ip=1
-	local default_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
-	local dev_notif_permission=""
-	local prev_wan=""
-	local prev_dev=""
-	
+	local adev idev fdev cdev fwan fconp
+	default_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
 	get_object_cache_generic "InternetGatewayDevice.WANDevice." "0" "0"
-	for intf in $list_interface;do
-		iface=`echo $intf|cut -f3 -d:`
-		proto=`$UCI_GET network.$iface.proto`
-		if [ "$proto" != "dhcp" -a "$proto" != "static" -a "$proto" != "pppoa" -a "$proto" != "pppoe" ];then
-			continue
-		fi
-		dev=`echo $intf|cut -f2 -d:`
-		logical_intf=`echo $intf|cut -f1 -d:`
-		wan=`get_wan_logical_intf $logical_intf`
-		local forced_inform_eip=""
-		local forced_notify=""
-		local notif_permission=""
-		if [ "$default_wan" = "$iface" ];then
-			forced_inform_eip="1"
-			forced_notify="2"
-			notif_permission="0"
-			dev_notif_permission="0"
-		fi
-		if [ "$prev_dev" != "$dev" -a "$prev_dev" != "" ];then
-			wan_ip=1
-			wan_ppp=1
-			get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission" "$iface"
-			dev_notif_permission=""
-		fi
-		if [ "$prev_wan" != "$wan" -a "$prev_wan" != "" ];then
-			wan_ip=1
-			wan_ppp=1
-		fi
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan." "0" "$notif_permission"
-		
-		if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection." "0" "$notif_permission"
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip." "0" "$notif_permission"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.Enable" "1" "" "set_wan_device_wan_mng_enable \$val $iface" "get_wan_device_wan_mng_enable $iface" "xsd:boolean"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ConnectionStatus" "0" "" "" "get_wan_device_mng_status $iface"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$wan_ip.MACAddress" "0" "get_wan_device_mng_interface_mac $iface"
-				let wan_ip=$wan_ip+1
-		fi
-		if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection." "0" "$notif_permission"
-				get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp." "0" "$notif_permission"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Enable" "1" "" "set_wan_device_wan_ppp_enable \$val $iface" "get_wan_device_wan_ppp_enable $iface" "xsd:boolean"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ConnectionStatus" "0" "" "" "get_wan_device_ppp_status $iface"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Username" "1" "$UCI_GET network.$iface.username" "set_wan_device network.$iface.username \$val"
-				get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$wan_ppp.Password" "1" "" "set_wan_device network.$iface.password \$val" "" "" "" "" "" "1"
-				let wan_ppp=$wan_ppp+1
-		fi
-		prev_wan="$wan"
-		prev_dev="$dev"
+	for adev in "$WAN_INST_ETH:eth0,ethernet" "$WAN_INST_ATM:atm,adsl" "$WAN_INST_PTM:ptm,vdsl";do
+		idev=${adev%:*}
+		adev=${adev#*:}
+		fdev=${adev%,*}
+		cdev=${adev#*,}
+		get_wandevice_wandevice_parameters "$idev" "$fdev"
+		local wans=`$UCI_SHOW layer2_interface_$cdev | sed -n "s/layer2_interface_$cdev\.[^.]\+\.baseifname=//p" | sort -u`
+		for fwan in $wans; do
+			local iwan=${fwan##*[hm]}; let iwan++
+			get_wandevice_wanconnectiondevice_parameters "$idev" "$iwan" "$fwan"
+			local conps=`$UCI_SHOW network | grep "network\.[^.]\+\.ifname=.*$fwan" | cut -d. -f2 | sort -u`
+			for fconp in $conps; do
+				[ "`check_multiwan_interface $fconp`" != "" ] && continue
+				local proto=`$UCI_GET network.$fconp.proto`
+				local iconp=`update_wan_instance "$idev" "$iwan" "$fconp" "$proto"`
+				get_wandevice_wanprotoclconnection_parameters "$idev" "$iwan" "$iconp" "$fconp" "$proto"
+			done
+		done
 	done
-	if [ "$prev_dev" != "" ]; then
-		get_wandevice_dev_parent_objects "$prev_dev" "$dev_notif_permission" "$iface"
-	fi
 }
 
 get_dynamic_InternetGatewayDevice_WANDevice() {
+	local idev iwan fconp
+	case "$1" in
+		""|\
+		InternetGatewayDevice.|\
+		InternetGatewayDevice.WANDevice.|\
+		InternetGatewayDevice.WANDevice.[1-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9][0-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.[1-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.[1-9].*|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.[1-9][0-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.[1-9][0-9].*|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9].*|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9][0-9].|\
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9][0-9].*)
+	
+		default_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
+		local conps=`$UCI_SHOW network | grep "network\.[^.]\+\.ifname=" | cut -d. -f2 | sort -u`
+		for fconp in $conps; do
+			[ "`check_multiwan_interface $fconp`" = "" ] && continue
+			local proto=`$UCI_GET network.$fconp.proto`
+			get_multiwan_instance "$fconp" idev iwan 
+			local iconp=`update_wan_instance "$idev" "$iwan" "$fconp" "$proto"`
+			get_wandevice_wanprotoclconnection_parameters "$idev" "$iwan" "$iconp" "$fconp" "$proto"
+		done
+	esac
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_WANDevice() { 
+add_wan_wanconnectiondevice() {
+	local idev="$1"
+	local filename="$2"
+	local fdev iwan fwan layer2
+	
+	get_wan_device_by_instance $idev fdev layer2
+	local iwan=`get_max_layer2_interface_index $fdev $layer2`
+	iwan=${iwan:--1}
+	let iwan++
+
+	if [ "$fdev" = "atm" ]; then
+		local catm=`$UCI_ADD layer2_interface_adsl atm_bridge`
+		$UCI_SET layer2_interface_adsl.$catm.baseifname=atm$iwan
+		$UCI_SET layer2_interface_adsl.$catm.bridge=0
+		$UCI_SET layer2_interface_adsl.$catm.encapseoa=llcsnap_eth
+		$UCI_SET layer2_interface_adsl.$catm.ifname=atm$iwan.1
+		$UCI_SET layer2_interface_adsl.$catm.link_type=EoA
+		$UCI_SET layer2_interface_adsl.$catm.unit=$iwan
+		$UCI_SET layer2_interface_adsl.$catm.vci=35
+		$UCI_SET layer2_interface_adsl.$catm.vpi=8
+		delay_service restart "layer2_interface_adsl" "1"
+	else
+		local cptm=`$UCI_ADD layer2_interface_vdsl vdsl_interface`
+		$UCI_SET layer2_interface_vdsl.$cptm.baseifname=ptm$iwan
+		$UCI_SET layer2_interface_vdsl.$cptm.bridge=0
+		$UCI_SET layer2_interface_vdsl.$cptm.ifname=ptm$iwan.1
+		$UCI_SET layer2_interface_vdsl.$cptm.unit=$iwan
+		delay_service restart "layer2_interface_vdsl" "1"
+	fi
+	$UCI_COMMIT
+	delay_service restart "layer2_interface" "1"
+	
+	fwan="$fdev$iwan"
+	let iwan++		
+	
+	get_wandevice_wanconnectiondevice_parameters "$idev" "$iwan" "$fwan" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$iwan"
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_wan_wanprotocolconnection() {
+	local instances="$1"
+	local proto="$2"
+	local iproto="$3"
+	local filename="$4"
+	local idev fdev iwan fwan layer2
+	
+	idev=${instances%% *}
+	iwan=${instances##* }
+	if [ "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" -a "$idev" != "$WAN_INST_ETH" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	get_wan_device_by_instance $idev fdev layer2
+	fwan="$fdev$((iwan-1))"
+	local tmp=`$UCI_SHOW layer2_interface_$layer2 | grep "layer2_interface_$layer2\.[^.]\+\.baseifname=$fwan"`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	fwan="$fwan.1"
+	local iconp=`get_max_pcon_instance $idev.$iwan.$iproto`
+	iconp=${iconp:-0}
+	local fconp="wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
+
+	$UCI_SET network.$fconp=interface
+	$UCI_SET network.$fconp.wan_instance="$idev.$iwan.$iproto.$iconp"
+	$UCI_SET network.$fconp.ifname=$fwan
+	$UCI_SET network.$fconp.proto=$proto
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	
+	get_wandevice_wanprotoclconnection_parameters "$idev" "$iwan" "$iconp" "$fconp" "$proto" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$iconp"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_wan_wanconnectiondevice() {
+	local instances="$2"
+	local filename="$3"
+	local idev fdev iwan fwan layer2 fconp
+
+	idev=${instances%% *}
+	iwan=${instances##* }
+	if [ "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	get_wan_device_by_instance $idev fdev layer2
+	fwan="$fdev$((iwan-1))"
+	local tmp=`$UCI_SHOW layer2_interface_$layer2 | grep "layer2_interface_$layer2\.[^.]\+\.baseifname=$fwan" | cut -f2 -d.`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	$UCI_SHOW network | grep "network\.[^.]\+\.ifname=.*$fwan" | cut -f2 -d. | while read fconp; do
+		$UCI_DELETE network.$fconp
+	done
+	$UCI_DELETE layer2_interface_$layer2.$tmp
+	$UCI_COMMIT
+	delay_service restart "layer2_interface_$layer2" "1"
+	delay_service restart "layer2_interface" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_wan_wanprotocolconnection() {
+	local instances="$2"
+	local iproto="$3"
+	local filename="$4"
+	local idev fdev iwan fwan layer2
+
+	idev=${instances%% *}
+	instances=${instances#* }
+	iwan=${instances%% *}
+	iconp=${instances##* }
+	
+	if [ "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" -a "$idev" != "$WAN_INST_ETH" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	get_wan_device_by_instance $idev fdev layer2
+	fwan="$fdev$((iwan-1))"
+	local tmp=`$UCI_SHOW layer2_interface_$layer2 | grep "layer2_interface_$layer2\.[^.]\+\.baseifname=$fwan"`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	tmp=`$UCI_SHOW network | grep "network\.[^.]\+\.wan_instance=$idev.$iwan.$iproto.$iconp" | cut -f2 -d.`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+
+	$UCI_DELETE network.$tmp
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_WANDevice() {
+	local filename="$2"
+	local idev fault_code instances
+	default_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
+	case $1 in
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice." "rc" "idev"
+			if [ "$rc" != "0" -o "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" ]; then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME;
+			fi
+			add_wan_wanconnectiondevice "$idev" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			add_wan_wanprotocolconnection "$instances" "dhcp" "$WAN_IP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+			
+		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			add_wan_wanprotocolconnection "$instances" "pppoe" "$WAN_PPP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 delete_object_InternetGatewayDevice_WANDevice() {
+	local filename="$2"
+	local fault_code instances
+	case $1 in
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanprotocolconnection "$1" "$instances" "$WAN_IP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+			
+		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanprotocolconnection "$1" "$instances" "$WAN_PPP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanconnectiondevice "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

@@ -5,12 +5,32 @@
 
 get_lan_device_interface() {
 local i=0
+local ret=""
 for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`;do
 	if [ "`$UCI_GET network.$lan.is_lan`" = "1" ];then
-		let i=$i+1
-		echo "$lan:$i"
+		local dev
+		local jsmsg=`ifstatus $lan`
+		json_init
+		json_load "$jsmsg"
+		json_get_var dev device
+		dev=${dev/br-/}
+		local tmp=${ret#*:$dev;}
+		if [ "$tmp" = "$ret" ]; then
+			let i++
+			ret="$ret $i:$dev;1:$lan"
+		else
+			tmp=${tmp%%:*}
+			json_select "ipv4-address"
+			local type index="1"
+			while json_get_type type $index && [ "$type" != "" ]; do
+				let tmp++
+				let index++
+				ret=${ret/:$dev;/:$dev;$tmp:$lan,}
+			done
+		fi
 	fi
 done
+echo $ret
 }
 
 get_wlan_enable() {
@@ -647,12 +667,85 @@ set_wlan_pre_shared_key_associated_device_MACAddress() {
 	delay_service reload "network" "1"
 }
 
+get_lan_dns() {
+	local lan_name=$1
+	local val dns
+	json_load "$(ifstatus $lan_name)"
+	json_select "dns-server"
+	local index="1"
+	while json_get_type dns $index && [ "$dns" = string ]; do
+	        json_get_var dns "$((index++))"
+	        val="$dns,$val"
+	done
+	json_select ".."
+	val=${val%,}
+	if [ "$val" = "" ]; then val=`$UCI_GET network.$lan_name.dns`; val=${val// /,}; fi
+	echo $val
+}
+
+set_lan_dns() {
+	local lan_name=$1
+	local val="$2"
+	val=${val//,/ }
+	$UCI_SET network.$lan_name.dns="$val"
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
+get_lan_dhcp_server_configurable() {
+	local lan_name=$1
+	if [ "`$UCI_GET dhcp.$lan_name`" = "" ];then echo 0; else echo 1; fi
+}
+
+set_lan_dhcp_server_configurable() {
+	local lan_name=$1
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		if [ "`$UCI_GET dhcp.$lan_name`" = "" ];then
+			$UCI_SET dhcp.$lan_name=dhcp
+			$UCI_SET dhcp.$lan_name.interface=$lan_name
+			$UCI_SET dhcp.$lan_name.start=100
+			$UCI_SET dhcp.$lan_name.limit=150
+			$UCI_SET dhcp.$lan_name.leasetime=12h
+		fi
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		$UCI_SET dhcp.$lan_name=
+	else
+		return
+	fi
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
+get_lan_dhcp_server_enable() {
+	local lan_name=$1
+	if [ "`$UCI_GET dhcp.$lan_name`" = "" ]; then
+		echo 0
+	else
+		if [ "`$UCI_GET dhcp.$lan_name.ignore`" = "" ]; then echo 1; else echo 0; fi 
+	fi
+}
+
+set_lan_dhcp_server_enable() {
+	local lan_name=$1
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		$UCI_SET dhcp.$lan_name.ignore=
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		$UCI_SET dhcp.$lan_name.ignore=1
+	else
+		return
+	fi
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
 	uci_num=$3
-	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0"
-	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
@@ -693,26 +786,51 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num \$val"
 }
 
+get_landevice_lanhostconfigmanagement_generic() {
+	local idev=$1
+	local ndev=$2
+	local ilan=$3
+	local nlan=$4
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "" "set_interface_enable_ubus $nlan \$val" "get_interface_enable_ubus $nlan $nlan"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val"
+}
+
 get_cache_InternetGatewayDevice_LANDevice() {
-	for lan in `get_lan_device_interface`;do
-		lan_num=`echo $lan|cut -f2 -d:`
-		lan_dev=`echo $lan|cut -f1 -d:`
-		wlan_num=0
-		for uci_num in `$UCI_SHOW wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
-			let "wlan_num++"
-			get_landevice_wlanconfiguration_generic $lan_num $wlan_num $uci_num
+	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0"
+	for interface in `get_lan_device_interface`;do
+		local tmp=${interface%%;*}
+		local idev=${tmp%%:*}
+		local ndev=${tmp#*:}
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev." "0" "0"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement." "0"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $ndev \$val" "get_lan_dns $ndev" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $ndev" "set_lan_dhcp_server_configurable $ndev \$val" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $ndev" "set_lan_dhcp_server_enable $ndev \$val" "" "xsd:boolean"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
+
+		tmp=${interface#*;}
+		tmp=${tmp/,/ }
+		for lan in $tmp; do
+			ilan=${lan%%:*}
+			nlan=${lan#*:}
+			get_landevice_lanhostconfigmanagement_generic $idev $ndev $ilan $nlan
+		done
+		
+		local iwlan=0
+		for iuci in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
+			let iwlan++
+			get_landevice_wlanconfiguration_generic $idev $iwlan $iuci
 		done
 	done
 }
 
 get_dynamic_InternetGatewayDevice_LANDevice() {
-	local param="$1"
 	local assoclist="" num="" lan_num="" wlan_num=0 i=0
 	local mac_lower="" ip="" is_authenticated=""
 	
-	if [ "$param" = "" ]; then param="InternetGatewayDevice."; fi
-
-	case "$param" in
+	case "$1" in
+		""|\
 		InternetGatewayDevice.|\
 		InternetGatewayDevice.LANDevice.|\
 		InternetGatewayDevice.LANDevice.[1-9].|\
@@ -726,11 +844,12 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.[1-9]*.AssociatedDevice.[1-9]*.AssociatedDeviceMACAddress|\
 		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.[1-9]*.AssociatedDevice.[1-9]*.AssociatedDeviceIPAddress|\
 		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.[1-9]*.AssociatedDevice.[1-9]*.AssociatedDeviceAuthenticationState)
-		for lan in `get_lan_device_interface`;do
-			lan_num=`echo $lan|cut -f2 -d:`
-			lan_dev=`echo $lan|cut -f1 -d:`
+		for interface in `get_lan_device_interface`;do
+			local tmp=${interface%%;*}
+			local idev=${tmp%%:*}
+			local ndev=${tmp#*:}
 			wlan_num=0
-			for num in `$UCI_SHOW wireless|grep $lan_dev|sed -n 's/wireless\.@wifi-iface//p'|sed -n 's/\.network=\w\+ *\w*//p'|sed -n 's/\]//p'|sed -n 's/\[//p'`;do
+			for num in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
 				let "wlan_num++"
 				if [ "$num" = "0" ];then
 					assoclist=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
@@ -738,7 +857,7 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 					assoclist=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
 				fi
 				i=0
-				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice." "" "0" "" "" "" "" "0"
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice." "" "0" "" "" "" "" "0"
 				for mac in $assoclist;do
 					let i++
 					ip=""
@@ -757,10 +876,10 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 							is_authenticated="1"
 						fi
 					fi
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "" "0" "" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
+					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "" "0" "" "" "" "" "0"
+					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
+					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
+					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
 				done
 			done
 		done

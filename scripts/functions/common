@@ -4,6 +4,127 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+get_interface_enable_ubus() {
+	local val=""
+	local intf="$1"
+	
+	json_load "$(ifstatus $intf)"
+	json_get_var val up
+	echo $val
+}
+
+set_interface_enable_ubus() {
+	local intf="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		ubus call network.interface.$intf up '{}' &
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		ubus call network.interface.$intf down '{}' &
+	fi
+}
+
+create_firewall_zone_config() {
+	local pfx="$1"
+	local iface="$2"
+	local input=${3:-ACCEPT}
+	local forward=${4:-ACCEPT}
+	local output=${5:-ACCEPT}
+	local obj=`$UCI_ADD firewall zone`
+	$UCI_SET firewall.$obj.name="$pfx"_"$iface"
+	$UCI_SET firewall.$obj.input=$input
+	$UCI_SET firewall.$obj.forward=$forward
+	$UCI_SET firewall.$obj.output=$output
+	$UCI_SET firewall.$obj.network=$iface
+	echo $obj
+}
+
+get_interface_firewall_enabled() {
+	local iface="$1"
+	local i=0
+	while [ "`$UCI_GET firewall.@zone[$i]`" != "" ]; do
+		if [ "`$UCI_GET firewall.@zone[$i].network| grep $iface`" != "" ]; then
+			if [ "`$UCI_GET firewall.@zone[$i].input`" != "ACCEPT" -a "`$UCI_GET firewall.@zone[$i].forward`" != "ACCEPT" ]; then
+				echo 1; return
+			fi
+		fi
+		let i++
+	done
+	echo "0"
+}
+
+set_interface_firewall_enabled() {
+	local iface="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="DROP"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val="ACCEPT"
+	else
+		return
+	fi
+	local i=0 cnt=0
+	while [ "`$UCI_GET firewall.@zone[$i]`" != "" ]; do
+		if [  "`$UCI_GET firewall.@zone[$i].network| grep $iface`" != "" ]; then
+			$UCI_SET firewall.@zone[$i].input=$val
+			$UCI_SET firewall.@zone[$i].forward=$val
+			let cnt++
+		fi
+		let i++
+	done
+	if [ "$cnt" = "0" -a "$val" = "DROP" ]; then
+		local zone=`create_firewall_zone_config "fwl" "$iface" "DROP" "DROP"`
+	fi
+	delay_service reload "firewall" "1"
+}
+
+get_config_with_enum() {
+	local path=$1
+	local enum=$2
+	local val=`$UCI_GET $path`
+	local tmp=${enum%%:$val/*}
+	tmp=${tmp##*/}
+	if [ "$tmp" = "$enum" -o "$tmp" = "" ]; then
+		echo $val
+	else
+		echo $tmp
+	fi
+}
+
+set_config_with_enum() {
+	local path=$1
+	local enum=$2
+	local val=$3
+	local tmp=${enum#* $val:}
+	tmp=${tmp%% *}
+	if [ "$tmp" != "$enum" -a "$tmp" != "" ]; then
+		val=$tmp
+	fi
+	$UCI_SET $path=$val
+}
+
+add_bridge_vlan_interface() {
+	local dev="$1"
+	local vid="$2"
+	local tmp
+	for tmp in `$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.[^.]\+\.vlan8021q=$vid[^0-9]*" | cut -f2 -d.`; do
+		if [ "`$UCI_GET layer2_interface_vlan.$tmp.baseifname`" = "$dev" ]; then
+			echo "`$UCI_GET layer2_interface_vlan.$tmp.ifname`"
+			return
+		fi
+	done
+	tmp=`$UCI_ADD layer2_interface_vlan vlan_interface`
+	$UCI_SET layer2_interface_vlan.$tmp.baseifname=$dev
+	$UCI_SET layer2_interface_vlan.$tmp.bridge=1
+	$UCI_SET layer2_interface_vlan.$tmp.ifname="$dev.$vid"
+	$UCI_SET layer2_interface_vlan.$tmp.name="vlan_$dev""_$vid"
+	$UCI_SET layer2_interface_vlan.$tmp.vlan8021p=0
+	$UCI_SET layer2_interface_vlan.$tmp.vlan8021q=$vid
+	echo "$dev.$vid"
+}
+	
+
 # TODO: merge this one somewhere in OpenWrt
 uci_remove_list_element() {
 	local option="$1"
@@ -758,18 +879,10 @@ set_param_value_generic() {
 		return $FAULT_CPE_NON_WRITABLE_PARAMETER
 	fi
 
-	json_get_var set_cmd set_cmd
-	if [ "$set_cmd" = "" ];then
-		return $FAULT_CPE_NON_WRITABLE_PARAMETER
-	fi
-	eval "$set_cmd"
+	json_add_string "value" "$val"
+	json_close_object
+	echo "`json_dump`" >> $set_tmp_file
 	
-	json_get_var secret_value secret_value
-	if [ "$secret_value" != "1" ]; then
-		json_add_string "value" "$val"
-		json_close_object
-		echo "`json_dump`" >> $set_tmp_file
-	fi
 	return $FAULT_CPE_NO_FAULT
 }
 

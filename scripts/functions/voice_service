@@ -113,6 +113,27 @@ get_voice_profile_number_of_lines() {
 	echo $val
 }
 
+set_sip_profile_region() {
+	local val="$1"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	$UCI_SET voice_client.BRCM.country="$val"
+}
+
+enum_svsvp_dtmfmethod="/InBand:inband/RFC2833:rfc2833/SIPInfo:info/"
+set_voice_config_with_enum() {
+	set_config_with_enum $1 $2 $3
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
+get_voice_service_serviceproviderinfo_name() {
+	local num="$1"
+	local val=`$UCI_GET voice_client.sip$num.provider_name`
+	if [ "$val" = "" ]; then val=`$UCI_GET voice_client.sip$num.domain | cut -f1 -d'.'`; fi
+	echo $val
+}
+
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.SIP.
 
 set_sip_proxy_server() {
@@ -468,6 +489,22 @@ set_line_sip_uri() {
 	fi
 }
 
+set_sip_fax_t38_enable() {
+	local num="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="1"
+	elif [ "$val" = "false" -o "$val" = "0" -o "$val" = "" ]; then
+		val="0"
+	else
+		return
+	fi
+	
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	$UCI_SET voice_client.sip$num.is_fax="$val"
+}
 # Global SET/GET functions
 
 get_voice_service_max_profile() {
@@ -485,7 +522,7 @@ get_voice_service_max_line() {
 get_services_voice_service_generic() {
 	local profile_num="$1"
 	local sip_id="$2"
-	
+
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num." "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Reset" "1" "echo 0" "set_voice_profile_reset $sip_id \$val" "" "xsd:boolean"
@@ -516,6 +553,12 @@ get_services_voice_service_generic() {
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthUsername" "1" "" "set_sip_inbound_auth_username $sip_id \$val"
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.X_002207_CallLines" "1" "$UCI_GET voice_client.sip$sip_id.call_lines" "set_sip_x_002207_call_lines $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.DTMFMethod" "1" "get_config_with_enum voice_client.SIP.dtmfmode $enum_svsvp_dtmfmethod" "set_voice_config_with_enum voice_client.SIP.dtmfmode \$enum_svsvp_dtmfmethod \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Region" "1" "$UCI_GET voice_client.BRCM.country " "set_sip_profile_region \$val"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.ServiceProviderInfo." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.ServiceProviderInfo.Name" "1" "get_voice_service_serviceproviderinfo_name $sip_id" "\$UCI_SET voice_client.sip$sip_id.provider_name=\$val"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38.Enable" "1" "$UCI_GET voice_client.sip$sip_id.is_fax" "set_sip_fax_t38_enable $sip_id \$val" "" "xsd:boolean"
 }
 
 get_services_voice_service_line_generic() {
