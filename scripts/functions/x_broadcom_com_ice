@@ -1,0 +1,64 @@
+#!/bin/sh
+# Copyright (C) 2014 Inteno Broadband Technology AB
+
+get_ice_cloud_enable() {
+	case "$($UCI_GET ice.cloud.enabled)" in
+		1|"true"|"yes"|"on")
+			echo "true" ;;
+		0|"false"|"no"|"off")
+			echo "false" ;;
+		*) ;;
+	esac
+}
+
+# SET function which restarts the ice-client service
+set_ice_cloud_enable() {
+	local lower=$(echo $1 | tr '[A-Z]' '[a-z]')
+	case "$lower" in
+		"true"|1)
+			$UCI_SET ice.cloud.enabled=1 ;;
+		"false"|0)
+			$UCI_SET ice.cloud.enabled=0 ;;
+		*) return ;;
+	esac
+
+	if [ -f /etc/rc.d/*ice-client ]
+	then
+		delay_service restart "ice-client" "1"
+	fi
+}
+
+get_ice_cloud_server() {
+	echo $($UCI_GET ice.cloud.server)
+}
+
+set_ice_cloud_server() {
+	[ "$1" = "" ] && return
+
+	$UCI_SET ice.cloud.server=$1
+	if [ -f /etc/rc.d/*ice-client ]
+	then
+		delay_service restart "ice-client" "1"
+	fi
+}
+
+# First specify the root object,
+# then map leaves to the getter and setter functions, defined above.
+get_cache_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+	get_object_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE." "0"
+	get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE.Enable" "1" "get_ice_cloud_enable" "set_ice_cloud_enable \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE.Server" "1" "get_ice_cloud_server" "set_ice_cloud_server \$val"
+}
+
+get_dynamic_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
