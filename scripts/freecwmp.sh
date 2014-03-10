@@ -178,6 +178,13 @@ if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] started at \"`date`\""
 fi
 
+prefix_list="\
+InternetGatewayDevice. \
+InternetGatewayDevice.DeviceInfo. \
+InternetGatewayDevice.LANDevice. \
+InternetGatewayDevice.ManagementServer. \
+InternetGatewayDevice.WANDevice."
+
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
 . /usr/share/freecwmp/functions/device_info
@@ -185,30 +192,14 @@ fi
 . /usr/share/freecwmp/functions/management_server
 . /usr/share/freecwmp/functions/wan_device
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
-. /usr/share/freecwmp/functions/voice_service
+	. /usr/share/freecwmp/functions/voice_service
+	prefix_list="$prefix_list InternetGatewayDevice.Services."
 fi
 . /usr/share/freecwmp/functions/models
-. /usr/share/freecwmp/functions/x_broadcom_com_ice
-
-if [ $(db get hw.board.hasVoice) -eq 1 ]; then
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
-InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.Services. \
-InternetGatewayDevice.X_BROADCOM_COM_ICE."
-else
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
-InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.X_BROADCOM_COM_ICE."
+if [ -e "/etc/config/ice" ]; then
+	. /usr/share/freecwmp/functions/x_broadcom_com_ice
+	prefix_list="$prefix_list InternetGatewayDevice.X_BROADCOM_COM_ICE."
 fi
-
 
 config_load cwmp
 
