@@ -180,6 +180,17 @@ if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] started at \"`date`\""
 fi
 
+prefix_list="\
+InternetGatewayDevice. \
+InternetGatewayDevice.DeviceInfo. \
+InternetGatewayDevice.LANDevice. \
+InternetGatewayDevice.ManagementServer. \
+InternetGatewayDevice.WANDevice. \
+InternetGatewayDevice.Time. \
+InternetGatewayDevice.X_BROADCOM_COM_LoginCfg. \
+InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg. \
+InternetGatewayDevice.Layer2Bridging."
+
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
 . /usr/share/freecwmp/functions/device_info
@@ -187,38 +198,18 @@ fi
 . /usr/share/freecwmp/functions/management_server
 . /usr/share/freecwmp/functions/wan_device
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
-. /usr/share/freecwmp/functions/voice_service
+	prefix_list="$prefix_list InternetGatewayDevice.Services."
+	. /usr/share/freecwmp/functions/voice_service
 fi
 . /usr/share/freecwmp/functions/models
 . /usr/share/freecwmp/functions/times
 . /usr/share/freecwmp/functions/x_broadcom_com_logincfg
 . /usr/share/freecwmp/functions/x_broadcom_com_ipacccfg
 . /usr/share/freecwmp/functions/layer_2_bridging
-
-if [ $(db get hw.board.hasVoice) -eq 1 ]; then
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
-InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.Services. \
-InternetGatewayDevice.Time. \
-InternetGatewayDevice.X_BROADCOM_COM_LoginCfg. \
-InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg. \
-InternetGatewayDevice.Layer2Bridging."
-else
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
-InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.Time. \
-InternetGatewayDevice.X_BROADCOM_COM_LoginCfg. \
-InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg. \
-InternetGatewayDevice.Layer2Bridging."
-fi	
+if [ -e "/etc/config/ice" ]; then
+	. /usr/share/freecwmp/functions/x_broadcom_com_ice
+	prefix_list="$prefix_list InternetGatewayDevice.X_BROADCOM_COM_ICE."
+fi
 
 config_load cwmp
 
