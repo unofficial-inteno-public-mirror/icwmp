@@ -185,7 +185,7 @@ InternetGatewayDevice. \
 InternetGatewayDevice.DeviceInfo. \
 InternetGatewayDevice.LANDevice. \
 InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice."
+InternetGatewayDevice.WANDevice. \
 InternetGatewayDevice.Layer2Bridging. \
 InternetGatewayDevice.ManagementServer. \
 InternetGatewayDevice.Time. \
