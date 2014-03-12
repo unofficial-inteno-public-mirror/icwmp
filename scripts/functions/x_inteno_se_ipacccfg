@@ -100,28 +100,28 @@ set_x_bcm_com_ip_acc_list_cfgobj_enable() {
 	delay_service restart "firewall" "0"
 }
 
-get_cache_InternetGatewayDevice_X_BROADCOM_COM_IpAccCfg() {
+get_cache_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	local val
 	local instance index intf
-	get_object_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg." "0"
-	get_object_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg.X_BROADCOM_COM_IpAccListCfgObj." "0"
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg." "0"
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj." "0"
 	for instance in `get_firewall_rules`; do
 		index=$(($instance-1))
-		get_object_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg.X_BROADCOM_COM_IpAccListCfgObj.$instance." "0"
-		get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg.X_BROADCOM_COM_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg.X_BROADCOM_COM_IpAccListCfgObj.$instance.AccAddress" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_address $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_address $index \$val"
-		get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg.X_BROADCOM_COM_IpAccListCfgObj.$instance.AccNetMask" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index \$val"
+		get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance." "0"
+		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddress" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_address $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_address $index \$val"
+		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccNetMask" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index \$val"
 	done
 }
 
-get_dynamic_InternetGatewayDevice_X_BROADCOM_COM_IpAccCfg() {
+get_dynamic_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_X_BROADCOM_COM_IpAccCfg() {
+add_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
-delete_object_InternetGatewayDevice_X_BROADCOM_COM_IpAccCfg() {
+delete_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

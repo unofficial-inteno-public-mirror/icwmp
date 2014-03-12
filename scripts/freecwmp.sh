@@ -190,8 +190,8 @@ InternetGatewayDevice.Layer2Bridging. \
 InternetGatewayDevice.ManagementServer. \
 InternetGatewayDevice.Time. \
 InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.X_BROADCOM_COM_IpAccCfg. \
-InternetGatewayDevice.X_BROADCOM_COM_LoginCfg."
+InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
+InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
@@ -199,8 +199,8 @@ InternetGatewayDevice.X_BROADCOM_COM_LoginCfg."
 . /usr/share/freecwmp/functions/lan_device
 . /usr/share/freecwmp/functions/management_server
 . /usr/share/freecwmp/functions/wan_device
-. /usr/share/freecwmp/functions/x_broadcom_com_logincfg
-. /usr/share/freecwmp/functions/x_broadcom_com_ipacccfg
+. /usr/share/freecwmp/functions/x_inteno_se_logincfg
+. /usr/share/freecwmp/functions/x_inteno_se_ipacccfg
 . /usr/share/freecwmp/functions/layer_2_bridging
 . /usr/share/freecwmp/functions/models
 . /usr/share/freecwmp/functions/times
@@ -301,7 +301,7 @@ handle_action() {
 		handle_get_cache "InternetGatewayDevice." "1"
 		handle_get_cache "InternetGatewayDevice.ManagementServer."
 		handle_get_cache "InternetGatewayDevice.DeviceInfo."
-		handle_get_cache "InternetGatewayDevice.X_BROADCOM_COM_LoginCfg."
+		handle_get_cache "InternetGatewayDevice.X_INTENO_SE_LoginCfg"
 		local ls_cache=""
 		while [ "$found" = "0" ]; do
 			ls_prefix=`ls $cache_path`
