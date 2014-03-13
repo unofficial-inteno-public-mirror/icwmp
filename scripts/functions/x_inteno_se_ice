@@ -44,21 +44,21 @@ set_ice_cloud_server() {
 
 # First specify the root object,
 # then map leaves to the getter and setter functions, defined above.
-get_cache_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
-	get_object_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE." "0"
-	get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE.Enable" "1" "get_ice_cloud_enable" "set_ice_cloud_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.X_BROADCOM_COM_ICE.Server" "1" "get_ice_cloud_server" "set_ice_cloud_server \$val"
+get_cache_InternetGatewayDevice_X_INTENO_SE_ICE() {
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE." "0"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Enable" "1" "get_ice_cloud_enable" "set_ice_cloud_enable \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Server" "1" "get_ice_cloud_server" "set_ice_cloud_server \$val"
 }
 
-get_dynamic_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+get_dynamic_InternetGatewayDevice_X_INTENO_SE_ICE() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+add_object_InternetGatewayDevice_X_INTENO_SE_ICE() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
-delete_object_InternetGatewayDevice_X_BROADCOM_COM_ICE() {
+delete_object_InternetGatewayDevice_X_INTENO_SE_ICE() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 

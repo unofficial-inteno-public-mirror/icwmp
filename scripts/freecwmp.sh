@@ -198,7 +198,7 @@ fi
 . /usr/share/freecwmp/functions/models
 if [ -e "/etc/config/ice" ]; then
 	. /usr/share/freecwmp/functions/x_broadcom_com_ice
-	prefix_list="$prefix_list InternetGatewayDevice.X_BROADCOM_COM_ICE."
+	prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
 fi
 
 config_load cwmp
