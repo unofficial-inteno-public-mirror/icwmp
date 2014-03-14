@@ -252,16 +252,16 @@ set_wlan_key_passphrase() {
 	local val="$2"
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	delay_service reload "network" "1"
-	if [ $encryption != "wep-shared" -a $encryption != "wep-open" ] ; then
-		reset_wlan $nums
-		$UCI_SET wireless.@wifi-iface[$num].encryption="wep-open"
-		$UCI_SET wireless.@wifi-iface[$num].key="1"
+	if [ $encryption == "wep-shared" -o $encryption == "wep-open" ] ; then
+		for key in `/usr/sbin/wepkeygen 64 $val`;do
+			$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
+			let i++
+		done
+	elif [ $encryption == "none" ];then
+		echo "error"
+	else
+		set_wlan_pre_shared_key $num $val
 	fi
-	local i=1
-	for key in `/usr/sbin/wepkeygen 64 $val`;do
-		$UCI_SET wireless.@wifi-iface[$num].key$i="$key"
-		let i++
-	done
 }
 
 get_wlan_wep_encryption_level() {
