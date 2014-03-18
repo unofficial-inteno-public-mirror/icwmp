@@ -197,7 +197,7 @@ if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 fi
 . /usr/share/freecwmp/functions/models
 if [ -e "/etc/config/ice" ]; then
-	. /usr/share/freecwmp/functions/x_broadcom_com_ice
+	. /usr/share/freecwmp/functions/x_inteno_se_ice
 	prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
 fi
 
