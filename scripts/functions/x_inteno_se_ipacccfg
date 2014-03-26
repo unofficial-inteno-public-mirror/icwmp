@@ -33,7 +33,7 @@ get_x_bcm_com_ip_acc_list_cfgobj_acc_address() {
 
 get_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	local index=$1
-	port=`$UCI_GET firewall.@rule[$index].src_port`
+	port=`$UCI_GET firewall.@rule[$index].dest_port`
 	echo $port
 }
 
@@ -71,7 +71,7 @@ set_x_bcm_com_ip_acc_list_cfgobj_acc_address() {
 set_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	local index=$1
 	local val=$2
-	$UCI_SET firewall.@rule[$index].src_port=$val
+	$UCI_SET firewall.@rule[$index].dest_port=$val
 	delay_service restart "firewall" "0"
 }
 
