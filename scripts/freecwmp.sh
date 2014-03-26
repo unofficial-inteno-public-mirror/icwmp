@@ -592,8 +592,8 @@ handle_action() {
 	fi
 
 	if [ "$action" = "inform" ]; then
-		cat "$cache_path/"* | grep "\"forced_inform\"" | grep -v "\"get_cmd\""
-		cat "$cache_path/"* | grep "\"forced_inform\"" | grep "\"get_cmd\"" | while read line; do
+		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep -v "\"get_cmd\""
+		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep "\"get_cmd\"" | while read line; do
 			json_init
 			json_load "$line"
 			json_get_var exec_get_cmd get_cmd
