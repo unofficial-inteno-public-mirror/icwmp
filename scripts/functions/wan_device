@@ -413,6 +413,85 @@ set_wan_ip_link_connection_dns_enabled() {
 	delay_service reload "dnsmasq" "1"
 }
 
+get_wan_eth_intf_enable() {
+	local fdev="$1"
+	local val
+	json_load "$(devstatus $fdev)"
+	json_get_var val up
+	[ "$val" != "true" -a "$val" != "1" ] && val="false"
+	echo $val
+}
+
+set_wan_eth_intf_enable() {
+	local val="$1"
+	local fdev="$2"
+	local cval
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="true"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val="false"
+	else
+		return
+	fi
+	json_load "$(devstatus $fdev)"
+	json_get_var cval up
+	[ "$cval" = "$val" ] && return
+	
+	local intf 
+	local intfs=`$UCI_SHOW network | grep "network\.[^.]\+\.ifname=.*$fdev" | cut -d. -f2 | sort -u`
+	if [ "$val" = "true" ]; then
+		for intf in $intfs; do
+			ubus call network.interface.$intf up '{}' &	
+		done
+	else
+		for intf in $intfs; do
+			local type=`$UCI_GET network.$intf.type`
+			if [ "$type" != "anywan" -a "$type" != "multiwan" ]; then
+				ubus call network.interface.$intf down '{}' &
+				break
+			else
+				local device
+				json_load "$(ifstatus $intf)"
+				json_get_var device device
+				case "$device" in "$fdev"*)
+					ubus call network.interface.$intf down '{}' &
+					break
+					;;
+				esac
+			fi
+		done
+	fi
+}
+
+get_wan_eth_intf_status() {
+	local fdev="$1"
+	local val
+	json_load "$(devstatus $fdev)"
+	json_get_var val up
+	[ "$val" != "true" -a "$val" != "1" ] && echo "Disabled" || echo "Up"
+}
+
+get_wan_eth_intf_mac() {
+	local fdev="$1"
+	local val
+	json_load "$(devstatus $fdev)"
+	json_get_var val macaddr
+	[ "$val" = "" ] && val="00:00:00:00:00:00"
+	echo $val
+}
+
+get_wan_eth_intf_stats() {
+	local fdev="$1"
+	local svar="$2"
+	local val
+	json_load "$(devstatus $fdev)"
+	json_select "statistics" > /dev/null
+	json_get_var val "$svar" > /dev/null
+	json_select ".." > /dev/null
+	echo ${val:-0}
+}
+
 get_max_pcon_instance() {
 	$UCI_SHOW network |sed -n "s/network\.[^.]\+\.wan_instance=$1\.//p" | sort -rn | head -n1
 }
@@ -524,6 +603,17 @@ get_wandevice_wandevice_parameters() {
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status $dev"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type $dev"
+	fi
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Enable" "1" "" "set_wan_eth_intf_enable \$val $fdev" "get_wan_eth_intf_enable $fdev" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Status" "0" "" "" "get_wan_eth_intf_status $fdev"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.MACAddress" "0" "" "" "get_wan_eth_intf_mac $fdev"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Stats." "0"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Stats.BytesSent" "0" "" "" "get_wan_eth_intf_stats $fdev tx_bytes" "xsd:unsignedInt"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Stats.BytesReceived" "0" "" "" "get_wan_eth_intf_stats $fdev rx_bytes" "xsd:unsignedInt"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Stats.PacketsSent" "0" "" "" "get_wan_eth_intf_stats $fdev tx_packets" "xsd:unsignedInt"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Stats.PacketsReceived" "0" "" "" "get_wan_eth_intf_stats $fdev rx_packets" "xsd:unsignedInt"
 	fi
 }
 
