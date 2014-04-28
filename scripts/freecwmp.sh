@@ -187,9 +187,7 @@ InternetGatewayDevice.LANDevice. \
 InternetGatewayDevice.ManagementServer. \
 InternetGatewayDevice.WANDevice. \
 InternetGatewayDevice.Layer2Bridging. \
-InternetGatewayDevice.ManagementServer. \
 InternetGatewayDevice.Time. \
-InternetGatewayDevice.WANDevice. \
 InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
 InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 
