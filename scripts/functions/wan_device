@@ -587,6 +587,7 @@ get_wandevice_wanprotoclconnection_parameters() {
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Enable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ConnectionStatus" "0" "" "" "get_wan_device_ppp_status $iface"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
+		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.MACAddress" "0" "get_wan_device_mng_interface_mac $iface"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Username" "1" "$UCI_GET network.$iface.username" "set_wan_device network.$iface.username \$val"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Password" "1" "" "set_wan_device network.$iface.password \$val" "" "" "" "" "" "1"
 	fi
