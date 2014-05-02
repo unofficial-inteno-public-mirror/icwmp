@@ -231,7 +231,7 @@ freecwmp_cache_output() {
 	json_add_string "writable" "$permission"
 	if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
 	if [ "$get_cmd" != "" ]; then json_add_string "get_cmd" "$get_cmd"; fi
-	if [ "$set_cmd" != "" ]; then json_add_string "set_cmd" "$set_cmd"; fi
+	if [ "$set_cmd" != "" -a "$permission" = "1" ]; then json_add_string "set_cmd" "$set_cmd"; fi
 	if [ "$notif_permission" != "" ]; then json_add_string "notif_permission" "$notif_permission"; fi
 	if [ "$notification" != "" ]; then
 		json_add_string "notification" "$notification"
@@ -535,7 +535,7 @@ fi
 }
 
 freecwmp_set_parameter_fault() {
-	local parm="-$1"
+	local parm="$1"
 	local fault="$2"
 	freecwmp_fault_output "$parm" "$fault" >> $set_fault_tmp_file
 }
