@@ -1,10 +1,6 @@
 #!/bin/sh
-# Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2013 Inteno Broadband Technology AB
 # Author Feten Besbes <feten.besbes@pivasoftware.com>
-
-
-#TODO be completed by
 
 set_bridge_bridgename() {
 	$UCI_RENAME network.$1=$2
