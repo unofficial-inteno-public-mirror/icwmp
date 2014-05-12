@@ -26,7 +26,7 @@ enum log_severity_enum {
 
 #define DEFAULT_LOG_FILE_SIZE	10240
 #define DEFAULT_LOG_FILE_NAME	"/var/log/cwmpd.log"
-#define DEFAULT_LOG_SEVERITY	INFO
+#define DEFAULT_LOG_SEVERITY	DEBUG
 
 #ifdef WITH_CWMP_DEBUG
 # ifndef CWMP_LOG

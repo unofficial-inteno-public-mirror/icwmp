@@ -17,7 +17,7 @@ config 'cwmp' 'cpe'
 	option 'log_to_file' 'enable'
 	# log_severity: INFO (Default)	
 	# log_severity possible configs: EMERG, ALERT, CRITIC ,ERROR, WARNING, NOTICE, INFO, DEBUG
-	option 'log_severity' 'INFO'
+	option 'log_severity' 'DEBUG'
 	option 'log_file_name' '/var/log/cwmpd.log'
 	option 'log_max_size' '102400'
 	option 'userid' '$OUI-$SER'
