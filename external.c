@@ -325,7 +325,7 @@ int external_set_action(char *action, char *name, char *value, char *change)
 
 int external_object_action(char *command, char *name)
 {
-	DD(INFO,"executing %s object '%s'", action, name);
+	DD(INFO,"executing %s object '%s'", command, name);
 
 	json_object *json_obj_out;
 
