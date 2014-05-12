@@ -44,7 +44,7 @@ int external_apply(char *action, char *type);
 int external_handle_action(int (*external_handler)(char *msg));
 void external_add_list_paramameter(char *param_name, char *param_data, char *param_type, char *fault_code);
 void external_free_list_parameter();
-void external_init();
+int external_init();
 void external_exit();
 
 #endif

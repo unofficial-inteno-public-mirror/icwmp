@@ -1,0 +1,96 @@
+ cwmp.c         |  2 +-
+ event.c        |  2 +-
+ external.c     | 18 +++++++++++-------
+ inc/external.h |  2 +-
+ 4 files changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/cwmp.c b/cwmp.c
+index 9cc02ba..ec911cc 100644
+--- a/cwmp.c
++++ b/cwmp.c
+@@ -136,7 +136,7 @@ void cwmp_schedule_session (struct cwmp *cwmp)
+             CWMP_LOG(EMERG,"FATAL error in the mutex process in the session scheduler!");
+             exit(EXIT_FAILURE);
+         }
+-        external_init();
++        if (external_init()) continue;
+         CWMP_LOG (INFO,"Start session");
+         error = cwmp_schedule_rpc (cwmp,session);
+         CWMP_LOG (INFO,"End session");
+diff --git a/event.c b/event.c
+index 4384fab..98175d2 100644
+--- a/event.c
++++ b/event.c
+@@ -429,7 +429,7 @@ void sotfware_version_value_change(struct cwmp *cwmp, struct transfer_complete *
+ 	if (!p->old_software_version || p->old_software_version[0] == 0)
+ 		return;
+ 
+-	external_init();
++	if (external_init()) return;
+ 	external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
+ 	external_handle_action(cwmp_handle_getParamValues);
+ 	parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
+diff --git a/external.c b/external.c
+index 7b442c8..67208c8 100644
+--- a/external.c
++++ b/external.c
+@@ -18,6 +18,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <errno.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+@@ -190,16 +191,19 @@ static void json_obj_out_add(json_object *json_obj_out, char *name, char *val)
+ 	json_object_object_add(json_obj_out, name, json_obj_tmp);
+ 	}
+ 
+-void external_init()
++int external_init()
+ {
+ 	if (pipe(pfds_in) < 0)
+-			return;
++			return -1;
+ 
+ 	if (pipe(pfds_out) < 0)
+-		return;
++		return -1;
+ 
+-	if ((pid = fork()) == -1)
+-		goto error;
++	if ((pid = fork()) == -1) {
++	    CWMP_LOG(ERROR,"freecwmp fork error: Error no is : %d\n", errno);
++	    CWMP_LOG(ERROR,"freecwmp fork error: Error description is : %s\n",strerror(errno));
++	    goto error;
++	}
+ 
+ 	if (pid == 0) {
+ 		/* child */
+@@ -234,11 +238,11 @@ void external_init()
+ 	external_read_pipe_input(NULL);
+ 
+ 	DD(INFO, "freecwmp script is listening");
+-	return;
++	return 0;
+ 
+ error:
+ 	CWMP_LOG(ERROR,"freecwmp script intialization failed");
+-	exit(EXIT_FAILURE);
++	return -1;
+ }
+ 
+ void external_exit()
+diff --git a/inc/external.h b/inc/external.h
+index 6952fea..a195278 100644
+--- a/inc/external.h
++++ b/inc/external.h
+@@ -44,7 +44,7 @@ int external_apply(char *action, char *type);
+ int external_handle_action(int (*external_handler)(char *msg));
+ void external_add_list_paramameter(char *param_name, char *param_data, char *param_type, char *fault_code);
+ void external_free_list_parameter();
+-void external_init();
++int external_init();
+ void external_exit();
+ 
+ #endif

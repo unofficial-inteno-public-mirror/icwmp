@@ -136,7 +136,7 @@ void cwmp_schedule_session (struct cwmp *cwmp)
             CWMP_LOG(EMERG,"FATAL error in the mutex process in the session scheduler!");
             exit(EXIT_FAILURE);
         }
-        external_init();
+        if (external_init()) continue;
         CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");
