@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -198,8 +199,11 @@ void external_init()
 	if (pipe(pfds_out) < 0)
 		return;
 
-	if ((pid = fork()) == -1)
-		goto error;
+	if ((pid = fork()) == -1) {
+	    CWMP_LOG(ERROR,"freecwmp fork error: Error no is : %d\n", errno);
+	    CWMP_LOG(ERROR,"freecwmp fork error: Error description is : %s\n",strerror(errno));
+	    goto error;
+	}
 
 	if (pid == 0) {
 		/* child */

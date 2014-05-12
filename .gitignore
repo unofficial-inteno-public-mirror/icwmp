@@ -21,3 +21,4 @@ depcomp
 install-sh
 ipkg-brcm63xx_ref_nand/
 missing
+cscope.*

@@ -1,0 +1,29 @@
+ external.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/external.c b/external.c
+index 7b442c8..b6ff554 100644
+--- a/external.c
++++ b/external.c
+@@ -18,6 +18,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <errno.h>
+ #include <sys/socket.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+@@ -198,8 +199,11 @@ void external_init()
+ 	if (pipe(pfds_out) < 0)
+ 		return;
+ 
+-	if ((pid = fork()) == -1)
+-		goto error;
++	if ((pid = fork()) == -1) {
++	    CWMP_LOG(ERROR,"freecwmp fork error: Error no is : %d\n", errno);
++	    CWMP_LOG(ERROR,"freecwmp fork error: Error description is : %s\n",strerror(errno));
++	    goto error;
++	}
+ 
+ 	if (pid == 0) {
+ 		/* child */
