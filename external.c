@@ -198,7 +198,7 @@ void external_init()
 	if (pipe(pfds_out) < 0)
 		return;
 
-	if ((pid = fork()) == -1)
+	if ((pid = vfork()) == -1)
 		goto error;
 
 	if (pid == 0) {
