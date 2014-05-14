@@ -442,20 +442,20 @@ int run_session_end_func (struct session *session)
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");
-		external_simple("end_session");
+		external_simple("end_session", NULL);
 	}
 
 	if (session->end_session & END_SESSION_FACTORY_RESET)
 	{
 		CWMP_LOG (INFO,"Executing factory reset: end session request");
-		external_simple("factory_reset");
+		external_simple("factory_reset", NULL);
 		exit(EXIT_SUCCESS);
 	}
 
 	if (session->end_session & END_SESSION_REBOOT)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");
-		external_simple("reboot");
+		external_simple("reboot", NULL);
 		exit(EXIT_SUCCESS);
 	}
 

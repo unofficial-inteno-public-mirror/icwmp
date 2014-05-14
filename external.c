@@ -339,7 +339,7 @@ int external_object_action(char *command, char *name)
 	return 0;
 }
 
-int external_simple(char *command)
+int external_simple(char *command, char *arg)
 {
 	DD(INFO,"executing %s request", command);
 
@@ -349,6 +349,7 @@ int external_simple(char *command)
 	json_obj_out = json_object_new_object();
 
 	json_obj_out_add(json_obj_out, "command", command);
+	if (arg) json_obj_out_add(json_obj_out, "arg", arg);
 
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
