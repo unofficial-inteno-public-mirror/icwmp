@@ -158,6 +158,8 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 #ifdef HTTP_CURL
 	CURLcode res;
 	long http_code = 0;
+	static char *ip_acs = NULL;
+	char *ip = NULL;
 	curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
 	curl_easy_setopt(curl, CURLOPT_USERNAME, cwmp->conf.acs_userid);
 	curl_easy_setopt(curl, CURLOPT_PASSWORD, cwmp->conf.acs_passwd);
@@ -165,6 +167,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_c.header_list);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, HTTP_TIMEOUT);
+	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, msg_out);
 	if (msg_out)
@@ -191,7 +194,16 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	if (!strlen(*msg_in))
 		FREE(*msg_in);
 
-	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+    if (ip) {
+        if (!ip_acs || strcmp(ip_acs, ip) != 0) {
+            FREE(ip_acs);
+            ip_acs = strdup(ip);
+            external_simple("allow_cr_ip", ip_acs);
+        }
+    }
+
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
 	if(http_code == 204)
 	{

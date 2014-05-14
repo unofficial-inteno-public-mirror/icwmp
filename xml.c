@@ -549,7 +549,7 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
         }
     }
 
-    external_simple("inform");
+    external_simple("inform", NULL);
 
     external_handle_action(cwmp_handle_getParamValues);
 

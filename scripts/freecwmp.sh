@@ -150,6 +150,10 @@ case "$1" in
 	end_session)
 		action="end_session"
 		;;
+	allow_cr_ip)
+		action="allow_cr_ip"
+		__arg1="$2"
+		;;
 	json_continuous_input)
 		action="json_continuous_input"
 		;;
@@ -611,6 +615,16 @@ handle_action() {
 		/bin/sh /tmp/end_session.sh
 	fi
 	
+	if [ "$action" = "allow_cr_ip" ]; then
+		local port=`$UCI_GET cwmp.cpe.port`
+		local if_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
+		[ "$if_wan" = "" ] && return
+		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
+		[ "$if_wan" = "" ] && return
+		local zone_name=`$UCI_GET firewall.$zone.name`
+		iptables -I $zone_name -p tcp -s $__arg1 --dport $port -j ACCEPT
+	fi
+	
 	if [ "$action" = "json_continuous_input" ]; then
 		echo "EOF"
 		while read CMD; do
@@ -695,6 +709,10 @@ handle_action() {
 					;;
 				end_session)
 					action="end_session"
+					;;
+				allow_cr_ip)
+					action="allow_cr_ip"
+					json_get_var __arg1 arg
 					;;
 				end)
 					echo "EOF"
