@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -190,16 +191,23 @@ static void json_obj_out_add(json_object *json_obj_out, char *name, char *val)
 	json_object_object_add(json_obj_out, name, json_obj_tmp);
 	}
 
-void external_init()
+int external_init()
 {
 	if (pipe(pfds_in) < 0)
-			return;
+			return -1;
 
 	if (pipe(pfds_out) < 0)
-		return;
-
-	if ((pid = fork()) == -1)
+		return -1;
+	if ((pid = fork()) == -1) {
+	    CWMP_LOG(ERROR,"freecwmp fork error: Error no is : %d", errno);
+	    CWMP_LOG(ERROR,"freecwmp fork error: Error description is : %s",strerror(errno));
+	    CWMP_LOG(INFO,"Using vfork instead of fork",strerror(errno));
+	    if ((pid = vfork()) == -1) {
+	        CWMP_LOG(ERROR,"freecwmp vfork error: Error no is : %d", errno);
+	        CWMP_LOG(ERROR,"freecwmp vfork error: Error description is : %s",strerror(errno));
 		goto error;
+	    }
+	}
 
 	if (pid == 0) {
 		/* child */
@@ -234,11 +242,11 @@ void external_init()
 	external_read_pipe_input(NULL);
 
 	DD(INFO, "freecwmp script is listening");
-	return;
+	return 0;
 
 error:
 	CWMP_LOG(ERROR,"freecwmp script intialization failed");
-	exit(EXIT_FAILURE);
+	return -1;
 }
 
 void external_exit()
