@@ -622,7 +622,7 @@ handle_action() {
 		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
 		[ "$if_wan" = "" ] && return
 		local zone_name=`$UCI_GET firewall.$zone.name`
-		iptables -I $zone_name -p tcp -s $__arg1 --dport $port -j ACCEPT
+		iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT
 	fi
 	
 	if [ "$action" = "json_continuous_input" ]; then
