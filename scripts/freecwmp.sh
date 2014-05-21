@@ -622,7 +622,7 @@ handle_action() {
 		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
 		[ "$if_wan" = "" ] && return
 		local zone_name=`$UCI_GET firewall.$zone.name`
-        sed -i 's,\(.*-I\).*\(-p.*-s\).*\(--dport.*\)Open ACS port.*/,\1 zone_${zone_name}_input \2 $__arg1 \3Open ACS port \*/,g' /etc/firewall.cwmp
+		sed -i 's,\(.*-I\).*\(-p.*-s\).*\(--dport.*\)Open ACS port.*/,\1 zone_${zone_name}_input \2 $__arg1 \3Open ACS port \*/,g' /etc/firewall.cwmp
 	fi
 	
 	if [ "$action" = "json_continuous_input" ]; then
