@@ -1,1 +1,2 @@
 #created by the freecwmp package 
+#iptables -I FW_ZONE -p tcp -s ACS_ADDRESS --dport PORT -j ACCEPT --comment "Open ACS port"
