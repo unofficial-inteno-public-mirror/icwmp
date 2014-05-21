@@ -618,12 +618,12 @@ handle_action() {
 	if [ "$action" = "allow_cr_ip" ]; then
 		local port=`$UCI_GET cwmp.cpe.port`
 		local if_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
-		[ "$if_wan" = "" ] && return
 		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
-		[ "$if_wan" = "" ] && return
 		local zone_name=`$UCI_GET firewall.$zone.name`
+		[ "$zone_name" = "" ] && return
 		# update iptables rule
 		sed -i "s,^.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp
+		fw3 reload
 	fi
 	
 	if [ "$action" = "json_continuous_input" ]; then
