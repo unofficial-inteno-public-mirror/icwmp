@@ -163,7 +163,10 @@ static void external_read_pipe_input(int (*external_handler)(char *msg))
 			value = c;
         } else {
         	if (!value) continue;
-        	if (strcmp(value, "EOF")==0) break;
+        	if (strcmp(value, "EOF")==0) {
+        	    FREE(value);
+        	    break;
+        	}
         	if(external_handler) external_handler(value);
             FREE(value);
         }

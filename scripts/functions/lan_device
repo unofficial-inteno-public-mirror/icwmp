@@ -669,7 +669,7 @@ set_wlan_pre_shared_key_associated_device_MACAddress() {
 
 get_lan_dns() {
 	local lan_name=$1
-	local val dns
+	local val="" dns
 	json_load "$(ifstatus $lan_name)"
 	json_select "dns-server"
 	local index="1"

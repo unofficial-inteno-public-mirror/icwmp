@@ -230,7 +230,7 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
             event_remove_all_event_container (session,RPC_QUEUE);
         }
         event_container = cwmp_add_event_container (cwmp, EVENT_IDX_0BOOTSTRAP, "");
-        free(acsurl);
+        FREE(acsurl);
         if (event_container == NULL)
         {
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
@@ -240,6 +240,8 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
         cwmp_scheduleInform_remove_all();
         cwmp_scheduledDownload_remove_all();
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+    } else {
+        FREE(acsurl);
     }
 
     if (cmp)
@@ -469,6 +471,7 @@ void connection_request_ip_value_change(struct cwmp *cwmp)
 		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 		if (event_container == NULL)
 		{
+		    FREE(bip);
 			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 			return;
 		}
@@ -478,6 +481,7 @@ void connection_request_ip_value_change(struct cwmp *cwmp)
 		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 		pthread_cond_signal(&(cwmp->threshold_session_send));
 	}
+	FREE(bip);
 }
 
 int cwmp_root_cause_events (struct cwmp *cwmp)

@@ -26,14 +26,12 @@
 LIST_HEAD(list_download);
 static pthread_mutex_t		mutex_download = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t		threshold_download;
-static bool					thread_download_is_working = false;
 int							count_download_queue = 0;
 int							count_schedule_inform_queue = 0;
 
 LIST_HEAD(list_schedule_inform);
 static pthread_mutex_t      mutex_schedule_inform = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t       threshold_schedule_inform;
-static bool                 thread_is_working=false;
 
 const static char *soap_env_url = "http://schemas.xmlsoap.org/soap/envelope/";
 const static char *soap_enc_url = "http://schemas.xmlsoap.org/soap/encoding/";
@@ -1651,65 +1649,68 @@ void *thread_cwmp_rpc_cpe_scheduleInform (void *v)
     struct event_container          *event_container;
     struct schedule_inform          *schedule_inform;
     struct timespec                 si_timeout = {0, 0};
-    time_t                          current_time;
+    time_t                          current_time, stime;
     bool                            add_event_same_time = false;
 
-    thread_is_working = true;
-    while (list_schedule_inform.next!=&(list_schedule_inform))
+    for(;;)
     {
-        schedule_inform = list_entry(list_schedule_inform.next,struct schedule_inform, list);
-        current_time    = time(NULL);
-        if (current_time >= schedule_inform->scheduled_time)
-        {
-            if (add_event_same_time)
+        if(list_schedule_inform.next!=&(list_schedule_inform)) {
+            schedule_inform = list_entry(list_schedule_inform.next,struct schedule_inform, list);
+            stime = schedule_inform->scheduled_time;
+            current_time    = time(NULL);
+            if (current_time >= schedule_inform->scheduled_time)
             {
+                if (add_event_same_time)
+                {
+                    pthread_mutex_lock (&mutex_schedule_inform);
+                    list_del (&(schedule_inform->list));
+                    if (schedule_inform->commandKey!=NULL)
+                    {
+                        bkp_session_delete_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
+                        free (schedule_inform->commandKey);
+                    }
+                    free(schedule_inform);
+                    pthread_mutex_unlock (&mutex_schedule_inform);
+                    continue;
+                }
+                pthread_mutex_lock (&(cwmp->mutex_session_queue));
+                CWMP_LOG(INFO,"Schedule Inform thread: add ScheduleInform event in the queue");
+                event_container = cwmp_add_event_container (cwmp, EVENT_IDX_3SCHEDULED, "");
+                if (event_container != NULL)
+                {
+                    cwmp_save_event_container (cwmp,event_container);
+                }
+                event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_ScheduleInform, schedule_inform->commandKey);
+                if (event_container != NULL)
+                {
+                    cwmp_save_event_container (cwmp,event_container);
+                }
+                pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+                pthread_cond_signal(&(cwmp->threshold_session_send));
                 pthread_mutex_lock (&mutex_schedule_inform);
                 list_del (&(schedule_inform->list));
-                if (schedule_inform->commandKey!=NULL)
+                if (schedule_inform->commandKey != NULL)
                 {
-                	bkp_session_delete_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
+                    bkp_session_delete_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
                     free (schedule_inform->commandKey);
                 }
                 free(schedule_inform);
+                count_schedule_inform_queue--;
                 pthread_mutex_unlock (&mutex_schedule_inform);
+                add_event_same_time = true;
                 continue;
             }
-            pthread_mutex_lock (&(cwmp->mutex_session_queue));
-            CWMP_LOG(INFO,"Schedule Inform thread: add ScheduleInform event in the queue");
-            event_container = cwmp_add_event_container (cwmp, EVENT_IDX_3SCHEDULED, "");
-            if (event_container != NULL)
-            {
-                cwmp_save_event_container (cwmp,event_container);
-            }
-            event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_ScheduleInform, schedule_inform->commandKey);
-            if (event_container != NULL)
-            {
-                cwmp_save_event_container (cwmp,event_container);
-            }
-            pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-            pthread_cond_signal(&(cwmp->threshold_session_send));
-            pthread_mutex_lock (&mutex_schedule_inform);
-            list_del (&(schedule_inform->list));
-            if (schedule_inform->commandKey != NULL)
-            {
-            	bkp_session_delete_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
-                free (schedule_inform->commandKey);
-            }
-            free(schedule_inform);
-            count_schedule_inform_queue--;
-            pthread_mutex_unlock (&mutex_schedule_inform);
-            add_event_same_time = true;
-            continue;
+        } else {
+            stime = time(NULL) - 10;
         }
         add_event_same_time = false;
         pthread_mutex_lock (&mutex_schedule_inform);
-        si_timeout.tv_sec = schedule_inform->scheduled_time;
+        si_timeout.tv_sec = stime;
         pthread_cond_timedwait(&threshold_schedule_inform, &mutex_schedule_inform, &si_timeout);
         pthread_mutex_unlock (&mutex_schedule_inform);
     }
-    thread_is_working = false;
     bkp_session_save();
-    return CWMP_OK;
+    return NULL;
 }
 
 int cwmp_scheduleInform_remove_all()
@@ -1786,17 +1787,21 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     list_for_each(ilist,&(list_schedule_inform))
     {
         schedule_inform = list_entry(ilist,struct schedule_inform, list);
-        if (schedule_inform->scheduled_time == scheduled_time)
-        {
-            pthread_mutex_unlock (&mutex_schedule_inform);
-            return CWMP_OK;
-        }
-        if (schedule_inform->scheduled_time > scheduled_time)
+        if (schedule_inform->scheduled_time >= scheduled_time)
         {
             cond_signal = true;
             break;
         }
     }
+
+    n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
+                NULL, NULL, MXML_DESCEND);
+    if (!n) goto fault;
+
+    n = mxmlNewElement(n, "cwmp:ScheduleInformResponse");
+    if (!n) goto fault;
+
+
     CWMP_LOG(INFO,"Schedule inform event will start in %us",delay_seconds);
     schedule_inform = calloc (1,sizeof(struct schedule_inform));
     if (schedule_inform==NULL)
@@ -1814,26 +1819,6 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     {
         pthread_cond_signal(&threshold_schedule_inform);
     }
-
-    if (!thread_is_working)
-    {
-        thread_is_working = true;
-        error = pthread_create(&scheduleInform_thread, NULL, &thread_cwmp_rpc_cpe_scheduleInform, (void *)&cwmp_main);
-        if (error<0)
-        {
-            CWMP_LOG(ERROR,"Error error when creating the schedule event thread!");
-            thread_is_working = false;
-            goto fault;
-        }
-
-    }
-
-	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body",
-				NULL, NULL, MXML_DESCEND);
-	if (!n) goto fault;
-
-	n = mxmlNewElement(n, "cwmp:ScheduleInformResponse");
-	if (!n) goto fault;
 
 success:
 	return 0;
@@ -1914,120 +1899,124 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     struct cwmp                     			*cwmp = (struct cwmp *)v;
     struct download          					*pdownload;
     struct timespec                 			download_timeout = {0, 0};
-    time_t                          			current_time;
+    time_t                          			current_time, stime;
     int											i,error = FAULT_CPE_NO_FAULT;
     struct transfer_complete					*ptransfer_complete;
     long int									time_of_grace = 3600,timeout;
     char										*fault_code;
     struct parameter_container 					*parameter_container;
 
-    thread_download_is_working = true;
-    while (list_download.next!=&(list_download))
+    for(;;)
     {
-    	pdownload = list_entry(list_download.next,struct download, list);
-        current_time    = time(NULL);
-        if(pdownload->scheduled_time != 0)
-			timeout = current_time - pdownload->scheduled_time;
-        else
-        	timeout = 0;
-        if((timeout >= 0)&&(timeout > time_of_grace))
-		{
-        	pthread_mutex_lock (&mutex_download);
-        	bkp_session_delete_download(pdownload);
-        	ptransfer_complete = calloc (1,sizeof(struct transfer_complete));
-			if(ptransfer_complete != NULL)
-			{
-				error = FAULT_CPE_DOWNLOAD_FAILURE;
+        if (list_download.next!=&(list_download)) {
+            pdownload = list_entry(list_download.next,struct download, list);
+            stime = pdownload->scheduled_time;
+            current_time    = time(NULL);
+            if(pdownload->scheduled_time != 0)
+                timeout = current_time - pdownload->scheduled_time;
+            else
+                timeout = 0;
+            if((timeout >= 0)&&(timeout > time_of_grace))
+            {
+                pthread_mutex_lock (&mutex_download);
+                bkp_session_delete_download(pdownload);
+                ptransfer_complete = calloc (1,sizeof(struct transfer_complete));
+                if(ptransfer_complete != NULL)
+                {
+                    error = FAULT_CPE_DOWNLOAD_FAILURE;
 
-				ptransfer_complete->command_key		= strdup(pdownload->command_key);
-				ptransfer_complete->start_time 		= strdup(mix_get_time());
-				ptransfer_complete->complete_time	= strdup(ptransfer_complete->start_time);
-				ptransfer_complete->fault_code		= error;
+                    ptransfer_complete->command_key		= strdup(pdownload->command_key);
+                    ptransfer_complete->start_time 		= strdup(mix_get_time());
+                    ptransfer_complete->complete_time	= strdup(ptransfer_complete->start_time);
+                    ptransfer_complete->fault_code		= error;
 
-				bkp_session_insert_transfer_complete(ptransfer_complete);
-				cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
-			}
-			list_del (&(pdownload->list));
-			if(pdownload->scheduled_time != 0)
-				count_download_queue--;
-			cwmp_free_download_request(pdownload);
-			pthread_mutex_unlock (&mutex_download);
-		}
-        if((timeout >= 0)&&(timeout <= time_of_grace))
-        {
-        	pthread_mutex_lock (&(cwmp->mutex_session_send));
-        	external_init();
-            CWMP_LOG(INFO,"Launch download file %s",pdownload->url);
-            error = cwmp_launch_download(pdownload,&ptransfer_complete);
-    		if(error != FAULT_CPE_NO_FAULT)
-    		{
-    			bkp_session_insert_transfer_complete(ptransfer_complete);
-    			bkp_session_save();
-    			cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
-    			bkp_session_delete_transfer_complete(ptransfer_complete);
-    		}
-    		else
-    		{
-    			if (pdownload->file_type[0] == '1') {
-					external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
-					external_handle_action(cwmp_handle_getParamValues);
-					parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
-					if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
-						strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
-					{
-						ptransfer_complete->old_software_version = strdup(parameter_container->data);
-					}
-					external_free_list_parameter();
-    			}
-				bkp_session_insert_transfer_complete(ptransfer_complete);
-				bkp_session_save();
-				external_apply("download", pdownload->file_type);
-				external_handle_action(cwmp_handle_downloadFault);
-				external_fetch_downloadFaultResp(&fault_code);
-				if(fault_code != NULL)
-				{
-					if(fault_code[0]=='9')
-					{
-						for(i=1;i<__FAULT_CPE_MAX;i++)
-						{
-							if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
-							{
-								error = i;
-								break;
-							}
-						}
-					}
-					free(fault_code);
-					if((error == FAULT_CPE_NO_FAULT) &&
-						(pdownload->file_type[0] == '1' || pdownload->file_type[0] == '3'))
-					{
-						exit(EXIT_SUCCESS);
-					}
-					bkp_session_delete_transfer_complete(ptransfer_complete);
-					ptransfer_complete->fault_code = error;
-					bkp_session_insert_transfer_complete(ptransfer_complete);
-					bkp_session_save();
-					cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
-				}
-    		}
-        	external_exit();
-    		pthread_mutex_unlock (&(cwmp->mutex_session_send));
-			pthread_cond_signal (&(cwmp->threshold_session_send));
-			pthread_mutex_lock (&mutex_download);
-			list_del (&(pdownload->list));
-			if(pdownload->scheduled_time != 0)
-				count_download_queue--;
-			cwmp_free_download_request(pdownload);
-			pthread_mutex_unlock (&mutex_download);
-            continue;
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                }
+                list_del (&(pdownload->list));
+                if(pdownload->scheduled_time != 0)
+                    count_download_queue--;
+                cwmp_free_download_request(pdownload);
+                pthread_mutex_unlock (&mutex_download);
+                continue;
+            }
+            if((timeout >= 0)&&(timeout <= time_of_grace))
+            {
+                pthread_mutex_lock (&(cwmp->mutex_session_send));
+                external_init();
+                CWMP_LOG(INFO,"Launch download file %s",pdownload->url);
+                error = cwmp_launch_download(pdownload,&ptransfer_complete);
+                if(error != FAULT_CPE_NO_FAULT)
+                {
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    bkp_session_save();
+                    cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                    bkp_session_delete_transfer_complete(ptransfer_complete);
+                }
+                else
+                {
+                    if (pdownload->file_type[0] == '1') {
+                        external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
+                        external_handle_action(cwmp_handle_getParamValues);
+                        parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
+                        if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
+                            strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
+                        {
+                            ptransfer_complete->old_software_version = strdup(parameter_container->data);
+                        }
+                        external_free_list_parameter();
+                    }
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    bkp_session_save();
+                    external_apply("download", pdownload->file_type);
+                    external_handle_action(cwmp_handle_downloadFault);
+                    external_fetch_downloadFaultResp(&fault_code);
+                    if(fault_code != NULL)
+                    {
+                        if(fault_code[0]=='9')
+                        {
+                            for(i=1;i<__FAULT_CPE_MAX;i++)
+                            {
+                                if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+                                {
+                                    error = i;
+                                    break;
+                                }
+                            }
+                        }
+                        free(fault_code);
+                        if((error == FAULT_CPE_NO_FAULT) &&
+                            (pdownload->file_type[0] == '1' || pdownload->file_type[0] == '3'))
+                        {
+                            exit(EXIT_SUCCESS);
+                        }
+                        bkp_session_delete_transfer_complete(ptransfer_complete);
+                        ptransfer_complete->fault_code = error;
+                        bkp_session_insert_transfer_complete(ptransfer_complete);
+                        bkp_session_save();
+                        cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                    }
+                }
+                external_exit();
+                pthread_mutex_unlock (&(cwmp->mutex_session_send));
+                pthread_cond_signal (&(cwmp->threshold_session_send));
+                pthread_mutex_lock (&mutex_download);
+                list_del (&(pdownload->list));
+                if(pdownload->scheduled_time != 0)
+                    count_download_queue--;
+                cwmp_free_download_request(pdownload);
+                pthread_mutex_unlock (&mutex_download);
+                continue;
+            }
+        } else {
+            stime = time(NULL) - 10;
         }
         pthread_mutex_lock (&mutex_download);
-        download_timeout.tv_sec = pdownload->scheduled_time;
+        download_timeout.tv_sec = stime;
         pthread_cond_timedwait(&threshold_download, &mutex_download, &download_timeout);
         pthread_mutex_unlock (&mutex_download);
     }
-    thread_download_is_working = false;
-    return CWMP_OK;
+    return NULL;
 }
 
 int cwmp_free_download_request(struct download *download)
@@ -2234,12 +2223,7 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		list_for_each(ilist,&(list_download))
 		{
 			idownload = list_entry(ilist,struct download, list);
-			if (idownload->scheduled_time == scheduled_time)
-			{
-				pthread_mutex_unlock (&mutex_download);
-				return 0;
-			}
-			if (idownload->scheduled_time > scheduled_time)
+			if (idownload->scheduled_time >= scheduled_time)
 			{
 				cond_signal = true;
 				break;
@@ -2267,22 +2251,12 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		{
 			pthread_cond_signal(&threshold_download);
 		}
-		if (!thread_download_is_working)
-		{
-			thread_download_is_working = true;
-			error = pthread_create(&download_thread, NULL, &thread_cwmp_rpc_cpe_download, (void *)&cwmp_main);
-			if (error<0)
-			{
-				CWMP_LOG(ERROR,"Error when creating the download thread!");
-				thread_download_is_working = false;
-				return -1;
-			}
-		}
 	}
 
 	return 0;
 
 fault:
+    cwmp_free_download_request(download);
 	if (cwmp_create_fault_message(session, rpc, error))
 		goto error;
 	return 0;

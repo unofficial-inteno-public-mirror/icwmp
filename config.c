@@ -283,7 +283,7 @@ static int cwmp_do_package_cmd(struct uci_context *c)
     {
         cwmp_package_commit(c,*p);
     }
-
+    FREE(configs);
     return CWMP_OK;
 }
 
@@ -333,6 +333,7 @@ int uci_revert_value ()
         }
         uci_revert(ctx, &ptr);
     }
+    FREE(configs);
     uci_free_context(ctx);
 
     return CWMP_OK;

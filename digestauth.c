@@ -442,8 +442,10 @@ int http_digest_auth_check(const char *http_method, const char *url,
 		if (('\0' != *end) || ((LONG_MAX == nci) && (ERANGE == errno)))
 		{
 			DD(DEBUG, "Authentication failed, invalid format.");
+			free(end);
 			return MHD_NO; /* invalid nonce format */
 		}
+		free(end);
 
 		/*
 		 * Checking if that combination of nonce and nc is sound
