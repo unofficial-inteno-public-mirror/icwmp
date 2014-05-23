@@ -1700,16 +1700,21 @@ void *thread_cwmp_rpc_cpe_scheduleInform (void *v)
                 add_event_same_time = true;
                 continue;
             }
-        } else {
-            stime = time(NULL) - 10;
-        }
+            bkp_session_save();
         add_event_same_time = false;
         pthread_mutex_lock (&mutex_schedule_inform);
         si_timeout.tv_sec = stime;
         pthread_cond_timedwait(&threshold_schedule_inform, &mutex_schedule_inform, &si_timeout);
         pthread_mutex_unlock (&mutex_schedule_inform);
-    }
+        } else {
     bkp_session_save();
+            add_event_same_time = false;
+            pthread_mutex_lock (&mutex_schedule_inform);
+            pthread_cond_wait(&threshold_schedule_inform, &mutex_schedule_inform);
+            pthread_mutex_unlock (&mutex_schedule_inform);
+        }
+    }
+
     return NULL;
 }
 
@@ -1789,7 +1794,6 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
         schedule_inform = list_entry(ilist,struct schedule_inform, list);
         if (schedule_inform->scheduled_time >= scheduled_time)
         {
-            cond_signal = true;
             break;
         }
     }
@@ -1815,10 +1819,7 @@ int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc
     bkp_session_insert_schedule_inform(schedule_inform->scheduled_time,schedule_inform->commandKey);
     bkp_session_save();
     pthread_mutex_unlock (&mutex_schedule_inform);
-    if (cond_signal)
-    {
         pthread_cond_signal(&threshold_schedule_inform);
-    }
 
 success:
 	return 0;
@@ -2008,13 +2009,15 @@ void *thread_cwmp_rpc_cpe_download (void *v)
                 pthread_mutex_unlock (&mutex_download);
                 continue;
             }
-        } else {
-            stime = time(NULL) - 10;
-        }
         pthread_mutex_lock (&mutex_download);
         download_timeout.tv_sec = stime;
         pthread_cond_timedwait(&threshold_download, &mutex_download, &download_timeout);
         pthread_mutex_unlock (&mutex_download);
+        } else {
+            pthread_mutex_lock (&mutex_download);
+            pthread_cond_wait(&threshold_download, &mutex_download);
+            pthread_mutex_unlock (&mutex_download);
+        }
     }
     return NULL;
 }
@@ -2225,7 +2228,6 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 			idownload = list_entry(ilist,struct download, list);
 			if (idownload->scheduled_time >= scheduled_time)
 			{
-				cond_signal = true;
 				break;
 			}
 		}
@@ -2247,10 +2249,7 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		}
 
 		pthread_mutex_unlock (&mutex_download);
-		if (cond_signal)
-		{
 			pthread_cond_signal(&threshold_download);
-		}
 	}
 
 	return 0;
