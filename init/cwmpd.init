@@ -105,6 +105,10 @@ run() {
 boot() {
 	touch /etc/cwmpd/.cwmpd_boot
 	/bin/sh /usr/sbin/freecwmp clean cache
+	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	if [ "$scron" != "" ]; then
+		crontab -l | sed "/\/usr\/sbin\/watchcwmpd/d" | crontab -
+	fi
 }
 
 start_cwmpd() {
@@ -221,13 +225,21 @@ stop_cwmpd() {
 
 start() {
 	start_cwmpd "$1" 2> /dev/null
+	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	if [ "$scron" = "" ]; then
+		{ crontab -l; echo "*/5 * * * * /usr/sbin/watchcwmpd"; } | crontab -
+	fi
 }
 
 stop() {
 	stop_cwmpd 2> /dev/null
+	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	if [ "$scron" != "" ]; then
+		crontab -l | sed "/\/usr\/sbin\/watchcwmpd/d" | crontab -
+	fi
 }
 
 restart() {
-	stop
+	stop_cwmpd 2> /dev/null
 	start
 }

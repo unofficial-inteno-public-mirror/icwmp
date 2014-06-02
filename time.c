@@ -11,12 +11,10 @@
 
 char local_time[26] = {0};
 
-char * mix_get_time(void)
+char * mix_get_time_of(time_t t_time)
 {
-	time_t t_time;
 	struct tm *t_tm;
 
-	t_time = time(NULL);
 	t_tm = localtime(&t_time);
 	if (t_tm == NULL)
 		return NULL;
@@ -30,4 +28,12 @@ char * mix_get_time(void)
 	local_time[26] = '\0';
 
 	return local_time;
+}
+
+char * mix_get_time(void)
+{
+    time_t t_time;
+    t_time = time(NULL);
+    mix_get_time_of(t_time);
+    return local_time;
 }

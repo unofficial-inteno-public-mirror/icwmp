@@ -122,20 +122,24 @@ case "$1" in
 		if [ "$2" = "notification" ]; then
 			action="apply_notification"
 		elif [ "$2" = "value" ]; then
+			__arg1="$3"
 			action="apply_value"
 		elif [ "$2" = "download" ]; then
 			__arg1="$3"
 			action="apply_download"
 		else
+			__arg1="$2"
 			action="apply_value"
 		fi
 		;;
 	add)
 		__arg1="$3"
+		__arg2="$4"
 		action="add_object"
 		;;
 	delete)
 		__arg1="$3"
+		__arg2="$4"
 		action="delete_object"
 		;;
 	inform)
@@ -409,6 +413,9 @@ handle_action() {
 		if [ "$fault_code" != "0" ]; then
 			let fault_code=$fault_code+9000
 			freecwmp_output "" "" "" "" "" "$fault_code"
+		else
+			$UCI_SET cwmp.acs.ParameterKey=$__arg2
+			$UCI_COMMIT
 		fi
 	fi
 
@@ -418,6 +425,9 @@ handle_action() {
 		if [ "$fault_code" != "0" ]; then
 			let fault_code=$fault_code+9000
 			freecwmp_output "" "" "" "" "" "$fault_code"
+		else
+			$UCI_SET cwmp.acs.ParameterKey=$__arg2
+			$UCI_COMMIT
 		fi
 	fi
 
@@ -577,6 +587,7 @@ handle_action() {
 						sed -i "/\<$param\>/s%.*%$line%" $cache_path/$filename
 					fi
 				done
+				$UCI_SET cwmp.acs.ParameterKey=$__arg1
 				freecwmp_output "" "" "" "" "" "" "1"
 				;;
 			esac
@@ -689,20 +700,24 @@ handle_action() {
 					if [ "$action" = "notification" ]; then
 						action="apply_notification"
 					elif [ "$action" = "value" ]; then
+						json_get_var __arg1 arg
 						action="apply_value"
 					elif [ "$action" = "download" ]; then
-						json_get_var __arg1 type
+						json_get_var __arg1 arg
 						action="apply_download"
 					else
+						json_get_var __arg1 arg
 						action="apply_value"
 					fi
 					;;
 				add)
 					json_get_var __arg1 parameter
+					json_get_var __arg2 parameter_key
 					action="add_object"
 					;;
 				delete)
 					json_get_var __arg1 parameter
+					json_get_var __arg2 parameter_key
 					action="delete_object"
 					;;
 				inform)

@@ -154,6 +154,23 @@ typedef struct config_uci_list {
     char                                *value;
 } config_uci_list;
 
+typedef struct session_status {
+    time_t last_start_time;
+    time_t last_end_time;
+    int last_status;
+    time_t next_periodic;
+    time_t next_retry;
+    unsigned int success_session;
+    unsigned int failure_session;
+} session_status;
+
+enum enum_session_status {
+    SESSION_WAITING,
+    SESSION_RUNNING,
+    SESSION_FAILURE,
+    SESSION_SUCCESS
+};
+
 typedef struct cwmp {
     struct env			env;
     struct config		conf;
@@ -167,6 +184,8 @@ typedef struct cwmp {
     int					retry_count_session;
     struct list_head	*head_event_container;
     int					pid_file;
+    time_t              start_time;
+    struct session_status session_status;
 } cwmp;
 
 typedef struct session {
@@ -206,6 +225,7 @@ void *thread_event_periodic (void *v);
 void cwmp_add_notification (char *name, char *value, char *attribute, char *type);
 int netlink_init(void);
 char * mix_get_time(void);
+char * mix_get_time_of(time_t t_time);
 void *thread_exit_program (void *v);
 
 #endif /* _CWMP_H__ */

@@ -1158,7 +1158,7 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 	if (b && b->type == MXML_TEXT && b->value.text.string)
 		parameter_key = b->value.text.string;
 
-	if (external_apply("value", NULL))
+	if (external_apply("value", parameter_key ? parameter_key : ""))
 		goto fault;
 
 	external_handle_action(cwmp_handle_setParamValues);
@@ -1190,12 +1190,6 @@ int cwmp_handle_rpc_cpe_set_parameter_values(struct session *session, struct rpc
 
 	b = mxmlNewText(b, 0, status);
 	if (!b) goto fault;
-
-	if (parameter_key != NULL) {
-		sprintf(buf,"%s=%s", UCI_ACS_PARAMETERKEY_PATH, parameter_key);
-		uci_set_value (buf);
-		uci_commit_value();
-	}
 
 success:
 	free(status);
@@ -1354,7 +1348,7 @@ int cwmp_handle_rpc_cpe_add_object(struct session *session, struct rpc *rpc)
 	}
 
 	if (object_name) {
-		if (external_object_action("add", object_name))
+		if (external_object_action("add", object_name, parameter_key ? parameter_key : ""))
 			goto fault;
 	} else {
 		fault_code = FAULT_CPE_INVALID_PARAMETER_NAME;
@@ -1392,13 +1386,6 @@ int cwmp_handle_rpc_cpe_add_object(struct session *session, struct rpc *rpc)
 
 	b = mxmlNewText(b, 0, status);
 	if (!b) goto fault;
-
-
-	if (parameter_key != NULL) {
-		sprintf(buf,"%s=%s", UCI_ACS_PARAMETERKEY_PATH, parameter_key);
-		uci_set_value (buf);
-		uci_commit_value();
-	}
 
 success:
 	free(instance);
@@ -1449,7 +1436,7 @@ int cwmp_handle_rpc_cpe_delete_object(struct session *session, struct rpc *rpc)
 	}
 
 	if (object_name) {
-		if (external_object_action("delete", object_name))
+		if (external_object_action("delete", object_name, parameter_key ? parameter_key : ""))
 			goto fault;
 	} else {
 		fault_code = FAULT_CPE_INVALID_PARAMETER_NAME;
@@ -1481,13 +1468,6 @@ int cwmp_handle_rpc_cpe_delete_object(struct session *session, struct rpc *rpc)
 
 	b = mxmlNewText(b, 0, status);
 	if (!b) goto fault;
-
-
-	if (parameter_key != NULL) {
-		sprintf(buf,"%s=%s", UCI_ACS_PARAMETERKEY_PATH, parameter_key);
-		uci_set_value (buf);
-		uci_commit_value();
-	}
 
 success:
 	free(fault);
