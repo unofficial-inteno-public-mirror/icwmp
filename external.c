@@ -322,7 +322,7 @@ int external_set_action(char *action, char *name, char *value, char *change)
 	return 0;
 }
 
-int external_object_action(char *command, char *name)
+int external_object_action(char *command, char *name, char *parameter_key)
 {
 	DD(INFO,"executing %s object '%s'", command, name);
 
@@ -334,6 +334,7 @@ int external_object_action(char *command, char *name)
 	json_obj_out_add(json_obj_out, "command", command);
 	json_obj_out_add(json_obj_out, "action", "object");
 	json_obj_out_add(json_obj_out, "parameter", name);
+	if (parameter_key) json_obj_out_add(json_obj_out, "parameter_key", parameter_key);
 
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
@@ -384,7 +385,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass)
 	return 0;
 }
 
-int external_apply(char *action, char *type)
+int external_apply(char *action, char *arg)
 {
 	DD(INFO,"executing apply %s", action);
 
@@ -395,7 +396,7 @@ int external_apply(char *action, char *type)
 
 	json_obj_out_add(json_obj_out, "command", "apply");
 	json_obj_out_add(json_obj_out, "action", action);
-	if (type) json_obj_out_add(json_obj_out, "type", type);
+	if (arg) json_obj_out_add(json_obj_out, "arg", arg);
 
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
