@@ -182,6 +182,7 @@ static inline time_t get_session_status_next_time() {
     }
     return ntime;
 }
+
 static const struct blobmsg_policy status_policy[] = {
 };
 
@@ -190,7 +191,6 @@ cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
              struct ubus_request_data *req, const char *method,
              struct blob_attr *msg)
 {
-    char *info;
     void *c;
     time_t ntime = 0;
 
@@ -228,12 +228,38 @@ cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
     return 0;
 }
 
+static const struct blobmsg_policy inform_policy[] = {
+};
 
+static int
+cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
+             struct ubus_request_data *req, const char *method,
+             struct blob_attr *msg)
+{
+    blob_buf_init(&b, 0);
+    if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
+        blobmsg_add_u32(&b, "status", -1);
+        blobmsg_add_string(&b, "info", "Session already running");
+    }
+    else {
+        pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+        cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
+        pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+        pthread_cond_signal(&(cwmp_main.threshold_session_send));
+        blobmsg_add_u32(&b, "status", 1);
+        blobmsg_add_string(&b, "info", "Session started");
+    }
+    ubus_send_reply(ctx, req, b.head);
+    blob_buf_free(&b);
+
+    return 0;
+}
 
 static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("notify", cwmp_handle_notify, notify_policy),
 	UBUS_METHOD("command", cwmp_handle_command, command_policy),
 	UBUS_METHOD("status", cwmp_handle_status, status_policy),
+	UBUS_METHOD("inform", cwmp_handle_inform, inform_policy),
 };
 
 static struct ubus_object_type main_object_type =
