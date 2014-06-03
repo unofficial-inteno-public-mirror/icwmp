@@ -358,10 +358,12 @@ void *thread_event_periodic (void *v)
 		    {
 		    	periodic_timeout.tv_sec = current_time + periodic_interval;
 		    }
+		    cwmp->session_status.next_periodic = periodic_timeout.tv_sec;
         	pthread_cond_timedwait(&(cwmp->threshold_periodic), &(cwmp->mutex_periodic), &periodic_timeout);
         }
         else
         {
+            cwmp->session_status.next_periodic = 0;
         	pthread_cond_wait(&(cwmp->threshold_periodic), &(cwmp->mutex_periodic));
         }
         pthread_mutex_unlock (&(cwmp->mutex_periodic));

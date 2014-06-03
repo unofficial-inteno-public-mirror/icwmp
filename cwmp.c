@@ -136,6 +136,10 @@ void cwmp_schedule_session (struct cwmp *cwmp)
             CWMP_LOG(EMERG,"FATAL error in the mutex process in the session scheduler!");
             exit(EXIT_FAILURE);
         }
+        cwmp->session_status.last_end_time = 0;
+        cwmp->session_status.last_start_time = time(NULL);
+        cwmp->session_status.last_status = SESSION_RUNNING;
+        cwmp->session_status.next_retry = 0;
         external_init();
         CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
@@ -147,12 +151,20 @@ void cwmp_schedule_session (struct cwmp *cwmp)
             error = cwmp_move_session_to_session_queue (cwmp, session);
             CWMP_LOG(INFO,"Retry session, retry count = %d, retry in %ds",cwmp->retry_count_session,cwmp_get_retry_interval(cwmp));
             retry = true;
+            cwmp->session_status.last_end_time = time(NULL);
+            cwmp->session_status.last_status = SESSION_FAILURE;
+            cwmp->session_status.next_retry = time(NULL) + cwmp_get_retry_interval(cwmp);
+            cwmp->session_status.failure_session++;
             pthread_mutex_unlock (&(cwmp->mutex_session_send));
             continue;
         }
         cwmp_session_destructor (cwmp, session);
         cwmp->session_send          = NULL;
         cwmp->retry_count_session   = 0;
+        cwmp->session_status.last_end_time = time(NULL);
+        cwmp->session_status.last_status = SESSION_SUCCESS;
+        cwmp->session_status.next_retry = 0;
+        cwmp->session_status.success_session++;
         pthread_mutex_unlock (&(cwmp->mutex_session_send));
     }
 }
@@ -512,6 +524,7 @@ int main(int argc, char **argv)
         return error;
     }
     CWMP_LOG(INFO,"STARTING CWMP");
+    cwmp->start_time = time(NULL);
 
     if (error = cwmp_init_backup_session(cwmp, NULL, ALL))
     {

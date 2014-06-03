@@ -17,10 +17,18 @@
 #include "cwmp.h"
 #include "ubus.h"
 #include "external.h"
+#include "xml.h"
 #include "log.h"
 
 static struct ubus_context *ctx = NULL;
 static struct blob_buf b;
+
+static const char *arr_session_status[] = {
+    [SESSION_WAITING] = "waiting",
+    [SESSION_RUNNING] = "running",
+    [SESSION_FAILURE] = "failure",
+    [SESSION_SUCCESS] = "success",
+};
 
 enum notify {
 	NOTIFY_PARAM,
@@ -159,9 +167,73 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 	return 0;
 }
 
+static inline time_t get_session_status_next_time() {
+    time_t ntime = 0;
+    if(list_schedule_inform.next!=&(list_schedule_inform)) {
+        struct schedule_inform *schedule_inform;
+        schedule_inform = list_entry(list_schedule_inform.next,struct schedule_inform, list);
+        ntime = schedule_inform->scheduled_time;
+    }
+    if (!ntime || (cwmp_main.session_status.next_retry && ntime > cwmp_main.session_status.next_retry)) {
+        ntime = cwmp_main.session_status.next_retry;
+    }
+    if (!ntime || (cwmp_main.session_status.next_periodic && ntime > cwmp_main.session_status.next_periodic)) {
+        ntime = cwmp_main.session_status.next_periodic;
+    }
+    return ntime;
+}
+static const struct blobmsg_policy status_policy[] = {
+};
+
+static int
+cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
+             struct ubus_request_data *req, const char *method,
+             struct blob_attr *msg)
+{
+    char *info;
+    void *c;
+    time_t ntime = 0;
+
+    blob_buf_init(&b, 0);
+
+    c = blobmsg_open_table(&b, "cwmp");
+    blobmsg_add_string(&b, "status", "up");
+    blobmsg_add_string(&b, "start_time", mix_get_time_of(cwmp_main.start_time));
+    blobmsg_add_string(&b, "acs_url", cwmp_main.conf.acsurl);
+    blobmsg_close_table(&b, c);
+
+    c = blobmsg_open_table(&b, "last_session");
+    blobmsg_add_string(&b, "status", cwmp_main.session_status.last_start_time ? arr_session_status[cwmp_main.session_status.last_status] : "N/A");
+    blobmsg_add_string(&b, "start_time", cwmp_main.session_status.last_start_time ? mix_get_time_of(cwmp_main.session_status.last_start_time) : "N/A");
+    blobmsg_add_string(&b, "end_time", cwmp_main.session_status.last_end_time ? mix_get_time_of(cwmp_main.session_status.last_end_time) : "N/A");
+    blobmsg_close_table(&b, c);
+
+    c = blobmsg_open_table(&b, "next_session");
+    blobmsg_add_string(&b, "status", arr_session_status[SESSION_WAITING]);
+    ntime = get_session_status_next_time();
+    blobmsg_add_string(&b, "start_time", ntime ? mix_get_time_of(ntime) : "N/A");
+    blobmsg_add_string(&b, "end_time", "N/A");
+    blobmsg_close_table(&b, c);
+
+    c = blobmsg_open_table(&b, "statistics");
+    blobmsg_add_u32(&b, "success_sessions", cwmp_main.session_status.success_session);
+    blobmsg_add_u32(&b, "failure_sessions", cwmp_main.session_status.failure_session);
+    blobmsg_add_u32(&b, "total_sessions", cwmp_main.session_status.success_session + cwmp_main.session_status.failure_session);
+    blobmsg_close_table(&b, c);
+
+
+    ubus_send_reply(ctx, req, b.head);
+    blob_buf_free(&b);
+
+    return 0;
+}
+
+
+
 static const struct ubus_method freecwmp_methods[] = {
 	UBUS_METHOD("notify", cwmp_handle_notify, notify_policy),
 	UBUS_METHOD("command", cwmp_handle_command, command_policy),
+	UBUS_METHOD("status", cwmp_handle_status, status_policy),
 };
 
 static struct ubus_object_type main_object_type =
