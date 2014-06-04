@@ -8,7 +8,7 @@ watch_cwmpd_log() {
 	local cwmpd_log_file=`uci get -q cwmp.cpe.log_file_name`
 	cwmpd_log_file=${cwmpd_log_file:-"/var/log/cwmpd.log"}
 	echo "*******************************************************************************"
-	echo "`date`: Restat cwmpd by watchcwmpd"
+	echo "`date`: Restart cwmpd by watchcwmpd"
 	echo "Last 20 lines in the cwmpd log before the restart:"
 	echo "-------------------------------------------------------------------------------"
 	cat $cwmpd_log_file | tail -20
