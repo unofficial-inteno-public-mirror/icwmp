@@ -605,8 +605,9 @@ handle_action() {
 	fi
 
 	if [ "$action" = "inform" ]; then
-		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep -v "\"get_cmd\""
-		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep "\"get_cmd\"" | while read line; do
+		forced_param=`get_param_name_generic "" 0 | grep "\"forced_inform\""`
+		echo "$forced_param" | grep -v "\"get_cmd\""
+		echo "$forced_param" | grep "\"get_cmd\"" | while read line; do
 			json_init
 			json_load "$line"
 			json_get_var exec_get_cmd get_cmd
