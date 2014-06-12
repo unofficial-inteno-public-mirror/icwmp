@@ -1,7 +1,8 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2013 Inteno Broadband Technology AB
+# Copyright (C) 2013-2014 Inteno Broadband Technology AB
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
 voice_service_save_instance_config() {
 	local i="$1" #line number
@@ -505,7 +506,206 @@ set_sip_fax_t38_enable() {
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.is_fax="$val"
 }
+
+allowed_sip_codecs="ulaw alaw g729 g723 g726"
+
+capabilities_sip_codecs="\
+g723     G.723.1    6451  30-300 30"$'\n'"\
+gsm      GSM-FR     13312 20-300 20"$'\n'"\
+ulaw     G.711MuLaw 65536 10-150 20"$'\n'"\
+alaw     G.711ALaw  65536 10-150 20"$'\n'"\
+g726aal2 g726aal2   32768 10-300 20"$'\n'"\
+adpcm    adpcm      32768 10-300 20"$'\n'"\
+slin     slin       0     10-70  20"$'\n'"\
+lpc10    lpc10      2457  20-20  20"$'\n'"\
+g729     G.729a     8192  10-230 20"$'\n'"\
+speex    speex      49152 10-60  20"$'\n'"\
+ilbc     iLBC       8192  30-30  30"$'\n'"\
+g726     G.726      32768 10-300 20"$'\n'"\
+g722     G.722      65536 0-0    0"$'\n'"\
+siren7   G.722.1    32768 0-0    0"$'\n'"\
+siren14  siren14    0     0-0    0"$'\n'"\
+slin16   slin16     0     0-0    0"$'\n'"\
+g719     g719       0     0-0    0"$'\n'"\
+speex16  speex16    0     0-0    0"$'\n'"\
+testlaw  testlaw    0     0-0    0"
+
+capabilities_sip_codecs_get() {
+	local codec="$1"
+	local varn="$2"
+	echo "$capabilities_sip_codecs" | awk '$1=="'"$codec"'" {print $'"$varn"'}'
+}
+
+enum_rtp_tos="/\
+CS0:0/\
+CS1:32/\
+AF11:40/\
+AF12:48/\
+AF13:56/\
+CS2:64/\
+AF21:72/\
+AF22:80/\
+AF23:88/\
+CS3:96/\
+AF31:104/\
+AF32:112/\
+AF33:120/\
+CS4:128/\
+AF41:136/\
+AF42:144/\
+AF43:152/\
+CS5:160/\
+EF:184/\
+CS6:192/\
+CS7:224/"
+
+get_voice_service_vp_rtp_dscp() {
+	local val=`$UCI_GET voice_client.SIP.tos_audio`
+	val=${val:-CS0}
+	val=${enum_rtp_tos#*/$val:}
+	[ "$val" = "" -o "$val" = "$enum_rtp_tos" ] && return
+	echo ${val%%/*}
+}
+
+set_voice_service_vp_rtp_dscp() {
+	local val="$1"
+	val=${enum_rtp_tos%:$val/*}
+	[ "$val" = "" -o "$val" = "$enum_rtp_tos" ] && return
+	val=${val##*/}
+	$UCI_SET voice_client.SIP.tos_audio=$val
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
+get_voice_service_vp_rtp_rtcp_enable() {
+	local val=`ps | awk '$NF=="/usr/sbin/asterisk"'`
+	[ "$val" = "" ] && echo 0 || echo 1
+}
+
+get_voice_service_vp_rtp_rtcp_txrepeatinterval() {
+	local val=`$UCI_GET voice_client.SIP.rtcpinterval`
+	echo ${val:-5000}
+}
+
+set_voice_service_vp_rtp_rtcp_txrepeatinterval() {
+	local val="$1"
+	$UCI_SET voice_client.SIP.rtcpinterval=$val
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
+get_voice_service_vp_rtp_srtp_enable() {
+	local sip_id="$1"
+	local val=`$UCI_GET voice_client.sip$sip_id.encryption`
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	[ "$val" = "yes" ] && echo 1 || echo 0
+}
+
+set_voice_service_vp_rtp_srtp_enable() {
+	local sip_id="$1"
+	local val="$2"
+
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		`$UCI_SET voice_client.sip$sip_id.encryption=yes`
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		`$UCI_SET voice_client.sip$sip_id.encryption=`
+	else
+		return
+	fi
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
+codec_priority_sort() {
+	local sip_id="$1"
+	local codec="$2"
+	local ucodecs=`$UCI_SHOW voice_client.sip$sip_id |sed -n "s/voice_client\.sip$sip_id\.codec//p" | sort'`
+	[ "$codec" != "" ] && ucodecs="$ucodecs"$'\n'"6=$codec"
+	local pcodec pcodecs=`$UCI_SHOW voice_client.sip$sip_id |sed -n "s/voice_client\.sip$sip_id\.priority_//p" | awk -F '=' '{print $2"="$1}' | sort -n'`
+
+	local cn=0
+	for pcodec in $pcodecs; do
+		local pc=${pcodec#*=}
+		local uc=`echo "$ucodecs" | awk -F '=' '$2=="'"$pc"'"'`
+		if [ "$uc" != "" ]; then
+			[ "$pc" != "-" ] && $UCI_SET voice_client.sip$sip_id.codec$((cn++))=$pc
+			ucodecs=${ucodecs//$uc/}
+		fi
+	done
+	
+	for uc in $ucodecs; do
+		[ $cn -gt 5 ] && break
+		[ "${uc#*=}" != "-" ] && $UCI_SET voice_client.sip$sip_id.codec$((cn++))=${uc#*=}
+		ucodecs=${ucodecs//$uc/}
+	done
+	
+	while [ $cn -le 5 ]; do
+		$UCI_SET voice_client.sip$sip_id.codec$((cn++))=""
+	done
+
+	if [ "${ucodecs/6=$codec/}" != "$ucodecs" ]; then
+		$UCI_SET voice_client.sip$sip_id.codec5=$codec
+	fi
+}
+
+get_line_codec_list_packetization() {
+	local sip_id="$1"
+	local codec="$2"
+	local val=`$UCI_GET voice_client.sip$sip_id.ptime_$codec`
+	[ "$val" = "" ] && val=`capabilities_sip_codecs_get $codec 5`
+	echo $val
+}
+
+get_line_codec_list_enable() {
+	local sip_id="$1"
+	local codec="$2"
+	local val=`$UCI_SHOW voice_client.sip$sip_id | grep "voice_client\.sip$sip_id\.codec[0-5]=$codec"`
+	[ "$val" = "" ] && echo 0 || echo 1
+}
+
+set_line_codec_list_enable() {
+	local sip_id="$1"
+	local codec="$2"
+	local val="$3"
+	local ucodec ucodecs=`$UCI_SHOW voice_client.sip$sip_id | awk -F'[.=]' '/voice_client\.sip'"$sip_id"'\.codec[0-5]='"$codec"'/ {print $3}'`
+
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		[ "$ucodecs" != "" ] && return
+		codec_priority_sort "$sip_id" "$codec"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		[ "$ucodecs" = "" ] && return
+		for ucodec in $ucodecs; do
+			$UCI_SET voice_client.sip$sip_id.$ucodec=""
+		done
+	else
+		return
+	fi
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
+set_line_codec_list_priority() {
+	local sip_id="$1"
+	local codec="$2"
+	local val="$3"
+	
+	$UCI_SET voice_client.sip$sip_id.priority_$codec=$val
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+		
+	local en=`$UCI_SHOW voice_client.sip$sip_id | grep "voice_client\.sip$sip_id\.codec[0-5]=$codec"`
+	[ "$en" = "" ] && return
+	codec_priority_sort "$sip_id"
+}
+
 # Global SET/GET functions
+uci_voice_set() {
+	$UCI_SET $1=$2
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
 
 get_voice_service_max_profile() {
 	local val=`$UCI_SHOW voice_client|grep -c sip_service_provider`
@@ -559,13 +759,23 @@ get_services_voice_service_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.ServiceProviderInfo.Name" "1" "get_voice_service_serviceproviderinfo_name $sip_id" "\$UCI_SET voice_client.sip$sip_id.provider_name=\$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38.Enable" "1" "$UCI_GET voice_client.sip$sip_id.is_fax" "set_sip_fax_t38_enable $sip_id \$val" "" "xsd:boolean"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMin" "1" "$UCI_GET voice_client.SIP.rtpstart" "uci_voice_set voice_client.SIP.rtpstart \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMax" "1" "$UCI_GET voice_client.SIP.rtpend" "uci_voice_set voice_client.SIP.rtpend \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.DSCPMark" "1" "get_voice_service_vp_rtp_dscp" "set_voice_service_vp_rtp_dscp \$val" "" "xsd:unsignedInt"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP.Enable" "0" "" "" "get_voice_service_vp_rtp_rtcp_enable" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP.TxRepeatInterval" "1" "get_voice_service_vp_rtp_rtcp_txrepeatinterval" "set_voice_service_vp_rtp_rtcp_txrepeatinterval \$val" "" "xsd:unsignedInt"
+		get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP.Enable" "1" "get_voice_service_vp_rtp_srtp_enable $sip_id" "set_voice_service_vp_rtp_srtp_enable $sip_id \$val" "" "xsd:boolean"
 }
 
 get_services_voice_service_line_generic() {
 	local profile_num="$1"
 	local sip_id="$2"
 	local line_num="$3"
-	
+	local ucodec
+
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num." "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Enable" "1" "get_line_enable $sip_id $line_name" "set_line_enable $sip_id $line_name \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.DirectoryNumber" "1" "$UCI_GET voice_client.$line_name.extension" "set_line_directory_number $sip_id $line_name \$val"
@@ -578,6 +788,40 @@ get_services_voice_service_line_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \$val"
+
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List." "0"
+	local codec cn=0
+	for codec in $allowed_sip_codecs; do
+		get_services_voice_service_line_codec_list_generic "$profile_num" "$sip_id" "$line_num" "$((++cn))" "$codec"
+	done
+}
+	
+get_services_voice_service_line_codec_list_generic() {
+	local profile_num="$1"
+	local sip_id="$2"
+	local line_num="$3"
+	local codec_num="$4"
+	local codec="$5"
+
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.EntryID" "0" "echo $codec_num" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.Codec" "0" "capabilities_sip_codecs_get $codec 2"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.BitRate" "0" "capabilities_sip_codecs_get $codec 3" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.PacketizationPeriod" "1" "get_line_codec_list_packetization $sip_id $codec" "uci_voice_set voice_client.sip$sip_id.ptime_$codec \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.SilenceSuppression" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.Enable" "1" "get_line_codec_list_enable $sip_id $codec" "set_line_codec_list_enable $sip_id $codec \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List.$codec_num.Priority" "1" "$UCI_GET voice_client.sip$sip_id.priority_$codec" "set_line_codec_list_priority $sip_id $codec \$val" "" "xsd:unsignedInt"
+}
+
+get_services_voice_service_capabilities_codecs_generic() {
+	local id="$1"
+	local codec="$2"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id.EntryID" "0" "echo $id" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id.Codec" "0" "capabilities_sip_codecs_get $codec 2"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id.BitRate" "0" "capabilities_sip_codecs_get $codec 3" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id.PacketizationPeriod" "0" "capabilities_sip_codecs_get $codec 4"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs.$id.SilenceSuppression" "0" "echo 0" "" "" "xsd:boolean"
 }
 
 get_cache_InternetGatewayDevice_Services() {
@@ -588,6 +832,54 @@ get_cache_InternetGatewayDevice_Services() {
 	get_object_cache_generic "InternetGatewayDevice.Services." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1." "0"
+	
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxProfileCount" "0" "echo 8" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxLineCount" "0" "echo 6" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxSessionsPerLine" "0" "echo 1" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxSessionCount" "0" "echo 6" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SignalingProtocols" "0" "echo SIP"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Regions" "0" "echo AE, BE, BR, CH, CL, CN, CZ, DE, DK, ES, FI, FR, GB, HU, IN, IT, JP, NL, NZ, NO, SE, TW, US, ETS, T57"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RTCP" "0" "echo 1" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SRTP" "0" "echo 1" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RTPRedundancy" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.PSTNSoftSwitchOver" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.FaxT38" "0" "echo 1" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.FaxPassThrough" "0" "echo 1" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.ModemPassThrough" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.ToneGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.ToneDescriptionsEditable" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.PatternBasedToneGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.FileBasedToneGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.ToneFileFormats" "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RingGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RingDescriptionsEditable" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.PatternBasedRingGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RingPatternEditable" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.FileBasedRingGeneration" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RingFileFormats" "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.DigitMap" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.NumberingPlan" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.ButtonMap" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.VoicePortTests" "0" "echo 0" "" "" "xsd:boolean"
+	
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP." "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.Role" "0" "echo BackToBackUserAgents"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.Extensions" "0" "echo INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.Transports" "0" "echo UDP, TCP, TLS"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.URISchemes" "0"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.EventSubscription" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.ResponseMap" "0" "echo 0" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.TLSAuthenticationProtocols" "0" "echo MD5"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.TLSEncryptionProtocols" "0" "echo RC4, RC2, DES, 3DES"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SIP.TLSKeyExchangeProtocols" "0" "echo RSA, DSS"
+	
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Codecs." "0"
+	local codec num=0
+	for codec in $allowed_sip_codecs; do
+		get_services_voice_service_capabilities_codecs_generic "$((++num))" $codec
+	done
+	
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile." "1"
 	for sip_id in `$UCI_SHOW voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sed 's/sip//g'|sort -un`;do
 		let profile_num=$sip_id+1
@@ -625,8 +917,8 @@ get_line_max_instance() {
 local line_number=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Line id"`
 for i in `seq 0 $line_number`;do
 	if [ "`$UCI_GET voice_client.brcm$i.sip_account`" = "-" ];then
-	        echo $i
-	        break
+		echo $i
+		break
 	fi
 done
 }
@@ -811,10 +1103,10 @@ delete_object_InternetGatewayDevice_Services() {
 				return $FAULT_CPE_INVALID_PARAMETER_NAME
 			fi
 			for line in `$UCI_SHOW voice_client|grep brcm|grep instances`;do
-		        if [ "`echo $line|awk -F '=' '{print $2}'|cut -d: -f $num1`" = "$num2" ];then
-		                line_name=`echo $line|awk -F '.' '{print $2}'`
-		                break
-		        fi
+				if [ "`echo $line|awk -F '=' '{print $2}'|cut -d: -f $num1`" = "$num2" ];then
+					line_name=`echo $line|awk -F '.' '{print $2}'`
+					break
+				fi
 			done 
 			delete_line $line_name
 			$UCI_COMMIT
