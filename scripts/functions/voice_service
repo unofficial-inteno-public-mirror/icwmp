@@ -1136,3 +1136,7 @@ get_dynamic_InternetGatewayDevice_Services() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+get_dynamic_linker_InternetGatewayDevice_Services() {
+	return $FAULT_CPE_NO_FAULT
+}
+

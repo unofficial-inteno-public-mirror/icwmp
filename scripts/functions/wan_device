@@ -931,3 +931,8 @@ delete_object_InternetGatewayDevice_WANDevice() {
 	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
+
+get_dynamic_linker_InternetGatewayDevice_WANDevice() {
+	return $FAULT_CPE_NO_FAULT
+}
+

@@ -895,7 +895,7 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 					assoclist=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
 				fi
 				i=0
-				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice." "" "0" "" "" "" "" "0"
+				freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice." "0" "0"
 				for mac in $assoclist;do
 					let i++
 					ip=""
@@ -914,14 +914,18 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 							is_authenticated="1"
 						fi
 					fi
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "" "0" "" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
-					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
+					freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "0" "0"
+					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
+					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
+					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
 				done
 			done
 		done
 	esac
+}
+
+get_dynamic_linker_InternetGatewayDevice_LANDevice() {
+	return $FAULT_CPE_NO_FAULT
 }
 
 add_object_InternetGatewayDevice_LANDevice() { 

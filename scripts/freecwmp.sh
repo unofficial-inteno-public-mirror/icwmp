@@ -64,6 +64,7 @@ cache_path="/etc/cwmpd/.cache"
 tmp_cache="/tmp/.freecwmp_dm"
 set_tmp_file="/tmp/.set_tmp_file"
 set_fault_tmp_file="/tmp/.set_fault_tmp_file"
+cache_linker_dynamic="/etc/cwmpd/.cache_linker_dynamic"
 	
 mkdir -p $cache_path
 rm -f "$cache_path/"*"_dynamic"
@@ -595,6 +596,7 @@ handle_action() {
 	fi
 
 	if [ "$action" = "inform" ]; then
+		rm -f "$cache_linker_dynamic"
 		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep -v "\"get_cmd\""
 		get_param_name_generic "" 0 | grep "\"forced_inform\"" | grep "\"get_cmd\"" | while read line; do
 			json_init
@@ -605,6 +607,7 @@ handle_action() {
 			val=`eval "$exec_get_cmd"`
 			freecwmp_output "$param" "$val" "" "" "$type"
 		done
+		rm -f "$cache_linker_dynamic"
 	fi
 
 	if [ "$action" = "notify" ]; then
