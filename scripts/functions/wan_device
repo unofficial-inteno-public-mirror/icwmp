@@ -652,6 +652,7 @@ get_wandevice_wanprotoclconnection_parameters() {
 	local forced_inform_eip=""
 	local forced_notify=""
 	local notif_permission=""
+	local linker="linker_interface:$iface"
 	
 	if [ "$default_wan" = "$iface" ];then
 		forced_inform_eip="1"
@@ -659,7 +660,7 @@ get_wandevice_wanprotoclconnection_parameters() {
 		notif_permission="0"
 	fi
 	if [ "$proto" = "dhcp" -o "$proto" = "static" ];then
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp." "1" "$notif_permission"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp." "1" "$notif_permission" "$linker"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.Enable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.ConnectionStatus" "0" "" "" "get_wan_device_mng_status $iface"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.ExternalIPAddress" "0" "" "" "get_wan_device_mng_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
@@ -673,7 +674,7 @@ get_wandevice_wanprotoclconnection_parameters() {
 		#get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANIPConnection.$conp.DNSOverrideAllowed" "0" "" 
 	fi
 	if [ "$proto" = "pppoa" -o "$proto" = "pppoe" ];then
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp." "1" "$notif_permission"
+		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp." "1" "$notif_permission" "$linker"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.Enable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ConnectionStatus" "0" "" "" "get_wan_device_ppp_status $iface"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice.$wan.WANPPPConnection.$conp.ExternalIPAddress" "0" "" "" "get_wan_device_ppp_interface_ip $iface" "" "$notif_permission" "$forced_inform_eip" "$forced_notify"
