@@ -842,7 +842,7 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		local ndev=${tmp#*:}
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev." "0" "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement." "0"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $ndev \$val" "get_lan_dns $ndev" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $ndev \$val" "get_lan_dns $ndev"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $ndev" "set_lan_dhcp_server_configurable $ndev \$val" "" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $ndev" "set_lan_dhcp_server_enable $ndev \$val" "" "xsd:boolean"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
