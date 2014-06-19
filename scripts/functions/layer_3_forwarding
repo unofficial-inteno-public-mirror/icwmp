@@ -27,6 +27,14 @@ proc_get_route_var_by_conf() {
 	awk '$2=="'"$dest"'" && $8=="'"$mask"'"{print $'"$varn"'}' /proc/net/route
 }
 
+set_layer3_def_conn_serv() {
+	local val="$1"
+	local linker=`get_linker_by_parameter "$val"`
+	local interface=${linker#*:}
+	[ "$interface" = "" ] && return
+	$UCI_SET cwmp.cpe.default_wan_interface=$interface
+	delay_service reload "network" "1"
+}
 
 get_layer3_nbr_entry() {
 	local pr=`cat /proc/net/route | wc -l`
@@ -172,6 +180,49 @@ set_layer3_gatewayip() {
 	delay_service reload "network" "1"
 }
 
+get_layer3_interface() {
+	local route="$1"
+	local val=""
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.interface`
+		;;
+		*)
+		bval=`echo $route | awk '{print $1}'`
+		local val=${bval/br-/}
+		if [ "$bval" = "$val" ]; then
+			local device iface ifaces=`$UCI_SHOW network | grep "network\.[^.]\+\.ifname=.*$val" | cut -f2 -d.`
+			for iface in $ifaces; do
+				json_load "$(ifstatus $iface)"
+				json_get_var device device
+				if [ "$device" = "$val" ]; then
+					val="$iface"
+					break
+				fi
+			done
+		fi
+		;;
+	esac
+	echo "$val"
+}
+
+get_layer3_interface_linker_parameter() {
+	local iface="$1"
+	local val=""
+	[ "$iface" = "" ] && return
+	val="$(get_parameter_by_linker linker_interface:$iface)"
+	echo $val
+}
+
+set_layer3_interface_linker_parameter() {
+	local route="$1"
+	local val="$2"
+	local linker=`get_linker_by_parameter "$val"`
+	local interface=${linker#*:}
+	[ "$interface" = "" ] && return
+	$UCI_SET network.$route.interface=$interface
+	delay_service reload "network" "1"
+}
 
 get_layer3_metric() {
 	local route="$1"
@@ -244,7 +295,7 @@ get_cache_object_layer3() {
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceIPAddress" "0" "echo 0.0.0.0"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceSubnetMask" "0" "echo 0.0.0.0"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.GatewayIPAddress" "$p" "get_layer3_gatewayip \"$route\"" "set_layer3_gatewayip $route \$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Interface" "$p"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Interface" "$p" "" "set_layer3_interface_linker_parameter $route \$val" "get_layer3_interface_linker_parameter $(get_layer3_interface "$route")"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.ForwardingMetric" "$p" "get_layer3_metric \"$route\"" "set_layer3_metric $route \$val"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.MTU" "$p" "get_layer3_mtu \"$route\"" "set_layer3_mtu $route \$val"
 }
@@ -253,7 +304,7 @@ get_cache_InternetGatewayDevice_Layer3Forwarding() {
 	local il=0 route
 	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding." "0"
 	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding." "0"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService" "1"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService" "1" "" "set_layer3_def_conn_serv \$val" "get_parameter_by_linker linker_interface:\$default_wan"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.ForwardNumberOfEntries" "0" "" "" "get_layer3_nbr_entry" "xsd:unsignedInt"
 	local route routes=`$UCI_SHOW network | grep "network\.@route[^=]\+=route" | cut -d. -f2 | cut -d= -f1`
 	for route in $routes; do
@@ -299,6 +350,26 @@ get_dynamic_InternetGatewayDevice_Layer3Forwarding() {
 }
 
 get_dynamic_linker_InternetGatewayDevice_Layer3Forwarding() {
+	case "$action" in
+		get_value|set_value)
+		case "$1" in
+			""|\
+			InternetGatewayDevice.|\
+			InternetGatewayDevice.Layer3Forwarding.|\
+			InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService|\
+			InternetGatewayDevice.Layer3Forwarding.Forwarding.|\
+			InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9].|\
+			InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9].|\
+			InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9][0-9].|\
+			InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9]*.Interface)
+			local current_action="$action"
+			action="get_linker"
+			get_dynamic_InternetGatewayDevice_WANDevice
+			action="$current_action"
+			;;
+		esac
+		;;
+	esac
 	return $FAULT_CPE_NO_FAULT
 }
 
