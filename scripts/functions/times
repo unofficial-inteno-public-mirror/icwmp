@@ -53,6 +53,10 @@ get_dynamic_InternetGatewayDevice_Time() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+get_dynamic_linker_InternetGatewayDevice_Time() {
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_object_InternetGatewayDevice_Time() { 
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

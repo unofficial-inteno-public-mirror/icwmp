@@ -37,6 +37,10 @@ get_dynamic_InternetGatewayDevice_DeviceInfo() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+get_dynamic_linker_InternetGatewayDevice_DeviceInfo() {
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_object_InternetGatewayDevice_DeviceInfo() { 
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

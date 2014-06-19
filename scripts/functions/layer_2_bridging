@@ -165,3 +165,7 @@ delete_object_InternetGatewayDevice_Layer2Bridging() {
 get_dynamic_InternetGatewayDevice_Layer2Bridging() {
 	return $FAULT_CPE_NO_FAULT
 }
+
+get_dynamic_linker_InternetGatewayDevice_Layer2Bridging() {
+	return $FAULT_CPE_NO_FAULT
+}
