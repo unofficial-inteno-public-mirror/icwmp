@@ -27,6 +27,7 @@ proc_get_route_var_by_conf() {
 	awk '$2=="'"$dest"'" && $8=="'"$mask"'"{print $'"$varn"'}' /proc/net/route
 }
 
+
 get_layer3_nbr_entry() {
 	local pr=`cat /proc/net/route | wc -l`
 	local dr=`$UCI_SHOW network | grep "network\.@route_disabled\[[0-9]\+\]=route_disabled" | wc -l`
@@ -171,6 +172,7 @@ set_layer3_gatewayip() {
 	delay_service reload "network" "1"
 }
 
+
 get_layer3_metric() {
 	local route="$1"
 	local val
@@ -296,7 +298,11 @@ get_dynamic_InternetGatewayDevice_Layer3Forwarding() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_Layer3Forwarding() { 
+get_dynamic_linker_InternetGatewayDevice_Layer3Forwarding() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_Layer3Forwarding() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
