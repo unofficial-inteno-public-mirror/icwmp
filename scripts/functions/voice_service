@@ -114,8 +114,44 @@ get_voice_profile_number_of_lines() {
 	echo $val
 }
 
+capabilities_regions="\
+AUS AU"$'\n'"\
+BEL BE"$'\n'"\
+BRA BR"$'\n'"\
+CHL CL"$'\n'"\
+CHN CN"$'\n'"\
+CZE CZ"$'\n'"\
+DNK DK"$'\n'"\
+FIN FI"$'\n'"\
+FRA FR"$'\n'"\
+DEU DE"$'\n'"\
+HUN HU"$'\n'"\
+IND IN"$'\n'"\
+ITA IT"$'\n'"\
+JPN JP"$'\n'"\
+NLD NL"$'\n'"\
+NZL NZ"$'\n'"\
+USA US"$'\n'"\
+ESP ES"$'\n'"\
+SWE SE"$'\n'"\
+CHE CH"$'\n'"\
+NOR NO"$'\n'"\
+TWN TW"$'\n'"\
+GBR GB"$'\n'"\
+ARE AE"$'\n'"\
+ETS ETS"$'\n'"\
+T57 T57"
+
+get_sip_profile_region() {
+	local val=`$UCI_GET voice_client.BRCM.country`
+	echo "$capabilities_regions" | awk '$1=="'"$val"'" { print $2 }'
+}
+
 set_sip_profile_region() {
 	local val="$1"
+	val=`echo $val|tr '[a-z]' '[A-Z]'`
+	val=`echo "$capabilities_regions" | awk '$2=="'"$val"'" { print $1 }'`
+	[ "$val" = "" ] && return
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.BRCM.country="$val"
@@ -567,6 +603,11 @@ get_voice_service_vp_rtp_dscp() {
 	echo ${val%%/*}
 }
 
+get_capabilities_sip_regions() {
+	local val=`echo "$capabilities_regions" | awk '{ print $2 }'`
+	echo ${val//$'\n'/, }
+}
+
 set_voice_service_vp_rtp_dscp() {
 	local val="$1"
 	val=${enum_rtp_tos%:$val/*}
@@ -754,7 +795,7 @@ get_services_voice_service_generic() {
 	# get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.InboundAuthPassword" "1" "" "set_sip_inbound_auth_password $sip_id \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.SIP.X_002207_CallLines" "1" "$UCI_GET voice_client.sip$sip_id.call_lines" "set_sip_x_002207_call_lines $sip_id \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.DTMFMethod" "1" "get_config_with_enum voice_client.SIP.dtmfmode $enum_svsvp_dtmfmethod" "set_voice_config_with_enum voice_client.SIP.dtmfmode \$enum_svsvp_dtmfmethod \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Region" "1" "$UCI_GET voice_client.BRCM.country " "set_sip_profile_region \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Region" "1" "get_sip_profile_region" "set_sip_profile_region \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.ServiceProviderInfo." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.ServiceProviderInfo.Name" "1" "get_voice_service_serviceproviderinfo_name $sip_id" "\$UCI_SET voice_client.sip$sip_id.provider_name=\$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38." "0"
@@ -840,7 +881,7 @@ get_cache_InternetGatewayDevice_Services() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxSessionsPerLine" "0" "echo 1" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.MaxSessionCount" "0" "echo 6" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SignalingProtocols" "0" "echo SIP"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Regions" "0" "echo AE, BE, BR, CH, CL, CN, CZ, DE, DK, ES, FI, FR, GB, HU, IN, IT, JP, NL, NZ, NO, SE, TW, US, ETS, T57"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.Regions" "0" "get_capabilities_sip_regions"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RTCP" "0" "echo 1" "" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.SRTP" "0" "echo 1" "" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.Capabilities.RTPRedundancy" "0" "echo 0" "" "" "xsd:boolean"
