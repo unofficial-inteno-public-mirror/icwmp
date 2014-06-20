@@ -789,6 +789,7 @@ get_services_voice_service_line_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \$val"
 
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List." "0"
 	local codec cn=0
 	for codec in $allowed_sip_codecs; do
