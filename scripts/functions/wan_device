@@ -122,6 +122,10 @@ get_wan_device_wan_dsl_interface_config_status() {
 			val="NoSignal"
 			;;
 		esac
+	elif [ "$dev" = "$WAN_INST_ETH" ]; then
+		val="NoSignal Not a dsl interface"
+	else
+		val="NoSignal"
 	fi
 	echo $val
 }
@@ -139,7 +143,7 @@ get_wan_device_wan_dsl_interface_config_modulation_type() {
 			val="ADSL_G.lite"
 			;;
 			T1.413)
-			val="ADSL_ANSI_T1 .413"
+			val="ADSL_ANSI_T1.413"
 			;;
 			ADSL2)
 			val="ADSL_G.dmt.bis"
@@ -154,6 +158,8 @@ get_wan_device_wan_dsl_interface_config_modulation_type() {
 			val="$adsl_shown"
 			;;
 		esac
+	elif [ "$dev" = "$WAN_INST_ETH" ]; then
+		val="Not a dsl interface"
 	else
 		val="VDSL"
 	fi
@@ -520,11 +526,9 @@ get_wandevice_wandevice_parameters() {
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANConnectionDevice." "$cwritable" "$notif_permission"
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig." "0"
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANCommonInterfaceConfig.WANAccessType" "0" "get_wan_device_wan_access_type $dev"
-	if [ "$dev" = "$WAN_INST_ATM" -o "$dev" = "$WAN_INST_PTM" ]; then
-		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status $dev"
-		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type $dev"
-	fi
+	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status $dev"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type $dev"
 }
 
 get_wandevice_wanconnectiondevice_parameters() {
