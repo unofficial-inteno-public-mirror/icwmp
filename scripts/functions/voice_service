@@ -572,6 +572,16 @@ capabilities_sip_codecs_get() {
 	echo "$capabilities_sip_codecs" | awk '$1=="'"$codec"'" {print $'"$varn"'}'
 }
 
+get_voice_service_vp_rtp_portmin() {
+	val=`$UCI_GET voice_client.SIP.rtpstart`
+	echo ${val:-5000}
+}
+
+get_voice_service_vp_rtp_portmax() {
+	val=`$UCI_GET voice_client.SIP.rtpend`
+	echo ${val:-31000}
+}
+
 enum_rtp_tos="/\
 CS0:0/\
 CS1:32/\
@@ -597,6 +607,7 @@ CS7:224/"
 
 get_voice_service_vp_rtp_dscp() {
 	local val=`$UCI_GET voice_client.SIP.tos_audio`
+	val=`echo $val|tr '[a-z]' '[A-Z]'`
 	val=${val:-CS0}
 	val=${enum_rtp_tos#*/$val:}
 	[ "$val" = "" -o "$val" = "$enum_rtp_tos" ] && return
@@ -690,6 +701,25 @@ codec_priority_sort() {
 	fi
 }
 
+codec_priority_update() {
+	local sip_id="$1"
+	local cdc
+	for cdc in $allowed_sip_codecs; do
+		local priority=`$UCI_GET voice_client.sip$sip_id.priority_$cdc`
+		[ "$priority" != "" ] && return
+		priority=`$UCI_SHOW voice_client.sip$sip_id | awk -F'[.=]' '/voice_client\.sip'"$sip_id"'\.codec[0-5]='"$cdc"'/ {print $3}'`
+		if [ "$priority" != "" ]; then
+			priority=${priority/codec/}
+			let priority++
+		else
+			priority=1
+		fi
+		$UCI_SET voice_client.sip$sip_id.priority_$cdc=$priority
+	done
+	codec_priority_sort $sip_id
+	$UCI_COMMIT
+}
+
 get_line_codec_list_packetization() {
 	local sip_id="$1"
 	local codec="$2"
@@ -731,11 +761,11 @@ set_line_codec_list_priority() {
 	local sip_id="$1"
 	local codec="$2"
 	local val="$3"
-	
+
 	$UCI_SET voice_client.sip$sip_id.priority_$codec=$val
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
-		
+
 	local en=`$UCI_SHOW voice_client.sip$sip_id | grep "voice_client\.sip$sip_id\.codec[0-5]=$codec"`
 	[ "$en" = "" ] && return
 	codec_priority_sort "$sip_id"
@@ -801,13 +831,13 @@ get_services_voice_service_generic() {
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.FaxT38.Enable" "1" "$UCI_GET voice_client.sip$sip_id.is_fax" "set_sip_fax_t38_enable $sip_id \$val" "" "xsd:boolean"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMin" "1" "$UCI_GET voice_client.SIP.rtpstart" "uci_voice_set voice_client.SIP.rtpstart \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMax" "1" "$UCI_GET voice_client.SIP.rtpend" "uci_voice_set voice_client.SIP.rtpend \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMin" "1" "get_voice_service_vp_rtp_portmin" "uci_voice_set voice_client.SIP.rtpstart \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.LocalPortMax" "1" "get_voice_service_vp_rtp_portmax" "uci_voice_set voice_client.SIP.rtpend \$val" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.DSCPMark" "1" "get_voice_service_vp_rtp_dscp" "set_voice_service_vp_rtp_dscp \$val" "" "xsd:unsignedInt"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP.Enable" "0" "" "" "get_voice_service_vp_rtp_rtcp_enable" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP.TxRepeatInterval" "1" "get_voice_service_vp_rtp_rtcp_txrepeatinterval" "set_voice_service_vp_rtp_rtcp_txrepeatinterval \$val" "" "xsd:unsignedInt"
-		get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP." "0"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP.Enable" "1" "get_voice_service_vp_rtp_srtp_enable $sip_id" "set_voice_service_vp_rtp_srtp_enable $sip_id \$val" "" "xsd:boolean"
 }
 
@@ -833,6 +863,7 @@ get_services_voice_service_line_generic() {
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List." "0"
 	local codec cn=0
+	codec_priority_update "$sip_id"
 	for codec in $allowed_sip_codecs; do
 		get_services_voice_service_line_codec_list_generic "$profile_num" "$sip_id" "$line_num" "$((++cn))" "$codec"
 	done
