@@ -706,7 +706,7 @@ codec_priority_update() {
 	local cdc
 	for cdc in $allowed_sip_codecs; do
 		local priority=`$UCI_GET voice_client.sip$sip_id.priority_$cdc`
-		[ "$priority" != "" ] && return
+		[ "$priority" != "" ] && continue
 		priority=`$UCI_SHOW voice_client.sip$sip_id | awk -F'[.=]' '/voice_client\.sip'"$sip_id"'\.codec[0-5]='"$cdc"'/ {print $3}'`
 		if [ "$priority" != "" ]; then
 			priority=${priority/codec/}
