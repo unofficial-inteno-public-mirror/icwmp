@@ -609,6 +609,7 @@ handle_action() {
 	fi
 
 	if [ "$action" = "inform" ]; then
+		rm -f "$cache_linker_dynamic"
 		forced_param=`get_param_name_generic "" 0 | grep "\"forced_inform\""`
 		echo "$forced_param" | grep -v "\"get_cmd\""
 		echo "$forced_param" | grep "\"get_cmd\"" | while read line; do
