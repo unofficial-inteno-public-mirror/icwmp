@@ -399,8 +399,7 @@ freecwmp_config_notifications() {
 }
 
 freecwmp_get_parameter_value() {
-	local _dest="$1"
-	local _parm="$2"
+	local _parm="$1"
 	local _val
 	config_foreach freecwmp_config_cwmp "cwmp" "get" "value" "$_parm" "_val"
 	echo "$_val"
@@ -968,3 +967,4 @@ object_fn_generic() {
 	$f "$1" "$found"
 	return $?
 }
+
