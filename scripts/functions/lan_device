@@ -855,6 +855,223 @@ update_instance_landevice_dhcpstaticaddress() {
 	fi
 }
 
+get_lan_dhcp_interval_address() {
+	local opt="$1"
+	local nlan="$2"
+	local start=`$UCI_GET dhcp.$nlan.start`
+	local limit=`$UCI_GET dhcp.$nlan.limit`
+	[ "$start" = "" -o "$limit" = "" ] && return
+	local ipaddr=`$UCI_GET network.$nlan.ipaddr`
+	if [ "$ipaddr" = "" ]; then
+		json_load "$(ifstatus $nlan)"
+		json_select "ipv4-address"
+		json_select 1
+		json_get_var ipaddr address
+	fi
+	[ "$ipaddr" = "" ] && return
+	local mask=`$UCI_GET network.$nlan.netmask`
+	if [ "$mask" = "" ]; then
+		json_load "$(ifstatus $nlan)"
+		json_select "ipv4-address"
+		json_select 1
+		json_get_var mask mask
+		mask=`cidr2netmask $mask`
+	fi
+	[ "$mask" = "" ] && return
+	ipcalc.sh $ipaddr $mask $start $limit | sed -n "s/$opt=//p"
+}
+
+set_lan_dhcp_address_start() {
+	local nlan="$1"
+	local val="$2"
+	local ipaddr=`$UCI_GET network.$nlan.ipaddr`
+	if [ "$ipaddr" = "" ]; then
+		json_load "$(ifstatus $nlan)"
+		json_select "ipv4-address"
+		json_select 1
+		json_get_var ipaddr address
+	fi
+	[ "$ipaddr" = "" ] && return
+	local mask=`$UCI_GET network.$nlan.netmask`
+	if [ "$mask" = "" ]; then
+		json_load "$(ifstatus $nlan)"
+		json_select "ipv4-address"
+		json_select 1
+		json_get_var mask mask
+		mask=`cidr2netmask $mask`
+	fi
+	[ "$mask" = "" ] && return
+	local naddr=`ip_to_int $val`
+	mask=`ip_to_int $mask`
+	ipaddr=`ip_to_int $ipaddr`
+	val=$((naddr-(mask&ipaddr)))
+	[ $val -lt 0 ] && val=0
+	`$UCI_SET dhcp.$nlan.start=$val`
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
+set_lan_dhcp_address_end() {
+	local nlan="$1"
+	local val="$2"
+	local start=`get_lan_dhcp_interval_address START $nlan`
+	[ "$start" = "" ] && return
+	start=`ip_to_int $start`
+	val=`ip_to_int $val`
+	
+	val=$((val-start))
+	[ $val -lt 0 ] && val=0
+	`$UCI_SET dhcp.$nlan.limit=$val`
+	delay_service reload "network" "1"
+	delay_service reload "dnsmasq" "1"
+}
+
+get_lan_dhcp_reserved_addresses() {
+	local nlan="$1"
+	local min=`get_lan_dhcp_interval_address START $nlan`
+	local max=`get_lan_dhcp_interval_address END $nlan`
+	min=`ip_to_int $min`
+	max=`ip_to_int $max`
+	
+	local reserveds=""
+	local ip ips=`$UCI_SHOW dhcp | sed -n 's/dhcp\.@host\[[0-9]\+\].ip=//p'`
+	for ip in $ips; do
+		local nip=""
+		nip=`ip_to_int $ip`
+		if [ $nip -ge $min -a $nip -le $max ]; then
+			reserveds="$reserveds,$ip"
+		fi
+	done
+	echo ${reserveds#,}
+}
+
+set_lan_dhcp_reserved_addresses() {
+	local nlan="$1"
+	local val="$2"
+	local min=`get_lan_dhcp_interval_address START $nlan`
+	local max=`get_lan_dhcp_interval_address END $nlan`
+	min=`ip_to_int $min`
+	max=`ip_to_int $max`
+
+	local ip
+	for ip in ${val//,/ }; do
+		local exist=`$UCI_SHOW dhcp | sed -n 's/dhcp\.@host\[[0-9]\+\].ip=//p' | grep $ip`
+		[ "$exist" != "" ] && continue
+		local nip=""
+		nip=`ip_to_int $ip`
+		[ $nip -lt $min -o $nip -gt $max ] && continue
+		local slease=`$UCI_ADD dhcp host`
+		$UCI_SET dhcp.$slease.mac="$DHCPSTATICADDRESS_DISABLED_CHADDR"
+		$UCI_SET dhcp.$slease.interface="$nlan"
+		$UCI_SET dhcp.$slease.ip="$ip"
+	done
+	local host hosts=`$UCI_SHOW dhcp | grep "dhcp\.@host\[[0-9]\+\].ip="`
+	for host in $hosts; do
+		ip=${host#*=}
+		local nip=""
+		nip=`ip_to_int $ip`
+		if [ $nip -ge $min -a $nip -le $max ]; then
+			if [ "${val//$ip/}" = "$val" ]; then
+				$UCI_DELETE ${host%=*}
+			fi
+		fi
+	done
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+get_lan_dhcp_subnetmask() {
+	local nlan="$1"
+	local mask=`$UCI_GET dhcp.$nlan.netmask`
+	if [ "$mask" = "" ]; then
+		mask=`$UCI_GET network.$nlan.netmask`
+	fi
+	if [ "$mask" = "" ]; then
+		json_load "$(ifstatus $nlan)"
+		json_select "ipv4-address"
+		json_select 1
+		json_get_var mask mask
+		mask=`cidr2netmask $mask`
+	fi
+	echo $mask
+}
+
+set_lan_dhcp_subnetmask() {
+	local nlan="$1"
+	local val="$2"
+	$UCI_SET dhcp.$nlan.netmask=$val
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+get_lan_dhcp_iprouters() {
+	local nlan="$1"
+	local gw=`$UCI_GET network.$nlan.gateway`
+	if [ "$gw" = "" ]; then
+		gw=`$UCI_GET network.$nlan.ipaddr`
+	fi
+	echo $gw
+}
+
+set_lan_dhcp_iprouters() {
+	local nlan="$1"
+	local val="$2"
+	$UCI_SET network.$nlan.gateway=$val
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+get_lan_dhcp_leasetime() {
+	local nlan="$1"
+	local ltime=`$UCI_GET dhcp.$nlan.leasetime`
+	if [ "$ltime" = "" ]; then
+		echo -1
+		return
+	fi
+	mtime=60
+	ntime=${ltime%m}
+	if [ "$ntime" = "$ltime" ]; then
+		mtime=3600
+		ntime=${ltime%h}
+		[ "$ntime" = "$ltime" ] && return
+	fi
+	echo $((ntime*mtime)) 
+}
+
+set_lan_dhcp_leasetime() {
+	local nlan="$1"
+	local val="$2"
+	val=$((val/60))
+	$UCI_SET dhcp.$nlan.leasetime="$val"m
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+get_lan_dhcp_domainname() {
+	local nlan="$1"
+	local dop dhcp_options=`$UCI_GET dhcp.$nlan.dhcp_option`
+	for dop in $dhcp_options; do
+		local dn=${dop/15,/}
+		[ "$dn" = "$dop" ] && continue
+		echo $dn
+		break
+	done
+}
+
+set_lan_dhcp_domainname() {
+	local nlan="$1"
+	local val="$2"
+	local dop dhcp_options=`$UCI_GET dhcp.$nlan.dhcp_option`
+	for dop in $dhcp_options; do
+		local dn=${dop/15,/}
+		[ "$dn" = "$dop" ] && continue
+		$UCI_DEL_LIST dhcp.$nlan.dhcp_option=$dop
+	done 
+	$UCI_ADD_LIST dhcp.$nlan.dhcp_option="15,$val"
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
@@ -923,20 +1140,30 @@ get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
 get_cache_InternetGatewayDevice_LANDevice() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0"
 	for interface in `get_lan_device_interface`;do
-		local tmp=${interface%%;*}
-		local idev=${tmp%%:*}
-		local ndev=${tmp#*:}
+		local lan_iface=${interface%%;*}
+		local idev=${lan_iface%%:*}
+		local ndev=${lan_iface#*:}
+		lan_iface=${interface#*;}
+		lan_iface=${lan_iface/,/ }
+		local flan=${lan_iface%% *}
+		flan=${flan#*:}
+		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev." "0" "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement." "0"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $ndev \$val" "get_lan_dns $ndev" "" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $ndev" "set_lan_dhcp_server_configurable $ndev \$val" "" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $ndev" "set_lan_dhcp_server_enable $ndev \$val" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MinAddress" "1" "get_lan_dhcp_interval_address START $flan" "set_lan_dhcp_address_start $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MaxAddress" "1" "get_lan_dhcp_interval_address END $flan" "set_lan_dhcp_address_end $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.ReservedAddresses" "1" "get_lan_dhcp_reserved_addresses $flan" "set_lan_dhcp_reserved_addresses $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.SubnetMask" "1" "get_lan_dhcp_subnetmask $flan" "set_lan_dhcp_subnetmask $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPRouters" "1" "get_lan_dhcp_iprouters $flan" "set_lan_dhcp_iprouters $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_dhcp_leasetime $flan" "set_lan_dhcp_leasetime $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DomainName" "1" "get_lan_dhcp_domainname $flan" "set_lan_dhcp_domainname $flan \$val"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress." "1"
 
-		tmp=${interface#*;}
-		tmp=${tmp/,/ }
-		for lan in $tmp; do
+		for lan in $lan_iface; do
 			ilan=${lan%%:*}
 			nlan=${lan#*:}
 			get_landevice_lanhostconfigmanagement_ipinterface "$idev" "$ndev" "$ilan" "$nlan"
