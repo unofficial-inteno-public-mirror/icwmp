@@ -263,6 +263,25 @@ int xml_prepare_msg_out(struct session *session)
 
 int xml_set_cwmp_id(struct session *session)
 {
+    char        *c;
+    mxml_node_t *b;
+
+    /* define cwmp id */
+    if (asprintf(&c, "%u", ++(cwmp_main.cwmp_id)) == -1)
+        return -1;
+
+    b = mxmlFindElement(session->tree_out, session->tree_out, "cwmp:ID", NULL, NULL, MXML_DESCEND);
+    if (!b) return -1;
+
+    b = mxmlNewText(b, 0, c);
+    FREE(c);
+    if (!b) return -1;
+
+    return 0;
+}
+
+int xml_set_cwmp_id_rpc_cpe(struct session *session)
+{
 	char		*c;
 	mxml_node_t	*b;
 
@@ -273,9 +292,9 @@ int xml_set_cwmp_id(struct session *session)
 	b = mxmlFindElement(session->tree_in, session->tree_in, c, NULL, NULL, MXML_DESCEND);
 	FREE(c);
 
-	/* ACS did not send ID parameter, we are continuing without it */
-	if (b) {
 
+	if (b) {
+	    /* ACS send ID parameter */
 		b = mxmlWalkNext(b, session->tree_in, MXML_DESCEND_FIRST);
 		if (!b || b->type != MXML_TEXT || !b->value.text.string) return 0;
 		c = strdup(b->value.text.string);
@@ -285,8 +304,11 @@ int xml_set_cwmp_id(struct session *session)
 
 		b = mxmlNewText(b, 0, c);
 		FREE(c);
-
 		if (!b) return -1;
+	} else {
+	    /* ACS does not send ID parameter */
+	    int r = xml_set_cwmp_id(session);
+	    return r;
 	}
 	return 0;
 }

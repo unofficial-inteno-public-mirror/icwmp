@@ -175,7 +175,7 @@ int cwmp_rpc_cpe_handle_message (struct session *session, struct rpc *rpc_cpe)
 		return -1;
 	if (rpc_cpe_methods[rpc_cpe->type].handler(session, rpc_cpe))
 		return -1;
-	if (xml_set_cwmp_id(session))
+	if (xml_set_cwmp_id_rpc_cpe(session))
 		return -1;
 	return 0;
 }
@@ -203,6 +203,9 @@ int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session)
             		rpc_acs_methods[rpc_acs->type].name);
             if (rpc_acs_methods[rpc_acs->type].prepare_message(cwmp, session, rpc_acs))
             	goto retry;
+
+            if (xml_set_cwmp_id(session))
+                goto retry;
 
             CWMP_LOG (INFO,"Send the %s RPC message to the ACS",
             		rpc_acs_methods[rpc_acs->type].name);

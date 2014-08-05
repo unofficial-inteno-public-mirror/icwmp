@@ -186,6 +186,7 @@ typedef struct cwmp {
     int					pid_file;
     time_t              start_time;
     struct session_status session_status;
+    unsigned int cwmp_id;
 } cwmp;
 
 typedef struct session {
