@@ -454,6 +454,7 @@ static int xml_prepare_events_inform(struct session *session, mxml_node_t *tree)
 	if (n) {
 		if (asprintf(&c, "cwmp:EventStruct[%u]", n) == -1)
 			return -1;
+		mxmlElementSetAttr(b1, "xsi:type", "soap_enc:Array");
 		mxmlElementSetAttr(b1, "soap_enc:arrayType", c);
 		free(c);
 	}
@@ -600,7 +601,8 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
     if (asprintf(&c, "cwmp:ParameterValueStruct[%d]", size) == -1)
 		goto error;
 
-	mxmlElementSetAttr(parameter_list, "soap_enc:arrayType", c);
+    mxmlElementSetAttr(parameter_list, "xsi:type", "soap_enc:Array");
+    mxmlElementSetAttr(parameter_list, "soap_enc:arrayType", c);
 
 	free(c);
 	session->tree_out = tree;
@@ -780,7 +782,7 @@ int cwmp_handle_rpc_cpe_get_parameter_values(struct session *session, struct rpc
 	if (!parameter_list) goto fault;
 
 #ifdef ACS_MULTI
-	mxmlElementSetAttr(n, "xsi:type", "soap_enc:Array");
+	mxmlElementSetAttr(parameter_list, "xsi:type", "soap_enc:Array");
 #endif
 
 	while (b) {
@@ -886,7 +888,7 @@ int cwmp_handle_rpc_cpe_get_parameter_names(struct session *session, struct rpc 
 	if (!parameter_list) goto fault;
 
 #ifdef ACS_MULTI
-	mxmlElementSetAttr(n, "xsi:type", "soap_enc:Array");
+	mxmlElementSetAttr(parameter_list, "xsi:type", "soap_enc:Array");
 #endif
 
 	while (b) {
@@ -996,7 +998,7 @@ int cwmp_handle_rpc_cpe_get_parameter_attributes(struct session *session, struct
 	if (!parameter_list) goto fault;
 
 #ifdef ACS_MULTI
-	mxmlElementSetAttr(n, "xsi:type", "soap_enc:Array");
+	mxmlElementSetAttr(parameter_list, "xsi:type", "soap_enc:Array");
 #endif
 
 	while (b) {
@@ -1545,6 +1547,7 @@ int cwmp_handle_rpc_cpe_get_rpc_methods(struct session *session, struct rpc *rpc
 				NULL, NULL, MXML_DESCEND);
 	if (!b) goto fault;
 
+	mxmlElementSetAttr(b, "xsi:type", "soap_enc:Array");
 	if (asprintf(&c, "xsd:string[%d]", counter) == -1)
 		goto fault;
 
