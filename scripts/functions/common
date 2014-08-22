@@ -251,23 +251,24 @@ freecwmp_cache_output() {
 	local notif_permission="$8"
 	local forced_inform="$9"
 	local secret_value="$10"
-	
-	json_init
-	json_add_string "parameter" "$parameter"
-	json_add_string "writable" "$permission"
-	if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
-	if [ "$get_cmd" != "" ]; then json_add_string "get_cmd" "$get_cmd"; fi
-	if [ "$set_cmd" != "" ]; then json_add_string "set_cmd" "$set_cmd"; fi
-	if [ "$notif_permission" != "" ]; then json_add_string "notif_permission" "$notif_permission"; fi
-	if [ "$notification" != "" ]; then
-		json_add_string "notification" "$notification"
-		json_add_string "value" "$value"
-	fi
-	if [ "$forced_inform" != "" ]; then json_add_string "forced_inform" "$forced_inform"; fi
-	if [ "$secret_value" != "" ]; then json_add_string "secret_value" "$secret_value"; fi
-	json_close_object
-	MSG=`json_dump`
-	echo "$MSG"
+	echo | {
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "writable" "$permission"
+		if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
+		if [ "$get_cmd" != "" ]; then json_add_string "get_cmd" "$get_cmd"; fi
+		if [ "$set_cmd" != "" ]; then json_add_string "set_cmd" "$set_cmd"; fi
+		if [ "$notif_permission" != "" ]; then json_add_string "notif_permission" "$notif_permission"; fi
+		if [ "$notification" != "" ]; then
+			json_add_string "notification" "$notification"
+			json_add_string "value" "$value"
+		fi
+		if [ "$forced_inform" != "" ]; then json_add_string "forced_inform" "$forced_inform"; fi
+		if [ "$secret_value" != "" ]; then json_add_string "secret_value" "$secret_value"; fi
+		json_close_object
+		MSG=`json_dump`
+		echo "$MSG"
+	}
 }
 
 freecwmp_fault_output() {

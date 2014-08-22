@@ -3,6 +3,7 @@
 # Copyright (C) 2013-2014 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
 get_lan_device_interface() {
 local i=0
@@ -1072,11 +1073,119 @@ set_lan_dhcp_domainname() {
 	delay_service restart "dnsmasq" "1"
 }
 
+get_lan_ethernet_interfaces() {
+	local ndev="$1"
+	local ifaces=""
+	jmsg=`devstatus br-$ndev 2>/dev/null`
+	[ "$jmsg" = "" ] && { echo $ndev; return; }
+	json_load "$jmsg"
+	json_select "bridge-members"
+	local index="1"
+	while json_get_type bridge $index && [ "$bridge" = string ]; do
+		json_get_var bridge "$((index++))"
+		[ "${bridge/eth/}" = "$bridge" ] && continue
+		ifaces="$ifaces $bridge"
+	done
+	json_select ".."
+	echo "$ifaces"
+}
+
+get_lan_eth_iface_cfg_enable() {
+	local eth="$1"
+	local val
+	jmsg=`devstatus $eth`
+	json_load "$jmsg"
+	json_get_var val link
+	echo $val
+}
+
+set_lan_eth_iface_cfg_enable() {
+	local eth="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		ethctl $eth phy-power up >/dev/null
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		ethctl $eth phy-power down
+	fi
+}
+
+get_lan_eth_iface_cfg_status() {
+	local eth="$1"
+	local val
+	val=`get_lan_eth_iface_cfg_enable $eth`
+	[ "$val" = "true" -o "$val" = "1" ] && echo Up || echo Disabled
+}
+
+get_lan_eth_iface_cfg_maxbitrate() {
+	local eth="$1"
+	local val=`$UCI_GET ports.@ethports[0].$eth`
+	[ "$val" = "auto" ] && { echo "Auto"; return; }
+	echo ${val%[FHfh][Dd]*}
+}
+
+set_lan_eth_iface_cfg_maxbitrate() {
+	local eth="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	[ "$val" = "auto" ] &&  { $UCI_SET ports.@ethports[0].$eth="auto" ; return ; }
+	local duplex=`$UCI_GET ports.@ethports[0].$eth`
+	[ "$duplex" = "auto" ] && duplex="FD" || duplex=${duplex##*[0-9]}
+	$UCI_SET ports.@ethports[0].$eth="$val$duplex"
+	delay_service reload "network" "1"
+	delay_service restart "port_management" "1"
+}
+
+get_lan_eth_iface_cfg_duplexmode() {
+	local eth="$1"
+	local val=`$UCI_GET ports.@ethports[0].$eth`
+	[ "$val" = "auto" ] && { echo "Auto"; return; }
+	val=${val##*[0-9]}
+	val=`echo $val|tr '[a-z]' '[A-Z]'`
+	[ "$val" = "HD" ] && echo "Half"
+	[ "$val" = "FD" ] && echo "Full"
+}
+
+set_lan_eth_iface_cfg_duplexmode() {
+	local eth="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	[ "$val" = "auto" ] && { $UCI_SET ports.@ethports[0].$eth="auto" ; return ; }
+	local rate=`$UCI_GET ports.@ethports[0].$eth`
+	[ "$rate" = "auto" ] && rate="100" || rate=${rate%[FHfh][Dd]*}
+	if [ "$val" = "full" ]; then
+		val="FD"
+	elif [ "$val" = "half" ]; then
+		val="HD"
+	else
+		return
+	fi
+	$UCI_SET ports.@ethports[0].$eth="$rate$val"
+	delay_service reload "network" "1"
+	delay_service restart "port_management" "1"
+}
+
+get_lan_eth_iface_cfg_stats() {
+	local eth="$1"
+	local counter="$2"
+	local devstatus="" val=""
+	devstatus=`devstatus $eth`
+	json_load "$devstatus"
+	json_select "statistics"
+	json_get_var val $counter
+	json_select ".."
+	echo "$val"
+}
+
+get_lan_host_nbr_entries() {
+	local flan="$1"
+	ubus call router clients | grep -c "\"network\": \"$flan\""
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
 	uci_num=$3
-	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration." "0" "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "0" "" "" "get_wlan_status $uci_num"
@@ -1137,6 +1246,23 @@ get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Yiaddr" "1" "$UCI_GET dhcp.$ndhcp.ip" "set_dhcpstaticaddress_yiaddr $ndhcp \$val"
 }
 
+get_landevice_ethernet_interface_config() {
+	local idev=$1
+	local ieth=$2
+	local eth=$3
+	local flan=$4
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth." "0"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Enable" "1" "" "set_lan_eth_iface_cfg_enable $eth \$val" "get_lan_eth_iface_cfg_enable $eth" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Status" "0" "" "" "get_lan_eth_iface_cfg_status $eth"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.MaxBitRate" "1" "get_lan_eth_iface_cfg_maxbitrate $eth" "set_lan_eth_iface_cfg_maxbitrate $eth \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.DuplexMode" "1" "get_lan_eth_iface_cfg_duplexmode $eth" "set_lan_eth_iface_cfg_duplexmode $eth \$val"
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats." "0"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesSent" "0" "" "" "get_lan_eth_iface_cfg_stats $eth tx_bytes" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesReceived" "0" "" "" "get_lan_eth_iface_cfg_stats $eth rx_bytes" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsSent" "0" "" "" "get_lan_eth_iface_cfg_stats $eth tx_packets" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsReceived" "0" "" "" "get_lan_eth_iface_cfg_stats $eth rx_packets" "xsd:unsignedInt"
+}
+
 get_cache_InternetGatewayDevice_LANDevice() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0"
 	for interface in `get_lan_device_interface`;do
@@ -1150,9 +1276,9 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev." "0" "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement." "0"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $ndev \$val" "get_lan_dns $ndev" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $ndev" "set_lan_dhcp_server_configurable $ndev \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $ndev" "set_lan_dhcp_server_enable $ndev \$val" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $flan \$val" "get_lan_dns $flan" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $flan" "set_lan_dhcp_server_configurable $flan \$val" "" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $flan" "set_lan_dhcp_server_enable $flan \$val" "" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MinAddress" "1" "get_lan_dhcp_interval_address START $flan" "set_lan_dhcp_address_start $flan \$val"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MaxAddress" "1" "get_lan_dhcp_interval_address END $flan" "set_lan_dhcp_address_end $flan \$val"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.ReservedAddresses" "1" "get_lan_dhcp_reserved_addresses $flan" "set_lan_dhcp_reserved_addresses $flan \$val"
@@ -1160,9 +1286,11 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPRouters" "1" "get_lan_dhcp_iprouters $flan" "set_lan_dhcp_iprouters $flan \$val"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_dhcp_leasetime $flan" "set_lan_dhcp_leasetime $flan \$val"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DomainName" "1" "get_lan_dhcp_domainname $flan" "set_lan_dhcp_domainname $flan \$val"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts." "0" "0"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts.HostNumberOfEntries" "0" "" "" "get_lan_host_nbr_entries $flan" "xsd:unsignedInt"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts.Host." "0" "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress." "1"
-
 		for lan in $lan_iface; do
 			ilan=${lan%%:*}
 			nlan=${lan#*:}
@@ -1174,10 +1302,18 @@ get_cache_InternetGatewayDevice_LANDevice() {
 			done
 		done
 		
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration." "0" "0"
 		local iwlan=0
 		for iuci in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
 			let iwlan++
 			get_landevice_wlanconfiguration_generic $idev $iwlan $iuci
+		done
+		
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig." "0"
+		local eth eths=`get_lan_ethernet_interfaces $ndev`
+		local ieth=0
+		for eth in $eths; do
+			get_landevice_ethernet_interface_config $idev $((++ieth)) $eth $flan
 		done
 	done
 }
@@ -1238,6 +1374,70 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
 					freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
 				done
+			done
+		done
+	esac
+	case "$1" in
+		""|\
+		InternetGatewayDevice.|\
+		InternetGatewayDevice.LANDevice.|\
+		InternetGatewayDevice.LANDevice.[1-9].|\
+		InternetGatewayDevice.LANDevice.[1-9][0-9].|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9].|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9][0-9].|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9][0-9][0-9].|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.IPAddress|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.MACAddress|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.HostName|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.Active|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.LeaseTimeRemaining|\
+		InternetGatewayDevice.LANDevice.[1-9]*.Hosts.Host.[1-9]*.AddressSource )
+		clients=`ubus call router clients`
+		json_load "$clients"
+		for interface in `get_lan_device_interface`;do
+			local lan_iface=${interface%%;*}
+			local idev=${lan_iface%%:*}
+			lan_iface=${interface#*;}
+			lan_iface=${lan_iface/,/ }
+			local flan=${lan_iface%% *}
+			flan=${flan#*:}
+			local idx=1
+			local num=0
+			local val check
+			local exist=1
+			while [ true ]; do
+				let num++
+				json_select "client-$num" > /dev/null
+				check="$?"
+				[ "$check" !=  0 ] && break
+				json_get_var val network
+				[ "$val" != "$flan" ] && { json_select ".." > /dev/null; continue; }
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx." "" "0" "" "" "" "" "0"
+				json_get_var val ipaddr
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.IPAddress" "$val" "0" "0" "" "" "" "0"
+				json_get_var val hostname
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.HostName" "$val" "0" "0" "" "" "" "0"
+				json_get_var val connected
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.Active" "$val" "0" "0" "xsd:boolean" "" "" "0"
+				json_get_var mac macaddr
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.MACAddress" "$mac" "0" "0" "" "" "" "0"
+				json_get_var dhcp dhcp
+				if [ $dhcp -eq 1 ]; then
+					dhcp="DHCP"
+					leasetime=`awk -F ' ' ' $2=="'$mac'" {print$1}' /var/dhcp.leases`
+					time=$(date +%s)
+					rem_lease=$(( $leasetime - $time ))
+					[ $rem_lease -lt 0 ] && rem_lease=-1
+				else
+					dhcp="Static"
+					rem_lease=0
+				fi
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.AddressSource" "$dhcp" "0" "0" "" "" "" "0"
+				freecwmp_cache_output "InternetGatewayDevice.LANDevice.$idev.Hosts.Host.$idx.LeaseTimeRemaining" "$rem_lease" "0" "0" "" "" "" "0"
+				let idx++
+				json_select ".." > /dev/null
 			done
 		done
 	esac
