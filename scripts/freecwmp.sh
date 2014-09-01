@@ -3,6 +3,7 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
 . /lib/functions.sh
 . /usr/share/libubox/jshn.sh
@@ -197,7 +198,9 @@ InternetGatewayDevice.WANDevice. \
 InternetGatewayDevice.Layer2Bridging. \
 InternetGatewayDevice.Time. \
 InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
-InternetGatewayDevice.X_INTENO_SE_LoginCfg."
+InternetGatewayDevice.X_INTENO_SE_LoginCfg. \
+Device. \
+Device.Wifi."
 
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
@@ -210,6 +213,8 @@ InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 . /usr/share/freecwmp/functions/layer_2_bridging
 . /usr/share/freecwmp/functions/models
 . /usr/share/freecwmp/functions/times
+. /usr/share/freecwmp/functions/wifi
+
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 	. /usr/share/freecwmp/functions/voice_service
 	prefix_list="$prefix_list InternetGatewayDevice.Services."
@@ -305,6 +310,7 @@ handle_action() {
 	if [ "$action" = "wait_cache" ]; then
 		local found=0
 		handle_get_cache "InternetGatewayDevice." "1"
+		handle_get_cache "Device." "1"
 		handle_get_cache "InternetGatewayDevice.ManagementServer."
 		handle_get_cache "InternetGatewayDevice.DeviceInfo."
 		handle_get_cache "InternetGatewayDevice.X_INTENO_SE_LoginCfg"

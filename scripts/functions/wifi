@@ -1,0 +1,66 @@
+#!/bin/sh
+# Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
+# Copyright (C) 2013 Inteno Broadband Technology AB
+# Author Feten Besbes <feten.besbes@pivasoftware.com>
+
+
+get_supported_standard () {
+	local val=`wlctl -i wl0 status |awk  '$1=="Chanspec:" {print$2}'`
+	case $val in
+		"5GHz") echo  "a, n, ac";;
+		*) echo "b, g, n, gst, lrs";;
+	esac
+}
+
+get_OperatingStandards () {
+	local val=`uci get wireless.wl0.hwmode`
+	case "$val" in
+		"11b") echo "b" ;;
+		"11g") echo "g" ;;
+		"11bg") echo "b, g" ;;
+		"11gst") echo "gst" ;;
+		"11lrs") echo "lrs" ;;
+		"11n") echo "n" ;;
+		"auto")
+			local freq=`wlctl -i wl0 status |awk  '$1=="Chanspec:" {print$2}'`
+			case $freq in
+				"5GHz") echo  "a, n, ac";;
+				*) echo "b, g, n, gst, lrs";;
+			esac
+		;;
+	esac
+}
+
+get_operating_channel_bandwidth () {
+	local channel=`uci get wireless.wl0.channel`
+	if [ "$channel" = "auto" ]; then
+		echo "Auto"
+	else
+		echo "`uci get wireless.wl0.bandwidth`MHz"
+	fi
+}
+
+get_cache_Device_Wifi() {
+	get_object_cache_generic "Device.Wifi." "0"
+	get_object_cache_generic "Device.Wifi.Radio." "0"
+	get_object_cache_generic "Device.Wifi.Radio.1." "0"
+	get_param_cache_generic "Device.Wifi.Radio.1.SupportedStandards" "0" "get_supported_standard"
+	get_param_cache_generic "Device.Wifi.Radio.1.OperatingStandards" "0" "get_OperatingStandards"
+	get_param_cache_generic "Device.Wifi.Radio.1.OperatingChannelBandwidth" "0" "get_operating_channel_bandwidth"
+}
+
+get_dynamic_Device_Wifi() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+get_dynamic_linker_Device_Wifi() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_Device_Wifi() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_Device_Wifi() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}

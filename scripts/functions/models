@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+#  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
 #InternetGatewayDevice.
 get_cache_InternetGatewayDevice() {
@@ -20,4 +21,18 @@ delete_object_InternetGatewayDevice() {
 }
 
 #Device.
-#To be added
+get_cache_Device() {
+	get_object_cache_generic "Device." "0" "0"
+}
+
+get_dynamic_Device() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_Device() { 
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_Device() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
