@@ -829,7 +829,7 @@ get_landevice_lanhostconfigmanagement_generic() {
 	local ndev=$2
 	local ilan=$3
 	local nlan=$4
-	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0"
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0" "" "linker_interface:$nlan"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "" "set_interface_enable_ubus $nlan \$val" "get_interface_enable_ubus $nlan" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val"
 }
