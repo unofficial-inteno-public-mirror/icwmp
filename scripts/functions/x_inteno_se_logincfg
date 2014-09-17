@@ -24,6 +24,10 @@ get_dynamic_InternetGatewayDevice_X_INTENO_SE_LoginCfg() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+get_dynamic_linker_InternetGatewayDevice_X_INTENO_SE_LoginCfg() {
+    return $FAULT_CPE_NO_FAULT
+}
+
 add_object_InternetGatewayDevice_X_INTENO_SE_LoginCfg() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }

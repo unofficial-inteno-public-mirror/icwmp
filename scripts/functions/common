@@ -4,6 +4,26 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+get_parameter_by_linker() {
+	local linker="$1"
+	local param=""
+	jmsg=`cat "$cache_path/"* $cache_linker_dynamic | grep "\"linker\"" | grep "\"$linker\"" | head -1`
+	[ "$jmsg" = "" ] && return
+	json_load "$jmsg"
+	json_get_var param parameter
+	echo "$param"
+}
+
+get_linker_by_parameter() {
+	local param="$1"
+	local linker=""
+	jmsg=`cat "$cache_path/"* $cache_linker_dynamic | grep "\"linker\"" | grep "\"$param\"" | head -1`
+	[ "$jmsg" = "" ] && return
+	json_load "$jmsg"
+	json_get_var linker linker
+	echo "$linker"
+}
+
 get_interface_enable_ubus() {
 	local val=""
 	local intf="$1"
@@ -212,7 +232,7 @@ freecwmp_output() {
 	echo "$MSG"
 }
 
-freecwmp_cache_output() {
+freecwmp_cache_output_param() {
 
 	local MSG=""
 	local parameter="$1"
@@ -225,20 +245,38 @@ freecwmp_cache_output() {
 	local notif_permission="$8"
 	local forced_inform="$9"
 	local secret_value="$10"
+	local linker="$11"
 	
 	json_init
 	json_add_string "parameter" "$parameter"
 	json_add_string "writable" "$permission"
-	if [ "$type" != "" ]; then json_add_string "type" "$type"; fi
-	if [ "$get_cmd" != "" ]; then json_add_string "get_cmd" "$get_cmd"; fi
-	if [ "$set_cmd" != "" -a "$permission" = "1" ]; then json_add_string "set_cmd" "$set_cmd"; fi
-	if [ "$notif_permission" != "" ]; then json_add_string "notif_permission" "$notif_permission"; fi
-	if [ "$notification" != "" ]; then
-		json_add_string "notification" "$notification"
-		json_add_string "value" "$value"
-	fi
-	if [ "$forced_inform" != "" ]; then json_add_string "forced_inform" "$forced_inform"; fi
-	if [ "$secret_value" != "" ]; then json_add_string "secret_value" "$secret_value"; fi
+	json_add_string "value" "$value"
+	json_add_string "notification" "$notification"
+	[ "$type" != "" ] && json_add_string "type" "$type"
+	[ "$get_cmd" != "" ] && json_add_string "get_cmd" "$get_cmd"
+	[ "$set_cmd" != "" -a "$permission" = "1" ] && json_add_string "set_cmd" "$set_cmd"
+	[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
+	[ "$forced_inform" != "" ] && json_add_string "forced_inform" "$forced_inform"
+	[ "$secret_value" != "" ] && json_add_string "secret_value" "$secret_value"
+	[ "$linker" != "" ] && json_add_string "linker" "$linker"
+	json_close_object
+	MSG=`json_dump`
+	echo "$MSG"
+}
+
+freecwmp_cache_output_obj() {
+
+	local MSG=""
+	local parameter="$1"
+	local permission="$2"
+	local notif_permission="$3"
+	local linker="$4"
+	
+	json_init
+	json_add_string "parameter" "$parameter"
+	json_add_string "writable" "$permission"
+	[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
+	[ "$linker" != "" ] && json_add_string "linker" "$linker"
 	json_close_object
 	MSG=`json_dump`
 	echo "$MSG"
@@ -640,29 +678,51 @@ get_param_cache_generic() {
 	local forced_inform="$8"
 	local forced_notify="$9"
 	local secret_value="$10"
+	local linker="$11"
 	
 	local val=""
 	local notification="0"
 	
-	if [ "$val_cmd" != "" ]; then
-		val=`eval "$val_cmd"`
-	fi
-	
-	if [ "_$forced_notify" = "_" ]; then
-		freecwmp_get_parameter_notification "notification" $param
-	else
-		notification="$forced_notify"
-	fi
-	
-	freecwmp_cache_output "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform" "$secret_value"
+	case "$action" in
+		get_value|inform)
+		if [ "$val_cmd" != "" ]; then
+			val=`eval "$val_cmd"`
+		fi
+		;;
+		get_notification|notify)
+		if [ "_$forced_notify" = "_" ]; then
+			freecwmp_get_parameter_notification "notification" $param
+		else
+			notification="$forced_notify"
+		fi
+		;;
+		get_linker)
+		if [ "_$linker" = "_" ]; then
+			return;
+		fi
+		;;
+		get_cache)
+		if [ "$val_cmd" != "" ]; then
+			val=`eval "$val_cmd"`
+		fi
+		if [ "_$forced_notify" = "_" ]; then
+			freecwmp_get_parameter_notification "notification" $param
+		else
+			notification="$forced_notify"
+		fi
+		;;
+	esac
+		
+	freecwmp_cache_output_param "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform" "$secret_value" "$linker"
 }
 
 get_object_cache_generic() {
 	local param=$1
 	local permission=$2
 	local notif_permission=$3
+	local linker=$4
 		
-	freecwmp_cache_output "$param" "" "$permission" "" "" "" "" "$notif_permission"
+	freecwmp_cache_output_obj "$param" "$permission" "$notif_permission" "$linker"
 }
 
 
@@ -670,13 +730,15 @@ get_object_cache_generic() {
 get_generic_dynamic() {
 	local found_prefix="$1"
 	local param="$2"
-	local prefix="" get_func=""
+	local prefix="" get_func="" get_func_link=""
 
 	for prefix in $prefix_list; do
 		case  "$prefix" in "$found_prefix"*)
 			get_func=${prefix%.}
 			get_func=${get_func//./_}
+			get_func_link="get_dynamic_linker_""$get_func"
 			get_func="get_dynamic_""$get_func"
+			$get_func_link "$param" >>"$cache_linker_dynamic"
 			$get_func "$param" >"$cache_path/$prefix""_dynamic"
 		esac
 	done
@@ -752,6 +814,7 @@ get_param_value_generic() {
 	fi
 	
 	rm -f "$cache_path/"*"_dynamic"
+	rm -f "$cache_linker_dynamic"
 	get_generic_dynamic "$found_prefix" "$parameter"
 	
 	get_generic_cmd "$parameter" "$found_prefix" "cmd"
@@ -761,14 +824,18 @@ get_param_value_generic() {
 		eval '$cmd' | grep "\"get_cmd\"" | while read line; do
 			json_init
 			json_load "$line"
-			json_get_var exec_get_cmd get_cmd
 			json_get_var param parameter
+			json_get_var val value
 			json_get_var type type
-			val=`eval "$exec_get_cmd"`
+			if [ "$val" = "" ]; then
+				json_get_var exec_get_cmd get_cmd
+				val=`eval "$exec_get_cmd"`
+			fi
 			freecwmp_output "$param" "$val" "" "" "$type"
 		done
 	fi
-		
+	
+	rm -f "$cache_linker_dynamic"
 	rm -f "$cache_path/"*"_dynamic"
 	return "$ret"	
 }
