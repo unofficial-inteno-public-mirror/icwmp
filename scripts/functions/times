@@ -1,25 +1,38 @@
 #!/bin/sh
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #   Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+#   Author Feten Besbes <feten.besbes@pivasoftware.com>
 
 get_time_ntpserver() {
-	local ntp_servers val
-	ntp_servers=`$UCI_GET system.ntp.server`
-	val=${ntp_servers%% *}
+	local ntp_num="$1"
+	local val=`$UCI_GET system.ntp.server | awk -F ' ' -v var=$ntp_num '{print $var}'`
+	[ "$val" = "none" ] && val=""
 	echo $val
 }
 
 set_time_ntpserver() {
-	[ "$1" = "" ] && return
-	local val="$1"
+	local ntp_num="$1"
+	local val="$2"
 	local ntp_servers serv
+	local count=1
+	[ "$val" = "" ] && val="none"
 	ntp_servers=`$UCI_GET system.ntp.server`
-	ntp_servers="$ntp_servers "
-	ntp_servers=${ntp_servers#* }
-	ntp_servers="$val $ntp_servers"
 	$UCI_DELETE system.ntp.server
 	for serv in $ntp_servers; do
-		$UCI_ADD_LIST system.ntp.server="$serv"
+		if [ "$count" -eq "$ntp_num" ]; then
+			$UCI_ADD_LIST system.ntp.server="$val"
+		else
+			$UCI_ADD_LIST system.ntp.server="$serv"
+		fi
+		let count++
+	done
+	while [ $count -le $ntp_num ]; do
+		if [ "$count" = "$ntp_num" ]; then
+			$UCI_ADD_LIST system.ntp.server="$val"
+		else
+			$UCI_ADD_LIST system.ntp.server="none"
+		fi
+		let count++
 	done
 	if [ -f /etc/rc.d/*sysntpd ]; then delay_service restart "sysntpd" "1"; fi
 }
@@ -46,7 +59,11 @@ set_time_enable() {
 get_cache_InternetGatewayDevice_Time() {
 	get_object_cache_generic "InternetGatewayDevice.Time." "0"
 	get_param_cache_generic "InternetGatewayDevice.Time.Enable" "1" "get_time_enable" "set_time_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer1" "1" "get_time_ntpserver" "set_time_ntpserver \$val" 
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer1" "1" "get_time_ntpserver 1" "set_time_ntpserver 1 \$val"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer2" "1" "get_time_ntpserver 2" "set_time_ntpserver 2 \$val"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer3" "1" "get_time_ntpserver 3" "set_time_ntpserver 3 \$val"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer4" "1" "get_time_ntpserver 4" "set_time_ntpserver 4 \$val"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer5" "1" "get_time_ntpserver 5" "set_time_ntpserver 5 \$val"
 }
 
 get_dynamic_InternetGatewayDevice_Time() {
