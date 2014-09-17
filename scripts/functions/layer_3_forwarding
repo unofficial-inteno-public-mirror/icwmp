@@ -1,0 +1,305 @@
+#!/bin/sh
+# Copyright (C) 2014 Inteno Broadband Technology AB
+#  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+hex_to_ip() {
+	local hex="$1"
+	printf "%d.%d.%d.%d" 0x${hex:0:2} 0x${hex:2:2} 0x${hex:4:2} 0x${hex:6:2}
+}
+
+ip_to_hex() {
+	local ip="$1"
+	local ip1=${ip%%.*}; ip=${ip#*.}
+	local ip2=${ip%%.*}; ip=${ip#*.}
+	local ip3=${ip%%.*}; ip=${ip#*.}
+	local ip4=${ip%%.*}
+	printf "%02X%02X%02X%02X" $ip1 $ip2 $ip3 $ip4
+}
+
+proc_get_route_var_by_conf() {
+	local route="$1"
+	local varn="$2"
+	local dest=`$UCI_GET network.$route.target`
+	dest=`ip_to_hex $dest`
+	local mask=`$UCI_GET network.$route.netmask`
+	mask=${mask:-255.255.255.255}
+	mask=`ip_to_hex $mask`
+	
+	awk '$2=="'"$dest"'" && $8=="'"$mask"'"{print $'"$varn"'}' /proc/net/route
+}
+
+get_layer3_nbr_entry() {
+	local pr=`cat /proc/net/route | wc -l`
+	local dr=`$UCI_SHOW network | grep "network\.@route_disabled\[[0-9]\+\]=route_disabled" | wc -l`
+	local cr=`$UCI_SHOW network | grep "network\.@route\[[0-9]\+\]=route" | wc -l`
+	local cri=`$UCI_SHOW network | grep "network\.@route\[[0-9]\+\]\.interface" | wc -l`
+	echo $((pr-1+dr+cr-cri))
+}
+
+get_layer3_enable() {
+	local route="$1"
+	case $route in
+		"@route_disabled["*)
+		echo 0
+		;;
+		"@route["*)
+		[ "`proc_get_route_var_by_conf $route 1`" = "" ] && echo 0 || echo 1
+		;;
+		*)
+		echo 1
+		;;
+	esac
+}
+
+set_layer3_enable() {
+	local route="$1"
+	local val="$2"
+	local droute sroute="$route"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		case $route in
+			"@route_disabled["*)
+			droute="route"
+			;;
+			*)
+			return
+			;;
+		esac
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		case $route in
+			"@route["*)
+			droute="route_disabled"
+			;;
+			*)
+			return
+			;;
+		esac
+	else
+		return
+	fi
+	local rc rconfigs=`$UCI_SHOW network.$sroute |sed -n "s/network\.[^.]\+\.//p"`
+	route=`$UCI_ADD network $droute`
+	for rc in $rconfigs; do
+		$UCI_SET network.$route.$rc
+	done
+	$UCI_DELETE network.$sroute
+	delay_service reload "network" "1"
+}
+
+get_layer3_status() {
+	[ "`get_layer3_enable $1`" = "1" ] && echo "Enabled" || echo "Disabled"
+}
+
+
+get_layer3_type() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.netmask`
+		;;
+		*)
+		val=`echo $route | awk '{print $8}'`
+		val=`hex_to_ip $val`
+		;;
+	esac
+	[ "$val" = "255.255.255.255" -o "$val" = "" ] && echo "Host" || echo "Network"
+}
+
+get_layer3_destip() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.target`
+		;;
+		*)
+		val=`echo $route | awk '{print $2}'`
+		val=`hex_to_ip $val`
+		;;
+	esac
+	[ "$val" = "" ] && echo "0.0.0.0" || echo "$val"
+}
+
+set_layer3_destip() {
+	local route="$1"
+	local val="$2"
+	$UCI_SET network.$route.target=$val
+	delay_service reload "network" "1"
+}
+
+get_layer3_destmask() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.netmask`
+		;;
+		*)
+		val=`echo $route | awk '{print $8}'`
+		val=`hex_to_ip $val`
+		;;
+	esac
+	[ "$val" = "" ] && echo "255.255.255.255" || echo "$val"
+}
+
+set_layer3_destmask() {
+	local route="$1"
+	local val="$2"
+	$UCI_SET network.$route.netmask=$val
+	delay_service reload "network" "1"
+}
+
+get_layer3_gatewayip() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.gateway`
+		;;
+		*)
+		val=`echo $route | awk '{print $3}'`
+		val=`hex_to_ip $val`
+		;;
+	esac
+	[ "$val" = "" ] && echo "0.0.0.0" || echo "$val"
+}
+
+set_layer3_gatewayip() {
+	local route="$1"
+	local val="$2"
+	$UCI_SET network.$route.gateway=$val
+	delay_service reload "network" "1"
+}
+
+get_layer3_metric() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.metric`
+		;;
+		*)
+		val=`echo $route | awk '{print $7}'`
+		;;
+	esac
+	val=${val:-0}
+	echo "$val"
+}
+
+set_layer3_metric() {
+	local route="$1"
+	local val="$2"
+	$UCI_SET network.$route.metric=$val
+	delay_service reload "network" "1"
+}
+
+get_layer3_mtu() {
+	local route="$1"
+	local val
+	case "$route" in
+		*"@route"*)
+		val=`$UCI_GET network.$route.mtu`
+		;;
+		*)
+		val=`echo $route | awk '{print $9}'`
+		;;
+	esac
+	val=${val:-1500}
+	echo "$val"
+}
+
+set_layer3_mtu() {
+	local route="$1"
+	local val="$2"
+	$UCI_SET network.$route.mtu=$val
+	delay_service reload "network" "1"
+}
+
+update_layer3_instance() {
+	local route="$1"
+	local inst=`$UCI_GET network.$route.layer3_instance`
+	if [ "$inst" != "" ]; then
+		echo "$inst"
+	else
+		local inst=`$UCI_SHOW network |sed -n "s/network\.@route[^.]\+\.layer3_instance=//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET network.$route.layer3_instance="$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
+get_cache_object_layer3() {
+	local route="$1"
+	local il="$2"
+	local p="$3"
+	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il." "0"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Enable" "$p" "get_layer3_enable \"$route\"" "set_layer3_enable $route \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Status" "0" "get_layer3_status \"$route\""
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Type" "0" "get_layer3_type \"$route\""
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestIPAddress" "$p" "get_layer3_destip \"$route\"" "set_layer3_destip $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestSubnetMask" "$p" "get_layer3_destmask \"$route\"" "set_layer3_destmask $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceIPAddress" "0" "echo 0.0.0.0"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceSubnetMask" "0" "echo 0.0.0.0"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.GatewayIPAddress" "$p" "get_layer3_gatewayip \"$route\"" "set_layer3_gatewayip $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Interface" "$p"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.ForwardingMetric" "$p" "get_layer3_metric \"$route\"" "set_layer3_metric $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.MTU" "$p" "get_layer3_mtu \"$route\"" "set_layer3_mtu $route \$val"
+}
+
+get_cache_InternetGatewayDevice_Layer3Forwarding() {
+	local il=0 route
+	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding." "0"
+	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding." "0"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService" "1"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.ForwardNumberOfEntries" "0" "" "" "get_layer3_nbr_entry" "xsd:unsignedInt"
+	local route routes=`$UCI_SHOW network | grep "network\.@route[^=]\+=route" | cut -d. -f2 | cut -d= -f1`
+	for route in $routes; do
+		il=`update_layer3_instance $route`
+		get_cache_object_layer3 "$route" "$il" "1"
+	done
+}
+
+get_dynamic_InternetGatewayDevice_Layer3Forwarding() {
+	case "$1" in
+		""|\
+		InternetGatewayDevice.|\
+		InternetGatewayDevice.Layer3Forwarding.|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9].|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9].*|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9].|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9].*|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9][0-9].|\
+		InternetGatewayDevice.Layer3Forwarding.Forwarding.[1-9][0-9][0-9].*)
+		local inst=`$UCI_SHOW network |sed -n "s/network\.@route[^.]\+\.layer3_instance=//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		local proute
+		cat /proc/net/route | tail -n+2 | while read proute; do
+			local found="0"
+			local dest=`echo $proute | awk '{print $2}'`; dest=`hex_to_ip $dest`
+			local mask=`echo $proute | awk '{print $8}'`; mask=`hex_to_ip $mask`
+			local route routes=`$UCI_SHOW network | grep "network\.@route[^=]\+=route" | cut -d. -f2 | cut -d= -f1`
+			for route in $routes; do
+				cdest=`$UCI_GET network.$route.target`; cdest=${cdest:-0.0.0.0}
+				cmask=`$UCI_GET network.$route.netmask`;cmask=${cmask:-255.255.255.255}
+				if [ "$cdest" = "$dest" -a "$cmask" = "$mask" ]; then
+					found="1"
+					break
+				fi
+			done
+			if [ "$found" = "0" ]; then
+				get_cache_object_layer3 "$proute" "$((++inst))" "0"
+			fi
+		done
+	esac
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_Layer3Forwarding() { 
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_Layer3Forwarding() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}

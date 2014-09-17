@@ -197,7 +197,8 @@ InternetGatewayDevice.WANDevice. \
 InternetGatewayDevice.Layer2Bridging. \
 InternetGatewayDevice.Time. \
 InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
-InternetGatewayDevice.X_INTENO_SE_LoginCfg."
+InternetGatewayDevice.X_INTENO_SE_LoginCfg. \
+InternetGatewayDevice.Layer3Forwarding."
 
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
@@ -210,6 +211,8 @@ InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 . /usr/share/freecwmp/functions/layer_2_bridging
 . /usr/share/freecwmp/functions/models
 . /usr/share/freecwmp/functions/times
+. /usr/share/freecwmp/functions/layer_3_forwarding
+
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 	. /usr/share/freecwmp/functions/voice_service
 	prefix_list="$prefix_list InternetGatewayDevice.Services."
