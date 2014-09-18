@@ -166,6 +166,112 @@ get_wan_device_wan_dsl_interface_config_modulation_type() {
 	echo $val
 }
 
+get_wan_device_dsl_datapath() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --state|grep "Upstream rate"| awk '$1!="Max:" {print $2}'`
+		case "$val" in
+			FAST,)
+			val="Fast"
+			;;
+			INTR,)
+			val="Interleaved"
+			;;
+			*)
+			val="None"
+			;;
+		esac
+	else
+		val="None"
+	fi
+	echo $val
+}
+
+get_wan_device_dsl_downstreamcurrrate() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --state|grep "Downstream rate"| awk '$1!="Max:" {print $11}'`
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_downstreammaxrate() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --state|grep "Downstream rate"| awk '$1=="Max:" {print $10}'`
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_downstreamattenuation() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --stats|grep "Attn(dB):"| awk '{print $2}'`
+		local vcom=${val#*.}
+		[ "$vcom" = "$val" ] && vcom=0
+		val=${val%.*}${vcom:0:1}
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_downstreamnoisemargin() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --stats|grep "SNR (dB):"| awk '{print $3}'`
+		local vcom=${val#*.}
+		[ "$vcom" = "$val" ] && vcom=0
+		val=${val%.*}${vcom:0:1}
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_upstreamcurrrate() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --state|grep "Upstream rate"| awk '$1!="Max:" {print $6}'`
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_upstreammaxrate() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --state|grep "Upstream rate"| awk '$1=="Max:" {print $5}'`
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_upstreamattenuation() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --stats|grep "Attn(dB):"| awk '{print $3}'`
+		local vcom=${val#*.}
+		[ "$vcom" = "$val" ] && vcom=0
+		val=${val%.*}${vcom:0:1}
+	fi
+	echo ${val:-0}
+}
+
+get_wan_device_dsl_upstreamnoisemargin() {
+	local val=""
+	local dev="$1"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`adsl info --stats|grep "SNR (dB):"| awk '{print $4}'`
+		local vcom=${val#*.}
+		[ "$vcom" = "$val" ] && vcom=0
+		val=${val%.*}${vcom:0:1}
+	fi
+	echo ${val:-0}
+}
+
 set_wan_device() {
 	local uci_name=$1
 	local val=$2
@@ -608,6 +714,15 @@ get_wandevice_wandevice_parameters() {
 	get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig." "0"
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.Status" "0" "" "" "get_wan_device_wan_dsl_interface_config_status $dev"
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.ModulationType" "0" "get_wan_device_wan_dsl_interface_config_modulation_type $dev"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.DataPath" "0" "" "" "get_wan_device_dsl_datapath $dev"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.DownstreamCurrRate" "0" "" "" "get_wan_device_dsl_downstreamcurrrate $dev" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.DownstreamMaxRate" "0" "" "" "get_wan_device_dsl_downstreammaxrate $dev" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.DownstreamAttenuation" "0" "" "" "get_wan_device_dsl_downstreamattenuation $dev" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.DownstreamNoiseMargin" "0" "" "" "get_wan_device_dsl_downstreamnoisemargin $dev" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamCurrRate" "0" "" "" "get_wan_device_dsl_upstreamcurrrate $dev" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamMaxRate" "0" "" "" "get_wan_device_dsl_upstreammaxrate $dev" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamAttenuation" "0" "" "" "get_wan_device_dsl_upstreamattenuation $dev" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamNoiseMargin" "0" "" "" "get_wan_device_dsl_upstreamnoisemargin $dev" "xsd:int"
 	if [ "$dev" = "$WAN_INST_ETH" ]; then
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig." "0"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Enable" "1" "" "set_wan_eth_intf_enable \$val $fdev" "get_wan_eth_intf_enable $fdev" "xsd:boolean"
