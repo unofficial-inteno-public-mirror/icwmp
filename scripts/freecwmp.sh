@@ -550,7 +550,7 @@ handle_action() {
 					local l=${#parameter}
 					let l--
 					if [ "${parameter:$l:1}" != "." ]; then
-						sed -i "/\<$parameter\>/s/.*/$line/" $cache_path/$filename
+						sed -i "/\<$parameter\>/s%.*%$line%" $cache_path/$filename
 					else
 						cat $cache_path/$filename|grep "$parameter"|grep "\"notification\""| while read line; do
 							json_init
