@@ -2,21 +2,6 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 
-netmask2cidr ()
-{
-   local x=${1##*255.}
-   set -- 0^^^128^192^224^240^248^252^254^ $(( (${#1} - ${#x})*2 )) ${x%%.*}
-   x=${1%%$3*}
-   echo $(( $2 + (${#x}/4) ))
-}
-
-cidr2netmask ()
-{
-   set -- $(( 5 - ($1 / 8) )) 255 255 255 255 $(( (255 << (8 - ($1 % 8))) & 255 )) 0 0 0
-   [ $1 -gt 1 ] && shift $1 || shift
-   echo ${1-0}.${2-0}.${3-0}.${4-0}
-}
-
 get_firewall_rules() {
 	local i=0
 	local rule
@@ -24,11 +9,24 @@ get_firewall_rules() {
 	if [ "$rule" != "" ]; then seq 1 $rule; fi
 }
 
-get_x_bcm_com_ip_acc_list_cfgobj_acc_address() {
+get_x_inteno_cfgobj_address_netmask() {
 	local index=$1
-	ip=`$UCI_GET firewall.@rule[$index].src_ip | cut -f1 -d'/'`
-	if [ "$ip" = "" ]; then ip="0.0.0.0"; fi
+	ip=`$UCI_GET firewall.@rule[$index].src_ip`
+	ip=${ip// /,}
+	if [ "$ip" = "" ]; then ip="0.0.0.0/0"; fi
 	echo $ip
+}
+
+set_x_inteno_cfgobj_address_netmask() {
+	local index=$1
+	local val=$2
+	val=${val//,/ }
+	$UCI_SET firewall.@rule[$index].src_ip=""
+	local src_ip
+	for src_ip in $val; do
+		$UCI_ADD_LIST firewall.@rule[$index].src_ip="$src_ip"
+	done
+	delay_service restart "firewall" "0"
 }
 
 get_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
@@ -37,56 +35,11 @@ get_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	echo $port
 }
 
-get_x_bcm_com_ip_acc_list_cfgobj_acc_netmask() {
-	local index=$1
-	local src_ip=""
-	local cidr=32
-	local netmask
-	src_ip=`$UCI_GET firewall.@rule[$index].src_ip`
-	if [ "$src_ip" = "" ]; then echo 0.0.0.0; return; fi
-	src_ip="$src_ip/"
-	cidr=`echo $src_ip | cut -f2 -d'/'`
-	if [ "$cidr" = "" ]; then
-		netmask=255.255.255.255
-	else
-		netmask=`cidr2netmask $cidr`
-	fi
-	echo "$netmask"
-}
-
-set_x_bcm_com_ip_acc_list_cfgobj_acc_address() {
-	local index=$1
-	local val=$2
-	local src_ip=`$UCI_GET firewall.@rule[$index].src_ip`
-	if [ "$src_ip" = "" ]; then
-		src_ip="$val/0"
-	else
-		local ip=${src_ip%%/*}
-		src_ip=${src_ip/$ip/$val}
-	fi
-	$UCI_SET firewall.@rule[$index].src_ip="$src_ip"
-	delay_service restart "firewall" "0"
-}
 
 set_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	local index=$1
 	local val=$2
 	$UCI_SET firewall.@rule[$index].dest_port=$val
-	delay_service restart "firewall" "0"
-}
-
-set_x_bcm_com_ip_acc_list_cfgobj_acc_netmask() {
-	local index=$1
-	local val=$2
-	val=`netmask2cidr $val`
-	local src_ip=`$UCI_GET firewall.@rule[$index].src_ip`
-	if [ "$src_ip" = "" ]; then
-		src_ip="0.0.0.0/$val"
-	else
-		local ip=${src_ip%%/*}
-		src_ip="$ip/$val"
-	fi
-	$UCI_SET firewall.@rule[$index].src_ip="$src_ip"
 	delay_service restart "firewall" "0"
 }
 
@@ -121,9 +74,8 @@ get_cache_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 		index=$(($instance-1))
 		get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance." "0"
 		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddress" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_address $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_address $index \$val"
+		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddressAndNetMask" "1" "get_x_inteno_cfgobj_address_netmask $index" "set_x_inteno_cfgobj_address_netmask $index \$val"
 		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccPort" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_port $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_port $index \$val"
-		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccNetMask" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_netmask $index \$val"
 	done
 }
 

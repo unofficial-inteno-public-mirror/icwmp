@@ -57,6 +57,7 @@ UCI_ADD_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list -q"
 UCI_GET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get -q"
 UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
 UCI_DELETE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete -q"
+UCI_DEL_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} del_list -q"
 UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
 UCI_RENAME="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} rename -q"
 NEW_LINE='\n'
