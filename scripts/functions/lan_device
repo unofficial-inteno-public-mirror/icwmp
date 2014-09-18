@@ -1,8 +1,8 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
 # Copyright (C) 2013-2014 Inteno Broadband Technology AB
-#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+#  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
 get_lan_device_interface() {
 local i=0
@@ -96,6 +96,28 @@ set_wlan_channel() {
 	delay_service reload "network" "1"
 	$UCI_SET wireless.wl0.channel="$val"
 }
+
+get_wlan_auto_channel_enable() {
+	local val=`$UCI_GET wireless.wl0.channel`
+	if [ "$val" = "auto" -o "$val" = "" ];then
+		echo 1
+	else
+		echo 0
+	fi
+}
+
+set_wlan_auto_channel_enable() {
+	local val="$1"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="auto"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val=`/usr/sbin/wlctl -i wl0 channel|grep "target channel"|awk -F ' ' '{print$3}'`
+	fi
+	$UCI_SET wireless.wl0.channel="$val"
+	delay_service reload "network" "1"
+}
+
 
 set_wlan_ssid() {
 	local num="$1"
@@ -774,6 +796,96 @@ set_lan_dhcp_server_enable() {
 	delay_service reload "dnsmasq" "1"
 }
 
+DHCPSTATICADDRESS_DISABLED_CHADDR="00:00:00:00:00:01"
+get_dhcpstaticaddress_enable() {
+	local slease="$1"
+	local chaddr=`$UCI_GET dhcp.$slease.mac`
+	if [ "$chaddr" = "$DHCPSTATICADDRESS_DISABLED_CHADDR" ]; then
+		echo 0
+	else
+		echo 1
+	fi
+}
+
+set_dhcpstaticaddress_enable() {
+	local slease="$1"
+	local val="$2"
+	local orig_chaddr chaddr=`$UCI_GET dhcp.$slease.mac`
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		if [ "$chaddr" = "$DHCPSTATICADDRESS_DISABLED_CHADDR" ]; then
+			orig_chaddr=`$UCI_GET dhcp.$slease.mac_orig`
+			$UCI_SET dhcp.$slease.mac=$orig_chaddr
+			delay_service reload "network" "1"
+			delay_service restart "dnsmasq" "1"
+		else
+			return
+		fi
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		if [ "$chaddr" = "$DHCPSTATICADDRESS_DISABLED_CHADDR" ]; then
+			return
+		else
+			orig_chaddr=`$UCI_GET dhcp.$slease.mac`
+			$UCI_SET dhcp.$slease.mac_orig=$orig_chaddr
+			$UCI_SET dhcp.$slease.mac=$DHCPSTATICADDRESS_DISABLED_CHADDR
+			delay_service reload "network" "1"
+			delay_service restart "dnsmasq" "1"
+		fi
+	fi
+}
+
+get_dhcpstaticaddress_chaddr() {
+	local slease="$1"
+	local chaddr=`$UCI_GET dhcp.$slease.mac`
+	if [ "$chaddr" = "$DHCPSTATICADDRESS_DISABLED_CHADDR" ]; then
+		chaddr=`$UCI_GET dhcp.$slease.mac_orig`
+	fi
+	echo $chaddr
+}
+
+set_dhcpstaticaddress_chaddr() {
+	local slease="$1"
+	local val="$2"
+	local chaddr=`$UCI_GET dhcp.$slease.mac`
+	if [ "$chaddr" = "$DHCPSTATICADDRESS_DISABLED_CHADDR" ]; then
+		$UCI_SET dhcp.$slease.mac_orig=$val
+	else
+		$UCI_SET dhcp.$slease.mac=$val
+	fi
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+get_dhcpstaticaddress_yiaddr() {
+	local slease="$1"
+	local ip=`$UCI_GET dhcp.$slease.ip`
+	echo $ip
+}
+
+set_dhcpstaticaddress_yiaddr() {
+	local slease="$1"
+	local val="$2"
+	$UCI_SET dhcp.$slease.ip="$val"
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+}
+
+update_instance_landevice_dhcpstaticaddress() {
+	local idev="$1"
+	local slease="$2"
+	
+	local inst=`$UCI_GET dhcp.$slease.instance`
+	if [ "$inst" != "" ]; then
+		echo ${inst#*.}
+	else
+		local inst=`$UCI_SHOW dhcp |sed -n "s/dhcp\.@host\[[0-9]\+\]\.instance=$idev\.//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET dhcp.$slease.instance="$idev.$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
@@ -785,6 +897,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $uci_num"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "set_wlan_max_bit_rate $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable" "set_wlan_auto_channel_enable \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$num].ssid" "set_wlan_ssid $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "xsd:boolean"
@@ -824,7 +937,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num \$val"
 }
 
-get_landevice_lanhostconfigmanagement_generic() {
+get_landevice_lanhostconfigmanagement_ipinterface() {
 	local idev=$1
 	local ndev=$2
 	local ilan=$3
@@ -832,6 +945,16 @@ get_landevice_lanhostconfigmanagement_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0" "" "linker_interface:$nlan"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "" "set_interface_enable_ubus $nlan \$val" "get_interface_enable_ubus $nlan" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val"
+}
+
+get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
+	local idev=$1
+	local idhcp=$2
+	local ndhcp=$3
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp." "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Enable" "1" "get_dhcpstaticaddress_enable $ndhcp" "set_dhcpstaticaddress_enable $ndhcp \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Chaddr" "1" "get_dhcpstaticaddress_chaddr $ndhcp" "set_dhcpstaticaddress_chaddr $ndhcp \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Yiaddr" "1" "$UCI_GET dhcp.$ndhcp.ip" "set_dhcpstaticaddress_yiaddr $ndhcp \$val"
 }
 
 get_cache_InternetGatewayDevice_LANDevice() {
@@ -846,13 +969,19 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $ndev" "set_lan_dhcp_server_configurable $ndev \$val" "" "xsd:boolean"
 		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $ndev" "set_lan_dhcp_server_enable $ndev \$val" "" "xsd:boolean"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress." "1"
 
 		tmp=${interface#*;}
 		tmp=${tmp/,/ }
 		for lan in $tmp; do
 			ilan=${lan%%:*}
 			nlan=${lan#*:}
-			get_landevice_lanhostconfigmanagement_generic $idev $ndev $ilan $nlan
+			get_landevice_lanhostconfigmanagement_ipinterface "$idev" "$ndev" "$ilan" "$nlan"
+			local slease sleases=`$UCI_SHOW dhcp|grep "dhcp\.@host\[[0-9]\+\].interface=.*$nlan" | cut -f2 -d'.'`
+			for slease in $sleases; do
+				local idhcp=`update_instance_landevice_dhcpstaticaddress "$idev" "$slease"`
+				get_landevice_lanhostconfigmanagement_dhcpstaticaddress "$idev" "$idhcp" "$slease"
+			done
 		done
 		
 		local iwlan=0
@@ -928,10 +1057,81 @@ get_dynamic_linker_InternetGatewayDevice_LANDevice() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_LANDevice() { 
+add_landevice_dhcpstaticaddress() {
+	local inst="$1"
+	local filename="$2"
+	local interface tmp ndev nlan found=""
+	for interface in `get_lan_device_interface`; do
+		tmp=${interface%%;*}
+		idev=${tmp%%:*}
+		ndev=${tmp#*:}
+		[ "$idev" != "$inst" ] && continue
+		found=1
+		tmp=${interface#*;}
+		tmp=${tmp%%,*}
+		nlan=${tmp#*:}
+		break
+	done
+	if [ "$found" != "1" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	nlan=${nlan:-$ndev}
+
+	local slease=`$UCI_ADD dhcp host`
+	$UCI_SET dhcp.$slease.mac="$DHCPSTATICADDRESS_DISABLED_CHADDR"
+	$UCI_SET dhcp.$slease.interface="$nlan"
+	local idhcp=`update_instance_landevice_dhcpstaticaddress "$idev" "$slease"`
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+	get_landevice_lanhostconfigmanagement_dhcpstaticaddress "$idev" "$idhcp" "$slease" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$idhcp"
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_LANDevice() {
+	local filename="$2"
+	local fault_code idev
+	case $1 in
+		InternetGatewayDevice.LANDevice.[1-9]*.LANHostConfigManagement.DHCPStaticAddress.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress." "rc" "idev"
+			if [ "$rc" != "0" ]; then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME;
+			fi
+			add_landevice_dhcpstaticaddress "$idev" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
+delete_landevice_dhcpstaticaddress() {
+	local instances="$2"
+	local filename="$3"
+	instances=${instances// /.}
+	local slease=`$UCI_SHOW dhcp | grep "dhcp\.@host\[[0-9]\+\]\.instance=$instances" | cut -f2 -d'.' | head -n1`
+	[ "$slease" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	$UCI_DELETE dhcp.$slease
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 delete_object_InternetGatewayDevice_LANDevice() {
+	local filename="$2"
+	local fault_code instances
+	case $1 in
+		InternetGatewayDevice.LANDevice.[1-9]*.LANHostConfigManagement.DHCPStaticAddress.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_landevice_dhcpstaticaddress "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
