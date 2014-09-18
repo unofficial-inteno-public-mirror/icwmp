@@ -272,22 +272,23 @@ freecwmp_cache_output_param() {
 	local forced_inform="$9"
 	local secret_value="$10"
 	local linker="$11"
-	
-	json_init
-	json_add_string "parameter" "$parameter"
-	json_add_string "writable" "$permission"
-	json_add_string "value" "$value"
-	json_add_string "notification" "$notification"
-	[ "$type" != "" ] && json_add_string "type" "$type"
-	[ "$get_cmd" != "" ] && json_add_string "get_cmd" "$get_cmd"
-	[ "$set_cmd" != "" -a "$permission" = "1" ] && json_add_string "set_cmd" "$set_cmd"
-	[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
-	[ "$forced_inform" != "" ] && json_add_string "forced_inform" "$forced_inform"
-	[ "$secret_value" != "" ] && json_add_string "secret_value" "$secret_value"
-	[ "$linker" != "" ] && json_add_string "linker" "$linker"
-	json_close_object
-	MSG=`json_dump`
-	echo "$MSG"
+	echo | {
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "writable" "$permission"
+		json_add_string "value" "$value"
+		json_add_string "notification" "$notification"
+		[ "$type" != "" ] && json_add_string "type" "$type"
+		[ "$get_cmd" != "" ] && json_add_string "get_cmd" "$get_cmd"
+		[ "$set_cmd" != "" -a "$permission" = "1" ] && json_add_string "set_cmd" "$set_cmd"
+		[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
+		[ "$forced_inform" != "" ] && json_add_string "forced_inform" "$forced_inform"
+		[ "$secret_value" != "" ] && json_add_string "secret_value" "$secret_value"
+		[ "$linker" != "" ] && json_add_string "linker" "$linker"
+		json_close_object
+		MSG=`json_dump`
+		echo "$MSG"
+	}
 }
 
 freecwmp_cache_output_obj() {
@@ -297,15 +298,16 @@ freecwmp_cache_output_obj() {
 	local permission="$2"
 	local notif_permission="$3"
 	local linker="$4"
-	
-	json_init
-	json_add_string "parameter" "$parameter"
-	json_add_string "writable" "$permission"
-	[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
-	[ "$linker" != "" ] && json_add_string "linker" "$linker"
-	json_close_object
-	MSG=`json_dump`
-	echo "$MSG"
+	echo | {
+		json_init
+		json_add_string "parameter" "$parameter"
+		json_add_string "writable" "$permission"
+		[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
+		[ "$linker" != "" ] && json_add_string "linker" "$linker"
+		json_close_object
+		MSG=`json_dump`
+		echo "$MSG"
+	}
 }
 
 freecwmp_fault_output() {
