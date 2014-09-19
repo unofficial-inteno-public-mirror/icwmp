@@ -653,19 +653,6 @@ get_wlan_total_associations() {
 	echo "$val"
 }
 
-get_wlan_channel_in_use() {
-	local val=`$UCI_GET wireless.wl0.channel`
-	[ "$val" = "auto" ] && val="any"
-	echo "$val"
-}
-
-set_wlan_channel_in_use() {
-	local val="$1"
-	[ "$val" = "any" ] && val="auto"
-	$UCI_SET wireless.wl0.channel=$val
-	delay_service reload "network" "1"
-}
-
 get_wlan_devstatus_statistics() {
 	local num="$1"
 	local counter="$2"
@@ -1241,7 +1228,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "" "" "get_wlan_total_associations $uci_num" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel_in_use" "set_wlan_channel_in_use \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_bytes" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_bytes" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_packets" "xsd:unsignedInt"
