@@ -312,7 +312,7 @@ handle_action() {
 		handle_get_cache "InternetGatewayDevice." "1"
 		handle_get_cache "InternetGatewayDevice.ManagementServer."
 		handle_get_cache "InternetGatewayDevice.DeviceInfo."
-		handle_get_cache "InternetGatewayDevice.X_INTENO_SE_LoginCfg"
+		handle_get_cache "InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 		local ls_cache=""
 		while [ "$found" = "0" ]; do
 			ls_prefix=`ls $cache_path`

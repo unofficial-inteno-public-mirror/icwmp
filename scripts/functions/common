@@ -729,7 +729,7 @@ get_param_cache_generic() {
 			return;
 		fi
 		;;
-		get_cache)
+		get_cache|wait_cache)
 		if [ "$val_cmd" != "" ]; then
 			val=`eval "$val_cmd"`
 		fi
