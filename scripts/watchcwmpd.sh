@@ -2,8 +2,6 @@
 # Copyright (C) 2014 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
-. /usr/share/libubox/jshn.sh
-
 watch_cwmpd_log() {
 	local cwmpd_log_file=`uci get -q cwmp.cpe.log_file_name`
 	cwmpd_log_file=${cwmpd_log_file:-"/var/log/cwmpd.log"}
@@ -20,28 +18,12 @@ restart_cwmpd() {
 	#Restart cwmpd
 	/etc/init.d/cwmpd restart
 }
-for cnt in 1 2; do
-	jmsg=`ubus call tr069 status 2>/dev/null`
-	if [ "$jmsg" = "" ]; then
-		break
-	else
-		local stime
-		json_init
-		json_load "$jmsg"
-		json_select "next_session"
-		json_get_var stime start_time
-		stime=${stime%%+*}
-		stime=${stime//T/ }
-		stime=`date -d"$stime" +%s`
-		[ "$stime" = "" ] && continue
-		local ctime=`date +%s`
-		if [ $ctime -gt $stime ]; then
-			sleep 60
-			continue
-		else
-			exit 0
-		fi
+for cnt in 1 2 3 4 5 6; do
+	cwmpdpid=`ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v "[ \t\b\v]\+[ZzTt]\+[ \t\b\v]\+"`
+	if [ "$cwmpdpid" != "" ]; then
+		exit 0
 	fi
+	sleep 5
 done
 
 restart_cwmpd 2>/dev/null
