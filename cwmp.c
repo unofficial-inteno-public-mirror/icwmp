@@ -505,6 +505,12 @@ void *thread_uloop_run (void *v)
 	return NULL;
 }
 
+void *thread_http_cr_server_init (void *v)
+{
+    http_server_init();
+    return NULL;
+}
+
 void *thread_exit_program (void *v)
 {
 	CWMP_LOG(INFO,"EXIT CWMP");
@@ -521,6 +527,7 @@ int main(int argc, char **argv)
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
     pthread_t                       ubus_thread;
+    pthread_t                       http_cr_server_thread;
 
     if (error = cwmp_init(argc, argv, cwmp))
     {
@@ -559,11 +566,17 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
+    error = pthread_create(&http_cr_server_thread, NULL, &thread_http_cr_server_init, NULL);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the http connection request server thread!");
+    }
     cwmp_schedule_session (cwmp);
     pthread_join(ubus_thread, NULL);
     pthread_join(periodic_event_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
+    pthread_join(http_cr_server_thread, NULL);
 
     CWMP_LOG(INFO,"EXIT CWMP");
     return CWMP_OK;

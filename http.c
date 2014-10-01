@@ -17,6 +17,9 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include "cwmp.h"
 #include "log.h"
 
@@ -40,7 +43,6 @@
 #define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 static struct http_client http_c;
-static struct http_server http_s;
 
 #ifdef HTTP_CURL
 static CURL *curl;
@@ -263,150 +265,151 @@ error:
 	return -1;
 }
 
+static void
+http_success_cr()
+{
+    struct event_container  *event_container;
+    CWMP_LOG(INFO,"Connection Request thread: add connection request event in the queue");
+    pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+    event_container = cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
+    pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+    pthread_cond_signal(&(cwmp_main.threshold_session_send));
+}
+
+static void http_cr_new_client(int client, bool service_available)
+{
+    FILE *fp;
+    char buffer[BUFSIZ];
+    int8_t auth_status = 0;
+
+    fp = fdopen(client, "r+");
+
+    while (fgets(buffer, sizeof(buffer), fp)) {
+        if (!strncasecmp(buffer, "Authorization: Digest ", strlen("Authorization: Digest "))) {
+            char *username = cwmp_main.conf.cpe_userid;
+            char *password = cwmp_main.conf.cpe_passwd;
+
+            if (!username || !password) {
+                // if we dont have username or password configured proceed with connecting to ACS
+                service_available = false;
+                goto http_end;
+            }
+
+            if (http_digest_auth_check("GET", "/", buffer + strlen("Authorization: Digest "), REALM, username, password, 300) == MHD_YES)
+                auth_status = 1;
+            else
+                auth_status = 0;
+        }
+
+        if (buffer[0] == '\r' || buffer[0] == '\n') {
+            /* end of http request (empty line) */
+            goto http_end;
+        }
+    }
+    if(!service_available) {
+        goto http_end;
+    }
+    goto http_done;
+
+http_end:
+    if (!service_available) {
+        CWMP_LOG (INFO,"Receive Connection Request: Return 503 Service Unavailable");
+        fputs("HTTP/1.1 503 Service Unavailable\r\n", fp);
+        fputs("Connection: close\r\n", fp);
+        fputs("Content-Length: 0\r\n", fp);
+    } else if (auth_status) {
+        CWMP_LOG (INFO,"Receive Connection Request: success authentication");
+        fputs("HTTP/1.1 200 OK\r\n", fp);
+        fputs("Connection: close\r\n", fp);
+        fputs("Content-Length: 0\r\n", fp);
+        http_success_cr();
+    } else {
+        CWMP_LOG (INFO,"Receive Connection Request: Return 401 Unauthorized");
+        fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
+        fputs("Connection: close\r\n", fp);
+        http_digest_auth_fail_response(fp, "GET", "/", REALM, OPAQUE);
+        fputs("\r\n", fp);
+    }
+    fputs("\r\n", fp);
+
+http_done:
+    fclose(fp);
+}
+
 void http_server_init(void)
 {
-	char	port[16];
+	int socket_desc , client_sock , c , *new_sock;
+    struct sockaddr_in server , client;
+    static int cr_request = 0;
+    static time_t restrict_start_time = 0;
+    time_t current_time;
+    bool service_available;
 
-	sprintf(port,"%d",cwmp_main.conf.connection_request_port);
-	http_s.http_event.cb = http_new_client;
-	http_s.http_event.fd = usock(USOCK_TCP | USOCK_SERVER, "0.0.0.0", port);
-	uloop_fd_add(&http_s.http_event, ULOOP_READ | ULOOP_EDGE_TRIGGER);
-}
+    for(;;) {
+        //Create socket
+        socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+        if (socket_desc == -1)
+        {
+            CWMP_LOG (ERROR,"Could not open server socket for Connection Requests");
+            sleep(1);
+            continue;
+        }
 
-static void http_new_client(struct uloop_fd *ufd, unsigned events)
-{
-	int status;
-	struct timeval t;
-    static int      cr_request = 0;
-    static time_t   restrict_start_time = 0;
-    time_t          current_time;
-    bool			service_available;
+        //Prepare the sockaddr_in structure
+        server.sin_family = AF_INET;
+        server.sin_addr.s_addr = INADDR_ANY;
+        server.sin_port = htons(cwmp_main.conf.connection_request_port);
 
-	t.tv_sec = 60;
-	t.tv_usec = 0;
+        /* enable SO_REUSEADDR */
+        int reusaddr = 1;
+        if (setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0) {
+            CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
+        }
 
-	for (;;) {
-		int client = accept(ufd->fd, NULL, NULL);
+        //Bind
+        if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+        {
+            //print the error message
+            CWMP_LOG (ERROR,"Could not bind server socket for Connection Requests");
+            sleep(1);
+            continue;
+        }
+        break;
+    }
 
-		/* set one minute timeout */
-		if (setsockopt(ufd->fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&t, sizeof t)) {
-			CWMP_LOG(ERROR,"setsockopt() failed");
-		}
+    CWMP_LOG (INFO,"Connection Request server initiated");
 
-		if (client == -1)
-			break;
+    //Listen
+    listen(socket_desc , 3);
 
-	    current_time = time(NULL);
-	    service_available = true;
-	    if ((restrict_start_time==0) ||
-	    	((current_time-restrict_start_time) > CONNECTION_REQUEST_RESTRICT_PERIOD))
-	    {
-	        restrict_start_time = current_time;
-	        cr_request          = 1;
-	    }
-	    else
-	    {
-	        cr_request++;
-	        if (cr_request>CONNECTION_REQUEST_RESTRICT_REQUEST)
-	        {
-	            restrict_start_time = current_time;
-	            service_available = false;
-	        }
-	    }
+    //Accept and incoming connection
+    c = sizeof(struct sockaddr_in);
+    while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
+    {
+        current_time = time(NULL);
+        service_available = true;
+        if ((restrict_start_time==0) ||
+            ((current_time-restrict_start_time) > CONNECTION_REQUEST_RESTRICT_PERIOD))
+        {
+            restrict_start_time = current_time;
+            cr_request  = 1;
+        }
+        else
+        {
+            cr_request++;
+            if (cr_request > CONNECTION_REQUEST_RESTRICT_REQUEST)
+            {
+                restrict_start_time = current_time;
+                service_available = false;
+            }
+        }
+        http_cr_new_client(client_sock, service_available);
+        close(client_sock);
+    }
 
-		struct uloop_process *uproc = calloc(1, sizeof(*uproc));
-		if (!uproc || (uproc->pid = fork()) == -1) {
-			free(uproc);
-			close(client);
-		}
-
-		if (uproc->pid != 0) {
-			/* parent */
-			/* register an event handler for when the child terminates */
-			uproc->cb = http_del_client;
-			uloop_process_add(uproc);
-			close(client);
-		} else {
-			/* child */
-			FILE *fp;
-			char buffer[BUFSIZ];
-			int8_t auth_status = 0;
-
-			fp = fdopen(client, "r+");
-
-			if(!service_available)
-				goto http_end_child;
-
-			while (fgets(buffer, sizeof(buffer), fp)) {
-				if (!strncasecmp(buffer, "Authorization: Digest ", strlen("Authorization: Digest "))) {
-					char *username = cwmp_main.conf.cpe_userid;
-					char *password = cwmp_main.conf.cpe_passwd;
-
-					if (!username || !password) {
-						// if we dont have username or password configured proceed with connecting to ACS
-						service_available = false;
-						goto http_end_child;
-					}
-
-					if (http_digest_auth_check("GET", "/", buffer + strlen("Authorization: Digest "), REALM, username, password, 300) == MHD_YES)
-						auth_status = 1;
-					else
-						auth_status = 0;
-				}
-
-				if (buffer[0] == '\r' || buffer[0] == '\n') {
-					/* end of http request (empty line) */
-					goto http_end_child;
-				}
-
-			}
-error_child:
-			/* here we are because of an error, e.g. timeout */
-			status = ETIMEDOUT|ENOMEM;
-			goto done_child;
-
-http_end_child:
-			fflush(fp);
-			if (auth_status) {
-				CWMP_LOG (INFO,"Receive Connection Request: success authentication");
-				status = 0;
-				fputs("HTTP/1.1 200 OK\r\n", fp);
-				fputs("Content-Length: 0\r\n", fp);
-			} else if (!service_available) {
-				CWMP_LOG (INFO,"Receive Connection Request: Return 503 Service Unavailable");
-				status = EACCES;
-				fputs("HTTP/1.1 503 Service Unavailable\r\n", fp);
-				fputs("Connection: close\r\n", fp);
-			} else {
-				CWMP_LOG (INFO,"Receive Connection Request: Return 401 Unauthorized");
-				status = EACCES;
-				fputs("HTTP/1.1 401 Unauthorized\r\n", fp);
-				fputs("Connection: close\r\n", fp);
-				http_digest_auth_fail_response(fp, "GET", "/", REALM, OPAQUE);
-				fputs("\r\n", fp);
-			}
-			fputs("\r\n", fp);
-			goto done_child;
-
-done_child:
-			fclose(fp);
-			free(uproc);
-			exit(status);
-		}
-	}
-}
-
-static void
-http_del_client(struct uloop_process *uproc, int ret)
-{
-	free(uproc);
-	struct event_container  *event_container;
-	/* child terminated ; check return code */
-	if (WIFEXITED(ret) && WEXITSTATUS(ret) == 0) {
-        CWMP_LOG(INFO,"Connection Request thread: add connection request event in the queue");
-        pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
-        event_container = cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
-        pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
-        pthread_cond_signal(&(cwmp_main.threshold_session_send));
-	}
+    if (client_sock < 0)
+    {
+        CWMP_LOG(ERROR,"Could not accept connections for Connection Requests!");
+        return;
+    }
 }

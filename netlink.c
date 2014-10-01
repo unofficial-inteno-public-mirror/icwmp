@@ -34,16 +34,7 @@
 #include "log.h"
 
 static void netlink_new_msg(struct uloop_fd *ufd, unsigned events);
-static void freecwmp_kickoff(struct uloop_timeout *);
-
-static struct uloop_timeout netlink_timer = { .cb = freecwmp_kickoff };
-
 static struct uloop_fd netlink_event = { .cb = netlink_new_msg };
-
-static void freecwmp_kickoff(struct uloop_timeout *timeout)
-{
-	http_server_init();
-}
 
 static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 {
@@ -172,8 +163,6 @@ int netlink_init(void)
 
 	struct uloop_fd dummy_event = { .fd = sock[1] };
 	netlink_new_msg(&dummy_event, 0);
-
-	uloop_timeout_set(&netlink_timer, 2500);
 
 	return 0;
 }
