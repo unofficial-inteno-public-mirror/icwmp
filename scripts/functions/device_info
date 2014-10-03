@@ -4,6 +4,7 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+
 get_device_info_hardware_version() {
 	local val=""
 	local dslAnnex=""
@@ -16,6 +17,14 @@ get_device_info_uptime() {
 	local val=""                                           
 	val=`cat /proc/uptime | cut -f1 -d'.'`
 	echo "$val"
+}
+
+get_base_mac_addr() {
+	json_load "$(ubus call router info)"
+	json_select system
+	local mac
+	json_get_var mac basemac
+	echo "$mac"
 }
 
 get_cache_InternetGatewayDevice_DeviceInfo() {
@@ -31,6 +40,7 @@ get_cache_InternetGatewayDevice_DeviceInfo() {
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.DeviceLog" "0" "" "" "dmesg | tail -n5"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SpecVersion" "0" "freecwmp_get_parameter_value \$param" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode" "1" "freecwmp_get_parameter_value \$param" "freecwmp_set_parameter_value \$param \$val" "" "" "0" "1" "2"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_BaseMacAddr" "0" "get_base_mac_addr" "" "" "" "" "" ""
 }
 
 get_dynamic_InternetGatewayDevice_DeviceInfo() {
