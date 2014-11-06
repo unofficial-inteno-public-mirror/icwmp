@@ -707,6 +707,26 @@ set_wlan_ssid_advertisement_enable() {
 	delay_service reload "network" "1"
 }
 
+get_wlan_wps_enable() {
+	local num="$1"
+	local val=`$UCI_GET wireless.@wifi-iface[$num].wps_pbc`
+	[ "$val" = "1" ] && echo 1 || echo 0
+}
+
+set_wlan_wps_enable() {
+	local num="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		$UCI_SET wireless.@wifi-iface[$num].wps_pbc=1
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		$UCI_SET wireless.@wifi-iface[$num].wps_pbc=
+	else
+		return
+	fi
+	delay_service reload "network" "1"
+}
+
 set_wlan_wep_key() {
 	local num="$1"
 	local key_index="$2"
@@ -1270,6 +1290,9 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_packets" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_packets" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "xsd:boolean"
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS." "0"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
+
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2." "0"
