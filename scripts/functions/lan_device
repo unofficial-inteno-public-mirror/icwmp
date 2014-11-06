@@ -35,6 +35,22 @@ done
 echo $ret
 }
 
+update_instance_landevice_wlanconfiguration() {
+	local idev="$1"
+	local wiface="$2"
+	
+	local inst=`$UCI_GET wireless.$wiface.instance`
+	if [ "$inst" != "" ]; then
+		echo ${inst#*.}
+	else
+		local inst=`$UCI_SHOW wireless |sed -n "s/wireless\.@wifi-iface\[[0-9]\+\]\.instance=$idev\.//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET wireless.$wiface.instance="$idev.$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
 get_wlan_enable() {
 	local num="$1"
 	val=`$UCI_GET wireless.@wifi-iface[$num].disabled 2> /dev/null`
@@ -671,6 +687,26 @@ get_wlan_devstatus_statistics() {
 	echo "$val"
 }
 
+get_wlan_ssid_advertisement_enable() {
+	local num="$1"
+	local val=`$UCI_GET wireless.@wifi-iface[$num].hidden`
+	[ "$val" = "1" ] && echo 0 || echo 1
+}
+
+set_wlan_ssid_advertisement_enable() {
+	local num="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		$UCI_SET wireless.@wifi-iface[$num].hidden=
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		$UCI_SET wireless.@wifi-iface[$num].hidden=1
+	else
+		return
+	fi
+	delay_service reload "network" "1"
+}
+
 set_wlan_wep_key() {
 	local num="$1"
 	local key_index="$2"
@@ -1211,7 +1247,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "set_wlan_max_bit_rate $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable" "set_wlan_auto_channel_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$num].ssid" "set_wlan_ssid $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$uci_num].ssid" "set_wlan_ssid $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $uci_num" "set_wlan_standard $uci_num \$val"
@@ -1233,7 +1269,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_bytes" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_packets" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_packets" "xsd:unsignedInt"
-								
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "xsd:boolean"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2." "0"
@@ -1328,9 +1364,8 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		done
 		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration." "0" "0"
-		local iwlan=0
 		for iuci in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
-			let iwlan++
+			local iwlan=`update_instance_landevice_wlanconfiguration "$idev" "@wifi-iface[$iuci]"`
 			get_landevice_wlanconfiguration_generic $idev $iwlan $iuci
 		done
 		
@@ -1504,23 +1539,6 @@ add_landevice_dhcpstaticaddress() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_LANDevice() {
-	local filename="$2"
-	local fault_code idev
-	case $1 in
-		InternetGatewayDevice.LANDevice.[1-9]*.LANHostConfigManagement.DHCPStaticAddress.)
-			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress." "rc" "idev"
-			if [ "$rc" != "0" ]; then
-				return $FAULT_CPE_INVALID_PARAMETER_NAME;
-			fi
-			add_landevice_dhcpstaticaddress "$idev" "$filename"
-			fault_code="$?"
-			return $fault_code
-		;;
-	esac
-	return $FAULT_CPE_INVALID_PARAMETER_NAME
-}
-
 delete_landevice_dhcpstaticaddress() {
 	local instances="$2"
 	local filename="$3"
@@ -1536,6 +1554,83 @@ delete_landevice_dhcpstaticaddress() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+add_landevice_wlanconfiguration() {
+	local inst="$1"
+	local filename="$2"
+	local interface tmp ndev nlan found=""
+	for interface in `get_lan_device_interface`; do
+		tmp=${interface%%;*}
+		idev=${tmp%%:*}
+		ndev=${tmp#*:}
+		[ "$idev" != "$inst" ] && continue
+		found=1
+		tmp=${interface#*;}
+		tmp=${tmp%%,*}
+		nlan=${tmp#*:}
+		break
+	done
+	if [ "$found" != "1" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	nlan=${nlan:-$ndev}
+
+	local wiface=`$UCI_ADD wireless wifi-iface`
+	local instance=`update_instance_landevice_wlanconfiguration "$idev" "$wiface"`
+	$UCI_SET wireless.$wiface.device=wl0
+	$UCI_SET wireless.$wiface.encryption=none
+	$UCI_SET wireless.$wiface.macfilter=0
+	$UCI_SET wireless.$wiface.mode=ap
+	$UCI_SET wireless.$wiface.network=$nlan
+	$UCI_SET wireless.$wiface.ssid=Inteno_"$nlan"_"$instance"
+	
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	local iwiface=`$UCI_SHOW wireless | grep "wireless\.@wifi-iface\[[0-9]\+\]\.instance=$idev.$instance" | awk -F'[][]' '{print $2}' | head -n1`
+	get_landevice_wlanconfiguration_generic "$idev" "$instance" "$iwiface" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$instance"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_landevice_wlanconfiguration() {
+	local instances="$2"
+	local filename="$3"
+	instances=${instances// /.}
+	local wiface=`$UCI_SHOW wireless | grep "wireless\.@wifi-iface\[[0-9]\+\]\.instance=$instances" | cut -f2 -d'.' | head -n1`
+	[ "$wiface" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	$UCI_DELETE wireless.$wiface
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_LANDevice() {
+	local filename="$2"
+	local fault_code idev
+	case $1 in
+		InternetGatewayDevice.LANDevice.[1-9]*.LANHostConfigManagement.DHCPStaticAddress.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress." "rc" "idev"
+			if [ "$rc" != "0" ]; then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME;
+			fi
+			add_landevice_dhcpstaticaddress "$idev" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration." "rc" "idev"
+			if [ "$rc" != "0" ]; then
+				return $FAULT_CPE_INVALID_PARAMETER_NAME;
+			fi
+			add_landevice_wlanconfiguration "$idev" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
 delete_object_InternetGatewayDevice_LANDevice() {
 	local filename="$2"
 	local fault_code instances
@@ -1544,6 +1639,13 @@ delete_object_InternetGatewayDevice_LANDevice() {
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 			delete_landevice_dhcpstaticaddress "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_landevice_wlanconfiguration "$1" "$instances" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;
