@@ -9,29 +9,31 @@ get_lan_device_interface() {
 local i=0
 local ret=""
 for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`;do
-	if [ "`$UCI_GET network.$lan.is_lan`" = "1" ];then
+	local fislan=`$UCI_GET network.$lan.is_lan`
+	local ftype=`$UCI_GET network.$lan.type`
+	if [ "$fislan" = "1" -o  "$ftype" = "alias" ];then
 		local dev
 		local jsmsg=`ifstatus $lan`
 		json_init
 		json_load "$jsmsg"
 		json_get_var dev device
 		dev=${dev/br-/}
-		local tmp=${ret#*:$dev;}
+		local tmp=${ret/:$dev./}
 		if [ "$tmp" = "$ret" ]; then
 			let i++
-			ret="$ret $i:$dev;1:$lan"
-		else
-			tmp=${tmp%%:*}
-			json_select "ipv4-address"
-			local type index="1"
-			while json_get_type type $index && [ "$type" != "" ]; do
-				let tmp++
-				let index++
-				ret=${ret/:$dev;/:$dev;$tmp:$lan,}
-			done
+			ret="$ret $i:$dev.0;"
 		fi
+		tmp=${ret#*:$dev.}
+		tmp=${tmp%% *}
+		local flan=${tmp%%,}
+		[ "$flan" = "$tmp" -o "$ftype" != "alias" ] && flan="" || flan="${flan#*;},"
+		local inst=${tmp%%;*}
+		[ "$inst" = "$tmp" -o "$inst" = "" ] && inst=1 || let inst++
+		ret=${ret/:$dev.$((inst-1));$flan/:$dev.$inst;$flan$inst:$lan,}
 	fi
 done
+ret=${ret//, / }; ret=${ret%,}
+ret=${ret//.[0-9]/}; ret=${ret//.[0-9]/}
 echo $ret
 }
 
@@ -1256,6 +1258,81 @@ get_lan_host_nbr_entries() {
 	ubus call router clients | grep -c "\"network\": \"$flan\""
 }
 
+get_interface_ipaddress() {
+	local nlan="$1"
+	local val=""
+	if [ "`$UCI_GET network.$nlan.proto`" = "static" ]; then
+		val=`$UCI_GET network.$nlan.ipaddr`
+	else
+		local jsmsg=`ifstatus $nlan`
+		json_init
+		json_load "$jsmsg"
+		json_select "ipv4-address"
+		local type
+		json_get_type type 1 
+		[ "$type" = "" ] && return
+		json_select 1
+		json_get_var val address
+	fi
+	echo "$val"
+}
+
+set_interface_ipaddress() {
+	local nlan="$1"
+	local val="$2"
+	[ "$val" = "" ] && return
+	$UCI_SET network.$nlan.ipaddr=$val
+	delay_service reload "network" "1"
+}
+
+get_interface_subnetmask() {
+	local nlan="$1"
+	local val=""
+	if [ "`$UCI_GET network.$nlan.proto`" = "static" ]; then
+		val=`$UCI_GET network.$nlan.netmask`
+	else
+		local jsmsg=`ifstatus $nlan`
+		json_init
+		json_load "$jsmsg"
+		json_select "ipv4-address"
+		local type
+		json_get_type type 1 
+		[ "$type" = "" ] && return
+		json_select 1
+		json_get_var val mask
+		val=`cidr2netmask $val`
+	fi
+	echo "$val"
+}
+
+set_interface_subnetmask() {
+	local nlan="$1"
+	local val="$2"
+	[ "$val" = "" ] && return
+	$UCI_SET network.$nlan.netmask=$val
+	delay_service reload "network" "1"
+}
+
+get_interface_addressingtype() {
+	local nlan="$1"
+	local val="`$UCI_GET network.$nlan.proto`"
+	case "$val" in
+		static) echo "Static";;
+		dhcp) echo "DHCP";;
+	esac
+}
+
+set_interface_addressingtype() {
+	local nlan="$1"
+	local val="$2"
+	case "$val" in
+		Static) $UCI_SET network.$nlan.proto=static;;
+		DHCP) $UCI_SET network.$nlan.proto=dhcp;;
+		*) return;;
+	esac
+	delay_service reload "network" "1"
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
@@ -1317,6 +1394,9 @@ get_landevice_lanhostconfigmanagement_ipinterface() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0" "" "linker_interface:$nlan"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "" "set_interface_enable_ubus $nlan \$val" "get_interface_enable_ubus $nlan" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceIPAddress" "1" "get_interface_ipaddress $nlan" "set_interface_ipaddress $nlan \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceSubnetMask" "1" "get_interface_subnetmask $nlan" "set_interface_subnetmask $nlan \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceAddressingType" "1" "get_interface_addressingtype $nlan" "set_interface_addressingtype $nlan \$val"
 }
 
 get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
