@@ -200,7 +200,8 @@ InternetGatewayDevice.Layer2Bridging. \
 InternetGatewayDevice.Time. \
 InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
 InternetGatewayDevice.X_INTENO_SE_LoginCfg. \
-InternetGatewayDevice.Layer3Forwarding."
+InternetGatewayDevice.Layer3Forwarding. \
+InternetGatewayDevice.UPnP."
 
 . /lib/functions/network.sh
 . /usr/share/freecwmp/functions/common
@@ -214,6 +215,7 @@ InternetGatewayDevice.Layer3Forwarding."
 . /usr/share/freecwmp/functions/models
 . /usr/share/freecwmp/functions/times
 . /usr/share/freecwmp/functions/layer_3_forwarding
+. /usr/share/freecwmp/functions/upnp
 
 if [ $(db get hw.board.hasVoice) -eq 1 ]; then
 	. /usr/share/freecwmp/functions/voice_service
