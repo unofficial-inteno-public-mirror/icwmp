@@ -71,27 +71,27 @@ case $initscript in
 	;;
 	*ice*)
 		case $action in
-			start|restart|reload) cwmp_icecache ;;
+			boot|start|restart|reload) cwmp_icecache ;;
 		esac
 	;;
 	*miniupnpd)
 		case $action in
-			start|restart|reload) cwmp_upnpcache ;;
+			boot|start|restart|reload) cwmp_upnpcache ;;
 		esac
 	;;
 	*network)
 		case $action in
-			start|restart|reload) cwmp_netcache ;;
+			boot|start|restart|reload) cwmp_netcache ;;
 		esac
 	;;
 	*passwords)
 		case $action in
-			start|restart|reload) cwmp_passwordcache ;;
+			boot|start|restart|reload) cwmp_passwordcache ;;
 		esac
 	;;
 	*sysntpd)
 		case $action in
-			start|restart|reload) cwmp_ntpcache ;;
+			boot|start|restart|reload) cwmp_ntpcache ;;
 		esac
 	;;
 esac
