@@ -74,11 +74,6 @@ case $initscript in
 			start|restart|reload) cwmp_icecache ;;
 		esac
 	;;
-	ice*)
-		case $action in
-			start|restart|reload) cwmp_icecache ;;
-		esac
-	;;
 	miniupnpd)
 		case $action in
 			start|restart|reload) cwmp_upnpcache ;;
