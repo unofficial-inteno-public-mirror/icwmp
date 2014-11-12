@@ -59,37 +59,37 @@ cwmp_ntpcache() {
 }
 
 case $initscript in
-	asterisk)
+	*asterisk)
 		case $action in
-			boot|restart|reload) cwmp_voicecache ;;
+			boot|start|restart|reload) cwmp_voicecache ;;
 		esac
 	;;
-	firewall)
+	*firewall)
 		case $action in
 			boot|start|restart|reload) cwmp_firewallcache ;;
 		esac
 	;;
-	ice*)
+	*ice*)
 		case $action in
 			start|restart|reload) cwmp_icecache ;;
 		esac
 	;;
-	miniupnpd)
+	*miniupnpd)
 		case $action in
 			start|restart|reload) cwmp_upnpcache ;;
 		esac
 	;;
-	network)
+	*network)
 		case $action in
 			start|restart|reload) cwmp_netcache ;;
 		esac
 	;;
-	passwords)
+	*passwords)
 		case $action in
 			start|restart|reload) cwmp_passwordcache ;;
 		esac
 	;;
-	sysntpd)
+	*sysntpd)
 		case $action in
 			start|restart|reload) cwmp_ntpcache ;;
 		esac
