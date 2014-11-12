@@ -1,6 +1,8 @@
 #!/bin/sh
 # Copyright (C) 2014 Inteno Broadband Technology AB
 
+prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
+
 get_ice_cloud_enable() {
 	case "$($UCI_GET ice.cloud.enabled)" in
 		1|"true"|"yes"|"on")

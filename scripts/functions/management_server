@@ -4,6 +4,8 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.ManagementServer."
+
 get_management_server_connection_request_url() {
 local val
 if [ -z "$default_management_server_connection_request_url" ]; then

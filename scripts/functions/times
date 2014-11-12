@@ -3,6 +3,8 @@
 #   Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.Time."
+
 get_time_ntpserver() {
 	local ntp_num="$1"
 	local val=`$UCI_GET system.ntp.server | awk -F ' ' -v var=$ntp_num '{print $var}'`

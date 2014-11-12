@@ -190,40 +190,12 @@ if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
 	echo "[debug] started at \"`date`\""
 fi
 
-prefix_list="\
-InternetGatewayDevice. \
-InternetGatewayDevice.DeviceInfo. \
-InternetGatewayDevice.LANDevice. \
-InternetGatewayDevice.ManagementServer. \
-InternetGatewayDevice.WANDevice. \
-InternetGatewayDevice.Layer2Bridging. \
-InternetGatewayDevice.Time. \
-InternetGatewayDevice.X_INTENO_SE_IpAccCfg. \
-InternetGatewayDevice.X_INTENO_SE_LoginCfg. \
-InternetGatewayDevice.Layer3Forwarding."
+prefix_list=""
 
 . /lib/functions/network.sh
-. /usr/share/freecwmp/functions/common
-. /usr/share/freecwmp/functions/device_info
-. /usr/share/freecwmp/functions/lan_device
-. /usr/share/freecwmp/functions/management_server
-. /usr/share/freecwmp/functions/wan_device
-. /usr/share/freecwmp/functions/x_inteno_se_logincfg
-. /usr/share/freecwmp/functions/x_inteno_se_ipacccfg
-. /usr/share/freecwmp/functions/layer_2_bridging
-. /usr/share/freecwmp/functions/models
-. /usr/share/freecwmp/functions/times
-. /usr/share/freecwmp/functions/layer_3_forwarding
-
-if [ $(db get hw.board.hasVoice) -eq 1 ]; then
-	. /usr/share/freecwmp/functions/voice_service
-	prefix_list="$prefix_list InternetGatewayDevice.Services."
-fi
-
-if [ -e "/etc/config/ice" ]; then
-	. /usr/share/freecwmp/functions/x_inteno_se_ice
-	prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
-fi
+for ffile in `ls /usr/share/freecwmp/functions/`; do
+. /usr/share/freecwmp/functions/$ffile
+done
 
 config_load cwmp
 

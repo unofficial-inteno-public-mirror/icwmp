@@ -3,6 +3,8 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_LoginCfg."
+
 set_x_bcm_password() {
 	local usr_type=$1
 	local new_pwd=$2

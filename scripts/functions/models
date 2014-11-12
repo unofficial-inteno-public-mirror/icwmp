@@ -3,6 +3,9 @@
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
 #InternetGatewayDevice.
+
+prefix_list="InternetGatewayDevice. $prefix_list"
+
 get_cache_InternetGatewayDevice() {
 	get_object_cache_generic "InternetGatewayDevice." "0" "0"
 }
