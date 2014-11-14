@@ -4,6 +4,7 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.DeviceInfo."
 
 get_device_info_hardware_version() {
 	local val=""

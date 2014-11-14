@@ -1,6 +1,9 @@
 #!/bin/sh
 # Copyright (C) 2014 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+
+prefix_list="$prefix_list InternetGatewayDevice.Layer3Forwarding."
+
 hex_to_ip() {
 	local hex="$1"
 	printf "%d.%d.%d.%d" 0x${hex:0:2} 0x${hex:2:2} 0x${hex:4:2} 0x${hex:6:2}

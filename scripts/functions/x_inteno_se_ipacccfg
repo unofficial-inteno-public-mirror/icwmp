@@ -2,6 +2,8 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_IpAccCfg."
+
 get_firewall_rules() {
 	local i=0
 	local rule
