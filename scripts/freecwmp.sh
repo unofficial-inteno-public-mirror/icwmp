@@ -3,6 +3,7 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
 . /lib/functions.sh
 . /usr/share/libubox/jshn.sh
