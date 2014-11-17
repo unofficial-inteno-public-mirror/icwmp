@@ -2,6 +2,8 @@
 # Copyright (C) 2014 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+prefix_list="$prefix_list InternetGatewayDevice.UPnP."
+
 get_upnp_enable() {
 	local val=`$UCI_GET upnpd.config.enable_upnp`
 	echo ${val:-1}
