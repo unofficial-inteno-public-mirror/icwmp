@@ -773,7 +773,7 @@ get_generic_dynamic() {
 }
 
 cat_cache_filter_param() {
-	cat "$1"* | grep "$2"
+	cat "$1"* | grep -F "$2"
 }
 
 get_param_prefix() {
