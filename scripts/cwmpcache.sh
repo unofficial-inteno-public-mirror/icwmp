@@ -45,9 +45,11 @@ cwmp_netcache() {
 		tm=$((tm+1))
 	done
 	cwmp_cache "LANDevice"
+	cwmp_cache "WANDevice"
 	cwmp_cache "Layer2Bridging"
 	cwmp_cache "Layer3Forwarding"
 	cwmp_cache "UPnP"
+	cwmp_cache "X_INTENO_SE_IpAccCfg"
 }
 
 cwmp_passwordcache() {
