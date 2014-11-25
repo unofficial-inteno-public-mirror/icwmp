@@ -290,8 +290,8 @@ handle_action() {
 		while [ "$found" = "0" ]; do
 			ls_prefix=`ls $cache_path`
 			for prefix in $prefix_list; do
-				found=0
 				[ "${prefix_list_skip_wait_cache/$prefix/}" != "$prefix_list_skip_wait_cache" ] && continue
+				found=0
 				for ls_p in $ls_prefix; do
 					if [ "$prefix" = "$ls_p" ]; then
 						found=1
