@@ -1349,6 +1349,23 @@ set_x_inteno_se_channelmode () {
 	fi
 }
 
+get_x_inteno_se_supported_standard () {
+	local val=`wlctl -i wl0 status |awk  '$1=="Chanspec:" {print$2}'`
+	case $val in
+		"5GHz") echo  "a, n, ac";;
+		*) echo "b, g, n, gst, lrs";;
+	esac
+}
+
+get_x_inteno_se_operating_channel_bandwidth () {
+	local channel=`uci get wireless.wl0.channel`
+	if [ "$channel" = "auto" ]; then
+		echo "Auto"
+	else
+		echo "`uci get wireless.wl0.bandwidth`MHz"
+	fi
+}
+
 get_landevice_wlanconfiguration_generic() {
 	lan_num=$1
 	wlan_num=$2
@@ -1386,6 +1403,8 @@ get_landevice_wlanconfiguration_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode" "set_x_inteno_se_channelmode \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_OperatingChannelBandwidth" "0" "get_x_inteno_se_operating_channel_bandwidth"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
