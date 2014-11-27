@@ -1347,6 +1347,7 @@ set_x_inteno_se_channelmode () {
 		local channel=`/usr/sbin/wlctl -i wl0 channel |grep "target channel" |awk -F ' ' '{print$3}'`
 		$UCI_SET wireless.wl0.channel="$channel"
 	fi
+	delay_service reload "network" "1"
 }
 
 get_x_inteno_se_supported_standard () {
@@ -1358,12 +1359,28 @@ get_x_inteno_se_supported_standard () {
 }
 
 get_x_inteno_se_operating_channel_bandwidth () {
-	local channel=`uci get wireless.wl0.channel`
+	local channel=`$UCI_GET wireless.wl0.channel`
 	if [ "$channel" = "auto" ]; then
 		echo "Auto"
 	else
-		echo "`uci get wireless.wl0.bandwidth`MHz"
+		local val=`$UCI_GET wireless.wl0.bandwidth`
+		echo "${val:-20}MHz"
 	fi
+}
+
+set_x_inteno_se_operating_channel_bandwidth () {
+	local val="$1"
+	if [ "$val" = "Auto" ]; then
+		$UCI_SET wireless.wl0.channel=auto
+		$UCI_SET wireless.wl0.bandwidth=
+	else
+		val=`printf %u ${val%MHz} 2>/dev/null`
+		[ "$val" = "0" -o "$val" = "" ] && return
+		$UCI_SET wireless.wl0.bandwidth=$val
+		local channel=`/usr/sbin/wlctl -i wl0 channel |grep "target channel" |awk -F ' ' '{print$3}'`
+		$UCI_SET wireless.wl0.channel="$channel"
+	fi
+	delay_service reload "network" "1"
 }
 
 get_landevice_wlanconfiguration_generic() {
@@ -1404,7 +1421,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode" "set_x_inteno_se_channelmode \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_OperatingChannelBandwidth" "0" "get_x_inteno_se_operating_channel_bandwidth"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth" "set_x_inteno_se_operating_channel_bandwidth \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
