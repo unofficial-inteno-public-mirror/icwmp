@@ -159,7 +159,7 @@ get_wlan_beacon_type() {
 		val="WPA"
 	elif [ "`echo $encryption|grep ^psk2$`" != "" -o "`echo $encryption|grep ^psk2+`" != "" -o "$encryption" = "wpa2" ]; then
 		val="11i"
-	elif [ "`echo $encryption|grep ^pskmixedpsk2$`" != "" -o "`echo $encryption|grep ^pskmixedpsk2+`" != "" -o "$encryption" = "wpamixedwpa2" ]; then
+	elif [ "`echo $encryption|grep ^mixed-psk$`" != "" -o "`echo $encryption|grep ^mixed-psk+`" != "" -o "$encryption" = "mixed-wpa" ]; then
 		val="WPAand11i"
 	fi
 	echo "$val"
@@ -217,7 +217,7 @@ set_wlan_beacon_type() {
 		fi
 		$UCI_SET wireless.@wifi-iface[$num].encryption=$val
 	elif [ "$val" = "WPAand11i" ]; then
-		val="pskmixedpsk2"
+		val="mixed-psk"
 		if [ "`echo $encryption |grep psk`" = "" ]; then
 			reset_wlan "$num"
 			$UCI_SET wireless.@wifi-iface[$num].key="`cat /proc/nvram/WpaKey`"
@@ -411,11 +411,11 @@ get_wlan_wpa_encryption_modes() {
 	local val=""
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$encryption" = "psk+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
+	if [ "$encryption" = "psk+tkip" -o "$encryption" = "mixed-psk+tkip" ];then
 		val="TKIPEncryption"
-	elif [ "$encryption" = "psk+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
+	elif [ "$encryption" = "psk+ccmp" -o "$encryption" = "mixed-psk+ccmp" ];then
 		val="AESEncryption"
-	elif [ "$encryption" = "psk+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp"  ];then
+	elif [ "$encryption" = "psk+tkip+ccmp" -o "$encryption" = "mixed-psk+tkip+ccmp"  ];then
 		val="TKIPandAESEncryption"
 	fi
 	echo "$val"
@@ -457,9 +457,9 @@ get_wlan_wpa_authentication_mode() {
 	local num="$1"
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	local val=""
-	if [ "`echo $encryption|grep ^psk$`" != "" -o "`echo $encryption|grep ^psk+`" != "" -o "`echo $encryption|grep ^pskmixedpsk2`" != "" ]; then
+	if [ "`echo $encryption|grep ^psk$`" != "" -o "`echo $encryption|grep ^psk+`" != "" -o "`echo $encryption|grep ^mixed-psk`" != "" ]; then
 		val="PSKAuthentication"
-	elif [ "$encryption" = "wpa" -o "$encryption" = "wpamixedwpa2" ];then
+	elif [ "$encryption" = "wpa" -o "$encryption" = "mixed-wpa" ];then
 		val="EAPAuthentication"
 	fi
 	echo "$val"
@@ -479,7 +479,7 @@ set_wlan_wpa_authentication_mode() {
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa"
-		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "wpamixedwpa2" ] ; then
+		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "mixed-wpa" ] ; then
 			reset_wlan "$num"
 			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
 			$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
@@ -495,11 +495,11 @@ get_wlan_ieee_11i_encryption_modes() {
 	local val=""
 	#TKIPEncryption, AESEncryption, TKIPandAESEncryption
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
-	if [ "$encryption" = "psk2+tkip" -o "$encryption" = "pskmixedpsk2+tkip" ];then
+	if [ "$encryption" = "psk2+tkip" -o "$encryption" = "mixed-psk+tkip" ];then
 		val="TKIPEncryption"
-	elif [ "$encryption" = "psk2+ccmp" -o "$encryption" = "pskmixedpsk2+ccmp" ];then
+	elif [ "$encryption" = "psk2+ccmp" -o "$encryption" = "mixed-psk+ccmp" ];then
 		val="AESEncryption"
-	elif [ "$encryption" = "psk2+tkip+ccmp" -o "$encryption" = "pskmixedpsk2+tkip+ccmp" ];then
+	elif [ "$encryption" = "psk2+tkip+ccmp" -o "$encryption" = "mixed-psk+tkip+ccmp" ];then
 		val="TKIPandAESEncryption"
 	fi
 	echo "$val"
@@ -545,9 +545,9 @@ get_wlan_ieee_11i_authentication_mode() {
 	local num="$1"
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	local val=""
-	if [ "`echo $encryption|grep ^psk2$`" != "" -o "`echo $encryption|grep ^psk2+`" != "" -o "`echo $encryption|grep ^pskmixedpsk2`" != "" ]; then
+	if [ "`echo $encryption|grep ^psk2$`" != "" -o "`echo $encryption|grep ^psk2+`" != "" -o "`echo $encryption|grep ^mixed-psk`" != "" ]; then
 		val="PSKAuthentication"
-	elif [ "$encryption" = "wpa2" -o "$encryption" = "wpamixedwpa2" ];then
+	elif [ "$encryption" = "wpa2" -o "$encryption" = "mixed-wpa" ];then
 		val="EAPAuthentication"
 	fi
 	echo "$val"
@@ -568,7 +568,7 @@ set_wlan_ieee_11i_authentication_mode() {
 		$UCI_SET wireless.@wifi-iface[$num].encryption="$val"
 	elif [ "$val" = "EAPAuthentication" ]; then
 		val="wpa2"
-		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "wpamixedwpa2" ] ; then
+		if [ $encryption != "wpa" -a $encryption != "wpa2" -a $encryption != "mixed-wpa" ] ; then
 			reset_wlan "$num"
 			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
 			$UCI_SET wireless.@wifi-iface[$num].radius_port="1812"
@@ -636,7 +636,7 @@ get_wlan_authentication_service_mode() {
 	local num="$1"
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	local val=""
-	if [ "$encryption" = "wpa" -o "$encryption" = "wpa2" -o "$encryption" = "wpamixedwpa2" ]; then
+	if [ "$encryption" = "wpa" -o "$encryption" = "wpa2" -o "$encryption" = "mixed-wpa" ]; then
 		val="RadiusClient"
 	else
 		val="None"
@@ -652,7 +652,7 @@ set_wlan_authentication_service_mode() {
 		reset_wlan "$num"
 		$UCI_SET wireless.@wifi-iface[$num].encryption="none"
 	elif [ "$val" = "RadiusClient" ];then
-		if [ "$encryption" != "wpa" -a "$encryption" != "wpa2" -a "$encryption" != "wpamixedwpa2" ]; then
+		if [ "$encryption" != "wpa" -a "$encryption" != "wpa2" -a "$encryption" != "mixed-wpa" ]; then
 			reset_wlan "$num"
 			$UCI_SET wireless.@wifi-iface[$num].encryption="wpa"
 			$UCI_SET wireless.@wifi-iface[$num].radius_server=""
