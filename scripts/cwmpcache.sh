@@ -60,6 +60,10 @@ cwmp_ntpcache() {
 	cwmp_cache "Time"
 }
 
+cwmp_igmpcache() {
+	cwmp_cache "X_INTENO_SE_IGMP"
+}
+
 case $initscript in
 	*asterisk)
 		case $action in
@@ -96,5 +100,11 @@ case $initscript in
 			boot|start|restart|reload) cwmp_ntpcache ;;
 		esac
 	;;
+	*mcpd)
+		case $action in
+			boot|start|restart|reload) cwmp_igmpcache ;;
+		esac
+	;;
+	
 esac
 
