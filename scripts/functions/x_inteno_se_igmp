@@ -1,0 +1,99 @@
+#!/bin/sh
+# Copyright (C) 2015 Inteno Broadband Technology AB
+#  Author Feten Besbes <feten.besbes@pivasoftware.com>
+
+prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_IGMP."
+
+get_igmp_param_value() {
+	local param="$1"
+	$UCI_GET mcpd.mcpd.$param
+}
+
+get_igmp_param_status () {
+	local param="$1"
+	local val=`$UCI_GET mcpd.mcpd.$param`
+	echo ${val:-0}
+}
+
+set_igmp_param_value() {
+	local param="$1"
+	local value="$2"
+	$UCI_SET mcpd.mcpd.$param="$value"
+	delay_service restart "mcpd" "1"
+}
+
+set_igmp_param_status() {
+	local param="$1"
+	local status="$2"
+	if [ "$status" = "true" -o "$status" = "1" ]; then
+		$UCI_SET mcpd.mcpd.$param="1"
+	elif [ "$status" = "false" -o "$status" = "0" ]; then
+		$UCI_SET mcpd.mcpd.$param=
+	else
+		return
+	fi
+	delay_service restart "mcpd" "1"
+}
+
+get_igmp_proxy_interface(){
+	local val list=`$UCI_GET mcpd.mcpd.igmp_proxy_interfaces`
+	echo ${value// /,}
+}
+
+set_igmp_proxy_interface(){
+	local value="$*"
+	values=${value//,/ }
+	[ "$values" = "" ] && return
+	$UCI_SET mcpd.mcpd.igmp_proxy_interfaces="${values//  / }"
+	delay_service restart "mcpd" "1"
+}
+
+get_igmp_snooping_interface(){
+	local value=`$UCI_GET mcpd.mcpd.igmp_snooping_interfaces`
+	echo ${value// /,}
+}
+
+set_igmp_snooping_interface(){
+	local value="$*"
+	values=${value//,/ }
+	[ "$values" = "" ] && return
+	$UCI_SET mcpd.mcpd.igmp_snooping_interfaces="${values//  / }"
+	delay_service restart "mcpd" "1"
+}
+
+get_cache_InternetGatewayDevice_X_INTENO_SE_IGMP() {
+	local val
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP." "0"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.DifferentiateService" "1" "get_igmp_param_value igmp_dscp_mark" "set_igmp_param_value igmp_dscp_mark \$val" 
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.ProxyInterface" "1" "get_igmp_proxy_interface" "set_igmp_proxy_interface \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.DefaultVersion" "1" "get_igmp_param_value igmp_default_version" "set_igmp_param_value igmp_default_version \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.QueryInterval" "1" "get_igmp_param_value igmp_query_interval" "set_igmp_param_value igmp_query_interval \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.QueryResponseInterval" "1" "get_igmp_param_value igmp_query_response_interval" "set_igmp_param_value igmp_query_response_interval \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.LastMemberQueryInterval" "1" "get_igmp_param_value igmp_last_member_query_interval" "set_igmp_param_value igmp_last_member_query_interval \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.RobustnessValue" "1" "get_igmp_param_value igmp_robustness_value" "set_igmp_param_value igmp_robustness_value \$val"  "" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.LanToLanMulticastEnable" "1" "get_igmp_param_status igmp_lan_to_lan_multicast" "set_igmp_param_status igmp_lan_to_lan_multicast \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.MaxGroup" "1" "get_igmp_param_value igmp_max_groups" "set_igmp_param_value igmp_max_groups \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.MaxSources" "1" "get_igmp_param_value igmp_max_sources" "set_igmp_param_value igmp_max_sources \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.MaxMembers" "1" "get_igmp_param_value igmp_max_members" "set_igmp_param_value igmp_max_members \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.FastLeaveEnable" "1" "get_igmp_param_status igmp_fast_leave" "set_igmp_param_status igmp_fast_leave \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.JoinImmediateEnable" "1" "get_igmp_param_status igmp_join_immediate" "set_igmp_param_status igmp_join_immediate \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.ProxyEnable" "1" "get_igmp_param_status igmp_proxy_enable" "set_igmp_param_status igmp_proxy_enable \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.SnoopingMode" "1" "get_igmp_param_value igmp_snooping_enable" "set_igmp_param_value igmp_snooping_enable \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IGMP.SnoopingInterfaces" "1" "get_igmp_snooping_interface" "set_igmp_snooping_interface \$val"
+}
+
+get_dynamic_InternetGatewayDevice_X_INTENO_SE_IGMP() {
+	return $FAULT_CPE_NO_FAULT
+}
+
+get_dynamic_linker_InternetGatewayDevice_X_INTENO_SE_IGMP() {
+    return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_X_INTENO_SE_IGMP() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_X_INTENO_SE_IGMP() {
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
