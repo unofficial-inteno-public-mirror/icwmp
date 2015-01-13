@@ -804,8 +804,8 @@ set_lan_dhcp_server_configurable() {
 	local lan_name=$1
 	local val="$2"
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name" | cut -f2 -d'.'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
-		local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name" | cut -f2 -d'.'`
 		if [ "$dface" = "" ];then
 			$UCI_SET dhcp.$lan_name=dhcp
 			$UCI_SET dhcp.$lan_name.interface=$lan_name
@@ -814,7 +814,11 @@ set_lan_dhcp_server_configurable() {
 			$UCI_SET dhcp.$lan_name.leasetime=12h
 		fi
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		$UCI_SET dhcp.$dface=
+		local list=`$UCI_SHOW -X dhcp |grep "dhcp\..*\.interface=$lan_name" | cut -f2 -d'.'`
+		for dface in $list;do
+			[ "`$UCI_GET dhcp.$dface`" = "dhcp" ] && break
+		done
+		$UCI_DELETE dhcp.$dface
 	else
 		return
 	fi
