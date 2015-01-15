@@ -430,6 +430,28 @@ set_line_calling_features_caller_id_name() {
 	$UCI_SET voice_client.sip$num.displayname="$val"
 }
 
+get_line_calling_features_callwaiting() {
+	local line_name="$1"
+	local val=`$UCI_GET voice_client.$line_name.callwaiting`
+	echo ${val:-0}
+}
+
+set_line_calling_features_callwaiting() {
+	local line_name="$1"
+	local val="$2"
+	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	if [ "$val" = "true" -o "$val" = "1" ]; then
+		val="1"
+	elif [ "$val" = "false" -o "$val" = "0" ]; then
+		val=""
+	else
+		return
+	fi
+	$UCI_SET voice_client.$line_name.callwaiting=$val
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
 get_line_x_002207_line_profile() {
 	local num="$1"
 	local line_name="$2"
@@ -856,6 +878,7 @@ get_services_voice_service_line_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallState" "0" "" "" "get_line_call_state $sip_id $line_name"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallWaitingEnable" "1" "get_line_calling_features_callwaiting $line_name" "set_line_calling_features_callwaiting $line_name \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "get_line_x_002207_line_profile $sip_id $line_name" "set_line_x_002207_line_profile $sip_id $line_name \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
