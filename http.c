@@ -370,7 +370,7 @@ void http_server_init(void)
         if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
         {
             //print the error message
-            CWMP_LOG (ERROR,"Could not bind server socket for Connection Requests");
+            CWMP_LOG (ERROR,"Could not bind server socket, Error no is : %d, Error description is : %s", errno, strerror(errno));
             sleep(1);
             continue;
         }
