@@ -36,7 +36,7 @@ set_igmp_param_status() {
 }
 
 get_igmp_proxy_interface(){
-	local val list=`$UCI_GET mcpd.mcpd.igmp_proxy_interfaces`
+	local value=`$UCI_GET mcpd.mcpd.igmp_proxy_interfaces`
 	echo ${value// /,}
 }
 
