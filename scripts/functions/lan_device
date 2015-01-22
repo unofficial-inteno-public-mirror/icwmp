@@ -791,15 +791,17 @@ set_lan_dns() {
 
 get_lan_dhcp_server_configurable() {
 	local lan_name=$1
-	if [ "`$UCI_GET dhcp.$lan_name`" = "" ];then echo 0; else echo 1; fi
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name"`
+	if [ "$dface" = "" ];then echo 0; else echo 1; fi
 }
 
 set_lan_dhcp_server_configurable() {
 	local lan_name=$1
 	local val="$2"
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name" | cut -f2 -d'.'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
-		if [ "`$UCI_GET dhcp.$lan_name`" = "" ];then
+		if [ "$dface" = "" ];then
 			$UCI_SET dhcp.$lan_name=dhcp
 			$UCI_SET dhcp.$lan_name.interface=$lan_name
 			$UCI_SET dhcp.$lan_name.start=100
@@ -807,7 +809,11 @@ set_lan_dhcp_server_configurable() {
 			$UCI_SET dhcp.$lan_name.leasetime=12h
 		fi
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		$UCI_SET dhcp.$lan_name=
+		local list=`$UCI_SHOW -X dhcp |grep "dhcp\..*\.interface=$lan_name" | cut -f2 -d'.'`
+		for dface in $list;do
+			[ "`$UCI_GET dhcp.$dface`" = "dhcp" ] && break
+		done
+		$UCI_DELETE dhcp.$dface
 	else
 		return
 	fi
@@ -817,21 +823,23 @@ set_lan_dhcp_server_configurable() {
 
 get_lan_dhcp_server_enable() {
 	local lan_name=$1
-	if [ "`$UCI_GET dhcp.$lan_name`" = "" ]; then
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name" | cut -f2 -d'.'`
+	if [ "$dface" = "" ]; then
 		echo 0
 	else
-		if [ "`$UCI_GET dhcp.$lan_name.ignore`" = "" ]; then echo 1; else echo 0; fi 
+		if [ "`$UCI_GET dhcp.$dface.ignore`" = "" ]; then echo 1; else echo 0; fi
 	fi
 }
 
 set_lan_dhcp_server_enable() {
 	local lan_name=$1
 	local val="$2"
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($lan_name\|@dhcp\[[0-9]\+\]\).interface=$lan_name" | cut -f2 -d'.'`
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
-		$UCI_SET dhcp.$lan_name.ignore=
+		$UCI_SET dhcp.$dface.ignore=
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		$UCI_SET dhcp.$lan_name.ignore=1
+		$UCI_SET dhcp.$dface.ignore=1
 	else
 		return
 	fi
@@ -932,8 +940,9 @@ update_instance_landevice_dhcpstaticaddress() {
 get_lan_dhcp_interval_address() {
 	local opt="$1"
 	local nlan="$2"
-	local start=`$UCI_GET dhcp.$nlan.start`
-	local limit=`$UCI_GET dhcp.$nlan.limit`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	local start=`$UCI_GET dhcp.$dface.start`
+	local limit=`$UCI_GET dhcp.$dface.limit`
 	[ "$start" = "" -o "$limit" = "" ] && return
 	local ipaddr=`$UCI_GET network.$nlan.ipaddr`
 	if [ "$ipaddr" = "" ]; then
@@ -959,6 +968,7 @@ set_lan_dhcp_address_start() {
 	local nlan="$1"
 	local val="$2"
 	local ipaddr=`$UCI_GET network.$nlan.ipaddr`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
 	if [ "$ipaddr" = "" ]; then
 		json_load "$(ifstatus $nlan)"
 		json_select "ipv4-address"
@@ -980,7 +990,7 @@ set_lan_dhcp_address_start() {
 	ipaddr=`ip_to_int $ipaddr`
 	val=$((naddr-(mask&ipaddr)))
 	[ $val -lt 0 ] && val=0
-	`$UCI_SET dhcp.$nlan.start=$val`
+	`$UCI_SET dhcp.$dface.start=$val`
 	delay_service reload "network" "1"
 	delay_service reload "dnsmasq" "1"
 }
@@ -988,6 +998,7 @@ set_lan_dhcp_address_start() {
 set_lan_dhcp_address_end() {
 	local nlan="$1"
 	local val="$2"
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
 	local start=`get_lan_dhcp_interval_address START $nlan`
 	[ "$start" = "" ] && return
 	start=`ip_to_int $start`
@@ -995,7 +1006,7 @@ set_lan_dhcp_address_end() {
 	
 	val=$((val-start))
 	[ $val -lt 0 ] && val=0
-	`$UCI_SET dhcp.$nlan.limit=$val`
+	`$UCI_SET dhcp.$dface.limit=$val`
 	delay_service reload "network" "1"
 	delay_service reload "dnsmasq" "1"
 }
@@ -1056,7 +1067,8 @@ set_lan_dhcp_reserved_addresses() {
 
 get_lan_dhcp_subnetmask() {
 	local nlan="$1"
-	local mask=`$UCI_GET dhcp.$nlan.netmask`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	local mask=`$UCI_GET dhcp.$dface.netmask`
 	if [ "$mask" = "" ]; then
 		mask=`$UCI_GET network.$nlan.netmask`
 	fi
@@ -1073,7 +1085,8 @@ get_lan_dhcp_subnetmask() {
 set_lan_dhcp_subnetmask() {
 	local nlan="$1"
 	local val="$2"
-	$UCI_SET dhcp.$nlan.netmask=$val
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	$UCI_SET dhcp.$dface.netmask=$val
 	delay_service reload "network" "1"
 	delay_service restart "dnsmasq" "1"
 }
@@ -1097,7 +1110,8 @@ set_lan_dhcp_iprouters() {
 
 get_lan_dhcp_leasetime() {
 	local nlan="$1"
-	local ltime=`$UCI_GET dhcp.$nlan.leasetime`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	local ltime=`$UCI_GET dhcp.$dface.leasetime`
 	if [ "$ltime" = "" ]; then
 		echo -1
 		return
@@ -1115,15 +1129,17 @@ get_lan_dhcp_leasetime() {
 set_lan_dhcp_leasetime() {
 	local nlan="$1"
 	local val="$2"
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
 	val=$((val/60))
-	$UCI_SET dhcp.$nlan.leasetime="$val"m
+	$UCI_SET dhcp.$dface.leasetime="$val"m
 	delay_service reload "network" "1"
 	delay_service restart "dnsmasq" "1"
 }
 
 get_lan_dhcp_domainname() {
 	local nlan="$1"
-	local dop dhcp_options=`$UCI_GET dhcp.$nlan.dhcp_option`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	local dop dhcp_options=`$UCI_GET dhcp.$dface.dhcp_option`
 	for dop in $dhcp_options; do
 		local dn=${dop/15,/}
 		[ "$dn" = "$dop" ] && continue
@@ -1135,13 +1151,14 @@ get_lan_dhcp_domainname() {
 set_lan_dhcp_domainname() {
 	local nlan="$1"
 	local val="$2"
-	local dop dhcp_options=`$UCI_GET dhcp.$nlan.dhcp_option`
+	local dface=`$UCI_SHOW dhcp | grep "dhcp\.\($nlan\|@dhcp\[[0-9]\+\]\).interface=$nlan" | cut -f2 -d'.'`
+	local dop dhcp_options=`$UCI_GET dhcp.$dface.dhcp_option`
 	for dop in $dhcp_options; do
 		local dn=${dop/15,/}
 		[ "$dn" = "$dop" ] && continue
-		$UCI_DEL_LIST dhcp.$nlan.dhcp_option=$dop
+		$UCI_DEL_LIST dhcp.$dface.dhcp_option=$dop
 	done 
-	$UCI_ADD_LIST dhcp.$nlan.dhcp_option="15,$val"
+	$UCI_ADD_LIST dhcp.$dface.dhcp_option="15,$val"
 	delay_service reload "network" "1"
 	delay_service restart "dnsmasq" "1"
 }
