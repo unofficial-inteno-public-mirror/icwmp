@@ -43,6 +43,7 @@
 #define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 static struct http_client http_c;
+static int cr_socket_desc;
 
 #ifdef HTTP_CURL
 static CURL *curl;
@@ -338,53 +339,67 @@ http_done:
 
 void http_server_init(void)
 {
-	int socket_desc , client_sock , c , *new_sock;
-    struct sockaddr_in server , client;
-    static int cr_request = 0;
-    static time_t restrict_start_time = 0;
-    time_t current_time;
-    bool service_available;
+    struct sockaddr_in server;
+    int cr_port;
 
     for(;;) {
+        cr_port = cwmp_main.conf.connection_request_port;
+        int i = (DEFAULT_CONNECTION_REQUEST_PORT == cr_port)? 1 : 0;
         //Create socket
-        socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-        if (socket_desc == -1)
+        cr_socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+        if (cr_socket_desc == -1)
         {
-            CWMP_LOG (ERROR,"Could not open server socket for Connection Requests");
+            CWMP_LOG (ERROR,"Could not open server socket for Connection Requests, Error no is : %d, Error description is : %s", errno, strerror(errno));
             sleep(1);
             continue;
+        }
+
+        /* enable SO_REUSEADDR */
+        int reusaddr = 1;
+        if (setsockopt(cr_socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0) {
+            CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
         }
 
         //Prepare the sockaddr_in structure
         server.sin_family = AF_INET;
         server.sin_addr.s_addr = INADDR_ANY;
-        server.sin_port = htons(cwmp_main.conf.connection_request_port);
-
-        /* enable SO_REUSEADDR */
-        int reusaddr = 1;
-        if (setsockopt(socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0) {
-            CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
-        }
-
-        //Bind
-        if( bind(socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
-        {
-            //print the error message
-            CWMP_LOG (ERROR,"Could not bind server socket, Error no is : %d, Error description is : %s", errno, strerror(errno));
-            sleep(1);
-            continue;
+        for(;;i++) {
+            server.sin_port = htons(cr_port);
+            //Bind
+            if( bind(cr_socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+            {
+                //print the error message
+                CWMP_LOG (ERROR,"Could not bind server socket on the port %d, Error no is : %d, Error description is : %s", cr_port, errno, strerror(errno));
+                cr_port = DEFAULT_CONNECTION_REQUEST_PORT + i;
+                CWMP_LOG (INFO,"Trying to use another connection request port: %d", cr_port);
+                continue;
+            }
+            break;
         }
         break;
     }
+    char buf[64];
+    sprintf(buf,UCI_CPE_PORT_PATH"=%d", cr_port);
+    uci_set_state_value(buf);
+    connection_request_port_value_change(&cwmp_main, cr_port);
+    CWMP_LOG (INFO,"Connection Request server initiated with the port: %d", cr_port);
+}
 
-    CWMP_LOG (INFO,"Connection Request server initiated");
+void http_server_listen(void)
+{
+    int client_sock , c , *new_sock;
+    static int cr_request = 0;
+    static time_t restrict_start_time = 0;
+    time_t current_time;
+    bool service_available;
+    struct sockaddr_in client;
 
     //Listen
-    listen(socket_desc , 3);
+    listen(cr_socket_desc , 3);
 
     //Accept and incoming connection
     c = sizeof(struct sockaddr_in);
-    while( (client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
+    while( (client_sock = accept(cr_socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
         current_time = time(NULL);
         service_available = true;

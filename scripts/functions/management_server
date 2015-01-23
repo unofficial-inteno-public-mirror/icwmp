@@ -14,7 +14,7 @@ if [ -z "$default_management_server_connection_request_url" ]; then
 	local tmp_json=${FLAGS_json}
 	FLAGS_json=${FLAGS_FALSE}
 	local ip=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.cpe.ip`
-	local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q get cwmp.cpe.port`
+	local port=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get cwmp.cpe.port`
 	FLAGS_value=$tmp_value
 	FLAGS_json=$tmp_json
 

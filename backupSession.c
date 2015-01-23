@@ -142,6 +142,21 @@ void bkp_session_simple_insert(char *parent, char *child, char *value)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
+void bkp_session_simple_insert_in_parent(char *parent, char *child, char *value)
+{
+	mxml_node_t *n, *b = bkp_tree;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	n = mxmlFindElement(b, b, parent, NULL, NULL, MXML_DESCEND);
+	if(!n)
+		n = bkp_session_insert(bkp_tree, parent,NULL);
+	b = mxmlFindElement(n, n, child, NULL, NULL, MXML_DESCEND);
+	if(b)
+		mxmlDelete(b);
+	bkp_session_insert(n,child,value);
+	pthread_mutex_unlock (&mutex_backup_session);
+}
+
 void bkp_session_move_inform_to_inform_send ()
 {
 	mxml_node_t *b = bkp_tree;
@@ -748,6 +763,14 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
 			{
 				*ret = load_child_value(b, "ip");
+				break;
+			}
+		}
+		if(load == CR_PORT)
+		{
+			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
+			{
+				*ret = load_child_value(b, "port");
 				break;
 			}
 		}

@@ -228,5 +228,7 @@ int netlink_init(void);
 char * mix_get_time(void);
 char * mix_get_time_of(time_t t_time);
 void *thread_exit_program (void *v);
+void connection_request_ip_value_change(struct cwmp *cwmp);
+void connection_request_port_value_change(struct cwmp *cwmp, int port);
 
 #endif /* _CWMP_H__ */

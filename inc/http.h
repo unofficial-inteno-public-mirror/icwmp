@@ -50,6 +50,7 @@ void http_client_exit(void);
 int http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in);
 
 void http_server_init(void);
+void http_server_listen(void);
 
 #endif
 

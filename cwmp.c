@@ -505,9 +505,9 @@ void *thread_uloop_run (void *v)
 	return NULL;
 }
 
-void *thread_http_cr_server_init (void *v)
+void *thread_http_cr_server_listen (void *v)
 {
-    http_server_init();
+    http_server_listen();
     return NULL;
 }
 
@@ -546,6 +546,13 @@ int main(int argc, char **argv)
         return error;
     }
 
+    http_server_init();
+
+    error = pthread_create(&http_cr_server_thread, NULL, &thread_http_cr_server_listen, NULL);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the http connection request server thread!");
+    }
     error = pthread_create(&ubus_thread, NULL, &thread_uloop_run, NULL);
     if (error<0)
 	{
@@ -566,12 +573,8 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
-    error = pthread_create(&http_cr_server_thread, NULL, &thread_http_cr_server_init, NULL);
-    if (error<0)
-    {
-        CWMP_LOG(ERROR,"Error when creating the http connection request server thread!");
-    }
-    cwmp_schedule_session (cwmp);
+
+    cwmp_schedule_session(cwmp);
     pthread_join(ubus_thread, NULL);
     pthread_join(periodic_event_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);

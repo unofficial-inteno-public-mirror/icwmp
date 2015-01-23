@@ -463,7 +463,7 @@ void connection_request_ip_value_change(struct cwmp *cwmp)
 
 	if(bip == NULL)
 	{
-		bkp_session_simple_insert("connection_request", "ip", cwmp->conf.ip);
+		bkp_session_simple_insert_in_parent("connection_request", "ip", cwmp->conf.ip);
 		bkp_session_save();
 		return;
 	}
@@ -473,17 +473,49 @@ void connection_request_ip_value_change(struct cwmp *cwmp)
 		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 		if (event_container == NULL)
 		{
-		    FREE(bip);
+			FREE(bip);
 			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 			return;
 		}
 		cwmp_save_event_container (cwmp,event_container);
-		bkp_session_simple_insert("connection_request", "ip", cwmp->conf.ip);
+		bkp_session_simple_insert_in_parent("connection_request", "ip", cwmp->conf.ip);
 		bkp_session_save();
 		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 		pthread_cond_signal(&(cwmp->threshold_session_send));
 	}
 	FREE(bip);
+}
+
+void connection_request_port_value_change(struct cwmp *cwmp, int port)
+{
+	char *bport = NULL;
+	struct event_container *event_container;
+	int error;
+	char bufport[32];
+
+	sprintf(bufport, "%d", port);
+
+	error   = cwmp_load_saved_session(cwmp, &bport, CR_PORT);
+
+	if(bport == NULL)
+	{
+		bkp_session_simple_insert_in_parent("connection_request", "port", bufport);
+		bkp_session_save();
+		return;
+	}
+	if (strcmp(bport, bufport)!=0)
+	{
+		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
+		if (event_container == NULL)
+		{
+			FREE(bport);
+			return;
+		}
+		cwmp_save_event_container (cwmp,event_container);
+		bkp_session_simple_insert_in_parent("connection_request", "port", bufport);
+		bkp_session_save();
+	}
+	FREE(bport);
 }
 
 int cwmp_root_cause_events (struct cwmp *cwmp)

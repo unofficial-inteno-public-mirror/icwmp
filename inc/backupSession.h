@@ -30,7 +30,8 @@
 typedef enum backup_loading {
     ALL,
     ACS,
-    CR_IP
+    CR_IP,
+    CR_PORT
 } backup_loading;
 
 struct search_keywords {
