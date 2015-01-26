@@ -33,7 +33,7 @@ command:
   notify
   end_session
   inform
-  wait [cache]
+  wait [cache [status]] 
   clean [cache]
   json_continuous_input
 EOF`
@@ -168,7 +168,11 @@ case "$1" in
 		;;
 	wait)
 		if [ "$2" = "cache" ]; then
-			action="wait_cache"
+			if [ "$3" = "status" ]; then
+				action="wait_cache_status"
+			else
+				action="wait_cache"
+			fi
 		fi
 		;;
 	clean)
@@ -319,7 +323,36 @@ handle_action() {
 			fi
 		done
 	fi
-	
+	if [ "$action" = "wait_cache_status" ]; then
+		local ls_cache=""
+			ls_prefix=" `ls $cache_path` "
+			ls_prefix=${ls_prefix//$'\n'/ }
+			local tmpskip=" $prefix_list_skip_wait_cache "
+			for ls_p in $prefix_list; do
+				if [ "${tmpskip/ $ls_p /}" != "$tmpskip" ]; then
+					echo "skipped $ls_p"
+				elif [ "${ls_prefix/ $ls_p /}" != "$ls_prefix" ]; then
+					echo "done    $ls_p"
+				else 
+					local cache_running=0
+					if [ -d $tmp_cache ]; then
+						ls_cache=`ls $tmp_cache`
+						for pid in $ls_cache; do
+							ls_pid=" `ls $tmp_cache/$pid` "
+							ls_pid=${ls_pid//$'\n'/ }
+							if [ "${ls_pid/ $ls_p /}" != "$ls_pid" -a -d "/proc/$pid" ]; then
+								echo "running $ls_p" 
+								cache_running=1
+								break
+							fi							
+						done
+					fi
+					if [ "$cache_running" = "0" ]; then 
+						echo "waiting $ls_p" 
+					fi
+				fi 
+			done
+	fi
 	if [ "$action" = "clean_cache" ]; then
 		rm -rf "$cache_path/"*
 	fi
