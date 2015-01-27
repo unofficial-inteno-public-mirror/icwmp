@@ -63,6 +63,9 @@ cwmp_ntpcache() {
 cwmp_igmpcache() {
 	cwmp_cache "X_INTENO_SE_IGMP"
 }
+cwmp_powermanagementcache() {
+	cwmp_cache "X_INTENO_SE_PowerManagement"
+}
 
 case $initscript in
 	*asterisk)
@@ -103,6 +106,11 @@ case $initscript in
 	*mcpd)
 		case $action in
 			boot|start|restart|reload) cwmp_igmpcache ;;
+		esac
+	;;
+	*power_mgmt)
+		case $action in
+			boot|start|restart|reload) cwmp_powermanagementcache ;;
 		esac
 	;;
 	
