@@ -5,7 +5,7 @@
 prefix_list="$prefix_list InternetGatewayDevice.UPnP."
 
 get_upnp_enable() {
-	local val=`$UCI_GET upnpd.config.enable_upnp`
+	local val=`$UCI_GET upnpd.config.enabled`
 	echo ${val:-1}
 }
 
@@ -13,13 +13,13 @@ set_upnp_enable() {
 	local val="$1"
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
-		$UCI_SET upnpd.config.enable_upnp=
+		$UCI_SET upnpd.config.enabled=1
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		$UCI_SET upnpd.config.enable_upnp=0
+		$UCI_SET upnpd.config.enabled=
 	else
 		return
 	fi
-	[ "`pidof miniupnpd`" != "" ] &&  delay_service restart "miniupnpd" "1"
+	delay_service restart "miniupnpd" "1"
 }
 
 get_upnp_status() {
@@ -49,3 +49,4 @@ add_object_InternetGatewayDevice_UPnP() {
 delete_object_InternetGatewayDevice_UPnP() {
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
+
