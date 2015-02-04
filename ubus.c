@@ -142,7 +142,8 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 		ubus_send_reply(ctx, req, b.head);
 
 		blob_buf_free(&b);
-
+		close(cwmp_main.cr_socket_desc);
+		CWMP_LOG(INFO,"Close connection request server socket");
 		error = pthread_create(&exit_thread, NULL, &thread_exit_program, NULL);
 		if (error<0)
 		{

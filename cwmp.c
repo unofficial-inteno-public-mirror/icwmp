@@ -518,6 +518,12 @@ void *thread_exit_program (void *v)
 	exit(EXIT_SUCCESS);
 }
 
+void signal_handler(int signal_num)
+{
+    close(cwmp_main.cr_socket_desc);
+    _exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char **argv)
 {
 
@@ -528,6 +534,7 @@ int main(int argc, char **argv)
     pthread_t                       download_thread;
     pthread_t                       ubus_thread;
     pthread_t                       http_cr_server_thread;
+    struct sigaction                act = {0};
 
     if (error = cwmp_init(argc, argv, cwmp))
     {
@@ -548,6 +555,10 @@ int main(int argc, char **argv)
 
     http_server_init();
 
+    act.sa_handler = signal_handler;
+    sigaction(SIGINT,  &act, 0);
+    sigaction(SIGTERM, &act, 0);
+	
     error = pthread_create(&http_cr_server_thread, NULL, &thread_http_cr_server_listen, NULL);
     if (error<0)
     {
