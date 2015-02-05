@@ -43,7 +43,6 @@
 #define OPAQUE "11733b200778ce33060f31c9af70a870ba96ddd4"
 
 static struct http_client http_c;
-static int cr_socket_desc;
 
 #ifdef HTTP_CURL
 static CURL *curl;
@@ -339,34 +338,37 @@ http_done:
 
 void http_server_init(void)
 {
-    struct sockaddr_in server;
-    int cr_port;
+    struct sockaddr_in server = {0};
+    unsigned short cr_port;
 
     for(;;) {
-        cr_port = cwmp_main.conf.connection_request_port;
-        int i = (DEFAULT_CONNECTION_REQUEST_PORT == cr_port)? 1 : 0;
+        cr_port =  (unsigned short) (cwmp_main.conf.connection_request_port);
+        unsigned short i = (DEFAULT_CONNECTION_REQUEST_PORT == cr_port)? 1 : 0;
         //Create socket
-        cr_socket_desc = socket(AF_INET , SOCK_STREAM , 0);
-        if (cr_socket_desc == -1)
+        cwmp_main.cr_socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+        if (cwmp_main.cr_socket_desc == -1)
         {
             CWMP_LOG (ERROR,"Could not open server socket for Connection Requests, Error no is : %d, Error description is : %s", errno, strerror(errno));
             sleep(1);
             continue;
         }
 
-        /* enable SO_REUSEADDR */
+        fcntl(cwmp_main.cr_socket_desc, F_SETFD, fcntl(cwmp_main.cr_socket_desc, F_GETFD) | FD_CLOEXEC);
+
         int reusaddr = 1;
-        if (setsockopt(cr_socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0) {
+        if (setsockopt(cwmp_main.cr_socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0)
+        {
             CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
         }
 
         //Prepare the sockaddr_in structure
         server.sin_family = AF_INET;
         server.sin_addr.s_addr = INADDR_ANY;
+		
         for(;;i++) {
             server.sin_port = htons(cr_port);
             //Bind
-            if( bind(cr_socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
+            if( bind(cwmp_main.cr_socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
             {
                 //print the error message
                 CWMP_LOG (ERROR,"Could not bind server socket on the port %d, Error no is : %d, Error description is : %s", cr_port, errno, strerror(errno));
@@ -387,7 +389,7 @@ void http_server_init(void)
 
 void http_server_listen(void)
 {
-    int client_sock , c , *new_sock;
+    int client_sock , c;
     static int cr_request = 0;
     static time_t restrict_start_time = 0;
     time_t current_time;
@@ -395,11 +397,11 @@ void http_server_listen(void)
     struct sockaddr_in client;
 
     //Listen
-    listen(cr_socket_desc , 3);
+    listen(cwmp_main.cr_socket_desc , 3);
 
     //Accept and incoming connection
     c = sizeof(struct sockaddr_in);
-    while( (client_sock = accept(cr_socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
+    while( (client_sock = accept(cwmp_main.cr_socket_desc, (struct sockaddr *)&client, (socklen_t*)&c)) )
     {
         current_time = time(NULL);
         service_available = true;
