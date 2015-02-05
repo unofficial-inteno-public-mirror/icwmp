@@ -128,6 +128,7 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 		int error;
 		CWMP_LOG(INFO, "triggered ubus exit");
 		int rc = flock(cwmp_main.pid_file, LOCK_UN | LOCK_NB);
+		close(cwmp_main.pid_file);
 		if(rc) {
 			char *piderr = "PID file unlock failed!";
 			fprintf(stderr, "%s\n", piderr);
