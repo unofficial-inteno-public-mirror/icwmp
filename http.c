@@ -340,7 +340,6 @@ void http_server_init(void)
 {
     struct sockaddr_in server = {0};
     unsigned short cr_port;
-    int reusaddr = 0;
 
     for(;;) {
         cr_port =  (unsigned short) (cwmp_main.conf.connection_request_port);
@@ -354,6 +353,14 @@ void http_server_init(void)
             continue;
         }
 
+        fcntl(cwmp_main.cr_socket_desc, F_SETFD, fcntl(cwmp_main.cr_socket_desc, F_GETFD) | FD_CLOEXEC);
+
+        int reusaddr = 1;
+        if (setsockopt(cwmp_main.cr_socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0)
+        {
+            CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
+        }
+
         //Prepare the sockaddr_in structure
         server.sin_family = AF_INET;
         server.sin_addr.s_addr = INADDR_ANY;
@@ -365,20 +372,8 @@ void http_server_init(void)
             {
                 //print the error message
                 CWMP_LOG (ERROR,"Could not bind server socket on the port %d, Error no is : %d, Error description is : %s", cr_port, errno, strerror(errno));
-                if(!reusaddr)
-			    {
-				    reusaddr = 1;
-				    CWMP_LOG (INFO,"enable the socket option SO_REUSEADDR");
-				    if (setsockopt(cwmp_main.cr_socket_desc, SOL_SOCKET, SO_REUSEADDR, &reusaddr, sizeof(int)) < 0)
-				    {
-				        CWMP_LOG (WARNING,"setsockopt(SO_REUSEADDR) failed");
-				    }
-			    }
-			    else 
-			    {
-                    CWMP_LOG (INFO,"Trying to use another connection request port: %d", cr_port);
-				    cr_port = DEFAULT_CONNECTION_REQUEST_PORT + i;
-			    }
+                cr_port = DEFAULT_CONNECTION_REQUEST_PORT + i;
+                CWMP_LOG (INFO,"Trying to use another connection request port: %d", cr_port);
                 continue;
             }
             break;

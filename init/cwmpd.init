@@ -133,38 +133,33 @@ start_cwmpd() {
 	fi
 }
 
-get_process_childs() {
+kill_process_childs() {
 	local pid_list="$1"
-	local proc="" line="" pt="" ppid="" pid="" pid_tmp="" pid_grep=""
+	local proc="" line="" pt="" ppid="" pid="" pid_childs="" pid_grep=""
+	[ "$pid_list" = "" ] && return
 	pid_grep=${pid_list// /\\|}
 
-	while [ "_$pid_grep" != "_" ];do
-		proc=`cat /proc/[0-9]*/stat | grep "$pid_grep"`
-		proc=${proc// /;;;;;}
-		pid_tmp=""
-		for line in $proc; do
-			pid="${line%%;;;;;*}"
-			ppid="${line#*;;;;;*;;;;;*;;;;;}"; ppid="${ppid%%;;;;;*}"
-			pt=`echo "$pid" | grep "$pid_grep"`
-			if [ "_$pt" != "_" -a "$pt" = "$pid" ]; then
-				continue
-			fi
-			pt=`echo "$ppid" | grep "$pid_grep"`
-			if [ "$pt" != "$ppid" -o "_$pid" = "_" ]; then
-				continue
-			fi
-			pid_list="$pid_list $pid"
-			if [  "_$pid_tmp" = "_" ]; then
-				pid_tmp="$pid"
-			else
-				pid_tmp="$pid_tmp\|$pid"
-			fi
-		done
-		pid_grep="$pid_tmp"
+	proc=`cat /proc/[0-9]*/stat | grep "$pid_grep"`
+	proc=${proc// /;;;;;}
+	for line in $proc; do
+		pid="${line%%;;;;;*}"
+		ppid="${line#*;;;;;*;;;;;*;;;;;}"; ppid="${ppid%%;;;;;*}"
+		pt=`echo "$pid" | grep "$pid_grep"`
+		if [ "_$pt" != "_" -a "$pt" = "$pid" ]; then
+			continue
+		fi
+		pt=`echo "$ppid" | grep "$pid_grep"`
+		if [ "$pt" != "$ppid" -o "_$pid" = "_" ]; then
+			continue
+		fi
+		pid_childs="$pid_childs $pid"
 	done
-	echo "$pid_list"
+	pid_childs=${pid_childs% }
+	pid_childs=${pid_childs# }
+	kill_process_childs "$pid_childs"
+	[ "$pid_childs" != "" ] && kill -9 $pid_childs
 }
-	
+
 pidof_cwmp() {
 	local pids=""
 	pids="`ps | grep /usr/sbin/cwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
@@ -182,22 +177,17 @@ pidof_freecwmp() {
 }
 
 stop_freecwmp_cache() {
-	local pid_list="" pid="" pids="" found="1" p name state ppid rest cmd
+	local pid_list="" pid="" pids="" p name state ppid rest cmd
 
-	while [ "$found" = "1" ]; do
-		found="0"
-		pid_list="`pidof_freecwmp`"
-		for pid in $pid_list; do
-			read p name state ppid rest < /proc/$pid/stat
-			cmd=`cat /proc/$ppid/cmdline | grep /etc/init.d/cwmpd`
-			if [ "_$cmd" = "_" ]; then
-				continue
-			fi
-			kill -stop $ppid
-			found="1"
-			pids=`get_process_childs $ppid`
-			kill -9 "$pids"
-		done
+	pid_list="`pidof_freecwmp`"
+	for pid in $pid_list; do
+		read p name state ppid rest < /proc/$pid/stat
+		cmd=`cat /proc/$ppid/cmdline | grep /etc/init.d/cwmpd`
+		if [ "_$cmd" = "_" ]; then
+			continue
+		fi
+		kill_process_childs "$ppid"
+		[ "$ppid" != "" ] && kill -9 "$ppid"
 	done
 }
 
@@ -206,19 +196,12 @@ stop_cwmpd() {
 	local pid_list=""  pids="" str=""
 	pid_list=`pidof_cwmp`
 	if [ "_$pid_list" != "_" ]; then
-		pid_list=`get_process_childs "$pid_list"`
-		ubus call tr069 command '{"command": "exit"}' -t 3 &> /dev/null
-		kill -9 $pid_list
-	
-		pids="`pidof_cwmp`"
-		local cnt=0
-		while [ "_$pids" != "_" -a $cnt -lt 100 ];do
-			pid_list="$pid_list $pids"
-			kill -stop $pid_list
-			pid_list=`get_process_childs "$pid_list"`
+		kill_process_childs "$pid_list"
+		ubus call tr069 command '{"command": "exit"}' -t 3 >/dev/null
+		local ret=$?
+		if [ "$ret" != "0" ]; then
 			kill -9 $pid_list
-			pids="`pidof_cwmp`"
-	done
+		fi
 	fi
 	stop_freecwmp_cache
 }
