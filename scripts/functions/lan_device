@@ -1348,7 +1348,8 @@ set_interface_addressingtype() {
 }
 
 get_x_inteno_se_channelmode () {
-	local val=`$UCI_GET wireless.wl0.channel`
+	local nlan="$1"
+	local val=`$UCI_GET wireless.wl${nlan}.channel`
 	if [ "$val" = "auto" -o "$val" = "" ];then
 		echo "Auto"
 	else
@@ -1357,18 +1358,20 @@ get_x_inteno_se_channelmode () {
 }
 
 set_x_inteno_se_channelmode () {
-	local val="$1"
+	local nlan="$1"
+	local val="$2"
 	if [ "$val" = "Auto" ]; then
-		$UCI_SET wireless.wl0.channel="auto"
+		$UCI_SET wireless.wl${nlan}.channel="auto"
 	elif [ "$val" = "Manual" ]; then
-		local channel=`/usr/sbin/wlctl -i wl0 channel |grep "target channel" |awk -F ' ' '{print$3}'`
-		$UCI_SET wireless.wl0.channel="$channel"
+		local channel=`/usr/sbin/wlctl -i wl${nlan} channel |grep "target channel" |awk -F ' ' '{print$3}'`
+		$UCI_SET wireless.wl${nlan}.channel="$channel"
 	fi
 	delay_service reload "network" "1"
 }
 
 get_x_inteno_se_supported_standard () {
-	local val=`wlctl -i wl0 status |awk  '$1=="Chanspec:" {print$2}'`
+	local nlan="$1"
+	local val=`wlctl -i wl${nlan} status |awk  '$1=="Chanspec:" {print$2}'`
 	case $val in
 		"5GHz") echo  "a, n, ac";;
 		*) echo "b, g, n, gst, lrs";;
@@ -1376,26 +1379,28 @@ get_x_inteno_se_supported_standard () {
 }
 
 get_x_inteno_se_operating_channel_bandwidth () {
-	local channel=`$UCI_GET wireless.wl0.channel`
+	local nlan="$1"
+	local channel=`$UCI_GET wireless.wl${nlan}.channel`
 	if [ "$channel" = "auto" ]; then
 		echo "Auto"
 	else
-		local val=`$UCI_GET wireless.wl0.bandwidth`
+		local val=`$UCI_GET wireless.wl${nlan}.bandwidth`
 		echo "${val:-20}MHz"
 	fi
 }
 
 set_x_inteno_se_operating_channel_bandwidth () {
-	local val="$1"
+	local nlan="$1"
+	local val="$2"
 	if [ "$val" = "Auto" ]; then
-		$UCI_SET wireless.wl0.channel=auto
-		$UCI_SET wireless.wl0.bandwidth=
+		$UCI_SET wireless.wl${nlan}.channel=auto
+		$UCI_SET wireless.wl${nlan}.bandwidth=
 	else
 		val=`printf %u ${val%MHz} 2>/dev/null`
 		[ "$val" = "0" -o "$val" = "" ] && return
-		$UCI_SET wireless.wl0.bandwidth=$val
-		local channel=`/usr/sbin/wlctl -i wl0 channel |grep "target channel" |awk -F ' ' '{print$3}'`
-		$UCI_SET wireless.wl0.channel="$channel"
+		$UCI_SET wireless.wl${nlan}.bandwidth=$val
+		local channel=`/usr/sbin/wlctl -i wl${nlan} channel |grep "target channel" |awk -F ' ' '{print$3}'`
+		$UCI_SET wireless.wl${nlan}.channel="$channel"
 	fi
 	delay_service reload "network" "1"
 }
@@ -1436,9 +1441,9 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "xsd:boolean"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode" "set_x_inteno_se_channelmode \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth" "set_x_inteno_se_operating_channel_bandwidth \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $uci_num" "set_x_inteno_se_channelmode $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard $uci_num"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $uci_num" "set_x_inteno_se_operating_channel_bandwidth $uci_num \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
