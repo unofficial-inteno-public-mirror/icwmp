@@ -2,7 +2,11 @@
 # Copyright (C) 2015 Inteno Broadband Technology AB
 #  Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 
-prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_PowerManagement."
+# if not version 3.#.#
+if $(echo db -q get hw.board.iopVersion) | grep -vEoq '[3]\.[0-9]\.[0-9]'
+then
+    prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_PowerManagement."
+fi
 
 get_power_mgmt_value() {
 	local power_type="$1"
