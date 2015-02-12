@@ -1,11 +1,15 @@
 #!/bin/sh
 # Copyright (C) 2015 Inteno Broadband Technology AB
 #  Author Anis Ellouze <anis.ellouze@pivasoftware.com>
+#  Author Simon Kers <simon.kers@inteno.se>
 
-# if not version 3.#.#
-if $(echo db -q get hw.board.iopVersion) | grep -vEoq '[3]\.[0-9]\.[0-9]'
+local service="/etc/init.d/power_mgmt"
+local object="InternetGatewayDevice.X_INTENO_SE_PowerManagement."
+
+# Add TR-069 object to cache if there is a service
+if [ -e $service ]
 then
-    prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_PowerManagement."
+	prefix_list="$prefix_list $object"
 fi
 
 get_power_mgmt_value() {
