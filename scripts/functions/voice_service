@@ -4,7 +4,14 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
-prefix_list="$prefix_list InternetGatewayDevice.Services."
+local service="/etc/init.d/asterisk"
+local object="InternetGatewayDevice.Services."
+
+# Add TR-069 object to cache if there is a service
+if [ -e $service ]
+then
+	prefix_list="$prefix_list $object"
+fi
 
 voice_service_save_instance_config() {
 	local i="$1" #line number
