@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
+#   Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 
 prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_IpAccCfg."
 
@@ -37,7 +38,6 @@ get_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	echo $port
 }
 
-
 set_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
 	local index=$1
 	local val=$2
@@ -67,18 +67,193 @@ set_x_bcm_com_ip_acc_list_cfgobj_enable() {
 	delay_service restart "firewall" "0"
 }
 
+get_port_forwarding_value() {
+	local option="$1"
+	local xcfg="$2"
+	$UCI_GET firewall.$xcfg.$option
+}
+
+set_port_forwarding_value() {
+	local option="$1"
+	local xcfg="$2"
+	shift 2
+	local val="$*"
+	$UCI_SET firewall.$xcfg.$option="$val"
+
+	delay_service restart "firewall" "1"
+}
+
+get_port_forwarding_value_default_any() {
+	local option="$1"
+	local xcfg="$2"
+	local val=`$UCI_GET firewall.$xcfg.$option`
+	echo ${val:-any}
+}
+
+set_port_forwarding_value_default_any() {
+	local option="$1"
+	local xcfg="$2"
+	shift 2
+	local val="$*"
+	val2=`echo $val|tr '[A-Z]' '[a-z]'`
+	[ "$val2" = "any" ] && val=""
+	$UCI_SET firewall.$xcfg.$option="$val"
+
+	delay_service restart "firewall" "1"
+}
+
+get_PortForwarding_enable_value() {
+	local option="$1"
+	local xcfg="$2"
+	local val=`$UCI_GET firewall.$xcfg.$option`
+	echo ${val:-1}
+}
+
+set_PortForwarding_enable_value() {
+	local option="$1"
+	local xcfg="$2"
+	local status="$3"
+	status=`echo $status|tr '[A-Z]' '[a-z]'`
+	if [ "$status" = "true" -o "$status" = "1" ]; then
+		$UCI_SET firewall.$xcfg.$option=
+	elif [ "$status" = "false" -o "$status" = "0" ]; then
+		$UCI_SET firewall.$xcfg.$option="0"
+	else
+		return
+	fi
+	delay_service reload "firewall" "1"
+}
+
+set_port_forwarding_src_mac() {
+	local xcfg="$1"
+	shift
+	local val="$*"
+	$UCI_DELETE firewall.$xcfg.src_mac
+	local mac
+	for mac in $val; do
+		$UCI_ADD_LIST firewall.$xcfg.src_mac=$mac
+	done
+	delay_service reload "firewall" "1"
+}
+
+update_port_forwarding_instance() {
+	local xcfg="$1"
+	
+	local inst=`$UCI_GET firewall.$xcfg.port_forwarding_instance`
+	if [ "$inst" != "" ]; then
+		echo "$inst"
+	else
+		local inst=`$UCI_SHOW firewall |sed -n "s/firewall\.@redirect\[[0-9]\+\]\.port_forwarding_instance=//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET firewall.$xcfg.port_forwarding_instance="$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
+get_cache_object_ip_acc_list_cfgobj() {
+	local instance="$1"
+	local index="$2"
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance." "0"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddressAndNetMask" "1" "get_x_inteno_cfgobj_address_netmask $index" "set_x_inteno_cfgobj_address_netmask $index \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccPort" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_port $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_port $index \$val"
+}
+
+get_cache_object_port_forwarding() {
+	local xcfg="$1"
+	local ic="$2"
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic." "0"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.Name" "1" "get_port_forwarding_value name $xcfg" "set_port_forwarding_value name $xcfg \$val" 
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.Enable" "1" "get_PortForwarding_enable_value enabled $xcfg" "set_PortForwarding_enable_value enabled $xcfg \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.EnalbeNatLoopback" "1" "get_PortForwarding_enable_value reflection $xcfg" "set_PortForwarding_enable_value reflection $xcfg \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.Protocol" "1" "get_port_forwarding_value proto $xcfg" "set_port_forwarding_value proto $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.ExternalZone" "1" "get_port_forwarding_value src $xcfg" "set_port_forwarding_value src $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.InternalZone" "1" "get_port_forwarding_value dest $xcfg" "set_port_forwarding_value dest $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.ExternalPort" "1" "get_port_forwarding_value src_dport $xcfg" "set_port_forwarding_value src_dport $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.InternalPort" "1" "get_port_forwarding_value_default_any dest_port $xcfg" "set_port_forwarding_value_default_any dest_port $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.SourcePort" "1" "get_port_forwarding_value_default_any src_port $xcfg" "set_port_forwarding_value_default_any dest_port $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.InternalIpAddress" "1" "get_port_forwarding_value src_ip $xcfg" "set_port_forwarding_value dest_ip $xcfg \$val" 
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.ExternalIpAddress" "1" "get_port_forwarding_value_default_any src_dip $xcfg" "set_port_forwarding_value_default_any src_dip $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.SourceIpAddress" "1" "get_port_forwarding_value_default_any src_ip $xcfg" "set_port_forwarding_value_default_any src_dip $xcfg \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.$ic.SourceMacAddress" "1" "get_port_forwarding_value src_mac $xcfg" "set_port_forwarding_src_mac $xcfg \$val"		
+}
+
 get_cache_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
+	local ic=0
 	local val
-	local instance index intf
+	local instance index
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg." "0"
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj." "0"
+	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding." "1"
 	for instance in `get_firewall_rules`; do
 		index=$(($instance-1))
-		get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance." "0"
-		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddressAndNetMask" "1" "get_x_inteno_cfgobj_address_netmask $index" "set_x_inteno_cfgobj_address_netmask $index \$val"
-		get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccPort" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_port $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_port $index \$val"
+		get_cache_object_ip_acc_list_cfgobj "$instance" "$index"
 	done
+	local cfg cfgs=`$UCI_SHOW  firewall | grep "firewall\.@redirect\[[0-9]\+\]\.target=DNAT" | awk -F'[][]' '{print $2}'`
+	for cfg in $cfgs; do
+		local xcfg=`$UCI_SHOW -X firewall |grep "firewall\.[^=.]\+=redirect" | sed "$((cfg+1))""q;d" | awk -F'[=.]' '{print $2}'`
+		ic=`update_port_forwarding_instance $xcfg`
+		get_cache_object_port_forwarding "$xcfg" "$ic"
+	done
+}
+
+add_ipacccfg_port_forwarding() {
+	local filename="$1"
+	local inst=`$UCI_SHOW firewall |sed -n "s/firewall\.@redirect\[[0-9]\+\]\.port_forwarding_instance=//p" | sort -rn | head -n1`
+	inst=${inst:-0}
+	local xcfg=`$UCI_ADD firewall redirect`
+	$UCI_SET firewall.$xcfg.port_forwarding_instance="$((++inst))"
+	$UCI_SET firewall.$xcfg.enabled=0
+	$UCI_SET firewall.$xcfg.target=DNAT
+	$UCI_SET firewall.$xcfg.proto="tcp udp"
+	$UCI_COMMIT
+	get_cache_object_port_forwarding "$xcfg" "$inst" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$inst"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_ipacccfg_port_forwarding() {
+	local instance="$2"
+	local filename="$3"
+	local xcfg=`$UCI_SHOW firewall |grep "firewall\.@redirect\[[0-9]\+\]\.port_forwarding_instance=$instance$" | cut -d. -f2`
+	if [ "$xcfg" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	
+	$UCI_DELETE firewall.$xcfg
+	$UCI_COMMIT
+	delay_service reload "firewall" "1"
+	
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
+	local filename="$2"
+	local fault_code
+	case $1 in
+		InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.)
+			add_ipacccfg_port_forwarding "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
+}
+
+delete_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
+	local filename="$2"
+	local fault_code instances
+	case $1 in
+		InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.[1-9]*.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.{i}." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_ipacccfg_port_forwarding "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+	esac
+	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 get_dynamic_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
@@ -89,10 +264,4 @@ get_dynamic_linker_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	return $FAULT_CPE_NO_FAULT
 }
 
-add_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
-	return $FAULT_CPE_INVALID_PARAMETER_NAME
-}
 
-delete_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
-	return $FAULT_CPE_INVALID_PARAMETER_NAME
-}
