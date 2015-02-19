@@ -323,6 +323,14 @@ update_markinginterface_list() {
 	$UCI_COMMIT
 }
 
+set_associated_interfaces() {
+	local iface=$1
+	shift
+	local val="$*"
+	$UCI_SET network.$iface.ifname="$val"
+	delay_service reload "network" "1"
+}
+
 get_cache_object_bridge_vlan() {
 	local ib="$1"
 	local vb="$2"
@@ -341,7 +349,7 @@ get_cache_object_bridge() {
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeKey" "0" "echo $ib" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeName" "1" "echo $iface" "set_bridge_bridgename $iface \$val"
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLANID" "1" "get_bridge_vlanid $iface" "set_bridge_vlanid $iface \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "0" "$UCI_GET network.$iface.ifname"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "$UCI_GET network.$iface.ifname" "set_associated_interfaces $iface \$val"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN." "1"
 	update_bridge_all_vlan_config_bybridge $iface $ib
 	local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | cut -f2 -d.`
