@@ -13,61 +13,6 @@ then
 	prefix_list="$prefix_list $object"
 fi
 
-voice_service_save_instance_config() {
-	local i="$1" #line number
-	local j="$2" #line profile
-	local k="$3" #profile number
-	local line_name="$4"
-	local instances=""
-	t=1
-	while [ $t -lt $j ];do
-		if [ "$instances" != "" ];then
-			instances=$instances:"0"
-		else
-			instances="0"
-		fi
-		let t++
-	done
-	if [ "$instances" != "" ];then
-		instances=$instances:"$i"
-	else
-		instances="$i"
-	fi
-	while [ $t -lt $k ];do
-		instances=$instances:"0"
-		let t++
-	done
-	$UCI_SET voice_client.$line_name.instances="$instances"
-	$UCI_COMMIT
-}
-
-load_voice() {
-	local max_profile_number=`$UCI_SHOW voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sort -u|sed 's/sip//g'|sort -n|tail -1`
-	let max_profile_number++
-	for sip in `/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q  show voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sort -u`;do
-		sip_number=`echo $sip|sed 's/sip//g'`
-		let profile_number=$sip_number+1
-		# Line
-		local line_number="0"
-		for line_name in `$UCI_SHOW  voice_client|grep sip_account|grep sip$sip_number|awk -F '.' '{print$2}'`;do
-			let line_number++
-			if [ "`$UCI_GET voice_client.$line_name.instances`" = "" ];then 
-				voice_service_save_instance_config "$line_number" "$profile_number" "$max_profile_number" "$line_name"
-			else
-				local instances=`$UCI_GET voice_client.$line_name.instances`
-				length=`echo $instances|tr -d -c [0-9] |wc -c`
-				new_length=`get_voice_profile_max_instance`
-				for r in `seq $length $new_length`;do
-					instances=$instances:0
-				done
-				$UCI_SET voice_client.$line_name.instances="$instances"
-				$UCI_COMMIT
-				instances=""
-			fi
-		done
-	done	
-}
-
 # under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.
 
 get_voice_profile_enable() {
@@ -395,8 +340,8 @@ get_line_status() {
 	local num="$1"
 	local line_name="$2"
 	local val=""
-	val1="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_registered"
-	val2="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q -P /var/state get asterisk.sip$num.sip_registry_request_sent"
+	val1="$UCI_GET_VARSTATE asterisk.sip$num.sip_registry_registered"
+	val2="$UCI_GET_VARSTATE asterisk.sip$num.sip_registry_request_sent"
 	if [ "$val1" = "yes" ];then
 		val="Up"
 	else
@@ -413,7 +358,7 @@ get_line_call_state() {
 	local num="$1"
 	local line_name="$2"
 	local val=""
-	state=`/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state -q get chan_brcm.$line_name.subchannel_0`
+	state=`$UCI_GET_VARSTATE chan_brcm.$line_name.subchannel_0`
 	if [ "$state" = "ONHOOK" ];then
 		val="Idle"
 	elif [ "$state" = "OFFHOOK" ];then
@@ -459,51 +404,22 @@ set_line_calling_features_callwaiting() {
 	delay_service restart "asterisk" "6"
 }
 
-get_line_x_002207_line_profile() {
-	local num="$1"
-	local line_name="$2"
-	local val=""	
-	let val=$num+1
-	echo $val
-}
-
 set_line_x_002207_line_profile() {
 	local num="$1"
 	local line_name="$2"
 	local val="$3"
-	let sip_id=$val-1
-	if [ "`$UCI_GET voice_client.sip$sip_id`" = "" ];then
+	local sip_id=$((val-1))
+	if [ "`$UCI_GET voice_client.sip$sip_id`" = "" -o "$num" = "$sip_id" ];then
 		return 0
 	fi
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
+
 	delete_line $line_name
-	i=`echo $line_name|sed 's/brcm//g'`
+	local inst=`update_vp_line_instance $line_name $val`
+	local i="${line_name#brcm}"
 	add_line "$i" "$sip_id"
-	instance=`$UCI_GET voice_client.$line_name.instances|cut -f $val -d :`
-	if [ "$instance" = "0" ];then
-		max_line_instance=`$UCI_SHOW voice_client|grep instances|awk -F '=' '{print$2}'|cut -f $val -d:|sort -un|tail -1`
-		let instance=$max_line_instance+1
-		local j=0
-		for k in `$UCI_GET voice_client.$line_name.instances|sed 's/:/ /g'`;do
-			let j++
-			if [ "$j" != "$val" ];then
-				if [ "$instances" = "" ];then
-					instances=$k
-				else
-					instances=$instances:$k
-				fi
-			else
-				if [ "$instances" = "" ];then
-					instances=$instance
-				else
-					instances=$instances:$instance
-				fi
-			fi
-		done
-		$UCI_SET voice_client.$line_name.instances="$instances"
-	fi
-	call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
+	local call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
 	if [ "$call_lines" != "" ];then
 		$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines $i"
 	else
@@ -809,21 +725,41 @@ uci_voice_set() {
 	delay_service restart "asterisk" "6"
 }
 
-get_voice_service_max_profile() {
-	local val=`$UCI_SHOW voice_client|grep -c sip_service_provider`
-	let val=$val-1
-	eval "export -- \"$1=$val\""
-}
-
 get_voice_service_max_line() {
 	local val=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Line id"`
 	let val=$val-1
 	eval "export -- \"$1=$val\""
 }
 
+update_vp_line_instance() {
+	local brcm="$1"
+	local ivp="$2"
+	local inst=`$UCI_SHOW voice_client |sed -n "s/voice_client\.brcm[0-9]\+\.instance=$ivp\.//p" | sort -rn | head -n1`
+	inst=${inst:-0}
+	$UCI_SET voice_client.$brcm.instance="$ivp.$((++inst))"
+	echo $inst
+}
+update_get_vp_line_instance() {
+	local brcm="$1"
+	local ivp="$2"
+	local inst=`$UCI_GET voice_client.$brcm.instance`
+	if [ "$inst" != "" ]; then
+		echo "${inst#*.}"
+	else
+		inst=`$UCI_SHOW voice_client |sed -n "s/voice_client\.brcm[0-9]\+\.instance=$ivp\.//p" | sort -rn | head -n1`
+		inst=${inst:-0}
+		$UCI_SET voice_client.$brcm.instance="$ivp.$((++inst))"
+		$UCI_COMMIT
+		echo $inst
+	fi
+}
+
 get_services_voice_service_generic() {
 	local profile_num="$1"
 	local sip_id="$2"
+	
+	local max_line line_name
+	get_voice_service_max_line max_line
 
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num." "1"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Enable" "1" "get_voice_profile_enable $sip_id" "set_voice_profile_enable $sip_id \$val"
@@ -870,6 +806,16 @@ get_services_voice_service_generic() {
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.RTCP.TxRepeatInterval" "1" "get_voice_service_vp_rtp_rtcp_txrepeatinterval" "set_voice_service_vp_rtp_rtcp_txrepeatinterval \$val" "" "xsd:unsignedInt"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.RTP.SRTP.Enable" "1" "get_voice_service_vp_rtp_srtp_enable $sip_id" "set_voice_service_vp_rtp_srtp_enable $sip_id \$val" "" "xsd:boolean"
+	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line." "1"
+	for line_name in `$UCI_SHOW voice_client | grep "voice_client.brcm[0-9]\+.sip_account=sip$sip_id$" | awk -F'.' '{print$2}'`;do
+		local line_id=${line_name#brcm}
+		if [ $line_id -gt $max_line ];then
+			continue
+		fi
+		local line_num=`update_get_vp_line_instance $line_name $profile_num`
+		get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
+	done
+	
 }
 
 get_services_voice_service_line_generic() {
@@ -886,7 +832,7 @@ get_services_voice_service_line_generic() {
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id $line_name \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallWaitingEnable" "1" "get_line_calling_features_callwaiting $line_name" "set_line_calling_features_callwaiting $line_name \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "get_line_x_002207_line_profile $sip_id $line_name" "set_line_x_002207_line_profile $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "echo $((sip_id+1))" "set_line_x_002207_line_profile $sip_id $line_name \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP." "0"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val" "" "" "" "" "" "1"
@@ -930,10 +876,6 @@ get_services_voice_service_capabilities_codecs_generic() {
 }
 
 get_cache_InternetGatewayDevice_Services() {
-	local max_line
-	# load instance numbers
-	load_voice
-	get_voice_service_max_line max_line
 	get_object_cache_generic "InternetGatewayDevice.Services." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1." "0"
@@ -986,52 +928,33 @@ get_cache_InternetGatewayDevice_Services() {
 	done
 
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile." "1"
-	for sip_id in `$UCI_SHOW voice_client|grep "voice_client.sip"|grep -v sip_service_provider|awk -F '.' '{print $2}'|sed 's/sip//g'|sort -un`;do
+	for csip in `$UCI_SHOW voice_client | grep "voice_client.sip[0-9]\+=sip_service_provider" | awk -F '[.=]' '{print $2}'`;do
+		local sip_id=${csip#sip}
 		let profile_num=$sip_id+1
 		get_services_voice_service_generic "$profile_num" "$sip_id"
-		# Line
-		get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line." "1"
-		for line_name in `$UCI_SHOW voice_client|grep sip_account|grep sip$sip_id$|awk -F'.' '{print$2}'`;do
-			line_id=`echo $line_name|sed 's/brcm//g'`
-			if [ $line_id -gt $max_line ];then
-				continue
-			fi
-			line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$profile_num`
-			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
-		done
 	done
 }
 
 get_voice_profile_max_instance() {
-	local max=`$UCI_SHOW voice_client|grep sip_service_provider|awk -F '.' '{print $2}'|awk -F '=' '{print $1}'|sed 's/sip//g'|sort -n|tail -1`
-	for i in `seq 0 $max`;do
-		if [ "`$UCI_GET voice_client.sip$i`" = "" ];then
-			let j=$i-1
-			echo $j
-			return 0
-		fi
-	done
-	if [ "$max" = "" ];then
-		echo -1
-	else
-		echo $max
-	fi
+	local max=`$UCI_SHOW voice_client|grep "voice_client.sip[0-9]\+=sip_service_provider" | awk -F '[.=]' '{print $2}' | sed 's/sip//g'|sort -n|tail -1`
+	[ -z "$max" ] && echo 0 || echo "$((max+1))"
 }
 
 get_line_max_instance() {
-local line_number=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Line id"`
-for i in `seq 0 $line_number`;do
-	if [ "`$UCI_GET voice_client.brcm$i.sip_account`" = "-" ];then
-		echo $i
-		break
-	fi
-done
+	local line_number=`/usr/sbin/asterisk -rx "brcm show status"|grep -c "Line id"`
+	let line_number--
+	for i in `seq 0 $line_number`;do
+		if [ "`$UCI_GET voice_client.brcm$i.sip_account`" = "-" ];then
+			echo $i
+			break
+		fi
+	done
 }
 
 add_voice_profile() {
 local i="$1"	
 let j=$i+1
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
+$UCI_BATCH << EOF 2>&1 >/dev/null
 	set voice_client.sip$i=sip_service_provider
 	set voice_client.sip$i.name='Account $j'
 	set voice_client.sip$i.enabled='0'
@@ -1054,184 +977,153 @@ EOF
 
 delete_voice_profile() {
 local i="$1"
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q delete voice_client.sip$i
+$UCI_DELETE voice_client.sip$i
 }
 
 add_line() {
 local i="$1"
 local j="$2"
-/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q batch << EOF 2>&1 >/dev/null
+$UCI_BATCH << EOF 2>&1 >/dev/null
 	set voice_client.brcm$i.sip_account="sip$j"
 EOF
 }
 
 delete_line() {
-local line_name="$1"
-local call_lines_exist=""
-sip_id=`$UCI_GET voice_client.$line_name.sip_account|sed 's/sip//g'`
-line_id=`echo $line_name|sed 's/brcm//g'`
-$UCI_SET voice_client.$line_name.sip_account='-'
-call_lines_exist=`$UCI_GET voice_client.sip$sip_id.call_lines|wc -w`
-if [ $call_lines_exist -gt 1 ];then
-	call_lines="`$UCI_GET voice_client.sip$sip_id.call_lines|sed "s/ *$line_id */ /g"`"
-else
-	call_lines=""
-fi
-$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines"
-}
-
-get_line_instances_list() {
-local i=$1
-local j=$1
-local instances
-let j--
-for line in `$UCI_SHOW voice_client|grep sip_account|awk -F '.' '{print $2}'`;do
-	if [ "`$UCI_GET voice_client.$line.sip_account`" = "sip$j" ];then
-		local instance=`$UCI_GET voice_client.$line.instances|cut -f $i -d:`
-		if [ "$instance" != "0" ];then
-			instances="$instances $instance"
-		fi
-	fi
-done
-echo $instances
+	local line_name="$1"
+	local call_lines_exist=""
+	local sip_id=`$UCI_GET voice_client.$line_name.sip_account|sed 's/sip//g'`
+	local line_id=${line_name#brcm}
+	$UCI_SET voice_client.$line_name.sip_account='-'
+	local call_lines_exist=" `$UCI_GET voice_client.sip$sip_id.call_lines` "
+	call_lines_exist=${call_lines_exist// $line_id / }
+	call_lines_exist=${call_lines_exist# }; call_lines_exist=${call_lines_exist% }
+	$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines_exist"
 }
 
 delete_associated_line_instances() {
 local i=$1
-for line in `$UCI_SHOW voice_client|grep sip_account|awk -F '.' '{print $2}'`;do
-	if [ "`$UCI_GET voice_client.$line.sip_account`" = "sip$i" ];then
-		$UCI_SET voice_client.$line.sip_account="-"
-	fi
+for line in `$UCI_SHOW voice_client|grep "voice_client.brcm[0-9]\+.sip_account=sip$i$" | awk -F '.' '{print $2}'`; do
+	$UCI_SET voice_client.$line.sip_account="-"
+	$UCI_SET voice_client.$line.instance=
 done
+}
+
+add_line_object() {
+	local num="$1"
+	local filename="$2"
+	
+	local sip_id=$((num-1))
+	local exist=`$UCI_GET voice_client.sip$sip_id`
+	if [ "$exist" = "" ];then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME
+	fi
+	local i=`get_line_max_instance`
+	if [ "$i" = "" ]; then
+		return $FAULT_CPE_RESOURCES_EXCEEDED
+	fi
+	add_line "$i" "$sip_id"
+	local instance=`update_vp_line_instance brcm$i $num`
+	call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
+	if [ "$call_lines" != "" ]; then
+		$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines $i"
+	else
+		$UCI_SET voice_client.sip$sip_id.call_lines="$i"
+	fi
+	freecwmp_set_parameter_notification "$1$instance." "0"
+	$UCI_COMMIT
+	local profile_num=$num
+	get_services_voice_service_line_generic "$profile_num" "$sip_id" "$instance"  >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$instance"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
+}
+
+add_profile_object() {
+	local filename="$1"
+	local sip_id=`get_voice_profile_max_instance`
+	add_voice_profile "$sip_id"
+	local instance=$((sip_id+1))
+	$UCI_COMMIT
+	freecwmp_set_parameter_notification "$1$instance." "0"
+	get_services_voice_service_generic "$instance" "$sip_id" >> $cache_path/$filename
+	freecwmp_output "" "" "" "" "" "" "1" "$instance"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_line_object() {
+	local instances="$2"
+	local filename="$3"
+	
+	instances="${instances// /.}"
+	local brcm=`$UCI_SHOW voice_client | grep "voice_client\.brcm[0-9]\+\.instance=$instances$" | awk -F'.' '{print $2}'`
+	[ -z "$brcm" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	$UCI_SET voice_client.$brcm.instance=
+	delete_line $brcm
+	$UCI_COMMIT
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_profile_object() {
+	local instances="$2"
+	local filename="$3"
+	
+	local sip_id=$((instances-1))
+	[ "`$UCI_GET voice_client.sip$sip_id`" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	delete_voice_profile $sip_id
+	delete_associated_line_instances $sip_id
+	$UCI_COMMIT
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1/d" $cache_path/$filename
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
 }
 
 add_object_InternetGatewayDevice_Services() {
 	local filename="$2"
+	local instances rc fault_code
 	case $1 in
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.Line.)
-			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line." "rc" "num"
-			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
-			let sip_id=$num-1
-			local exist=`$UCI_GET voice_client.sip$sip_id`
-			if [ "$exist" = "" ];then
-				return $FAULT_CPE_INVALID_PARAMETER_NAME
-			fi
-			local i=`get_line_max_instance`
-			if [ "$i" = "" ];then
-				return $FAULT_CPE_RESOURCES_EXCEEDED
-			fi
-			add_line "$i" "$sip_id"
-			local instance=`$UCI_GET voice_client.brcm$i.instances|cut -f $num -d :`
-			if [ "$instance" = "0" ];then
-				max_line_instance=`$UCI_SHOW voice_client|grep instances|awk -F '=' '{print$2}'|cut -f $num -d:|sort -un|tail -1`
-				let instance=$max_line_instance+1
-				local j=0
-				for k in `$UCI_GET voice_client.brcm$i.instances|sed 's/:/ /g'`;do
-					let j++
-					if [ "$j" != "$num" ];then
-						if [ "$instances" = "" ];then
-							instances=$k
-						else
-							instances=$instances:$k
-						fi
-					else
-						if [ "$instances" = "" ];then
-							instances=$instance
-						else
-							instances=$instances:$instance
-						fi
-					fi
-				done
-				$UCI_SET voice_client.brcm$i.instances="$instances"
-			fi
-			call_lines=`$UCI_GET voice_client.sip$sip_id.call_lines`
-			if [ "$call_lines" != "" ];then
-				$UCI_SET voice_client.sip$sip_id.call_lines="$call_lines $i"
-			else
-				$UCI_SET voice_client.sip$sip_id.call_lines="$i"
-			fi
-			freecwmp_set_parameter_notification "$1$instance." "0"
-			$UCI_COMMIT
-			let profile_num=$sip_id+1
-			get_services_voice_service_line_generic "$profile_num" "$sip_id" "$instance"  >> $cache_path/$filename
-			freecwmp_output "" "" "" "" "" "" "1" "$instance"
-			delay_service restart "voice_client" "5"
-			delay_service restart "asterisk" "6"
-			return $FAULT_CPE_NO_FAULT
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line." "rc" "instances"
+			[ "$rc" != "0" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+			add_line_object "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
 		;;
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.)
-			local instance=`get_voice_profile_max_instance`
-			let instance++
-			add_voice_profile "$instance"
-			$UCI_COMMIT
-			let instance++
-			freecwmp_output "" "" "" "" "" "" "1" "$instance"
-			freecwmp_set_parameter_notification "$1$instance." "0"
-			get_services_voice_service_generic "$instance" "$sip_id" >> $cache_path/$filename
-			delay_service restart "voice_client" "5"
-			delay_service restart "asterisk" "6"
-			return $FAULT_CPE_NO_FAULT
-		;;
-		InternetGatewayDevice.Services.VoiceService.)
-			return $FAULT_CPE_RESOURCES_EXCEEDED
+			add_profile_object "$filename"
+			fault_code="$?"
+			return $fault_code
 		;;
 	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME
 }
 
 delete_object_InternetGatewayDevice_Services() {
-	local param="$1"
 	local filename="$2"
-	local profile_object=${param%%Line.*}
-	freecwmp_parse_formated_parameter "$profile_object" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}." "rc" "num"
-	if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
-	let sip_id=$num-1
-	exist=`$UCI_GET voice_client.sip$sip_id`
-	if [ "$exist" = "" ];then
-		return $FAULT_CPE_INVALID_PARAMETER_NAME
-	fi
-	line_instances_list=`get_line_instances_list $num`
+	local rc fault_code instances
+	
 	case $1 in
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.Line.[1-9]*.)
-		local num1=$num
-		freecwmp_parse_formated_parameter "${param#$profile_object}" "Line.{i}." "rc" "num"
-		local num2=$num
-		if [ $rc -eq 0 ];then
-			local l_inst_found=0
-			for line_instance in $line_instances_list;do
-				if [ "$line_instance" = "$num2" ];then
-					l_inst_found=1
-					break
-				fi
-			done
-			if [ "$l_inst_found" = "0" ];then
-				return $FAULT_CPE_INVALID_PARAMETER_NAME
-			fi
-			for line in `$UCI_SHOW voice_client|grep brcm|grep instances`;do
-				if [ "`echo $line|awk -F '=' '{print $2}'|cut -d: -f $num1`" = "$num2" ];then
-					line_name=`echo $line|awk -F '.' '{print $2}'`
-					break
-				fi
-			done 
-			delete_line $line_name
-			$UCI_COMMIT
-			freecwmp_output "" "" "" "" "" "" "1"
-			sed -i "/$1/d" $cache_path/$filename
-			delay_service restart "voice_client" "5"
-			delay_service restart "asterisk" "6"
-			return $FAULT_CPE_NO_FAULT
-		fi
-		return $FAULT_CPE_INVALID_PARAMETER_NAME
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line.{i}." "rc" "instances"
+			[ "$rc" != "0" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+			delete_line_object "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
 		;;
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.)
-		delete_voice_profile $sip_id
-		delete_associated_line_instances $sip_id
-		$UCI_COMMIT
-		freecwmp_output "" "" "" "" "" "" "1"
-		sed -i "/$1/d" $cache_path/$filename
-		delay_service restart "voice_client" "5"
-		delay_service restart "asterisk" "6"
-		return $FAULT_CPE_NO_FAULT
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}." "rc" "instances"
+			[ "$rc" != "0" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+			delete_profile_object "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
 		;;
 	esac
 	return $FAULT_CPE_INVALID_PARAMETER_NAME

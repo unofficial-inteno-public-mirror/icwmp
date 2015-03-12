@@ -233,7 +233,7 @@ update_bridge_vlan_instance() {
 	local ib="$2"
 	local inst=`$UCI_GET layer2_interface_vlan.$bvlan.instance`
 	if [ "$inst" != "" ]; then
-		echo "${inst#.}"
+		echo "${inst#*.}"
 	else
 		inst=`$UCI_SHOW layer2_interface_vlan |sed -n "s/layer2_interface_vlan\.[^.]\+\.instance=$ib\.//p" | sort -rn | head -n1`
 		inst=${inst:-0}
