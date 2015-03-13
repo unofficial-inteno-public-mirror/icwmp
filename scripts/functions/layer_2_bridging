@@ -1,6 +1,7 @@
 #!/bin/sh
-# Copyright (C) 2013 Inteno Broadband Technology AB
+# Copyright (C) 2013-2015 Inteno Broadband Technology AB
 # Author Feten Besbes <feten.besbes@pivasoftware.com>
+# Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
 prefix_list="$prefix_list InternetGatewayDevice.Layer2Bridging."
 
@@ -463,6 +464,25 @@ delete_layer2bridging_bridge() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_layer2bridging_bridge_all() {
+	local filename="$3"
+	local bridge bridge_list=`$UCI_SHOW network |grep "network\.[^.]\+\.bridge_instance=" | cut -d. -f2`
+	for bridge in $bridge_list; do
+		$UCI_SET network.$bridge.type=
+		$UCI_SET network.$bridge.bridge_instance=
+	done
+	local ivb ivbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=" | awk -F '[][]' '{print $2}' | sort -rn`
+	for ivb in $ivbs; do
+		$UCI_DELETE layer2_interface_vlan.@vlan_bridge[$ivb]
+	done
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_layer2bridging_marking() {
 	local filename="$1"
 	local inst=`$UCI_SHOW network |sed -n "s/network\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
@@ -478,7 +498,6 @@ add_layer2bridging_marking() {
 delete_layer2bridging_marking() {
 	local instance="$2"
 	local filename="$3"
-	$UCI_SET network.$mb.instance="$((++inst))"
 	local tmp=`$UCI_SHOW network |grep "network\.@marking-bridge\[[0-9]\+\]\.instance=$instance" | cut -d. -f2`
 	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 	local bkey=`$UCI_GET network.$tmp.bridgekey`
@@ -499,9 +518,9 @@ delete_layer2bridging_marking() {
 				local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
 				[ "$bridge" = "" ] && return
 				local bifname="`$UCI_GET network.$bridge.ifname` "
-				bifname=${bifname//$baseifname.$vid[^0-9]/}
-				bifname=${bifname//  / }; bifname=${bifname//  / }
-				$UCI_SET network.$bridge.ifname="${bifname% }"
+				bifname=${bifname// $baseifname.$vid / }
+				bifname=${bifname# }; bifname=${bifname% };
+				$UCI_SET network.$bridge.ifname="$bifname"
 			done
 		fi
 	esac
@@ -509,6 +528,41 @@ delete_layer2bridging_marking() {
 	
 	freecwmp_output "" "" "" "" "" "" "1"
 	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_layer2bridging_marking_all() {
+	local filename="$3"
+	local mb mbs=`$UCI_SHOW network |grep "network\.@marking-bridge\[[0-9]\+\]\.instance" | awk -F '[][]' '{print $2}' | sort -rn`
+	for mb in $mbs; do
+		local bkey=`$UCI_GET network.@marking-bridge[$mb].bridgekey`
+		local baseifname=`$UCI_GET network.@marking-bridge[$mb].baseifname`
+		$UCI_DELETE network.@marking-bridge[$mb]
+		case $baseifname in
+			eth0|atm*|ptm*)
+			local found=0
+			local cmb cmbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
+			for cmb in $cmbs; do
+				[ "`$UCI_GET network.$cmb.bridgekey`" = "$bkey" ] && { found=1; break; }
+			done
+			if [ "$found" = "0" ]; then
+				local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
+				for vb in $vbs; do
+					local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+					[ "$vid" = "" ] && continue
+					local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
+					[ "$bridge" = "" ] && return
+					local bifname=" `$UCI_GET network.$bridge.ifname` "
+					bifname=${bifname// $baseifname.$vid / }
+					bifname=${bifname# }; bifname=${bifname% };
+					$UCI_SET network.$bridge.ifname="$bifname"
+				done
+			fi
+		esac
+	done
+	$UCI_COMMIT
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -542,15 +596,37 @@ delete_layer2bridging_bridge_vlan() {
 	
 	local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
 	local bifname="`$UCI_GET network.$bridge.ifname` "
-	bifname=${bifname//[aep]t[mh][0-9].$vid[^0-9]/}
-	bifname=${bifname//  / }; bifname=${bifname//  / }
-	$UCI_SET network.$bridge.ifname="${bifname% }"
+	bifname=${bifname// [aep]t[mh][0-9].$vid / }
+	bifname=${bifname# }; bifname=${bifname% }
+	$UCI_SET network.$bridge.ifname="$bifname"
 	$UCI_DELETE layer2_interface_vlan.$vb
 	$UCI_COMMIT
 
 	delay_service reload "network" "1"
 	freecwmp_output "" "" "" "" "" "" "1"
 	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_layer2bridging_bridge_vlan_all() {
+	local instances="$2"
+	local filename="$3"
+	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=${instances}" | cut -f2 -d.`
+	[ "$bridge" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	local ivb ivbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.instance=$instances\." | awk -F '[][]' '{print $2}' | sort -rn`
+	for ivb in $ivbs; do
+		local vid=`$UCI_GET layer2_interface_vlan.@vlan_bridge[$ivb].vid`
+		local bifname=" `$UCI_GET network.$bridge.ifname` "
+		bifname=${bifname// [aep]t[mh][0-9].$vid / }
+		bifname=${bifname# }; bifname=${bifname% }
+		$UCI_SET network.$bridge.ifname="$bifname"
+		$UCI_DELETE layer2_interface_vlan.@vlan_bridge[$ivb]
+	done
+	$UCI_COMMIT
+
+	delay_service reload "network" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -592,6 +668,13 @@ delete_object_InternetGatewayDevice_Layer2Bridging() {
 			fault_code="$?"
 			return $fault_code
 		;;
+		InternetGatewayDevice.Layer2Bridging.Bridge.[1-9]*.VLAN.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Layer2Bridging.Bridge.{i}.VLAN." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_layer2bridging_bridge_vlan_all "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
 		InternetGatewayDevice.Layer2Bridging.Bridge.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Layer2Bridging.Bridge.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
@@ -599,10 +682,20 @@ delete_object_InternetGatewayDevice_Layer2Bridging() {
 			fault_code="$?"
 			return $fault_code
 		;;
+		InternetGatewayDevice.Layer2Bridging.Bridge.)
+			delete_layer2bridging_bridge_all "$1" "" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
 		InternetGatewayDevice.Layer2Bridging.Marking.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Layer2Bridging.Marking.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 			delete_layer2bridging_marking "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.Layer2Bridging.Marking.)
+			delete_layer2bridging_marking_all "$1" "" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;

@@ -1,7 +1,8 @@
 #!/bin/sh
 # Copyright (C) 2011-2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2013 Inteno Broadband Technology AB
+# Copyright (C) 2013-2015 Inteno Broadband Technology AB
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
+#  Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
 prefix_list="$prefix_list InternetGatewayDevice.WANDevice."
 
@@ -963,6 +964,32 @@ delete_wan_wanconnectiondevice() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_wan_wanconnectiondevice_all() {
+	local instances="$2"
+	local filename="$3"
+	local idev fdev iwan fwan layer2 fconp
+
+	idev=${instances%% *}
+	iwan=${instances##* }
+	if [ "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	get_wan_device_by_instance $idev fdev layer2
+	local wcd wcds=`$UCI_SHOW -X layer2_interface_$layer2 | grep "layer2_interface_$layer2\.[^.]\+\.baseifname=$fdev" | cut -d. -f2`
+	for wcd in $wcds; do
+		$UCI_DELETE layer2_interface_$layer2.$wcd
+	done
+	$UCI_SHOW network | grep "network\.[^.]\+\.ifname=.*$fdev" | cut -f2 -d. | while read fconp; do
+		$UCI_DELETE network.$fconp
+	done
+	$UCI_COMMIT
+	delay_service restart "layer2_interface_$layer2" "1"
+	delay_service restart "layer2_interface" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 delete_wan_wanprotocolconnection() {
 	local instances="$2"
 	local iproto="$3"
@@ -989,6 +1016,35 @@ delete_wan_wanprotocolconnection() {
 	delay_service reload "network" "1"
 	freecwmp_output "" "" "" "" "" "" "1"
 	sed -i "/$1/d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_wan_wanprotocolconnection_all() {
+	local instances="$2"
+	local iproto="$3"
+	local filename="$4"
+	local idev fdev iwan fwan layer2
+
+	idev=${instances%% *}
+	instances=${instances#* }
+	iwan=${instances%% *}
+		
+	if [ "$idev" != "$WAN_INST_ATM" -a "$idev" != "$WAN_INST_PTM" -a "$idev" != "$WAN_INST_ETH" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	get_wan_device_by_instance $idev fdev layer2
+	fwan="$fdev$((iwan-1))"
+	local tmp=`$UCI_SHOW layer2_interface_$layer2 | grep "layer2_interface_$layer2\.[^.]\+\.baseifname=$fwan"`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	local iconp iconps=`$UCI_SHOW network | grep "network\.[^.]\+\.wan_instance=$idev.$iwan.$iproto" | cut -f2 -d.`
+	if [ "$iconps" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	for iconp in $iconps; do
+		$UCI_DELETE network.$iconp
+	done
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
 	return $FAULT_CPE_NO_FAULT
 }
 
@@ -1037,6 +1093,14 @@ delete_object_InternetGatewayDevice_WANDevice() {
 			return $fault_code
 			
 		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANIPConnection.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanprotocolconnection_all "$1" "$instances" "$WAN_IP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+			
+		;;
 		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
@@ -1044,10 +1108,24 @@ delete_object_InternetGatewayDevice_WANDevice() {
 			fault_code="$?"
 			return $fault_code
 		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.WANPPPConnection.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanprotocolconnection_all "$1" "$instances" "$WAN_PPP_CONNECTION" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
 		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 			delete_wan_wanconnectiondevice "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.WANDevice.[1-9].WANConnectionDevice.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.WANDevice.{i}.WANConnectionDevice." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_wan_wanconnectiondevice_all "$1" "$instances" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;

@@ -1,9 +1,10 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2013-2014 Inteno Broadband Technology AB
+# Copyright (C) 2013-2015 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Feten Besbes <feten.besbes@pivasoftware.com>
+#  Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
 prefix_list="$prefix_list InternetGatewayDevice.LANDevice."
 
@@ -1732,6 +1733,32 @@ delete_landevice_dhcpstaticaddress() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_landevice_dhcpstaticaddress_all() {
+	local instances="$2"
+	local filename="$3"
+	local interface tmp found=""
+	for interface in `get_lan_device_interface`; do
+		tmp=${interface%%;*}
+		idev=${tmp%%:*}
+		[ "$idev" != "$instances" ] && continue
+		found=1
+		break
+	done
+	if [ "$found" != "1" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	local uci_num uci_nums=`$UCI_SHOW dhcp | grep "dhcp\.@host\[[0-9]\+\]\.instance=$instances\." | awk -F '[][]' '{print $2}' | sort -rn`
+	for uci_num in $uci_nums; do
+		$UCI_DELETE dhcp.@host[$uci_num]
+	done
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	delay_service restart "dnsmasq" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_landevice_wlanconfiguration() {
 	local inst="$1"
 	local filename="$2"
@@ -1783,6 +1810,32 @@ delete_landevice_wlanconfiguration() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_landevice_wlanconfiguration_all() {
+	local instances="$2"
+	local filename="$3"
+	local interface tmp found=""
+	for interface in `get_lan_device_interface`; do
+		tmp=${interface%%;*}
+		idev=${tmp%%:*}
+		[ "$idev" != "$instances" ] && continue
+		found=1
+		break
+	done
+	if [ "$found" != "1" ]; then
+		return $FAULT_CPE_INVALID_PARAMETER_NAME;
+	fi
+	
+	local wiface wifaces=`$UCI_SHOW wireless | grep "wireless\.@wifi-iface\[[0-9]\+\]\.instance=$instances\." | awk -F '[][]' '{print $2}' | sort -rn`
+	for wiface in $wifaces; do
+		$UCI_DELETE wireless.@wifi-iface[$wiface]
+	done
+	$UCI_COMMIT
+	delay_service reload "network" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_object_InternetGatewayDevice_LANDevice() {
 	local filename="$2"
 	local fault_code idev
@@ -1820,10 +1873,24 @@ delete_object_InternetGatewayDevice_LANDevice() {
 			fault_code="$?"
 			return $fault_code
 		;;
+		InternetGatewayDevice.LANDevice.[1-9]*.LANHostConfigManagement.DHCPStaticAddress.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.LANHostConfigManagement.DHCPStaticAddress." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_landevice_dhcpstaticaddress_all "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
 		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 			delete_landevice_wlanconfiguration "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.LANDevice.[1-9]*.WLANConfiguration.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.LANDevice.{i}.WLANConfiguration." "rc" "instances"
+			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+			delete_landevice_wlanconfiguration_all "$1" "$instances" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;

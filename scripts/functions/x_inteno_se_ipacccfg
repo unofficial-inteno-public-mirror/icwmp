@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (C) 2013 Inteno Broadband Technology AB
+# Copyright (C) 2013-2015 Inteno Broadband Technology AB
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 #   Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 
@@ -228,6 +228,19 @@ delete_ipacccfg_port_forwarding() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_ipacccfg_port_forwarding_all() {
+	local filename="$3"
+	local uci_num uci_nums=`$UCI_SHOW firewall |grep "firewall\.@redirect\[[0-9]\+\]\.port_forwarding_instance" | awk -F'[][]' '{print $2}' | sort -rn`
+	for uci_num in $uci_nums; do
+		$UCI_DELETE firewall.@redirect[$uci_num]
+	done 
+	$UCI_COMMIT
+	delay_service reload "firewall" "1"
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	return $FAULT_CPE_NO_FAULT
+}
+
 add_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	local filename="$2"
 	local fault_code
@@ -249,6 +262,11 @@ delete_object_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.{i}." "rc" "instances"
 			if [ "$rc" != "0" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
 			delete_ipacccfg_port_forwarding "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.)
+			delete_ipacccfg_port_forwarding_all "$1" "" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;

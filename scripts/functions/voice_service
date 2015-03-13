@@ -1,8 +1,9 @@
 #!/bin/sh
 # Copyright (C) 2012 Luka Perkov <freecwmp@lukaperkov.net>
-# Copyright (C) 2013-2014 Inteno Broadband Technology AB
+# Copyright (C) 2013-2015 Inteno Broadband Technology AB
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
+#  Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
 local service="/etc/init.d/asterisk"
 local object="InternetGatewayDevice.Services."
@@ -1070,6 +1071,25 @@ delete_line_object() {
 	return $FAULT_CPE_NO_FAULT
 }
 
+delete_line_object_all() {
+	local instances="$2"
+	local filename="$3"
+  local brcm
+	
+	local sip_id=$((instances-1))
+	[ "`$UCI_GET voice_client.sip$sip_id`" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+	for brcm in `$UCI_SHOW voice_client|grep "voice_client.brcm[0-9]\+.sip_account=sip$sip_id$"| awk -F'[.]' '{print $2}'`;do
+		$UCI_SET voice_client.$brcm.instance=
+		delete_line $brcm
+	done 
+	$UCI_COMMIT
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
+}
+
 delete_profile_object() {
 	local instances="$2"
 	local filename="$3"
@@ -1081,6 +1101,23 @@ delete_profile_object() {
 	$UCI_COMMIT
 	freecwmp_output "" "" "" "" "" "" "1"
 	sed -i "/$1/d" $cache_path/$filename
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+	return $FAULT_CPE_NO_FAULT
+}
+
+delete_profile_object_all() {
+	local filename="$2"
+  local sip_id
+	
+	for sip_id in `$UCI_SHOW  voice_client |grep "voice_client.sip[0-9]\+=sip_service_provider" | awk -F'[=.]' '{print $2}'`;do
+		sip_id=${sip_id#sip}
+		delete_voice_profile $sip_id
+		delete_associated_line_instances $sip_id
+	done
+	$UCI_COMMIT
+	freecwmp_output "" "" "" "" "" "" "1"
+	sed -i "/$1[0-9]\+\./d" $cache_path/$filename
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	return $FAULT_CPE_NO_FAULT
@@ -1118,10 +1155,22 @@ delete_object_InternetGatewayDevice_Services() {
 			fault_code="$?"
 			return $fault_code
 		;;
+		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.Line.)
+			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line." "rc" "instances"
+			[ "$rc" != "0" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
+			delete_line_object_all "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
 		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.[1-9]*.)
 			freecwmp_parse_formated_parameter "$1" "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}." "rc" "instances"
 			[ "$rc" != "0" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
 			delete_profile_object "$1" "$instances" "$filename"
+			fault_code="$?"
+			return $fault_code
+		;;
+		InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.)
+			delete_profile_object_all "$1" "$filename"
 			fault_code="$?"
 			return $fault_code
 		;;
