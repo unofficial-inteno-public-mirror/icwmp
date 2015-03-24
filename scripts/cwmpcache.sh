@@ -44,6 +44,7 @@ cwmp_netcache() {
 		[ $tm -ge 10 ] && break
 		tm=$((tm+1))
 	done
+	cwmp_cache "LANInterfaces"
 	cwmp_cache "LANDevice"
 	cwmp_cache "WANDevice"
 	cwmp_cache "Layer2Bridging"
