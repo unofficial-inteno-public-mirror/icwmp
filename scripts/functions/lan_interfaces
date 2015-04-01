@@ -18,11 +18,13 @@ get_cache_InternetGatewayDevice_LANInterfaces() {
 	get_object_cache_generic "InternetGatewayDevice.LANInterfaces." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceNumberOfEntries" "0" "get_lan_ethernet_interface_number" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANWLANConfigurationNumberOfEntries" "0" "get_lan_wlan_configuration_number" "" "" "xsd:unsignedInt"
+	get_object_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceConfig." "0"
 	for ei in `db get hw.board.ethernetLanPorts`; do
 		local li=${ei#eth}
 		get_object_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceConfig.$li." "0"
 		get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceConfig.$li.X_INTENO_COM_EthName" "0" "echo $ei"
 	done
+	get_object_cache_generic "InternetGatewayDevice.LANInterfaces.WLANConfiguration." "0"
 	local nwi=`get_lan_wlan_configuration_number`
 	while [ $((wi++)) -lt $nwi ]; do
 		get_object_cache_generic "InternetGatewayDevice.LANInterfaces.WLANConfiguration.$wi." "0"
