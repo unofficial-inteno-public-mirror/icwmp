@@ -13,27 +13,27 @@ set_bridge_bridgename() {
 get_bridge_vlanid() {
 	local bridge="$1"
 	local bkey=`$UCI_GET network.$bridge.bridge_instance`
-	local inst=`$UCI_SHOW layer2_interface_vlan |sed -n "s/layer2_interface_vlan\.[^.]\+\.instance=$bkey\.//p" | sort -n | head -n1`
+	local inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.[^.]\+\.instance=$bkey\.//p" | sort -n | head -n1`
 	[ "$inst" = "" ] && return
-	local vb=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.instance=$bkey\.$inst" | cut -f2 -d.`
-	$UCI_GET layer2_interface_vlan.$vb.vid
+	local vb=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.instance=$bkey\.$inst" | cut -f2 -d.`
+	$UCI_GET dmmap.$vb.vid
 }
 
 set_bridge_vlanid() {
 	local bridge="$1"
 	local val="$2"
 	local bkey=`$UCI_GET network.$bridge.bridge_instance`
-	local inst=`$UCI_SHOW layer2_interface_vlan |sed -n "s/layer2_interface_vlan\.[^.]\+\.instance=$bkey\.//p" | sort -n | head -n1`
+	local inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.[^.]\+\.instance=$bkey\.//p" | sort -n | head -n1`
 	if [ "$inst" = "" ]; then
-		local vb=`$UCI_ADD layer2_interface_vlan vlan_bridge`
+		local vb=`$UCI_ADD dmmap vlan_bridge`
 		local iv=`update_bridge_vlan_instance $vb $bkey`
-		$UCI_SET layer2_interface_vlan.$vb.bridgekey=$bkey
-		$UCI_SET layer2_interface_vlan.$vb.name="vlan_$bkey.$iv"
-		$UCI_SET layer2_interface_vlan.$vb.enable=0
-		$UCI_SET layer2_interface_vlan.$vb.vid=$val
+		$UCI_SET dmmap.$vb.bridgekey=$bkey
+		$UCI_SET dmmap.$vb.name="vlan_$bkey.$iv"
+		$UCI_SET dmmap.$vb.enable=0
+		$UCI_SET dmmap.$vb.vid=$val
 		delay_service reload "network" "1"
 	else
-		local vb=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.instance=$bkey\.$inst" | cut -f2 -d.`
+		local vb=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.instance=$bkey\.$inst" | cut -f2 -d.`
 		set_bridgevlan_vid "$vb" "$val"
 	fi
 }
@@ -42,19 +42,19 @@ set_bridgevlan_enable() {
 	local vb="$1"
 	local val="$2"
 
-	local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+	local vid=`$UCI_GET dmmap.$vb.vid`
 	vid=`printf '%d' $vid`
 	
-	local bkey=`$UCI_GET layer2_interface_vlan.$vb.bridgekey`
-	local cval=`$UCI_GET layer2_interface_vlan.$vb.enable`
+	local bkey=`$UCI_GET dmmap.$vb.bridgekey`
+	local cval=`$UCI_GET dmmap.$vb.enable`
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ] && [ "$cval" != "1" ]; then
-		$UCI_SET layer2_interface_vlan.$vb.enable=1
+		$UCI_SET dmmap.$vb.enable=1
 		[ $vid -le 0 ] && return
 		update_add_vlan_interfaces "$bkey" "$vid"
 		update_add_vlan_to_bridge_interface "$bkey" "$vb"
 	elif [ "$val" = "false" -o "$val" = "0" ] && [ "$cval" != "0" ]; then
-		$UCI_SET layer2_interface_vlan.$vb.enable=0
+		$UCI_SET dmmap.$vb.enable=0
 		[ $vid -le 0 ] && return
 		update_remove_vlan_from_bridge_interface "$bkey" "$vb"
 	else
@@ -67,19 +67,19 @@ set_bridgevlan_enable() {
 set_bridgevlan_vid() {
 	local vb="$1"
 	local val="$2"
-	local cval=`$UCI_GET layer2_interface_vlan.$vb.vid`
+	local cval=`$UCI_GET dmmap.$vb.vid`
 	val=`printf '%d' $val`
 	[ "$val" = "$cval" -o $val -le 0 ] && return
-	local enable=`$UCI_GET layer2_interface_vlan.$vb.enable`
+	local enable=`$UCI_GET dmmap.$vb.enable`
 	if [ "$enable" = "1" ]; then
-		local bkey=`$UCI_GET layer2_interface_vlan.$vb.bridgekey`
+		local bkey=`$UCI_GET dmmap.$vb.bridgekey`
 		update_remove_vlan_from_bridge_interface "$bkey" "$vb"
-		$UCI_SET layer2_interface_vlan.$vb.vid=$val
+		$UCI_SET dmmap.$vb.vid=$val
 		update_add_vlan_interfaces "$bkey" "$val"
 		update_add_vlan_to_bridge_interface "$bkey" "$vb"
 		delay_service reload "network" "1"
 	else
-		$UCI_SET layer2_interface_vlan.$vb.vid=$val
+		$UCI_SET dmmap.$vb.vid=$val
 	fi
 }
 
@@ -88,9 +88,9 @@ set_marking_bridgekey() {
 	local val="$2"
 	[ "$val" = "" ] && return
 	local bkey
-	local obkey=`$UCI_GET network.$mb.bridgekey`
-	$UCI_SET network.$mb.bridgekey=$val
-	local baseifname=`$UCI_GET network.$mb.baseifname`
+	local obkey=`$UCI_GET dmmap.$mb.bridgekey`
+	$UCI_SET dmmap.$mb.bridgekey=$val
+	local baseifname=`$UCI_GET dmmap.$mb.baseifname`
 	case $baseifname in
 		cfg*)
 			bkey=$val
@@ -120,14 +120,14 @@ set_marking_bridgekey() {
 		eth0|atm*|ptm*)
 			bkey=$obkey
 			local found=0
-			local cmb cmbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
+			local cmb cmbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
 			for cmb in $cmbs; do
-				[ "`$UCI_GET network.$cmb.bridgekey`" = "$bkey" ] && { found=1; break; }
+				[ "`$UCI_GET dmmap.$cmb.bridgekey`" = "$bkey" ] && { found=1; break; }
 			done
 			if [ "$found" = "0" ]; then
-				local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
+				local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
 				for vb in $vbs; do
-					local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+					local vid=`$UCI_GET dmmap.$vb.vid`
 					[ "$vid" = "" ] && continue
 					local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
 					[ "$bridge" = "" ] && return
@@ -138,11 +138,11 @@ set_marking_bridgekey() {
 				done
 			fi
 			bkey=$val
-			local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
+			local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
 			for vb in $vbs; do
-				local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+				local vid=`$UCI_GET dmmap.$vb.vid`
 				[ "$vid" = "" ] && continue
-				local enable=`$UCI_GET layer2_interface_vlan.$vb.enable `
+				local enable=`$UCI_GET dmmap.$vb.enable `
 				[ "$enable" = "" -o "$enable" = "0" ] && continue
 				update_remove_vlan_from_bridge_interface $bkey $vb
 				update_add_vlan_interfaces "$bkey" "$vid"
@@ -156,47 +156,50 @@ set_marking_bridgekey() {
 set_marking_interfacekey() {
 	local mb="$1"
 	local val="$2"
-  [ "$val" = "" ] && return
-	local ab=`$UCI_SHOW network | grep "network\.@available-bridge\[[0-9]\+\]\.key=$val" | cut -f2 -d'.' | head -n1`
+	[ "$val" = "" ] && return
+	local ab=`$UCI_SHOW dmmap | grep "dmmap\.@available-bridge\[[0-9]\+\]\.key=$val" | cut -f2 -d'.' | head -n1`
 	[ "$ab" = "" ] && return
-	local bifname=`$UCI_GET network.$ab.baseifname`
-
+	local bifname=`$UCI_GET dmmap.$ab.baseifname`
+	local bridge bkey=`$UCI_GET dmmap.$mb.bridgekey`
+	if [ -n "$bkey" ]; then
+		bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
+		if [ -n "$bridge" ]; then
+			local obifname=`$UCI_GET dmmap.$mb.baseifname`
+			local instance=`$UCI_GET dmmap.$mb.instance`
+			if [ -n "$obifname" ]; then
+			remove_config_interfaces "$obifname" "$bkey" "$bridge" "$instance"
+			fi
+		fi
+	fi
 	case $bifname in
 		cfg*)
-			local tmp=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$bifname"`
+			local tmp=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$bifname"`
 			[ -n "$tmp" ] && return
-			$UCI_SET network.$mb.interfacekey=$val
-			$UCI_SET network.$mb.baseifname=$bifname
-			local bkey=`$UCI_GET network.$mb.bridgekey`
-			[ "$bkey" = "" ] && return
-			local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
-			[ "$bridge" = "" ] && return
+			$UCI_SET dmmap.$mb.interfacekey=$val
+			$UCI_SET dmmap.$mb.baseifname=$bifname
+			[ "$bkey" = "" -o "$bridge" = "" ] && return
 			$UCI_SET wireless.$bifname.network=$bridge
 		;;
 		eth[1-9])
-			local tmp=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$bifname"`
+			local tmp=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$bifname"`
 			[ -n "$tmp" ] && return
-			$UCI_SET network.$mb.interfacekey=$val
-			$UCI_SET network.$mb.baseifname=$bifname
-			local bkey=`$UCI_GET network.$mb.bridgekey`
-			[ "$bkey" = "" ] && return
-			local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
-			[ "$bridge" = "" ] && return
+			$UCI_SET dmmap.$mb.interfacekey=$val
+			$UCI_SET dmmap.$mb.baseifname=$bifname
+			[ "$bkey" = "" -o "$bridge" = "" ] && return
 			local brgifname="`$UCI_GET network.$bridge.ifname`"
 			brgifname="$brgifname $bifname"
 			$UCI_SET network.$bridge.ifname="${brgifname# }"
 			delay_service reload "network" "1"
 		;;
 		eth0|atm*|ptm*)
-			$UCI_SET network.$mb.interfacekey=$val
-			$UCI_SET network.$mb.baseifname=$bifname
-			local bkey=`$UCI_GET network.$mb.bridgekey`
+			$UCI_SET dmmap.$mb.interfacekey=$val
+			$UCI_SET dmmap.$mb.baseifname=$bifname
 			[ "$bkey" = "" ] && return
-			local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
+			local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
 			for vb in $vbs; do
-				local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+				local vid=`$UCI_GET dmmap.$vb.vid`
 				[ "$vid" = "" ] && continue
-				local enable=`$UCI_GET layer2_interface_vlan.$vb.enable `
+				local enable=`$UCI_GET dmmap.$vb.enable `
 				[ "$enable" = "" -o "$enable" = "0" ] && continue
 				update_remove_vlan_from_bridge_interface $bkey $vb
 				update_add_vlan_interfaces "$bkey" "$vid"
@@ -212,7 +215,7 @@ update_remove_vlan_from_bridge_interface() {
 	local vb="$2"
 	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
 	[ "$bridge" = "" ] && return
-	local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+	local vid=`$UCI_GET dmmap.$vb.vid`
 	local bifname="`$UCI_GET network.$bridge.ifname` "
 	bifname=${bifname//[aep]t[mh][0-9].$vid[^0-9]/}
 	bifname=${bifname//  / }; bifname=${bifname//  / }
@@ -225,14 +228,14 @@ update_add_vlan_to_bridge_interface() {
 	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
 	[ "$bridge" = "" ] && return
 	
-	local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+	local vid=`$UCI_GET dmmap.$vb.vid`
 	[ "$vid" = "" ] && return
 	
 	local bifname="`$UCI_GET network.$bridge.ifname` "
 	local ifname vifname=""
-	local mb mbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d'.'`
+	local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d'.'`
 	for mb in $mbs; do
-		ifname=`$UCI_GET network.$mb.baseifname`
+		ifname=`$UCI_GET dmmap.$mb.baseifname`
 		case "$ifname" in
 			eth0|atm*|ptm*)
 			ifname="$ifname.$vid"
@@ -248,9 +251,9 @@ update_add_vlan_to_bridge_interface() {
 update_add_vlan_interfaces() {
 	local bkey="$1"
 	local vid="$2"
-	local ifname mb mbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d'.'`
+	local ifname mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d'.'`
 	for mb in $mbs; do
-		ifname=`$UCI_GET network.$mb.baseifname`
+		ifname=`$UCI_GET dmmap.$mb.baseifname`
 		local vif=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_interface\[[0-9]\+\]\.ifname=$ifname.$vid" | cut -f2 -d.`
 		if [ "$vif" = "" ]; then
 			case "$ifname" in
@@ -285,13 +288,13 @@ update_bridge_instance() {
 update_bridge_vlan_instance() {
 	local bvlan="$1"
 	local ib="$2"
-	local inst=`$UCI_GET layer2_interface_vlan.$bvlan.instance`
+	local inst=`$UCI_GET dmmap.$bvlan.instance`
 	if [ "$inst" != "" ]; then
-		echo "${inst#*.}"
+		echo "${inst#.}"
 	else
-		inst=`$UCI_SHOW layer2_interface_vlan |sed -n "s/layer2_interface_vlan\.[^.]\+\.instance=$ib\.//p" | sort -rn | head -n1`
+		inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.[^.]\+\.instance=$ib\.//p" | sort -rn | head -n1`
 		inst=${inst:-0}
-		$UCI_SET layer2_interface_vlan.$bvlan.instance="$ib.$((++inst))"
+		$UCI_SET dmmap.$bvlan.instance="$ib.$((++inst))"
 		$UCI_COMMIT
 		echo $inst
 	fi
@@ -319,29 +322,29 @@ update_bridge_vlan_config() {
 	local bkey="$2"
 	local vid="$3"
 	local vlan="$4"
-	local cbridgevlan=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.vid=$vid" | cut -f2 -d.`
+	local cbridgevlan=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.vid=$vid" | cut -f2 -d.`
 	if [ "$cbridgevlan" = "" ]; then
-		cbridgevlan=`$UCI_ADD layer2_interface_vlan vlan_bridge`
+		cbridgevlan=`$UCI_ADD dmmap vlan_bridge`
 		local iv=`update_bridge_vlan_instance "$cbridgevlan" "$bkey"`
-		$UCI_SET layer2_interface_vlan.$cbridgevlan.bridgekey=$bkey
-		$UCI_SET layer2_interface_vlan.$cbridgevlan.vid=$vid
-		$UCI_SET layer2_interface_vlan.$cbridgevlan.name=vlan_$bkey.$iv
+		$UCI_SET dmmap.$cbridgevlan.bridgekey=$bkey
+		$UCI_SET dmmap.$cbridgevlan.vid=$vid
+		$UCI_SET dmmap.$cbridgevlan.name=vlan_$bkey.$iv
 	fi
 }
 
 update_availableinterface_list() {
 	local iface="$1"
 	local key
-	local ciface=`$UCI_SHOW network | grep "network\.@available-bridge\[[0-9]\+\]\.baseifname=$iface" | cut -f2 -d'.' | head -n1`
+	local ciface=`$UCI_SHOW dmmap | grep "dmmap\.@available-bridge\[[0-9]\+\]\.baseifname=$iface" | cut -f2 -d'.' | head -n1`
 	if [ "$ciface" != "" ]; then
-		$UCI_GET network.$ciface.key
+		$UCI_GET dmmap.$ciface.key
 		return
 	fi
-	key=`$UCI_SHOW network |sed -n "s/network\.@available-bridge\[[0-9]\+\]\.key=//p" | sort -rn | head -n1`
+	key=`$UCI_SHOW dmmap |sed -n "s/dmmap\.@available-bridge\[[0-9]\+\]\.key=//p" | sort -rn | head -n1`
 	key=${key:-0}
-	ciface=`$UCI_ADD network available-bridge`
-	$UCI_SET network.$ciface.baseifname=$iface
-	$UCI_SET network.$ciface.key=$((++key))
+	ciface=`$UCI_ADD dmmap available-bridge`
+	$UCI_SET dmmap.$ciface.baseifname=$iface
+	$UCI_SET dmmap.$ciface.key=$((++key))
 	$UCI_COMMIT
 	echo $key
 }
@@ -353,22 +356,22 @@ update_markinginterface_list() {
 	for ifname in $ifnames; do
 		found=0
 		ifname=${ifname%.*}
-		local mb mbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.'`
+		local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.'`
 		for mb in $mbs; do
-			[ "`$UCI_GET network.$mb.bridgekey`" = "$bkey" ] && { found=1; break; }
+			[ "`$UCI_GET dmmap.$mb.bridgekey`" = "$bkey" ] && { found=1; break; }
 		done
 		[ "$found" = "1" ] && continue
 
-		local ciface=`$UCI_SHOW network | grep "network\.@available-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.' | head -n1`
-		local interfacekey=`$UCI_GET network.$ciface.key`
-		local inst=`$UCI_SHOW network |sed -n "s/network\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
+		local ciface=`$UCI_SHOW dmmap | grep "dmmap\.@available-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.' | head -n1`
+		local interfacekey=`$UCI_GET dmmap.$ciface.key`
+		local inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
 		inst=${inst:-0}
 
-		mb=`$UCI_ADD network marking-bridge`
-		$UCI_SET network.$mb.baseifname=$ifname
-		$UCI_SET network.$mb.bridgekey=$bkey
-		$UCI_SET network.$mb.interfacekey=$interfacekey
-		$UCI_SET network.$mb.instance="$((++inst))"
+		mb=`$UCI_ADD dmmap marking-bridge`
+		$UCI_SET dmmap.$mb.baseifname=$ifname
+		$UCI_SET dmmap.$mb.bridgekey=$bkey
+		$UCI_SET dmmap.$mb.interfacekey=$interfacekey
+		$UCI_SET dmmap.$mb.instance="$((++inst))"
 	done
 	
 	local wifi wifis=`$UCI_SHOW -X wireless | grep "wireless\.[^.=]\+=wifi-iface" | awk -F'[.=]' '{print $2}'`
@@ -376,22 +379,22 @@ update_markinginterface_list() {
 		[ "`$UCI_GET wireless.$wifi.network`" != "$iface" ] && continue
 		ifname="$wifi"
 		found=0
-		local mb mbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.'`
+		local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.'`
 		for mb in $mbs; do
-			[ "`$UCI_GET network.$mb.bridgekey`" = "$bkey" ] && { found=1; break; }
+			[ "`$UCI_GET dmmap.$mb.bridgekey`" = "$bkey" ] && { found=1; break; }
 		done
 		[ "$found" = "1" ] && continue
 
-		local ciface=`$UCI_SHOW network | grep "network\.@available-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.' | head -n1`
-		local interfacekey=`$UCI_GET network.$ciface.key`
-		local inst=`$UCI_SHOW network |sed -n "s/network\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
+		local ciface=`$UCI_SHOW dmmap | grep "dmmap\.@available-bridge\[[0-9]\+\]\.baseifname=$ifname" | cut -f2 -d'.' | head -n1`
+		local interfacekey=`$UCI_GET dmmap.$ciface.key`
+		local inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
 		inst=${inst:-0}
 		
-		mb=`$UCI_ADD network marking-bridge`
-		$UCI_SET network.$mb.baseifname=$ifname
-		$UCI_SET network.$mb.bridgekey=$bkey
-		$UCI_SET network.$mb.interfacekey=$interfacekey
-		$UCI_SET network.$mb.instance="$((++inst))"
+		mb=`$UCI_ADD dmmap marking-bridge`
+		$UCI_SET dmmap.$mb.baseifname=$ifname
+		$UCI_SET dmmap.$mb.bridgekey=$bkey
+		$UCI_SET dmmap.$mb.interfacekey=$interfacekey
+		$UCI_SET dmmap.$mb.instance="$((++inst))"
 	done
 
 	$UCI_COMMIT
@@ -410,9 +413,9 @@ get_cache_object_bridge_vlan() {
 	local vb="$2"
 	local iv="$3"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv." "1"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANEnable" "1" "$UCI_GET layer2_interface_vlan.$vb.enable" "set_bridgevlan_enable $vb \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANName" "1" "$UCI_GET layer2_interface_vlan.$vb.name" "\$UCI_SET layer2_interface_vlan.$vb.name=\$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANID" "1" "$UCI_GET layer2_interface_vlan.$vb.vid" "set_bridgevlan_vid $vb \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANEnable" "1" "$UCI_GET dmmap.$vb.enable" "set_bridgevlan_enable $vb \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANName" "1" "$UCI_GET dmmap.$vb.name" "\$UCI_SET dmmap.$vb.name=\$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANID" "1" "$UCI_GET dmmap.$vb.vid" "set_bridgevlan_vid $vb \$val" "" "xsd:unsignedInt"
 }
 
 get_cache_object_bridge() {
@@ -426,9 +429,9 @@ get_cache_object_bridge() {
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "$UCI_GET network.$iface.ifname" "set_associated_interfaces $iface \$val"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN." "1"
 	update_bridge_all_vlan_config_bybridge $iface $ib
-	local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | cut -f2 -d.`
+	local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | cut -f2 -d.`
 	for vb in $vbs; do
-		local iv=`$UCI_GET layer2_interface_vlan.$vb.instance`
+		local iv=`$UCI_GET dmmap.$vb.instance`
 		get_cache_object_bridge_vlan "$ib" "$vb" "${iv#*.}"
 	done
 }
@@ -448,8 +451,8 @@ get_cache_object_marking() {
 	local im="$1"
 	local mb="$2"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im." "1"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingBridgeReference" "1" "$UCI_GET network.$mb.bridgekey" "set_marking_bridgekey $mb \$val" "" "xsd:int"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingInterface" "1" "$UCI_GET network.$mb.interfacekey" "set_marking_interfacekey $mb \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingBridgeReference" "1" "$UCI_GET dmmap.$mb.bridgekey" "set_marking_bridgekey $mb \$val" "" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingInterface" "1" "$UCI_GET dmmap.$mb.interfacekey" "set_marking_interfacekey $mb \$val"
 }
 	
 get_cache_InternetGatewayDevice_Layer2Bridging() {
@@ -493,9 +496,9 @@ get_cache_InternetGatewayDevice_Layer2Bridging() {
 		fi
 	done
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking." "1"
-	local mb mbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.instance=" | cut -f2 -d'.'`
+	local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.instance=" | cut -f2 -d'.'`
 	for mb in $mbs; do
-		local im=`$UCI_GET network.$mb.instance`
+		local im=`$UCI_GET dmmap.$mb.instance`
 		get_cache_object_marking "$im" "$mb"
 	done
 }
@@ -525,9 +528,9 @@ delete_layer2bridging_bridge() {
 
 	$UCI_SET network.$tmp.type=
 	$UCI_SET network.$tmp.bridge_instance=
-	local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$instance" | cut -f2 -d.`
+	local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$instance" | cut -f2 -d.`
 	for vb in $vbs; do
-		$UCI_DELETE layer2_interface_vlan.$vb
+		$UCI_DELETE dmmap.$vb
 	done
 	$UCI_COMMIT
 	delay_service reload "network" "1"
@@ -544,9 +547,9 @@ delete_layer2bridging_bridge_all() {
 		$UCI_SET network.$bridge.type=
 		$UCI_SET network.$bridge.bridge_instance=
 	done
-	local ivb ivbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=" | awk -F '[][]' '{print $2}' | sort -rn`
+	local ivb ivbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=" | awk -F '[][]' '{print $2}' | sort -rn`
 	for ivb in $ivbs; do
-		$UCI_DELETE layer2_interface_vlan.@vlan_bridge[$ivb]
+		$UCI_DELETE dmmap.@vlan_bridge[$ivb]
 	done
 	$UCI_COMMIT
 	delay_service reload "network" "1"
@@ -558,27 +561,21 @@ delete_layer2bridging_bridge_all() {
 
 add_layer2bridging_marking() {
 	local filename="$1"
-	local inst=`$UCI_SHOW network |sed -n "s/network\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
+	local inst=`$UCI_SHOW dmmap |sed -n "s/dmmap\.@marking-bridge\[[0-9]\+\]\.instance=//p" | sort -rn | head -n1`
 	inst=${inst:-0}
-	mb=`$UCI_ADD network marking-bridge`
-	$UCI_SET network.$mb.instance="$((++inst))"
+	mb=`$UCI_ADD dmmap marking-bridge`
+	$UCI_SET dmmap.$mb.instance="$((++inst))"
 	$UCI_COMMIT
 	get_cache_object_marking "$inst" "$mb" >> $cache_path/$filename
 	freecwmp_output "" "" "" "" "" "" "1" "$inst"
 	return $FAULT_CPE_NO_FAULT
 }
 
-delete_layer2bridging_marking() {
-	local instance="$2"
-	local filename="$3"
-	local tmp=`$UCI_SHOW network |grep "network\.@marking-bridge\[[0-9]\+\]\.instance=$instance" | cut -d. -f2`
-	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
-	local bkey=`$UCI_GET network.$tmp.bridgekey`
-	local baseifname=`$UCI_GET network.$tmp.baseifname`
-	$UCI_DELETE network.$tmp
-	[ -z "$bkey" ] && return
-	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
-	[ "$bridge" = "" ] && return
+remove_config_interfaces(){
+	local baseifname="$1"
+	local bkey="$2"
+	local bridge="$3"
+	local mbi="$4"
 	case $baseifname in
 		cfg*)
 			$UCI_SET wireless.$baseifname.network=
@@ -591,14 +588,14 @@ delete_layer2bridging_marking() {
 		;;
 		eth0|atm*|ptm*)
 			local found=0
-			local cmb cmbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
+			local cmb cmbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
 			for cmb in $cmbs; do
-				[ "`$UCI_GET network.$cmb.bridgekey`" = "$bkey" ] && { found=1; break; }
+				[ "`$UCI_GET dmmap.$cmb.bridgekey`" = "$bkey" -a "`$UCI_GET dmmap.$cmb.instance`" != "$mbi" ] && { found=1; break; }
 			done
 			if [ "$found" = "0" ]; then
-				local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
+				local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
 				for vb in $vbs; do
-					local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+					local vid=`$UCI_GET dmmap.$vb.vid`
 					[ "$vid" = "" ] && continue
 					local bifname=" `$UCI_GET network.$bridge.ifname` "
 					bifname=${bifname// $baseifname.$vid / }
@@ -608,6 +605,20 @@ delete_layer2bridging_marking() {
 			 fi
 		;;
 	esac
+}
+
+delete_layer2bridging_marking() {
+	local instance="$2"
+	local filename="$3"
+	local tmp=`$UCI_SHOW dmmap |grep "dmmap\.@marking-bridge\[[0-9]\+\]\.instance=$instance" | cut -d. -f2`
+	if [ "$tmp" = "" ]; then return $FAULT_CPE_INVALID_PARAMETER_NAME; fi
+	local bkey=`$UCI_GET dmmap.$tmp.bridgekey`
+	local baseifname=`$UCI_GET dmmap.$tmp.baseifname`
+	$UCI_DELETE dmmap.$tmp
+	[ -z "$bkey" ] && return
+	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
+	[ "$bridge" = "" ] && return
+	remove_config_interfaces "$baseifname" "$bkey" "$bridge"
 	$UCI_COMMIT
 	delay_service reload "network" "1"
 	freecwmp_output "" "" "" "" "" "" "1"
@@ -617,43 +628,15 @@ delete_layer2bridging_marking() {
 
 delete_layer2bridging_marking_all() {
 	local filename="$3"
-	local mb mbs=`$UCI_SHOW network |grep "network\.@marking-bridge\[[0-9]\+\]\.instance" | awk -F '[][]' '{print $2}' | sort -rn`
+	local mb mbs=`$UCI_SHOW dmmap |grep "dmmap\.@marking-bridge\[[0-9]\+\]\.instance" | awk -F '[][]' '{print $2}' | sort -rn`
 	for mb in $mbs; do
-		local bkey=`$UCI_GET network.@marking-bridge[$mb].bridgekey`
-		local baseifname=`$UCI_GET network.@marking-bridge[$mb].baseifname`
-		$UCI_DELETE network.@marking-bridge[$mb]
+		local bkey=`$UCI_GET dmmap.@marking-bridge[$mb].bridgekey`
+		local baseifname=`$UCI_GET dmmap.@marking-bridge[$mb].baseifname`
+		$UCI_DELETE dmmap.@marking-bridge[$mb]
 		[ -z "$bkey" ] && continue
 		local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$bkey" | cut -f2 -d.`
 		[ "$bridge" = "" ] && continue
-		case $baseifname in
-			cfg*)
-				$UCI_SET wireless.$baseifname.network=
-			;;
-			eth[1-9])
-				local bifname=" `$UCI_GET network.$bridge.ifname` "
-				bifname=${bifname// $baseifname / }
-				bifname=${bifname# }; bifname=${bifname% };
-				$UCI_SET network.$bridge.ifname="$bifname"
-			;;
-			eth0|atm*|ptm*)
-				local found=0
-				local cmb cmbs=`$UCI_SHOW network | grep "network\.@marking-bridge\[[0-9]\+\]\.baseifname=$baseifname" | cut -f2 -d.`
-				for cmb in $cmbs; do
-					[ "`$UCI_GET network.$cmb.bridgekey`" = "$bkey" ] && { found=1; break; }
-				done
-				if [ "$found" = "0" ]; then
-					local vb vbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$bkey" | cut -f2 -d.`
-					for vb in $vbs; do
-						local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
-						[ "$vid" = "" ] && continue
-						local bifname=" `$UCI_GET network.$bridge.ifname` "
-						bifname=${bifname// $baseifname.$vid / }
-						bifname=${bifname# }; bifname=${bifname% };
-						$UCI_SET network.$bridge.ifname="$bifname"
-					done
-				 fi
-			;;
-		esac
+		remove_config_interfaces "$baseifname" "$bkey" "$bridge"
 	done
 	$UCI_COMMIT
 	delay_service reload "network" "1"
@@ -669,11 +652,11 @@ add_layer2bridging_bridge_vlan() {
 	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=$ibridge" | cut -f2 -d.`
 	[ "$bridge" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME;
 	
-	local vb=`$UCI_ADD layer2_interface_vlan vlan_bridge`
+	local vb=`$UCI_ADD dmmap vlan_bridge`
 	local iv=`update_bridge_vlan_instance $vb $ibridge`
-	$UCI_SET layer2_interface_vlan.$vb.bridgekey=$ibridge
-	$UCI_SET layer2_interface_vlan.$vb.name="vlan_$ibridge.$iv"
-	$UCI_SET layer2_interface_vlan.$vb.enable=0
+	$UCI_SET dmmap.$vb.bridgekey=$ibridge
+	$UCI_SET dmmap.$vb.name="vlan_$ibridge.$iv"
+	$UCI_SET dmmap.$vb.enable=0
 	$UCI_COMMIT
 	
 	get_cache_object_bridge_vlan "$ibridge" "$vb" "$iv" >> $cache_path/$filename
@@ -685,17 +668,17 @@ delete_layer2bridging_bridge_vlan() {
 	local instances="$2"
 	local filename="$3"
 	instances=${instances// /.}
-	local vb=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.instance=$instances" | cut -f2 -d'.' | head -n1`
+	local vb=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.instance=$instances" | cut -f2 -d'.' | head -n1`
 	[ "$vb" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
 	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=${instances%.*}" | cut -f2 -d.`
 	[ "$bridge" = "" ] && return $FAULT_CPE_INTERNAL_ERROR
 	
-	local vid=`$UCI_GET layer2_interface_vlan.$vb.vid`
+	local vid=`$UCI_GET dmmap.$vb.vid`
 	local bifname="`$UCI_GET network.$bridge.ifname` "
 	bifname=${bifname// [aep]t[mh][0-9].$vid / }
 	bifname=${bifname# }; bifname=${bifname% }
 	$UCI_SET network.$bridge.ifname="$bifname"
-	$UCI_DELETE layer2_interface_vlan.$vb
+	$UCI_DELETE dmmap.$vb
 	$UCI_COMMIT
 
 	delay_service reload "network" "1"
@@ -709,14 +692,14 @@ delete_layer2bridging_bridge_vlan_all() {
 	local filename="$3"
 	local bridge=`$UCI_SHOW network | grep "network\.[^.]\+\.bridge_instance=${instances}" | cut -f2 -d.`
 	[ "$bridge" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
-	local ivb ivbs=`$UCI_SHOW layer2_interface_vlan | grep "layer2_interface_vlan\.@vlan_bridge\[[0-9]\+\]\.instance=$instances\." | awk -F '[][]' '{print $2}' | sort -rn`
+	local ivb ivbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.instance=$instances\." | awk -F '[][]' '{print $2}' | sort -rn`
 	for ivb in $ivbs; do
-		local vid=`$UCI_GET layer2_interface_vlan.@vlan_bridge[$ivb].vid`
+		local vid=`$UCI_GET dmmap.@vlan_bridge[$ivb].vid`
 		local bifname=" `$UCI_GET network.$bridge.ifname` "
 		bifname=${bifname// [aep]t[mh][0-9].$vid / }
 		bifname=${bifname# }; bifname=${bifname% }
 		$UCI_SET network.$bridge.ifname="$bifname"
-		$UCI_DELETE layer2_interface_vlan.@vlan_bridge[$ivb]
+		$UCI_DELETE dmmap.@vlan_bridge[$ivb]
 	done
 	$UCI_COMMIT
 
