@@ -759,12 +759,6 @@ set_wlan_pre_shared_key() {
 	delay_service reload "network" "1"
 }
 
-set_wlan_pre_shared_key_associated_device_MACAddress() {
-	local num="$1"
-	local val="$2"
-	delay_service reload "network" "1"
-}
-
 get_lan_dns() {
 	local lan_name=$1
 	local val="" dns
@@ -1390,6 +1384,22 @@ get_x_inteno_se_operating_channel_bandwidth () {
 	fi
 }
 
+get_wlan_psk_assoc_MACAddress() {
+	local assoc_list adma
+	local num="$1"
+	local pki="$2"
+	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
+	if [ "${encryption//psk/}" != "$encryption" ]; then
+		if [ "$num" = "0" ];then
+			assoc_list=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
+		else
+			assoc_list=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
+		fi
+		adma=`echo $assoc_list | awk -F' ' '{print $'"$pki"'}'`
+		echo "$adma"
+	fi 
+}
+
 set_x_inteno_se_operating_channel_bandwidth () {
 	local nlan="$1"
 	local val="$2"
@@ -1407,6 +1417,7 @@ set_x_inteno_se_operating_channel_bandwidth () {
 }
 
 get_landevice_wlanconfiguration_generic() {
+	local pki=0
 	lan_num=$1
 	wlan_num=$2
 	uci_num=$3
@@ -1456,12 +1467,22 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3.WEPKey" "1" "" "set_wlan_wep_key $uci_num 3 \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num 4 \$val" "" "" "" "" "" "1"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey." "0"
-	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.1.AssociatedDeviceMACAddress" "1" "" "set_wlan_pre_shared_key_associated_device_MACAddress $uci_num \$val"
+	while [ "$((pki++))" != "10" ];do
+		get_landevice_wlanconfiguration_presharedkey "$lan_num" "$wlan_num" "$pki" "$uci_num"
+	done
+
 }
 
+get_landevice_wlanconfiguration_presharedkey() {
+	local lan_num=$1
+	local wlan_num=$2
+	local pki=$3
+	local uci_num=$4
+	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki." "0"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.AssociatedDeviceMACAddress" "0" "" "" "get_wlan_psk_assoc_MACAddress $uci_num $pki"
+}
 get_landevice_lanhostconfigmanagement_ipinterface() {
 	local idev=$1
 	local ndev=$2
