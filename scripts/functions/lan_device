@@ -83,39 +83,41 @@ get_wlan_status() {
 }
 
 get_wlan_bssid() {
-	local num="$1"
-	if [ "$num" = "0" ];then
-		val=`/usr/sbin/wlctl -i wl$num bssid`
-	else
-		val=`/usr/sbin/wlctl -i wl0.$num bssid`
+	local wunit="$1"
+	local wlctl_num="$2"
+	if [ "$wlctl_num" != "0" ];then
+		wunit="$wunit.$wlctl_num"
 	fi
+	val=`/usr/sbin/wlctl -i $wunit bssid`
 	echo "$val"
 }
 
 set_wlan_max_bit_rate() {
-	local num="$1"
+	local wunit="$1"
 	local val="$2"
 	delay_service reload "network" "1"
-	$UCI_SET wireless.wl0.hwmode="auto"
+	$UCI_SET wireless.$wunit.hwmode="auto"
 }
 
 get_wlan_channel() {
-	local val=`$UCI_GET wireless.wl0.channel`
+	local wunit=$1
+	local val=`$UCI_GET wireless.$wunit.channel`
 	if [ "$val" = "auto" -o "$val" = "" ];then
-		val=`/usr/sbin/wlctl -i wl0 channel|grep "target channel"|awk -F ' ' '{print$3}'`
+		val=`/usr/sbin/wlctl -i $wunit channel|grep "target channel"|awk -F ' ' '{print$3}'`
 	fi
 	echo $val
 }
 
 set_wlan_channel() {
-	local num="$1"
+	local wunit="$1"
 	local val="$2"
 	delay_service reload "network" "1"
-	$UCI_SET wireless.wl0.channel="$val"
+	$UCI_SET wireless.$wunit.channel="$val"
 }
 
 get_wlan_auto_channel_enable() {
-	local val=`$UCI_GET wireless.wl0.channel`
+	local wunit=$1
+	local val=`$UCI_GET wireless.$wunit.channel`
 	if [ "$val" = "auto" -o "$val" = "" ];then
 		echo 1
 	else
@@ -124,14 +126,15 @@ get_wlan_auto_channel_enable() {
 }
 
 set_wlan_auto_channel_enable() {
-	local val="$1"
+	local wunit="$1"
+	local val="$2"
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
 		val="auto"
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		val=`/usr/sbin/wlctl -i wl0 channel|grep "target channel"|awk -F ' ' '{print$3}'`
+		val=`/usr/sbin/wlctl -i $wunit channel|grep "target channel"|awk -F ' ' '{print$3}'`
 	fi
-	$UCI_SET wireless.wl0.channel="$val"
+	$UCI_SET wireless.$wunit.channel="$val"
 	delay_service reload "network" "1"
 }
 
@@ -249,8 +252,8 @@ set_wlan_mac_control_enable() {
 }
 
 get_wlan_standard() {
-	local num="$1"
-	val=`$UCI_GET wireless.wl0.hwmode`
+	local wunit="$1"
+	val=`$UCI_GET wireless.$wunit.hwmode`
 	if [ "$val" = "11b" ]; then
 		val="b"
 	elif [ "$val" = "11bg" ]; then
@@ -264,7 +267,7 @@ get_wlan_standard() {
 }
 
 set_wlan_standard() {
-	local num="$1"
+	local wunit="$1"
 	local val="$2"
 	if [ "$val" = "b" ]; then
 		val="11b"
@@ -276,7 +279,7 @@ set_wlan_standard() {
 		val="auto"
 	fi
 	delay_service reload "network" "1"
-	$UCI_SET wireless.wl0.hwmode="$val"
+	$UCI_SET wireless.$wunit.hwmode="$val"
 }
 
 get_wlan_wep_key_index() {
@@ -576,13 +579,13 @@ set_wlan_ieee_11i_authentication_mode() {
 }
 
 get_wlan_radio_enabled() {
-	local num="$1"
+	local wunit="$1"
+	local wlctl_num="$2"	
 	local val=""
-	if [ "$num" = "0" ];then
-		radio=`/usr/sbin/wlctl -i wl$num radio`
-	else
-		radio=`/usr/sbin/wlctl -i wl0.$num radio`
+	if [ "$wlctl_num" != "0" ];then
+		wunit="$wunit.$wlctl_num"
 	fi
+	radio=`/usr/sbin/wlctl -i $wunit radio`
 	val=`echo $(($radio))`
 	if [ "$val" = "0" ];then
 		val=1
@@ -593,19 +596,20 @@ get_wlan_radio_enabled() {
 }
 
 set_wlan_radio_enabled() {
-	local num="$1"
-	local val="$2"
+	local wunit="$1"
+	local wlctl_num="$2"
+	local val="$3"
 	delay_service reload "network" "1"
 	if [ "$val" = "0" ];then
 		val="off"
 	elif [ "$val" = "1" ];then
 		val="on"
 	fi
-	if [ "$num" = "0" ];then
-		/usr/sbin/wlctl -i wl$num radio $val
-	else
-		/usr/sbin/wlctl -i wl0.$num radio $val
+	if [ "$wlctl_num" != "0" ];then
+		wunit="$wunit.$wlctl_num"
 	fi
+	/usr/sbin/wlctl -i $wunit radio $val
+
 }
 
 get_wlan_device_operation_mode() {
@@ -660,24 +664,24 @@ set_wlan_authentication_service_mode() {
 }
 
 get_wlan_total_associations() {
-	local num="$1"
-	if [ "$num" = "0" ];then
-		val=`/usr/sbin/wlctl -i wl$num assoclist | grep -c 'assoclist'`
-	else
-		val=`/usr/sbin/wlctl -i wl0.$num assoclist | grep -c 'assoclist'`
+	local wunit="$1"
+	local wlctl_num="$2"
+	if [ "$wlctl_num" != "0" ];then
+		wunit="$wunit.$wlctl_num"
 	fi
+	val=`/usr/sbin/wlctl -i $wunit assoclist | grep -c 'assoclist'`
 	echo "$val"
 }
 
 get_wlan_devstatus_statistics() {
-	local num="$1"
-	local counter="$2"
+	local wunit="$1"
+	local wlctl_num="$2"
+	local counter="$3"
 	local wdevstatus val
-	if [ "$num" = "0" ];then
-		wdevstatus=`devstatus wl0`
-	else
-		wdevstatus=`devstatus wl0.$num`
+	if [ "$wlctl_num" != "0" ];then
+		wunit="$wunit.$wlctl_num"
 	fi
+	wdevstatus=`devstatus $wunit`
 	json_init
 	json_load "$wdevstatus"
 	json_select "statistics"
@@ -1343,8 +1347,8 @@ set_interface_addressingtype() {
 }
 
 get_x_inteno_se_channelmode () {
-	local nlan="$1"
-	local val=`$UCI_GET wireless.wl${nlan}.channel`
+	local wunit="$1"
+	local val=`$UCI_GET wireless.$wunit.channel`
 	if [ "$val" = "auto" -o "$val" = "" ];then
 		echo "Auto"
 	else
@@ -1353,20 +1357,20 @@ get_x_inteno_se_channelmode () {
 }
 
 set_x_inteno_se_channelmode () {
-	local nlan="$1"
+	local wunit="$1"
 	local val="$2"
 	if [ "$val" = "Auto" ]; then
-		$UCI_SET wireless.wl${nlan}.channel="auto"
+		$UCI_SET wireless.$wunit.channel="auto"
 	elif [ "$val" = "Manual" ]; then
-		local channel=`/usr/sbin/wlctl -i wl${nlan} channel |grep "target channel" |awk -F ' ' '{print$3}'`
-		$UCI_SET wireless.wl${nlan}.channel="$channel"
+		local channel=`/usr/sbin/wlctl -i $wunit channel |grep "target channel" |awk -F ' ' '{print$3}'`
+		$UCI_SET wireless.$wunit.channel="$channel"
 	fi
 	delay_service reload "network" "1"
 }
 
 get_x_inteno_se_supported_standard () {
-	local nlan="$1"
-	local val=`wlctl -i wl${nlan} status |awk  '$1=="Chanspec:" {print$2}'`
+	local wunit="$1"
+	local val=`wlctl -i $wunit status |awk  '$1=="Chanspec:" {print$2}'`
 	case $val in
 		"5GHz") echo  "a, n, ac";;
 		*) echo "b, g, n, gst, lrs";;
@@ -1374,64 +1378,58 @@ get_x_inteno_se_supported_standard () {
 }
 
 get_x_inteno_se_operating_channel_bandwidth () {
-	local nlan="$1"
-	local channel=`$UCI_GET wireless.wl${nlan}.channel`
-	if [ "$channel" = "auto" ]; then
-		echo "Auto"
-	else
-		local val=`$UCI_GET wireless.wl${nlan}.bandwidth`
-		echo "${val:-20}MHz"
-	fi
+	local wunit="$1"
+	local val=`$UCI_GET wireless.$wunit.bandwidth`
+	[ "$val" = "" ] && val=`wlctl -i $wunit status |awk  '$1=="Chanspec:" {print$5}'`
+	echo "${val//[^0-9]/}""MHz"
+}
+
+set_x_inteno_se_operating_channel_bandwidth () {
+	local wunit="$1"
+	local val="$2"
+
+	val=` printf %u ${val//[^0-9]/} 2>/dev/null`
+	[ "$val" = "0" -o "$val" = "" ] && return
+	$UCI_SET wireless.$wunit.bandwidth=$val
+	
+	delay_service reload "network" "1"
 }
 
 get_wlan_psk_assoc_MACAddress() {
 	local assoc_list adma
-	local num="$1"
-	local pki="$2"
+	local wunit="$1"
+	local wlctl_num="$2"
+	local num="$3"
+	local pki="$4"
 	local encryption=`$UCI_GET wireless.@wifi-iface[$num].encryption`
 	if [ "${encryption//psk/}" != "$encryption" ]; then
-		if [ "$num" = "0" ];then
-			assoc_list=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
-		else
-			assoc_list=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
+		if [ "$wlctl_num" != "0" ];then
+			wunit="$wunit.$wlctl_num"
 		fi
+		assoc_list=`/usr/sbin/wlctl -i $wunit assoclist|awk -F' ' '{print $2}'`
 		adma=`echo $assoc_list | awk -F' ' '{print $'"$pki"'}'`
 		echo "$adma"
 	fi 
 }
 
-set_x_inteno_se_operating_channel_bandwidth () {
-	local nlan="$1"
-	local val="$2"
-	if [ "$val" = "Auto" ]; then
-		$UCI_SET wireless.wl${nlan}.channel=auto
-		$UCI_SET wireless.wl${nlan}.bandwidth=
-	else
-		val=`printf %u ${val%MHz} 2>/dev/null`
-		[ "$val" = "0" -o "$val" = "" ] && return
-		$UCI_SET wireless.wl${nlan}.bandwidth=$val
-		local channel=`/usr/sbin/wlctl -i wl${nlan} channel |grep "target channel" |awk -F ' ' '{print$3}'`
-		$UCI_SET wireless.wl${nlan}.channel="$channel"
-	fi
-	delay_service reload "network" "1"
-}
-
 get_landevice_wlanconfiguration_generic() {
 	local pki=0
-	lan_num=$1
-	wlan_num=$2
-	uci_num=$3
+	local lan_num=$1
+	local wlan_num=$2
+	local uci_num=$3
+	local wunit=$4
+	local wlctl_num=$5
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "0" "" "" "get_wlan_status $uci_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $uci_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.wl0.hwmode" "set_wlan_max_bit_rate $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel" "set_wlan_channel $uci_num \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable" "set_wlan_auto_channel_enable \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $wunit $wlctl_num"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.$wunit.hwmode" "set_wlan_max_bit_rate $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable $wunit" "set_wlan_auto_channel_enable $wunit \$val" "" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$uci_num].ssid" "set_wlan_ssid $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $uci_num" "set_wlan_standard $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $wunit" "set_wlan_standard $wunit \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "1" "get_wlan_wep_key_index $uci_num" "set_wlan_wep_key_index $uci_num \$val" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPEncryptionLevel" "0" "get_wlan_wep_encryption_level $uci_num"
@@ -1441,21 +1439,21 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode" "1" "get_wlan_wpa_authentication_mode $uci_num" "set_wlan_wpa_authentication_mode $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes" "1" "get_wlan_ieee_11i_encryption_modes $uci_num" "set_wlan_ieee_11i_encryption_modes $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode" "1" "get_wlan_ieee_11i_authentication_mode $uci_num" "set_wlan_ieee_11i_authentication_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "" "set_wlan_radio_enabled $uci_num \$val" "get_wlan_radio_enabled $uci_num" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "" "set_wlan_radio_enabled $wunit $wlctl_num \$val" "get_wlan_radio_enabled $wunit $wlctl_num" "xsd:boolean"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "" "" "get_wlan_total_associations $uci_num" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel $uci_num" "set_wlan_channel $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $uci_num tx_packets" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "" "" "get_wlan_devstatus_statistics $uci_num rx_packets" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "" "" "get_wlan_total_associations $wunit $wlctl_num" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesSent" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_bytes" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_bytes" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_packets" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_packets" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "xsd:boolean"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $uci_num" "set_x_inteno_se_channelmode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard $uci_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $uci_num" "set_x_inteno_se_operating_channel_bandwidth $uci_num \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $wunit" "set_x_inteno_se_channelmode $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard $wunit"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $wunit" "set_x_inteno_se_operating_channel_bandwidth $wunit \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
@@ -1468,7 +1466,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num 4 \$val" "" "" "" "" "" "1"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey." "0"
 	while [ "$((pki++))" != "10" ];do
-		get_landevice_wlanconfiguration_presharedkey "$lan_num" "$wlan_num" "$pki" "$uci_num"
+		get_landevice_wlanconfiguration_presharedkey "$lan_num" "$wlan_num" "$pki" "$wunit" "$wlctl_num" "$uci_num"
 	done
 
 }
@@ -1477,11 +1475,13 @@ get_landevice_wlanconfiguration_presharedkey() {
 	local lan_num=$1
 	local wlan_num=$2
 	local pki=$3
-	local uci_num=$4
+	local wunit=$4 
+	local wlctl_num=$5
+	local uci_num=$6
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki." "0"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.AssociatedDeviceMACAddress" "0" "" "" "get_wlan_psk_assoc_MACAddress $uci_num $pki"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.AssociatedDeviceMACAddress" "0" "" "" "get_wlan_psk_assoc_MACAddress $wunit $wlctl_num $uci_num $pki"
 }
 get_landevice_lanhostconfigmanagement_ipinterface() {
 	local idev=$1
@@ -1564,9 +1564,14 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		done
 		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration." "0" "0"
-		for iuci in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
-			local iwlan=`update_instance_landevice_wlanconfiguration "$idev" "@wifi-iface[$iuci]"`
-			get_landevice_wlanconfiguration_generic $idev $iwlan $iuci
+		local wunit iuci
+		for wunit in `$UCI_SHOW wireless|grep "wireless\.wl[0-9]\+=wifi-device" | awk -F '[.=]' '{print $2}'`; do
+			local wlctl_num=0
+			for iuci in `$UCI_SHOW wireless |grep "wireless\.@wifi-iface\[[0-9]\+\]\.device=$wunit"| awk -F '[][]' '{print $2}'`; do
+				[ "`$UCI_GET wireless.@wifi-iface[$iuci].network`" != "$ndev" ] && continue
+				local iwlan=`update_instance_landevice_wlanconfiguration "$idev" "@wifi-iface[$iuci]"`
+				get_landevice_wlanconfiguration_generic "$idev" "$iwlan" "$iuci" "$wunit" "$((wlctl_num++))"
+			done 
 		done
 		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig." "0"
@@ -1602,37 +1607,39 @@ get_dynamic_InternetGatewayDevice_LANDevice() {
 			local idev=${tmp%%:*}
 			local ndev=${tmp#*:}
 			wlan_num=0
-			for num in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=.*$ndev$" | cut -f2 -d'[' | cut -f1 -d']'`;do
-				let "wlan_num++"
-				if [ "$num" = "0" ];then
-					assoclist=`/usr/sbin/wlctl -i wl$num assoclist|awk -F' ' '{print $2}'`
-				else
-					assoclist=`/usr/sbin/wlctl -i wl0.$num assoclist|awk -F' ' '{print $2}'`
-				fi
-				i=0
-				freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice." "0" "0"
-				for mac in $assoclist;do
-					let i++
-					ip=""
-					is_authenticated=""
-					if [ "$action" = "get_value" ]; then
-						mac_lower=`echo $mac|tr '[A-F]' '[a-f]'`
-						ip=`cat /proc/net/arp|grep "$mac_lower"|awk -F' ' '{print $1}'`
-						if [ "$num" = "0" ];then
-							is_authenticated=`/usr/sbin/wlctl -i wl$num authe_sta_list|grep $mac`
-						else
-							is_authenticated=`/usr/sbin/wlctl -i wl0.$num authe_sta_list|grep $mac`
-						fi
-						if [ "$is_authenticated" = "" ];then
-							is_authenticated="0"
-						else
-							is_authenticated="1"
-						fi
+			local wunit wunit_l iuci
+		    for wunit in `$UCI_SHOW wireless|grep "wireless\.wl[0-9]\+=wifi-device" | awk -F '[.=]' '{print $2}'`; do
+				local wlctl_num=0
+				for iuci in `$UCI_SHOW wireless|grep "wireless\.@wifi-iface\[[0-9]\+\]\.device=$wunit"| awk -F '[][]' '{print $2}'`; do			
+					[ "`$UCI_GET wireless.@wifi-iface[$iuci].network`" != "$ndev" ] && continue
+					let "wlan_num++"
+					wunit_l="$wunit"
+					if [ "$wlctl_num" != "0" ];then
+						wunit_l="$wunit.$wlctl_num"
 					fi
-					freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "0" "0"
-					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
-					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
-					freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
+						assoclist=`/usr/sbin/wlctl -i $wunit_l assoclist|awk -F' ' '{print $2}'`
+					i=0
+					freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice." "0" "0"
+					for mac in $assoclist;do
+						let i++
+						ip=""
+						is_authenticated=""
+						if [ "$action" = "get_value" ]; then
+							mac_lower=`echo $mac|tr '[A-F]' '[a-f]'`
+							ip=`cat /proc/net/arp|grep "$mac_lower"|awk -F' ' '{print $1}'`
+							is_authenticated=`/usr/sbin/wlctl -i $wunit_l authe_sta_list|grep $mac`
+							if [ "$is_authenticated" = "" ];then
+								is_authenticated="0"
+							else
+								is_authenticated="1"
+							fi
+						fi
+						freecwmp_cache_output_obj "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i." "0" "0"
+						freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceMACAddress" "$mac" "0" "0" "" "" "" "0"
+						freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceIPAddress" "$ip" "0" "0" "" "" "" "0"
+						freecwmp_cache_output_param "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration.$wlan_num.AssociatedDevice.$i.AssociatedDeviceAuthenticationState" "$is_authenticated" "0" "0" "xsd:boolean" "" "" "0"	
+					done
+					let "wlctl_num++"
 				done
 			done
 		done
