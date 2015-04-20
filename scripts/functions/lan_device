@@ -9,35 +9,41 @@
 prefix_list="$prefix_list InternetGatewayDevice.LANDevice."
 
 get_lan_device_interface() {
-local i=0
-local ret=""
-for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`;do
-	local fislan=`$UCI_GET network.$lan.is_lan`
-	local ftype=`$UCI_GET network.$lan.type`
-	if [ "$fislan" = "1" -a  "$ftype" != "alias" ];then
-		dev=$lan
-	elif [ "$ftype" = "alias" ]; then
-		dev=`$UCI_GET network.$lan.ifname`
-		dev=${dev/br-/}
-	else
-		continue
-	fi
-	local tmp=${ret/:$dev./}
-	if [ "$tmp" = "$ret" ]; then
-		let i++
-		ret="$ret $i:$dev.0;"
-	fi
-	tmp=${ret#*:$dev.}
-	tmp=${tmp%% *}
-	local flan=${tmp%%,}
-	[ "$flan" = "$tmp" -o "$ftype" != "alias" ] && flan="" || flan="${flan#*;},"
-	local inst=${tmp%%;*}
-	[ "$inst" = "$tmp" -o "$inst" = "" ] && inst=1 || let inst++
-	ret=${ret/:$dev.$((inst-1));$flan/:$dev.$inst;$flan$inst:$lan,}
-done
-ret=${ret//, / }; ret=${ret%,}
-ret=${ret//.[0-9]/}; ret=${ret//.[0-9]/}
-echo $ret
+	local i=0
+	local ret=""
+	local fislan=0
+	local lan wnet
+	for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`;do
+		fislan=0
+		wnet=`$UCI_SHOW wireless |grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=$lan"`
+		[ "$wnet" != "" ] && fislan=1
+		local ifname=`$UCI_GET network.$lan.ifname`
+		[ "${ifname//eth[1-9]/}" != "$ifname" ] && fislan=1
+		local ftype=`$UCI_GET network.$lan.type`
+		if [ "$fislan" = "1" -a  "$ftype" != "alias" ];then
+			dev=$lan
+		elif [ "$ftype" = "alias" ]; then
+			dev=`$UCI_GET network.$lan.ifname`
+			dev=${dev/br-/}
+		else
+			continue
+		fi
+		local tmp=${ret/:$dev./}
+		if [ "$tmp" = "$ret" ]; then
+			let i++
+			ret="$ret $i:$dev.0;"
+		fi
+		tmp=${ret#*:$dev.}
+		tmp=${tmp%% *}
+		local flan=${tmp%%,}
+		[ "$flan" = "$tmp" -o "$ftype" != "alias" ] && flan="" || flan="${flan#*;},"
+		local inst=${tmp%%;*}
+		[ "$inst" = "$tmp" -o "$inst" = "" ] && inst=1 || let inst++
+		ret=${ret/:$dev.$((inst-1));$flan/:$dev.$inst;$flan$inst:$lan,}
+	done
+	ret=${ret//, / }; ret=${ret%,}
+	ret=${ret//.[0-9]/}; ret=${ret//.[0-9]/}
+	echo $ret
 }
 
 update_instance_landevice_wlanconfiguration() {
