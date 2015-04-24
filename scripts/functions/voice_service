@@ -94,8 +94,8 @@ NOR NO"$'\n'"\
 TWN TW"$'\n'"\
 GBR GB"$'\n'"\
 ARE AE"$'\n'"\
-ETS ETS"$'\n'"\
-T57 T57"
+ETS ET"$'\n'"\
+T57 T5"
 
 get_sip_profile_region() {
 	local val=`$UCI_GET voice_client.BRCM.country`
