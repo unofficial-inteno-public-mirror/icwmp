@@ -702,6 +702,33 @@ get_wan_device_by_instance() {
 	eval "export -- \"$2=\"\"$__pref\"\"\""
 	eval "export -- \"$3=\"\"$__layer2\"\"\""
 }
+	
+set_annexm_enable() {
+	local dev="$1"
+	local val="$2"
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`echo $val|tr '[A-Z]' '[a-z]'`
+		if [ "$val" = "true" -o "$val" = "1" ]; then
+			val="Enabled"
+		elif [ "$val" = "false" -o "$val" = "0" ]; then
+			val=""
+		else
+			return 
+		fi
+		$UCI_SET  layer2_interface.capabilities.AnnexM="$val"
+		delay_service restart "layer2_interface" "1"
+	fi
+}
+
+get_annexm_status() {
+	local dev="$1"
+	local val=""
+	if [ "$dev" = "$WAN_INST_ATM" ]; then
+		val=`$UCI_GET layer2_interface.capabilities.AnnexM`
+		val=`echo $val|tr '[A-Z]' '[a-z]'`
+	fi 
+	[ "$val" = "enabled" ] && echo "1" || echo "0"
+}
 
 get_wandevice_wandevice_parameters() {
 	local dev="$1"
@@ -726,6 +753,7 @@ get_wandevice_wandevice_parameters() {
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamMaxRate" "0" "" "" "get_wan_device_dsl_upstreammaxrate $dev" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamAttenuation" "0" "" "" "get_wan_device_dsl_upstreamattenuation $dev" "xsd:int"
 	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.UpstreamNoiseMargin" "0" "" "" "get_wan_device_dsl_upstreamnoisemargin $dev" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANDSLInterfaceConfig.X_INTENO_SE_AnnexMEnable" "1" "get_annexm_status $dev" "set_annexm_enable $dev \$val" "" "xsd:boolean"
 	if [ "$dev" = "$WAN_INST_ETH" ]; then
 		get_object_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig." "0"
 		get_param_cache_generic "InternetGatewayDevice.WANDevice.$dev.WANEthernetInterfaceConfig.Enable" "1" "" "set_wan_eth_intf_enable \$val $fdev" "get_wan_eth_intf_enable $fdev" "xsd:boolean"
