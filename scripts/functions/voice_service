@@ -300,12 +300,9 @@ set_sip_x_002207_call_lines() {
 
 get_line_enable() {
 	local num="$1"
-	local line_name="$2"
 	local line_num=""
 	local val=""
 	val=`$UCI_GET voice_client.sip$num.enabled 2> /dev/null`
-	let num=$num+1
-	line_num=`$UCI_GET voice_client.$line_name.instances|cut -d : -f$num`
 	if [ "$val" = "0" ]; then
 	    val="Disabled"
 	else
@@ -316,8 +313,7 @@ get_line_enable() {
 
 set_line_enable() {
 	local num="$1"
-	local line_name="$2"
-	local val="$3"
+	local val="$2"
 	if [ "$val" = "Enabled" ]; then
 	    val="1"
 	else
@@ -330,8 +326,9 @@ set_line_enable() {
 
 set_line_directory_number() {
 	local num="$1"
-	local line_name="$2"
+	local instance_line="$2"
 	local val="$3"
+	local line_name=`$UCI_SHOW voice_client | grep "voice_client\.brcm[0-9]\+\.instance=$instance_line" | awk -F '.' '{print$2}'`
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.$line_name.extension="$val"
@@ -376,8 +373,7 @@ get_line_call_state() {
 
 set_line_calling_features_caller_id_name() {
 	local num="$1"
-	local line_name="$2"
-	local val="$3"
+	local val="$2"
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.displayname="$val"
@@ -390,8 +386,9 @@ get_line_calling_features_callwaiting() {
 }
 
 set_line_calling_features_callwaiting() {
-	local line_name="$1"
-	local val="$2"
+	local instance_line="$1"
+	local val="$2"	
+	local line_name=`$UCI_SHOW voice_client | grep "voice_client\.brcm[0-9]\+\.instance=$instance_line" | awk -F '.' '{print$2}'`
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
 		val="1"
@@ -407,8 +404,9 @@ set_line_calling_features_callwaiting() {
 
 set_line_x_002207_line_profile() {
 	local num="$1"
-	local line_name="$2"
+	local instance_line="$2"
 	local val="$3"
+	local line_name=`$UCI_SHOW voice_client | grep "voice_client\.brcm[0-9]\+\.instance=$instance_line" | awk -F '.' '{print$2}'`
 	local sip_id=$((val-1))
 	if [ "`$UCI_GET voice_client.sip$sip_id`" = "" -o "$num" = "$sip_id" ];then
 		return 0
@@ -428,12 +426,32 @@ set_line_x_002207_line_profile() {
 	fi
 }
 
+set_line_x_002207_brcm_line() {
+	local instance_line="$1"
+	local val="$2"
+	local line_name=`$UCI_SHOW voice_client | grep "voice_client\.brcm[0-9]\+\.instance=$instance_line" | awk -F '.' '{print$2}'`
+	val="brcm$val"
+	[ "`$UCI_GET voice_client.$val`" != "brcm_line" ] && return
+	local sip_account="`$UCI_GET voice_client.$val.sip_account`"
+	local instance="`$UCI_GET voice_client.$val.instance`"
+	if [ "$sip_account" != "-" -a "$sip_account" != "" ] || [ "$instance" != "" ]; then
+		return
+	fi
+	sip_account="`$UCI_GET voice_client.$line_name.sip_account`"
+	instance="`$UCI_GET voice_client.$line_name.instance`"
+	$UCI_SET voice_client.$line_name.instance=
+	$UCI_SET voice_client.$line_name.sip_account='-'
+	$UCI_SET voice_client.$val.sip_account="$sip_account"
+	$UCI_SET voice_client.$val.instance="$instance"
+	delay_service restart "voice_client" "5"
+	delay_service restart "asterisk" "6"
+}
+
 #under InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.{i}.Line.{i}.SIP.
 
 set_line_sip_auth_username() {
 	local num="$1"
-	local line_name="$2"
-	local val="$3"
+	local val="$2"
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.authuser="$val"
@@ -441,8 +459,7 @@ set_line_sip_auth_username() {
 
 set_line_sip_auth_password() {
 	local num="$1"
-	local line_name="$2"
-	local val="$3"
+	local val="$2"
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"
 	$UCI_SET voice_client.sip$num.secret="$val"
@@ -460,8 +477,7 @@ get_line_sip_uri() {
 
 set_line_sip_uri() {
 	local num="$1"
-	local line_name="$2"
-	local val="$3"
+	local val="$2"
 	delay_service restart "voice_client" "5"
 	delay_service restart "asterisk" "6"q
 	local user=${val%@*}
@@ -814,7 +830,7 @@ get_services_voice_service_generic() {
 			continue
 		fi
 		local line_num=`update_get_vp_line_instance $line_name $profile_num`
-		get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num"
+		get_services_voice_service_line_generic "$profile_num" "$sip_id" "$line_num" "$line_name"
 	done
 	
 }
@@ -823,21 +839,23 @@ get_services_voice_service_line_generic() {
 	local profile_num="$1"
 	local sip_id="$2"
 	local line_num="$3"
+	local line_name="$4"
 	local ucodec
 
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num." "1"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Enable" "1" "get_line_enable $sip_id $line_name" "set_line_enable $sip_id $line_name \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.DirectoryNumber" "1" "$UCI_GET voice_client.$line_name.extension" "set_line_directory_number $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Enable" "1" "get_line_enable $sip_id $line_name" "set_line_enable $sip_id  \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.DirectoryNumber" "1" "$UCI_GET voice_client.$line_name.extension" "set_line_directory_number $sip_id $profile_num.$line_num \$val"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Status" "0" "" "" "get_line_status $sip_id $line_name"
 	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallState" "0" "" "" "get_line_call_state $sip_id $line_name"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id $line_name \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallWaitingEnable" "1" "get_line_calling_features_callwaiting $line_name" "set_line_calling_features_callwaiting $line_name \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "echo $((sip_id+1))" "set_line_x_002207_line_profile $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallerIDName" "1" "$UCI_GET voice_client.sip$sip_id.displayname" "set_line_calling_features_caller_id_name $sip_id \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.CallingFeatures.CallWaitingEnable" "1" "get_line_calling_features_callwaiting $line_name" "set_line_calling_features_callwaiting $profile_num.$line_num \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_LineProfile" "1" "echo $((sip_id+1))" "set_line_x_002207_line_profile $sip_id $profile_num.$line_num  \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.X_002207_BRCMLine" "1" "echo ${line_name//[a-z A-Z]/}" "set_line_x_002207_brcm_line $profile_num.$line_num  \$val"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP." "0"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id $line_name \$val"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id $line_name \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id $line_name \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthUserName" "1" "$UCI_GET voice_client.sip$sip_id.authuser" "set_line_sip_auth_username $sip_id  \$val"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.AuthPassword" "1" "" "set_line_sip_auth_password $sip_id \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.SIP.URI" "1" "get_line_sip_uri $sip_id $line_name" "set_line_sip_uri $sip_id \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec." "0"
 	get_object_cache_generic "InternetGatewayDevice.Services.VoiceService.1.VoiceProfile.$profile_num.Line.$line_num.Codec.List." "0"
@@ -953,9 +971,9 @@ get_line_max_instance() {
 }
 
 add_voice_profile() {
-local i="$1"	
-let j=$i+1
-$UCI_BATCH << EOF 2>&1 >/dev/null
+	local i="$1"	
+	let j=$i+1
+	$UCI_BATCH << EOF 2>&1 >/dev/null
 	set voice_client.sip$i=sip_service_provider
 	set voice_client.sip$i.name='Account $j'
 	set voice_client.sip$i.enabled='0'
@@ -977,14 +995,14 @@ EOF
 }
 
 delete_voice_profile() {
-local i="$1"
-$UCI_DELETE voice_client.sip$i
+	local i="$1"
+	$UCI_DELETE voice_client.sip$i
 }
 
 add_line() {
-local i="$1"
-local j="$2"
-$UCI_BATCH << EOF 2>&1 >/dev/null
+	local i="$1"
+	local j="$2"
+	$UCI_BATCH << EOF 2>&1 >/dev/null
 	set voice_client.brcm$i.sip_account="sip$j"
 EOF
 }
@@ -1002,11 +1020,11 @@ delete_line() {
 }
 
 delete_associated_line_instances() {
-local i=$1
-for line in `$UCI_SHOW voice_client|grep "voice_client.brcm[0-9]\+.sip_account=sip$i$" | awk -F '.' '{print $2}'`; do
-	$UCI_SET voice_client.$line.sip_account="-"
-	$UCI_SET voice_client.$line.instance=
-done
+	local i=$1
+	for line in `$UCI_SHOW voice_client|grep "voice_client.brcm[0-9]\+.sip_account=sip$i$" | awk -F '.' '{print $2}'`; do
+		$UCI_SET voice_client.$line.sip_account="-"
+		$UCI_SET voice_client.$line.instance=
+	done
 }
 
 add_line_object() {
@@ -1074,7 +1092,7 @@ delete_line_object() {
 delete_line_object_all() {
 	local instances="$2"
 	local filename="$3"
-  local brcm
+	local brcm
 	
 	local sip_id=$((instances-1))
 	[ "`$UCI_GET voice_client.sip$sip_id`" = "" ] && return $FAULT_CPE_INVALID_PARAMETER_NAME
@@ -1108,7 +1126,7 @@ delete_profile_object() {
 
 delete_profile_object_all() {
 	local filename="$2"
-  local sip_id
+	local sip_id
 	
 	for sip_id in `$UCI_SHOW  voice_client |grep "voice_client.sip[0-9]\+=sip_service_provider" | awk -F'[=.]' '{print $2}'`;do
 		sip_id=${sip_id#sip}
