@@ -2,11 +2,13 @@
 
 
 # USAGE:
-# ./generate_xml.sh <scripts path> <product class>
+# ./generate_xml.sh <scripts path> <product class> <device protocol> <model name> <software version>
 # If the input arguments are empty, then use the default values:
 SCRIPTS_PATH=${1:-"/home/anis/cwmp/iop-aa/package/freecwmp/src/scripts/functions/"}
 PRODUCT_CLASS=${2:-"DG301-W7P2U"}
-
+DEVICE_PROTOCOL=${3:-"DEVICE_PROTOCOL_DSLFTR069v1"}
+MODEL_NAME=${4:-"DG301-W7P2U"}
+SOFTWARE_VERSION=${5:-"1.2.3.4B"}
 cnt_obj=0
 cnt_param=0
 
@@ -116,10 +118,12 @@ xml_write_line() {
 gen_data_model_xml_file() {
 echo "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 echo "<deviceType xmlns=\"urn:dslforum-org:hdm-0-0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:dslforum-org:hdm-0-0 deviceType.xsd\">"
-echo "    <protocol></protocol>"
+echo "    <protocol>$DEVICE_PROTOCOL</protocol>"
 echo "    <manufacturer>Inteno</manufacturer>"
 echo "    <manufacturerOUI>002207</manufacturerOUI>"
 echo "    <productClass>$PRODUCT_CLASS</productClass>"
+echo "    <modelName>$MODEL_NAME</modelName>" 
+echo "    <softwareVersion>$SOFTWARE_VERSION</softwareVersion>"
 echo "    <dataModel>"
 echo "        <attributes>"
 echo "            <attribute>"
