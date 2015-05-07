@@ -17,7 +17,7 @@ cnt_param=0
 is_object() {
 	str=$1
 	function=`echo $str |cut -d, -f1`
-	if [ $function == "get_object_cache_generic" ]; then
+	if [ "$function" == "get_object_cache_generic" ]; then
 		check=`echo $str |grep "\.[012345689]*\.,\$\|\.#\w*\.,\$"`
 		if [ "$check" == "" ]; then
 			echo "object"
@@ -52,6 +52,7 @@ xml_open_tag_object() {
 	local objn="$1"
 	local isarray="$2"
 	local level="$3"
+	local h_child="$4"
 	local sp1=0 sp2=0
 	let sp1=8+4*$level
 	let sp2=$sp1+4
@@ -59,16 +60,20 @@ xml_open_tag_object() {
 	printf "%${sp2}s"; echo "<parameterName>$objn</parameterName>"
 	printf "%${sp2}s"; echo "<parameterType>object</parameterType>"
 	printf "%${sp2}s"; echo "<array>$isarray</array>"
-	printf "%${sp2}s"; echo "<parameters>"
+	if [ -n "$h_child" -a "$h_child" != "0" ]; then
+		printf "%${sp2}s"; echo "<parameters>"
+	fi
 }
 
 xml_close_tag_object() {
 	local level="$1"
+	local h_child="$2"
 	local sp1=0 sp2=0
 	let sp1=8+4*$level
 	let sp2=$sp1+4
-
-	printf "%${sp2}s"; echo "</parameters>"
+	if [ -n "$h_child" -a "$h_child" != "0" ]; then
+		printf "%${sp2}s"; echo "</parameters>"
+	fi
 	printf "%${sp1}s"; echo "</parameter>"
 }
 
@@ -104,9 +109,10 @@ xml_write_line() {
 		if [ "$node" = "object" ]; then
 			local isarray=`echo "$line" | cut -d, -f2`
 			let cnt_obj++
-			xml_open_tag_object "$param" "$isarray" "$level"
+			local has_child=`grep "$path$param,[a-zA-Z0-9_,]\+$" tmp.txt |wc -l`;
+			xml_open_tag_object "$param" "$isarray" "$level" "$has_child"
 			xml_write_line "$((level+1))" "$param" "$path$param,"
-			xml_close_tag_object "$level"
+			xml_close_tag_object "$level" "$has_child"
 		elif [ "$node" = "parameter" ]; then
 			local type=`echo "$line" | cut -d, -f2`
 			let cnt_param++
