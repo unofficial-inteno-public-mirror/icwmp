@@ -103,12 +103,36 @@ get_wan_device_wan_access_type() {
 	esac
 }
 
+get_wan_device_get_dslstats () {
+	local object="$1"
+	local param="$2"
+	local val
+	json_init
+	json_load "`ubus call router dslstats`"
+	for str in $object; do
+		json_select "$str"
+	done
+	json_get_var val "$param"
+	json_close_object
+	echo "$val"
+}
+
+get_wan_device_wan_dsl_traffic () {
+	local val=`get_wan_device_get_dslstats "dslstats" "traffic"`
+	case "$val" in
+		ATM*) echo "adsl";;
+		PTM*) echo "vdsl";;
+	esac
+}
+
 get_wan_device_wan_dsl_interface_config_status() {
 	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		adsl_shown=`adsl info --stats|grep "^Status:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|sed 's/ *$//g'`
-		case "$adsl_shown" in
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "NoSignal Not a dsl interface"
+	else
+		local status=`get_wan_device_get_dslstats "dslstats" "status"`
+		case "$status" in
 			"Showtime")
 			val="Up"
 			;;
@@ -125,20 +149,24 @@ get_wan_device_wan_dsl_interface_config_status() {
 			val="NoSignal"
 			;;
 		esac
-	elif [ "$dev" = "$WAN_INST_ETH" ]; then
-		val="NoSignal Not a dsl interface"
-	else
-		val="NoSignal"
+		local dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo $val
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo $val
+		fi
 	fi
-	echo $val
 }
 
 get_wan_device_wan_dsl_interface_config_modulation_type() {
 	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		local adsl_shown=`adsl info --stats|grep "Mode:"|cut -f2 -d:|sed 's/\t*//g'|sed 's/^ *//g'|cut -f1 -d ' '`
-		case "$adsl_shown" in
+	
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "Not a dsl interface"
+	else 
+		local mode=`get_wan_device_get_dslstats "dslstats" "mode"`
+		case "$mode" in
 			G.Dmt)
 			val="ADSL_G.dmt"
 			;;
@@ -158,21 +186,24 @@ get_wan_device_wan_dsl_interface_config_modulation_type() {
 			val="ADSL_2plus"
 			;;
 			*)
-			val="$adsl_shown"
+			val="$mode"
 			;;
 		esac
-	elif [ "$dev" = "$WAN_INST_ETH" ]; then
-		val="Not a dsl interface"
-	else
-		val="VDSL"
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo $val
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo $val
+		fi
 	fi
-	echo $val
 }
 
 get_wan_device_dsl_datapath() {
 	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "None"
+	else
 		val=`adsl info --state|grep "Upstream rate"| awk -F'['$'\t'' ,]' '$1!="Max:" {print $2}'`
 		case "$val" in
 			FAST)
@@ -185,94 +216,156 @@ get_wan_device_dsl_datapath() {
 			val="None"
 			;;
 		esac
-	else
-		val="None"
-	fi
-	echo $val
+		dsl=`get_wan_device_wan_dsl_traffic`
+		
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo $val
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo $val
+		else
+			echo "None"
+		fi
+	fi	
 }
 
 get_wan_device_dsl_downstreamcurrrate() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --state|grep "Downstream rate"| awk '$1!="Max:" {print $11}'`
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local rate_down=`get_wan_device_get_dslstats "dslstats bearers 1" "rate_down"`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${rate_down:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${rate_down:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_downstreammaxrate() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --state|grep "Downstream rate"| awk '$1=="Max:" {print $10}'`
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local max_rate_down=`get_wan_device_get_dslstats "dslstats bearers 1" "max_rate_down"`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${max_rate_down:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${max_rate_down:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_downstreamattenuation() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --stats|grep "Attn(dB):"| awk '{print $2}'`
-		local vcom=${val#*.}
-		[ "$vcom" = "$val" ] && vcom=0
-		val=${val%.*}${vcom:0:1}
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local attn_down_x100=`get_wan_device_get_dslstats "dslstats" "attn_down_x100"`
+		local attn_down=`expr ${attn_down_x100} / 10`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${attn_down:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${attn_down:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_downstreamnoisemargin() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --stats|grep "SNR (dB):"| awk '{print $3}'`
-		local vcom=${val#*.}
-		[ "$vcom" = "$val" ] && vcom=0
-		val=${val%.*}${vcom:0:1}
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local snr_down_x100=`get_wan_device_get_dslstats "dslstats" "snr_down_x100"`
+		local snr_down=`expr ${snr_down_x100} / 10`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${snr_down:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${snr_down:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_upstreamcurrrate() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --state|grep "Upstream rate"| awk '$1!="Max:" {print $6}'`
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local rate_up=`get_wan_device_get_dslstats "dslstats bearers 1" "rate_up"`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${rate_up:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${rate_up:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_upstreammaxrate() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --state|grep "Upstream rate"| awk '$1=="Max:" {print $5}'`
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local max_rate_up=`get_wan_device_get_dslstats "dslstats bearers 1" "max_rate_up"`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${max_rate_up:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${max_rate_up:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_upstreamattenuation() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --stats|grep "Attn(dB):"| awk '{print $3}'`
-		local vcom=${val#*.}
-		[ "$vcom" = "$val" ] && vcom=0
-		val=${val%.*}${vcom:0:1}
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local attn_up_x100=`get_wan_device_get_dslstats "dslstats" "attn_up_x100"`
+		local attn_up=`expr ${attn_up_x100} / 10`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${attn_up:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${attn_up:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 get_wan_device_dsl_upstreamnoisemargin() {
-	local val=""
 	local dev="$1"
-	if [ "$dev" = "$WAN_INST_ATM" ]; then
-		val=`adsl info --stats|grep "SNR (dB):"| awk '{print $4}'`
-		local vcom=${val#*.}
-		[ "$vcom" = "$val" ] && vcom=0
-		val=${val%.*}${vcom:0:1}
+	if [ "$dev" = "$WAN_INST_ETH" ]; then
+		echo "0"
+	else
+		local snr_up_x100=`get_wan_device_get_dslstats "dslstats" "snr_up_x100"`
+		local snr_up=`expr ${snr_up_x100} / 10`
+		dsl=`get_wan_device_wan_dsl_traffic`
+		if [ "$dev" = "$WAN_INST_ATM" -a "$dsl" = "adsl" ]; then
+			echo ${snr_up:-0}
+		elif [ "$dev" = "$WAN_INST_PTM" -a "$dsl" = "vdsl" ]; then
+			echo ${snr_up:-0}
+		else
+			echo "0"
+		fi
 	fi
-	echo ${val:-0}
 }
 
 set_wan_device() {
@@ -1164,4 +1257,3 @@ delete_object_InternetGatewayDevice_WANDevice() {
 get_dynamic_linker_InternetGatewayDevice_WANDevice() {
 	return $FAULT_CPE_NO_FAULT
 }
-
