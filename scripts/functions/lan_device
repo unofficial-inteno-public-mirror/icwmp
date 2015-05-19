@@ -1401,6 +1401,21 @@ set_x_inteno_se_operating_channel_bandwidth () {
 	delay_service reload "network" "1"
 }
 
+get_x_inteno_se_maxssid () {
+	local num="$1"
+	local val=`$UCI_GET wireless.@wifi-iface[$num].bss_max`
+	echo "$val"
+}
+
+set_x_inteno_se_maxssid () {
+	local num="$1"
+	local val="$2"
+
+	$UCI_SET wireless.@wifi-iface[$num].bss_max=$val
+
+	delay_service reload "network" "1"
+}
+
 get_wlan_psk_assoc_MACAddress() {
 	local assoc_list adma
 	local wunit="$1"
@@ -1487,6 +1502,7 @@ get_landevice_wlanconfiguration_generic() {
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $wunit" "set_x_inteno_se_channelmode $wunit \$val"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard $wunit"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $wunit" "set_x_inteno_se_operating_channel_bandwidth $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_MaxSSID" "1" "get_x_inteno_se_maxssid $uci_num" "set_x_inteno_se_maxssid $uci_num \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1." "0"
