@@ -9,13 +9,13 @@ prefix_list="$prefix_list InternetGatewayDevice.DeviceInfo."
 get_device_info_hardware_version() {
 	local val=""
 	local dslAnnex=""
-	dslAnnex=`cat /proc/nvram/dslAnnex 2> /dev/null`                                                
+	dslAnnex=`cat /proc/nvram/dslAnnex 2> /dev/null`
 	val=`cat /etc/iop_version | cut -d'-' -f1 | sed s/$/"$dslAnnex"/ 2> /dev/null`
 	echo "$val"
 }
 
 get_device_info_uptime() {
-	local val=""                                           
+	local val=""
 	val=`cat /proc/uptime | cut -f1 -d'.'`
 	echo "$val"
 }
