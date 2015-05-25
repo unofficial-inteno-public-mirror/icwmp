@@ -28,6 +28,26 @@ get_base_mac_addr() {
 	echo "$mac"
 }
 
+get_catv_enabled () {
+	local val=""
+	val=`$UCI_GET catv.catv.enable`
+	case "$val" in
+		yes) echo 1;;
+		no) echo 0;;
+	esac
+}
+
+set_catv_enabled () {
+	local val="$1"
+	local stat=""
+	case "$val" in
+		1) stat="yes";;
+		0) stat="no";;
+	esac
+	$UCI_SET catv.catv.enable="$stat"
+	$UCI_COMMIT
+}
+
 get_cache_InternetGatewayDevice_DeviceInfo() {
 	get_object_cache_generic "InternetGatewayDevice.DeviceInfo." "0" "0"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.Manufacturer" "0" "$UCI_GET cwmp.cpe.manufacturer" "" "" "" "" "1"
@@ -42,6 +62,7 @@ get_cache_InternetGatewayDevice_DeviceInfo() {
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SpecVersion" "0" "freecwmp_get_parameter_value \$param" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode" "1" "freecwmp_get_parameter_value \$param" "freecwmp_set_parameter_value \$param \$val" "" "" "0" "1" "2"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_BaseMacAddr" "0" "get_base_mac_addr" "" "" "" "" "" ""
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_CATVEnabled" "1" "get_catv_enabled" "set_catv_enabled \$val"
 }
 
 get_dynamic_InternetGatewayDevice_DeviceInfo() {
