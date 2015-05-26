@@ -618,7 +618,9 @@ handle_action() {
 
 	if [ "$action" = "inform" ]; then
 		rm -f "$cache_linker_dynamic"
-		forced_param=`get_param_name_generic "" 0 | grep "\"forced_inform\""`
+		rm -f "$cache_path/"*"_dynamic"
+		get_dynamic_InternetGatewayDevice_WANDevice > "$cache_path/InternetGatewayDevice.WANDevice_dynamic"
+		local forced_param=`cat "$cache_path/"* | grep "\"forced_inform\""`
 		echo "$forced_param" | grep -v "\"get_cmd\""
 		echo "$forced_param" | grep "\"get_cmd\"" | while read line; do
 			json_init
@@ -630,6 +632,7 @@ handle_action() {
 			freecwmp_output "$param" "$val" "" "" "$type"
 		done
 		rm -f "$cache_linker_dynamic"
+		rm -f "$cache_path/"*"_dynamic"
 	fi
 
 	if [ "$action" = "notify" ]; then
