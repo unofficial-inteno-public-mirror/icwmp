@@ -30,8 +30,8 @@ get_upnp_status() {
 get_cache_InternetGatewayDevice_UPnP() {
 	get_object_cache_generic "InternetGatewayDevice.UPnP." "0"
 	get_object_cache_generic "InternetGatewayDevice.UPnP.Device." "0"
-	get_param_cache_generic "InternetGatewayDevice.UPnP.Device.Enable" "1" "get_upnp_enable" "set_upnp_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.UPnP.Device.X_INTENO_SE_Status" "0" "" "" "get_upnp_status"
+	get_param_cache_generic "InternetGatewayDevice.UPnP.Device.Enable" "1" "get_upnp_enable" "set_upnp_enable \$val" "" "upnpd.config.enable_upnp" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.UPnP.Device.X_INTENO_SE_Status" "0" "get_upnp_status" "" "1"
 }
 
 get_dynamic_InternetGatewayDevice_UPnP() {

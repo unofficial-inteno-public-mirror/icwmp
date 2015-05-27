@@ -16,8 +16,8 @@ get_lan_wlan_configuration_number() {
 get_cache_InternetGatewayDevice_LANInterfaces() {
 	local ei wi=0
 	get_object_cache_generic "InternetGatewayDevice.LANInterfaces." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceNumberOfEntries" "0" "get_lan_ethernet_interface_number" "" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANWLANConfigurationNumberOfEntries" "0" "get_lan_wlan_configuration_number" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceNumberOfEntries" "0" "get_lan_ethernet_interface_number" "" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANInterfaces.LANWLANConfigurationNumberOfEntries" "0" "get_lan_wlan_configuration_number" "" "" "" "xsd:unsignedInt"
 	get_object_cache_generic "InternetGatewayDevice.LANInterfaces.LANEthernetInterfaceConfig." "0"
 	for ei in `db get hw.board.ethernetLanPorts`; do
 		local li=${ei#eth}

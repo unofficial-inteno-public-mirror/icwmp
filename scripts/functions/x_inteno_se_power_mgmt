@@ -40,10 +40,10 @@ get_power_mgmt_nbr_interfaces() {
 get_cache_InternetGatewayDevice_X_INTENO_SE_PowerManagement() {
 	local val
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement." "0"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.EthernetAutoPowerDownEnable" "1" "get_power_mgmt_value ethapd" "set_power_mgmt_param_value ethapd \$val" "" "xsd:boolean" 
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.EnergyEfficientEthernetEnable" "1" "get_power_mgmt_value eee" "set_power_mgmt_param_value eee \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.NumberOfEthernetInterfacesPoweredUp" "0" "" "" "get_power_mgmt_nbr_interfaces up" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.NumberOfEthernetInterfacesPoweredDown" "0" "" "" "get_power_mgmt_nbr_interfaces down" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.EthernetAutoPowerDownEnable" "1" "get_power_mgmt_value ethapd" "set_power_mgmt_param_value ethapd \$val" "" "power_mgmt.power_mgmt.ethapd" "xsd:boolean" 
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.EnergyEfficientEthernetEnable" "1" "get_power_mgmt_value eee" "set_power_mgmt_param_value eee \$val" "" "power_mgmt.power_mgmt.eee" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.NumberOfEthernetInterfacesPoweredUp" "0" "get_power_mgmt_nbr_interfaces up" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_PowerManagement.NumberOfEthernetInterfacesPoweredDown" "0" "get_power_mgmt_nbr_interfaces down" "" "1" "" "xsd:unsignedInt"
 }
 
 get_dynamic_InternetGatewayDevice_X_INTENO_SE_PowerManagement() {

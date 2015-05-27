@@ -413,20 +413,20 @@ get_cache_object_bridge_vlan() {
 	local vb="$2"
 	local iv="$3"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv." "1"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANEnable" "1" "$UCI_GET dmmap.$vb.enable" "set_bridgevlan_enable $vb \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANName" "1" "$UCI_GET dmmap.$vb.name" "\$UCI_SET dmmap.$vb.name=\$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANID" "1" "$UCI_GET dmmap.$vb.vid" "set_bridgevlan_vid $vb \$val" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANEnable" "1" "\$UCI_GET dmmap.$vb.enable" "set_bridgevlan_enable $vb \$val" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANName" "1" "\$UCI_GET dmmap.$vb.name" "\$UCI_SET dmmap.$vb.name=\$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN.$iv.VLANID" "1" "\$UCI_GET dmmap.$vb.vid" "set_bridgevlan_vid $vb \$val" "" "" "xsd:unsignedInt"
 }
 
 get_cache_object_bridge() {
 	local iface="$1"
 	local ib="$2"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib." "1"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeEnable" "1" "" "set_interface_enable_ubus $iface \$val" "get_interface_enable_ubus $iface" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeKey" "0" "echo $ib" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeEnable" "1" "get_interface_enable_ubus $iface" "set_interface_enable_ubus $iface \$val" "1" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeKey" "0" "echo $ib" "" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.BridgeName" "1" "echo $iface" "set_bridge_bridgename $iface \$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLANID" "1" "get_bridge_vlanid $iface" "set_bridge_vlanid $iface \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "$UCI_GET network.$iface.ifname" "set_associated_interfaces $iface \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLANID" "1" "get_bridge_vlanid $iface" "set_bridge_vlanid $iface \$val" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "\$UCI_GET network.$iface.ifname" "set_associated_interfaces $iface \$val"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN." "1"
 	update_bridge_all_vlan_config_bybridge $iface $ib
 	local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | cut -f2 -d.`
@@ -442,7 +442,7 @@ get_cache_object_availableinterface() {
 	local key="$3"
 	local type="$4"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.AvailableInterface.$ia." "0"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.AvailableInterface.$ia.AvailableInterfaceKey" "0" "echo $key" "" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.AvailableInterface.$ia.AvailableInterfaceKey" "0" "echo $key" "" "" "" "xsd:unsignedInt"
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.AvailableInterface.$ia.InterfaceReference" "0" "echo $oface"
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.AvailableInterface.$ia.InterfaceType" "0" "echo $type"
 }
@@ -451,8 +451,8 @@ get_cache_object_marking() {
 	local im="$1"
 	local mb="$2"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im." "1"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingBridgeReference" "1" "$UCI_GET dmmap.$mb.bridgekey" "set_marking_bridgekey $mb \$val" "" "xsd:int"
-	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingInterface" "1" "$UCI_GET dmmap.$mb.interfacekey" "set_marking_interfacekey $mb \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingBridgeReference" "1" "\$UCI_GET dmmap.$mb.bridgekey" "set_marking_bridgekey $mb \$val" "" "" "xsd:int"
+	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking.$im.MarkingInterface" "1" "\$UCI_GET dmmap.$mb.interfacekey" "set_marking_interfacekey $mb \$val"
 }
 	
 get_cache_InternetGatewayDevice_Layer2Bridging() {

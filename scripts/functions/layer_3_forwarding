@@ -306,25 +306,25 @@ get_cache_object_layer3() {
 	local il="$2"
 	local p="$3"
 	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il." "0"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Enable" "$p" "get_layer3_enable \"$route\"" "set_layer3_enable $route \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Status" "0" "get_layer3_status \"$route\""
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Type" "0" "get_layer3_type \"$route\""
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestIPAddress" "$p" "get_layer3_destip \"$route\"" "set_layer3_destip $route \$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestSubnetMask" "$p" "get_layer3_destmask \"$route\"" "set_layer3_destmask $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Enable" "$p" "get_layer3_enable \"$route\"" "set_layer3_enable $route \$val" "" "$([ $p = 1 ] && echo network.$route)" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Status" "0" "get_layer3_status \"$route\"" "" "" "$([ $p = 1 ] && echo network.$route)"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Type" "0" "get_layer3_type \"$route\"" "" "" "$([ $p = 1 ] && echo network.$route.netmask)"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestIPAddress" "$p" "get_layer3_destip \"$route\"" "set_layer3_destip $route \$val" "" "$([ $p = 1 ] && echo network.$route.target)" 
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.DestSubnetMask" "$p" "get_layer3_destmask \"$route\"" "set_layer3_destmask $route \$val" "" "$([ $p = 1 ] && echo network.$route.netmask)"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceIPAddress" "0" "echo 0.0.0.0"
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.SourceSubnetMask" "0" "echo 0.0.0.0"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.GatewayIPAddress" "$p" "get_layer3_gatewayip \"$route\"" "set_layer3_gatewayip $route \$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Interface" "$p" "" "set_layer3_interface_linker_parameter $route \$val" "get_layer3_interface_linker_parameter $(get_layer3_interface "$route")"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.ForwardingMetric" "$p" "get_layer3_metric \"$route\"" "set_layer3_metric $route \$val"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.MTU" "$p" "get_layer3_mtu \"$route\"" "set_layer3_mtu $route \$val"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.GatewayIPAddress" "$p" "get_layer3_gatewayip \"$route\"" "set_layer3_gatewayip $route \$val" "" "$([ $p = 1 ] && echo network.$route.gateway)"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.Interface" "$p" "get_layer3_interface_linker_parameter $(get_layer3_interface "$route")" "set_layer3_interface_linker_parameter $route \$val" "1" "$([ $p = 1 ] && echo network.$route.interface)"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.ForwardingMetric" "$p" "get_layer3_metric \"$route\"" "set_layer3_metric $route \$val" "" "$([ $p = 1 ] && echo network.$route.metric)"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding.$il.MTU" "$p" "get_layer3_mtu \"$route\"" "set_layer3_mtu $route \$val" "" "$([ $p = 1 ] && echo network.$route.mtu)"
 }
 
 get_cache_InternetGatewayDevice_Layer3Forwarding() {
 	local il=0 route
 	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding." "0"
 	get_object_cache_generic "InternetGatewayDevice.Layer3Forwarding.Forwarding." "0"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService" "1" "" "set_layer3_def_conn_serv \$val" "get_parameter_by_linker linker_interface:\$default_wan"
-	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.ForwardNumberOfEntries" "0" "" "" "get_layer3_nbr_entry" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.DefaultConnectionService" "1" "get_parameter_by_linker linker_interface:\$default_wan" "set_layer3_def_conn_serv \$val" "1"
+	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.ForwardNumberOfEntries" "0" "get_layer3_nbr_entry" "" "1" "" "xsd:unsignedInt"
 	local route routes=`$UCI_SHOW network | grep "network\.@route[^=]\+=route" | cut -d. -f2 | cut -d= -f1`
 	for route in $routes; do
 		il=`update_layer3_instance $route`

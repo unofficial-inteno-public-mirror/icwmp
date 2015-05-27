@@ -61,6 +61,7 @@ UCI_DEL_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} del_list -q"
 UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
 UCI_RENAME="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} rename -q"
 NEW_LINE='\n'
+SERVICE_RESTART="SERVICE_RESTART"
 cache_path="/etc/cwmpd/.cache"
 tmp_cache="/tmp/.freecwmp_dm"
 set_tmp_file="/tmp/.set_tmp_file"
@@ -621,8 +622,8 @@ handle_action() {
 		rm -f "$cache_path/"*"_dynamic"
 		get_dynamic_InternetGatewayDevice_WANDevice > "$cache_path/InternetGatewayDevice.WANDevice_dynamic"
 		local forced_param=`cat "$cache_path/"* | grep "\"forced_inform\""`
-		echo "$forced_param" | grep -v "\"get_cmd\""
-		echo "$forced_param" | grep "\"get_cmd\"" | while read line; do
+		echo "$forced_param" | grep "\"value\"" | grep -v "\"dynamic_val\""
+		echo "$forced_param" | grep "\"dynamic_val\"" | while read line; do
 			json_init
 			json_load "$line"
 			json_get_var exec_get_cmd get_cmd

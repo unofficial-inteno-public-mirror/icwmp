@@ -1468,40 +1468,40 @@ get_landevice_wlanconfiguration_generic() {
 	local wunit=$4
 	local wlctl_num=$5
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num." "0" "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "0" "" "" "get_wlan_status $uci_num"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Enable" "1" "get_wlan_enable $uci_num" "set_wlan_enable $uci_num \$val" "" "wireless.$uci_num.disabled" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Status" "0" "get_wlan_status $uci_num" "" "1" "wireless.$uci_num.disabled"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BSSID" "0" "get_wlan_bssid $wunit $wlctl_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "$UCI_GET wireless.$wunit.hwmode" "set_wlan_max_bit_rate $wunit \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable $wunit" "set_wlan_auto_channel_enable $wunit \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "$UCI_GET wireless.@wifi-iface[$uci_num].ssid" "set_wlan_ssid $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $wunit" "set_wlan_standard $wunit \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "1" "get_wlan_wep_key_index $uci_num" "set_wlan_wep_key_index $uci_num \$val" "" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MaxBitRate" "1" "\$UCI_GET wireless.$wunit.hwmode" "set_wlan_max_bit_rate $wunit \$val" "" "wireless.$wunit.hwmode"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Channel" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val" "" "wireless.$wunit.channel" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AutoChannelEnable" "1" "get_wlan_auto_channel_enable $wunit" "set_wlan_auto_channel_enable $wunit \$val" "" "wireless.$wunit.channel" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSID" "1" "\$UCI_GET wireless.@wifi-iface[$uci_num].ssid" "set_wlan_ssid $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].ssid"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BeaconType" "1" "get_wlan_beacon_type $uci_num" "set_wlan_beacon_type $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.MACAddressControlEnabled" "1" "get_wlan_mac_control_enable $uci_num" "set_wlan_mac_control_enable $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].macfilter" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.Standard" "1" "get_wlan_standard $wunit" "set_wlan_standard $wunit \$val"  "" "wireless.$wunit.hwmode"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKeyIndex" "1" "get_wlan_wep_key_index $uci_num" "set_wlan_wep_key_index $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption wireless.@wifi-iface[$uci_num].key" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "" "1"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPEncryptionLevel" "0" "get_wlan_wep_encryption_level $uci_num"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicEncryptionModes" "1" "get_wlan_basic_encryption_modes $uci_num" "set_wlan_basic_encryption_modes $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicAuthenticationMode" "1" "get_wlan_basic_authentication_mode $uci_num" "set_wlan_basic_authentication_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAEncryptionModes" "1" "get_wlan_wpa_encryption_modes $uci_num" "set_wlan_wpa_encryption_modes $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode" "1" "get_wlan_wpa_authentication_mode $uci_num" "set_wlan_wpa_authentication_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes" "1" "get_wlan_ieee_11i_encryption_modes $uci_num" "set_wlan_ieee_11i_encryption_modes $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode" "1" "get_wlan_ieee_11i_authentication_mode $uci_num" "set_wlan_ieee_11i_authentication_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "" "set_wlan_radio_enabled $wunit $wlctl_num \$val" "get_wlan_radio_enabled $wunit $wlctl_num" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "" "" "get_wlan_total_associations $wunit $wlctl_num" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesSent" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_packets" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "" "" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_packets" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicEncryptionModes" "1" "get_wlan_basic_encryption_modes $uci_num" "set_wlan_basic_encryption_modes $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.BasicAuthenticationMode" "1" "get_wlan_basic_authentication_mode $uci_num" "set_wlan_basic_authentication_mode $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAEncryptionModes" "1" "get_wlan_wpa_encryption_modes $uci_num" "set_wlan_wpa_encryption_modes $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPAAuthenticationMode" "1" "get_wlan_wpa_authentication_mode $uci_num" "set_wlan_wpa_authentication_mode $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iEncryptionModes" "1" "get_wlan_ieee_11i_encryption_modes $uci_num" "set_wlan_ieee_11i_encryption_modes $uci_num \$val"  "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.IEEE11iAuthenticationMode" "1" "get_wlan_ieee_11i_authentication_mode $uci_num" "set_wlan_ieee_11i_authentication_mode $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.RadioEnabled" "1" "get_wlan_radio_enabled $wunit $wlctl_num" "set_wlan_radio_enabled $wunit $wlctl_num \$val" "1" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.DeviceOperationMode" "1" "get_wlan_device_operation_mode $uci_num" "set_wlan_device_operation_mode $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].mode"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.AuthenticationServiceMode" "1" "get_wlan_authentication_service_mode $uci_num" "set_wlan_authentication_service_mode $uci_num \$val"  "" "wireless.@wifi-iface[$uci_num].encryption"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalAssociations" "0" "get_wlan_total_associations $wunit $wlctl_num" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.ChannelsInUse" "1" "get_wlan_channel $wunit" "set_wlan_channel $wunit \$val" "" "wireless.$wunit.channel"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesSent" "0" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_bytes" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalBytesReceived" "0" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_bytes" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsSent" "0" "get_wlan_devstatus_statistics $wunit $wlctl_num tx_packets" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.TotalPacketsReceived" "0" "get_wlan_devstatus_statistics $wunit $wlctl_num rx_packets" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.SSIDAdvertisementEnabled" "1" "get_wlan_ssid_advertisement_enable $uci_num" "set_wlan_ssid_advertisement_enable $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].hidden" "xsd:boolean"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $wunit" "set_x_inteno_se_channelmode $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WPS.Enable" "1" "get_wlan_wps_enable $uci_num" "set_wlan_wps_enable $uci_num \$val" "" "wireless.@wifi-iface[$uci_num].wps_pbc" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_ChannelMode" "1" "get_x_inteno_se_channelmode $wunit" "set_x_inteno_se_channelmode $wunit \$val" "" "wireless.$wunit.channel"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_SupportedStandards" "0" "get_x_inteno_se_supported_standard $wunit"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $wunit" "set_x_inteno_se_operating_channel_bandwidth $wunit \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_OperatingChannelBandwidth" "1" "get_x_inteno_se_operating_channel_bandwidth $wunit" "set_x_inteno_se_operating_channel_bandwidth $wunit \$val" "" "wireless.$wunit.bandwidth wireless.$wunit.channel"
 	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.X_INTENO_SE_MaxSSID" "1" "get_x_inteno_se_maxssid $uci_num" "set_x_inteno_se_maxssid $uci_num \$val"
 
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey." "0"
@@ -1509,10 +1509,10 @@ get_landevice_wlanconfiguration_generic() {
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3." "0"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1.WEPKey" "1" "" "set_wlan_wep_key $uci_num 1 \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2.WEPKey" "1" "" "set_wlan_wep_key $uci_num 2 \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3.WEPKey" "1" "" "set_wlan_wep_key $uci_num 3 \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num 4 \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.1.WEPKey" "1" "" "set_wlan_wep_key $uci_num 1 \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.2.WEPKey" "1" "" "set_wlan_wep_key $uci_num 2 \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.3.WEPKey" "1" "" "set_wlan_wep_key $uci_num 3 \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.WEPKey.4.WEPKey" "1" "" "set_wlan_wep_key $uci_num 4 \$val" "" "" "" "" "" "" "1"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey." "0"
 	while [ "$((pki++))" != "10" ];do
 		get_landevice_wlanconfiguration_presharedkey "$lan_num" "$wlan_num" "$pki" "$wunit" "$wlctl_num" "$uci_num"
@@ -1528,9 +1528,9 @@ get_landevice_wlanconfiguration_presharedkey() {
 	local wlctl_num=$5
 	local uci_num=$6
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.AssociatedDeviceMACAddress" "0" "" "" "get_wlan_psk_assoc_MACAddress $wunit $wlctl_num $uci_num $pki"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.PreSharedKey" "1" "" "set_wlan_pre_shared_key $uci_num \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.KeyPassphrase" "1" "" "set_wlan_key_passphrase $uci_num \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$lan_num.WLANConfiguration.$wlan_num.PreSharedKey.$pki.AssociatedDeviceMACAddress" "0" "get_wlan_psk_assoc_MACAddress $wunit $wlctl_num $uci_num $pki" "" "1"
 }
 get_landevice_lanhostconfigmanagement_ipinterface() {
 	local idev=$1
@@ -1538,11 +1538,11 @@ get_landevice_lanhostconfigmanagement_ipinterface() {
 	local ilan=$3
 	local nlan=$4
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan." "0" "" "linker_interface:$nlan"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "" "set_interface_enable_ubus $nlan \$val" "get_interface_enable_ubus $nlan" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceIPAddress" "1" "get_interface_ipaddress $nlan" "set_interface_ipaddress $nlan \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceSubnetMask" "1" "get_interface_subnetmask $nlan" "set_interface_subnetmask $nlan \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceAddressingType" "1" "get_interface_addressingtype $nlan" "set_interface_addressingtype $nlan \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.Enable" "1" "get_interface_enable_ubus $nlan" "set_interface_enable_ubus $nlan \$val" "1" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.X_BROADCOM_COM_FirewallEnabled" "1" "get_interface_firewall_enabled $nlan" "set_interface_firewall_enabled $nlan \$val" "" "firewall.zone"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceIPAddress" "1" "get_interface_ipaddress $nlan" "set_interface_ipaddress $nlan \$val" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceSubnetMask" "1" "get_interface_subnetmask $nlan" "set_interface_subnetmask $nlan \$val" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface.$ilan.IPInterfaceAddressingType" "1" "get_interface_addressingtype $nlan" "set_interface_addressingtype $nlan \$val" "" "network.$nlan.proto"
 }
 
 get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
@@ -1550,9 +1550,9 @@ get_landevice_lanhostconfigmanagement_dhcpstaticaddress() {
 	local idhcp=$2
 	local ndhcp=$3
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp." "1"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Enable" "1" "get_dhcpstaticaddress_enable $ndhcp" "set_dhcpstaticaddress_enable $ndhcp \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Chaddr" "1" "get_dhcpstaticaddress_chaddr $ndhcp" "set_dhcpstaticaddress_chaddr $ndhcp \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Yiaddr" "1" "$UCI_GET dhcp.$ndhcp.ip" "set_dhcpstaticaddress_yiaddr $ndhcp \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Enable" "1" "get_dhcpstaticaddress_enable $ndhcp" "set_dhcpstaticaddress_enable $ndhcp \$val" "" "dhcp.$slease.mac" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Chaddr" "1" "get_dhcpstaticaddress_chaddr $ndhcp" "set_dhcpstaticaddress_chaddr $ndhcp \$val" "" "dhcp.$slease.mac"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress.$idhcp.Yiaddr" "1" "\$UCI_GET dhcp.$ndhcp.ip" "set_dhcpstaticaddress_yiaddr $ndhcp \$val" "" "dhcp.$ndhcp.ip"
 }
 
 get_landevice_ethernet_interface_config() {
@@ -1561,19 +1561,19 @@ get_landevice_ethernet_interface_config() {
 	local eth=$3
 	local flan=$4
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Enable" "1" "" "set_lan_eth_iface_cfg_enable $eth \$val" "get_lan_eth_iface_cfg_enable $eth" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Status" "0" "" "" "get_lan_eth_iface_cfg_status $eth"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.MaxBitRate" "1" "get_lan_eth_iface_cfg_maxbitrate $eth" "set_lan_eth_iface_cfg_maxbitrate $eth \$val"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.DuplexMode" "1" "get_lan_eth_iface_cfg_duplexmode $eth" "set_lan_eth_iface_cfg_duplexmode $eth \$val"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Enable" "1" "get_lan_eth_iface_cfg_enable $eth" "set_lan_eth_iface_cfg_enable $eth \$val" "1" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Status" "0" "get_lan_eth_iface_cfg_status $eth" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.MaxBitRate" "1" "get_lan_eth_iface_cfg_maxbitrate $eth" "set_lan_eth_iface_cfg_maxbitrate $eth \$val" "" "ports.@ethports[0].$eth"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.DuplexMode" "1" "get_lan_eth_iface_cfg_duplexmode $eth" "set_lan_eth_iface_cfg_duplexmode $eth \$val" "" "ports.@ethports[0].$eth"
 	get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats." "0"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesSent" "0" "" "" "get_lan_eth_iface_cfg_stats $eth tx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesReceived" "0" "" "" "get_lan_eth_iface_cfg_stats $eth rx_bytes" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsSent" "0" "" "" "get_lan_eth_iface_cfg_stats $eth tx_packets" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsReceived" "0" "" "" "get_lan_eth_iface_cfg_stats $eth rx_packets" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesSent" "0" "get_lan_eth_iface_cfg_stats $eth tx_bytes" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.BytesReceived" "0" "get_lan_eth_iface_cfg_stats $eth rx_bytes" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsSent" "0" "get_lan_eth_iface_cfg_stats $eth tx_packets" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANEthernetInterfaceConfig.$ieth.Stats.PacketsReceived" "0" "get_lan_eth_iface_cfg_stats $eth rx_packets" "" "1" "" "xsd:unsignedInt"
 }
 
 get_cache_InternetGatewayDevice_LANDevice() {
-	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0"
+	get_object_cache_generic "InternetGatewayDevice.LANDevice." "0" "0" "" "add.network.interface delete.network.interface"
 	for interface in `get_lan_device_interface`;do
 		local lan_iface=${interface%%;*}
 		local idev=${lan_iface%%:*}
@@ -1585,21 +1585,21 @@ get_cache_InternetGatewayDevice_LANDevice() {
 		
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev." "0" "0"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement." "0"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "" "set_lan_dns $flan \$val" "get_lan_dns $flan"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $flan" "set_lan_dhcp_server_configurable $flan \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $flan" "set_lan_dhcp_server_enable $flan \$val" "" "xsd:boolean"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MinAddress" "1" "get_lan_dhcp_interval_address START $flan" "set_lan_dhcp_address_start $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MaxAddress" "1" "get_lan_dhcp_interval_address END $flan" "set_lan_dhcp_address_end $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.ReservedAddresses" "1" "get_lan_dhcp_reserved_addresses $flan" "set_lan_dhcp_reserved_addresses $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.SubnetMask" "1" "get_lan_dhcp_subnetmask $flan" "set_lan_dhcp_subnetmask $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPRouters" "1" "get_lan_dhcp_iprouters $flan" "set_lan_dhcp_iprouters $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_dhcp_leasetime $flan" "set_lan_dhcp_leasetime $flan \$val"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DomainName" "1" "get_lan_dhcp_domainname $flan" "set_lan_dhcp_domainname $flan \$val"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DNSServers" "1" "get_lan_dns $flan" "set_lan_dns $flan \$val" "1"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerConfigurable" "1" "get_lan_dhcp_server_configurable $flan" "set_lan_dhcp_server_configurable $flan \$val" "" "dhcp.$flan" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPServerEnable" "1" "get_lan_dhcp_server_enable $flan" "set_lan_dhcp_server_enable $flan \$val" "" "dhcp.$flan.ignore" "xsd:boolean"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MinAddress" "1" "get_lan_dhcp_interval_address START $flan" "set_lan_dhcp_address_start $flan \$val" "" "dhcp.$flan.start dhcp.$flan.limit network.$flan.ipaddr network.$flan.netmask"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.MaxAddress" "1" "get_lan_dhcp_interval_address END $flan" "set_lan_dhcp_address_end $flan \$val" "" "dhcp.$flan.start dhcp.$flan.limit network.$flan.ipaddr network.$flan.netmask"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.ReservedAddresses" "1" "get_lan_dhcp_reserved_addresses $flan" "set_lan_dhcp_reserved_addresses $flan \$val" "" "dhcp.host dhcp.$flan.start dhcp.$flan.limit network.$flan.ipaddr network.$flan.netmask"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.SubnetMask" "1" "get_lan_dhcp_subnetmask $flan" "set_lan_dhcp_subnetmask $flan \$val" "" "dhcp.$flan.netmask network.$flan.netmask"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPRouters" "1" "get_lan_dhcp_iprouters $flan" "set_lan_dhcp_iprouters $flan \$val" "" "network.$flan.gateway network.$flan.ipaddr"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPLeaseTime" "1" "get_lan_dhcp_leasetime $flan" "set_lan_dhcp_leasetime $flan \$val" "" "dhcp.$flan.leasetime"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DomainName" "1" "get_lan_dhcp_domainname $flan" "set_lan_dhcp_domainname $flan \$val" "" "dhcp.$flan.dhcp_option"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts." "0" "0"
-		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts.HostNumberOfEntries" "0" "" "" "get_lan_host_nbr_entries $flan" "xsd:unsignedInt"
+		get_param_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts.HostNumberOfEntries" "0" "get_lan_host_nbr_entries $flan" "" "1" "" "xsd:unsignedInt"
 		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.Hosts.Host." "0" "0"
-		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0"
-		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress." "1"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.IPInterface." "0" "" "" "add.network.interface delete.network.interface"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.LANHostConfigManagement.DHCPStaticAddress." "1" "" "" "add.dhcp.host delete.dhcp.host"
 
 		for lan in $lan_iface; do
 			ilan=${lan%%:*}
@@ -1612,7 +1612,7 @@ get_cache_InternetGatewayDevice_LANDevice() {
 			done
 		done
 		
-		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration." "0" "0"
+		get_object_cache_generic "InternetGatewayDevice.LANDevice.$idev.WLANConfiguration." "0" "0" "" "add.wireless.wifi-iface delete.wireless.wifi-iface"
 		local wunit iuci
 		for wunit in `$UCI_SHOW wireless|grep "wireless\.wl[0-9]\+=wifi-device" | awk -F '[.=]' '{print $2}'`; do
 			local wlctl_num=0

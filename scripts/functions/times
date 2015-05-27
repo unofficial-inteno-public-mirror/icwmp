@@ -60,12 +60,12 @@ set_time_enable() {
  
 get_cache_InternetGatewayDevice_Time() {
 	get_object_cache_generic "InternetGatewayDevice.Time." "0"
-	get_param_cache_generic "InternetGatewayDevice.Time.Enable" "1" "get_time_enable" "set_time_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer1" "1" "get_time_ntpserver 1" "set_time_ntpserver 1 \$val"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer2" "1" "get_time_ntpserver 2" "set_time_ntpserver 2 \$val"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer3" "1" "get_time_ntpserver 3" "set_time_ntpserver 3 \$val"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer4" "1" "get_time_ntpserver 4" "set_time_ntpserver 4 \$val"
-	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer5" "1" "get_time_ntpserver 5" "set_time_ntpserver 5 \$val"
+	get_param_cache_generic "InternetGatewayDevice.Time.Enable" "1" "get_time_enable" "set_time_enable \$val" "1" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer1" "1" "get_time_ntpserver 1" "set_time_ntpserver 1 \$val" "" "system.ntp.server"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer2" "1" "get_time_ntpserver 2" "set_time_ntpserver 2 \$val" "" "system.ntp.server"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer3" "1" "get_time_ntpserver 3" "set_time_ntpserver 3 \$val" "" "system.ntp.server"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer4" "1" "get_time_ntpserver 4" "set_time_ntpserver 4 \$val" "" "system.ntp.server"
+	get_param_cache_generic "InternetGatewayDevice.Time.NTPServer5" "1" "get_time_ntpserver 5" "set_time_ntpserver 5 \$val" "" "system.ntp.server"
 }
 
 get_dynamic_InternetGatewayDevice_Time() {

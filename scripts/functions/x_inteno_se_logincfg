@@ -16,10 +16,10 @@ EOF
 
 get_cache_InternetGatewayDevice_X_INTENO_SE_LoginCfg() {
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg." "0"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.AdminPassword" "1" "" "set_x_bcm_password admin \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.SupportPassword" "1" "" "set_x_bcm_password support \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.UserPassword" "1" "" "set_x_bcm_password user \$val" "" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.RootPassword" "1" "" "set_x_bcm_password root \$val" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.AdminPassword" "1" "" "set_x_bcm_password admin \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.SupportPassword" "1" "" "set_x_bcm_password support \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.UserPassword" "1" "" "set_x_bcm_password user \$val" "" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_LoginCfg.RootPassword" "1" "" "set_x_bcm_password root \$val" "" "" "" "" "" "" "1"
 }
 
 get_dynamic_InternetGatewayDevice_X_INTENO_SE_LoginCfg() {

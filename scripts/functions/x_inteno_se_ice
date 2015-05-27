@@ -48,8 +48,8 @@ set_ice_cloud_server() {
 # then map leaves to the getter and setter functions, defined above.
 get_cache_InternetGatewayDevice_X_INTENO_SE_ICE() {
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE." "0"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Enable" "1" "get_ice_cloud_enable" "set_ice_cloud_enable \$val" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Server" "1" "get_ice_cloud_server" "set_ice_cloud_server \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Enable" "1" "get_ice_cloud_enable" "set_ice_cloud_enable \$val" "" "ice.cloud.enabled" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_ICE.Server" "1" "get_ice_cloud_server" "set_ice_cloud_server \$val" "" "ice.cloud.server"
 }
 
 get_dynamic_InternetGatewayDevice_X_INTENO_SE_ICE() {

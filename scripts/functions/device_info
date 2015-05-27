@@ -6,6 +6,12 @@
 
 prefix_list="$prefix_list InternetGatewayDevice.DeviceInfo."
 
+get_device_manufactureroui() {
+	local val=""	                                          
+	val=`cat /proc/nvram/BaseMacAddr | awk '{ print \$1\$2\$3}' 2> /dev/null`
+	echo "$val"
+}
+
 get_device_info_hardware_version() {
 	local val=""
 	local dslAnnex=""
@@ -50,18 +56,18 @@ set_catv_enabled () {
 
 get_cache_InternetGatewayDevice_DeviceInfo() {
 	get_object_cache_generic "InternetGatewayDevice.DeviceInfo." "0" "0"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.Manufacturer" "0" "$UCI_GET cwmp.cpe.manufacturer" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ManufacturerOUI" "0" "cat /proc/nvram/BaseMacAddr | awk '{ print \$1\$2\$3}'" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ModelName" "0" "db get hw.board.routerModel" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProductClass" "0" "db get hw.board.iopVersion | cut -d'_' -f1" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SerialNumber" "0" "db get hw.board.serialNumber" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.HardwareVersion" "0" "db get hw.board.hardwareVersion" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SoftwareVersion" "0" "db get hw.board.iopVersion | cut -d'_' -f2" "" "" "" "0" "1" "2"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.UpTime" "0" "" "" "get_device_info_uptime" "xsd:unsignedInt"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.DeviceLog" "0" "" "" "dmesg | tail -n5"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SpecVersion" "0" "freecwmp_get_parameter_value \$param" "" "" "" "" "1"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode" "1" "freecwmp_get_parameter_value \$param" "freecwmp_set_parameter_value \$param \$val" "" "" "0" "1" "2"
-	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_BaseMacAddr" "0" "get_base_mac_addr" "" "" "" "" "" ""
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.Manufacturer" "0" "\$UCI_GET cwmp.cpe.manufacturer" "" "" "cwmp.cpe.manufacturer" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ManufacturerOUI" "0" "get_device_manufactureroui" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ModelName" "0" "db get hw.board.routerModel" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProductClass" "0" "db get hw.board.iopVersion | cut -d'_' -f1" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SerialNumber" "0" "db get hw.board.serialNumber" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.HardwareVersion" "0" "db get hw.board.hardwareVersion" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SoftwareVersion" "0" "db get hw.board.iopVersion | cut -d'_' -f2" "" "" "" "" "0" "1" "2"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.UpTime" "0" "get_device_info_uptime" "" "1" "" "xsd:unsignedInt"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.DeviceLog" "0" "dmesg | tail -n5" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.SpecVersion" "0" "freecwmp_get_parameter_value \$param" "" "" "" "" "" "1"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.ProvisioningCode" "1" "freecwmp_get_parameter_value \$param" "freecwmp_set_parameter_value \$param \$val" "" "cwmp.cpe.provisioning_code" "" "0" "1" "2"
+	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_BaseMacAddr" "0" "get_base_mac_addr"
 	get_param_cache_generic "InternetGatewayDevice.DeviceInfo.X_INTENO_SE_CATVEnabled" "1" "get_catv_enabled" "set_catv_enabled \$val"
 }
 

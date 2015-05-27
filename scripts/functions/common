@@ -272,6 +272,8 @@ freecwmp_cache_output_param() {
 	local forced_inform="$9"
 	local secret_value="$10"
 	local linker="$11"
+	local dynamic_val="$12"
+	local change_key="$13"
 	echo | {
 		json_init
 		json_add_string "parameter" "$parameter"
@@ -285,6 +287,8 @@ freecwmp_cache_output_param() {
 		[ "$forced_inform" != "" ] && json_add_string "forced_inform" "$forced_inform"
 		[ "$secret_value" != "" ] && json_add_string "secret_value" "$secret_value"
 		[ "$linker" != "" ] && json_add_string "linker" "$linker"
+		[ "$dynamic_val" != "" ] && json_add_string "dynamic_val" "$dynamic_val"
+		[ "$change_key" != "" ] && json_add_string "change_key" "$change_key"
 		json_close_object
 		MSG=`json_dump`
 		echo "$MSG"
@@ -298,12 +302,14 @@ freecwmp_cache_output_obj() {
 	local permission="$2"
 	local notif_permission="$3"
 	local linker="$4"
+	local change_key="$5"
 	echo | {
 		json_init
 		json_add_string "parameter" "$parameter"
 		json_add_string "writable" "$permission"
 		[ "$notif_permission" != "" ] && json_add_string "notif_permission" "$notif_permission"
 		[ "$linker" != "" ] && json_add_string "linker" "$linker"
+		[ "$change_key" != "" ] && json_add_string "change_key" "$change_key"
 		json_close_object
 		MSG=`json_dump`
 		echo "$MSG"
@@ -698,24 +704,26 @@ freecwmp_apply_vendor_configuration()
 get_param_cache_generic() {
 	local param="$1"
 	local permission="$2"
-	local val_cmd="$3"
+	local get_cmd="$3"
 	local set_cmd="$4"
-	local get_cmd="$5"
-	local type="$6"
-	local notif_permission="$7"
-	local forced_inform="$8"
-	local forced_notify="$9"
-	local secret_value="$10"
-	local linker="$11"
+	local dynamic_val="$5"
+	local change_key="$6"
+	local type="$7"
+	local notif_permission="$8"
+	local forced_inform="$9"
+	local forced_notify="$10"
+	local secret_value="$11"
+	local linker="$12"
 	
 	local val=""
 	local notification="0"
 	
 	case "$action" in
 		get_value|inform)
-		if [ "$val_cmd" != "" ]; then
-			val=`eval "$val_cmd"`
+		if [ "$get_cmd" != "" ]; then
+			val=`eval "$get_cmd"`
 		fi
+		dynamic_val=""
 		;;
 		get_notification|notify)
 		if [ "_$forced_notify" = "_" ]; then
@@ -730,8 +738,8 @@ get_param_cache_generic() {
 		fi
 		;;
 		get_cache|wait_cache|add_object)
-		if [ "$val_cmd" != "" ]; then
-			val=`eval "$val_cmd"`
+		if [ "$get_cmd" != "" ]; then
+			val=`eval "$get_cmd"`
 		fi
 		if [ "_$forced_notify" = "_" ]; then
 			freecwmp_get_parameter_notification "notification" $param
@@ -740,8 +748,8 @@ get_param_cache_generic() {
 		fi
 		;;
 	esac
-		
-	freecwmp_cache_output_param "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform" "$secret_value" "$linker"
+
+	freecwmp_cache_output_param "$param" "$val" "$permission" "$notification" "$type" "$set_cmd" "$get_cmd" "$notif_permission" "$forced_inform" "$secret_value" "$linker" "$dynamic_val" "$change_key"
 }
 
 get_object_cache_generic() {
@@ -749,8 +757,9 @@ get_object_cache_generic() {
 	local permission=$2
 	local notif_permission=$3
 	local linker=$4
+	local local change_key=$5
 		
-	freecwmp_cache_output_obj "$param" "$permission" "$notif_permission" "$linker"
+	freecwmp_cache_output_obj "$param" "$permission" "$notif_permission" "$linker" "$change_key"
 }
 
 
@@ -848,8 +857,8 @@ get_param_value_generic() {
 	get_generic_cmd "$parameter" "$found_prefix" "cmd"
 	ret="$?"
 	if [ "$ret" = $FAULT_CPE_NO_FAULT ]; then
-		eval '$cmd' | grep "\"value\"" | grep -v "\"get_cmd\""
-		eval '$cmd' | grep "\"get_cmd\"" | while read line; do
+		eval '$cmd' | grep "\"value\"" | grep -v "\"dynamic_val\""
+		eval '$cmd' | grep "\"dynamic_val\"" | while read line; do
 			json_init
 			json_load "$line"
 			json_get_var param parameter
