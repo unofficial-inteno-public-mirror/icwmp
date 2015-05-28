@@ -51,6 +51,7 @@ cwmp_netcache() {
 	cwmp_cache "Layer3Forwarding"
 	cwmp_cache "UPnP"
 	cwmp_cache "X_INTENO_SE_IpAccCfg"
+	cwmp_cache "X_INTENO_SE_Wifi"
 }
 
 cwmp_passwordcache() {
