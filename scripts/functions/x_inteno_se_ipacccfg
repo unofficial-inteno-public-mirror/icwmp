@@ -13,46 +13,46 @@ get_firewall_rules() {
 }
 
 get_x_inteno_cfgobj_address_netmask() {
-	local index=$1
-	ip=`$UCI_GET firewall.@rule[$index].src_ip`
+	local xrule=$1
+	ip=`$UCI_GET firewall.$xrule.src_ip`
 	ip=${ip// /,}
 	if [ "$ip" = "" ]; then ip="0.0.0.0/0"; fi
 	echo $ip
 }
 
 set_x_inteno_cfgobj_address_netmask() {
-	local index=$1
+	local xrule=$1
 	local val=$2
 	val=${val//,/ }
-	$UCI_SET firewall.@rule[$index].src_ip=""
+	$UCI_SET firewall.$xrule.src_ip=""
 	local src_ip
 	for src_ip in $val; do
-		$UCI_ADD_LIST firewall.@rule[$index].src_ip="$src_ip"
+		$UCI_ADD_LIST firewall.$xrule.src_ip="$src_ip"
 	done
 	delay_service restart "firewall" "0"
 }
 
 get_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
-	local index=$1
-	port=`$UCI_GET firewall.@rule[$index].dest_port`
+	local xrule=$1
+	port=`$UCI_GET firewall.$xrule.dest_port`
 	echo $port
 }
 
 set_x_bcm_com_ip_acc_list_cfgobj_acc_port() {
-	local index=$1
+	local xrule=$1
 	local val=$2
-	$UCI_SET firewall.@rule[$index].dest_port=$val
+	$UCI_SET firewall.$xrule.dest_port=$val
 	delay_service restart "firewall" "0"
 }
 
 get_x_bcm_com_ip_acc_list_cfgobj_enable() {
-	local index=$1
-	local enable=`$UCI_GET firewall.@rule[$index].enabled`
+	local xrule=$1
+	local enable=`$UCI_GET firewall.$xrule.enabled`
 	echo ${enable:-1}
 }
 
 set_x_bcm_com_ip_acc_list_cfgobj_enable() {
-	local index=$1
+	local xrule=$1
 	local val=$2
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
@@ -63,7 +63,7 @@ set_x_bcm_com_ip_acc_list_cfgobj_enable() {
 		return
 	fi
 	
-	$UCI_SET firewall.@rule[$index].enabled=$val
+	$UCI_SET firewall.$xrule.enabled=$val
 	delay_service restart "firewall" "0"
 }
 
@@ -153,11 +153,11 @@ update_port_forwarding_instance() {
 
 get_cache_object_ip_acc_list_cfgobj() {
 	local instance="$1"
-	local index="$2"
+	local xrule="$2"
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance." "0"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $index" "set_x_bcm_com_ip_acc_list_cfgobj_enable $index \$val" "" "" "xsd:boolean"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddressAndNetMask" "1" "get_x_inteno_cfgobj_address_netmask $index" "set_x_inteno_cfgobj_address_netmask $index \$val"
-	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccPort" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_port $index" "set_x_bcm_com_ip_acc_list_cfgobj_acc_port $index \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.Enable" "1" "get_x_bcm_com_ip_acc_list_cfgobj_enable $xrule" "set_x_bcm_com_ip_acc_list_cfgobj_enable $xrule \$val" "" "" "xsd:boolean"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccAddressAndNetMask" "1" "get_x_inteno_cfgobj_address_netmask $xrule" "set_x_inteno_cfgobj_address_netmask $xrule \$val"
+	get_param_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.$instance.AccPort" "1" "get_x_bcm_com_ip_acc_list_cfgobj_acc_port $xrule" "set_x_bcm_com_ip_acc_list_cfgobj_acc_port $xrule \$val"
 }
 
 get_cache_object_port_forwarding() {
@@ -188,7 +188,8 @@ get_cache_InternetGatewayDevice_X_INTENO_SE_IpAccCfg() {
 	get_object_cache_generic "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding." "1"
 	for instance in `get_firewall_rules`; do
 		index=$(($instance-1))
-		get_cache_object_ip_acc_list_cfgobj "$instance" "$index"
+    local xrule=`common_get_cfg_section_ref "firewall" "rule" "$index"`
+		get_cache_object_ip_acc_list_cfgobj "$instance" "$xrule"
 	done
 	local cfg cfgs=`$UCI_SHOW  firewall | grep "firewall\.@redirect\[[0-9]\+\]\.target=DNAT" | awk -F'[][]' '{print $2}'`
 	for cfg in $cfgs; do
