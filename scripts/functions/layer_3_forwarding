@@ -66,11 +66,12 @@ get_layer3_nbr_entry() {
 get_layer3_enable() {
 	local route="$1"
 	case $route in
-		"@route_disabled["*)
-		echo 0
-		;;
-		"@route["*)
-		[ "`proc_get_route_var_by_conf $route 1`" = "" ] && echo 0 || echo 1
+		cfg[0-9]*)
+		if [ "`$UCI_GET network.$route`" = "route_disabled" ]; then
+			echo 0
+		else
+			[ "`proc_get_route_var_by_conf $route 1`" = "" ] && echo 0 || echo 1
+		fi
 		;;
 		*)
 		echo 1
@@ -82,25 +83,12 @@ set_layer3_enable() {
 	local route="$1"
 	local val="$2"
 	local droute sroute="$route"
+	local enable=`$UCI_GET network.$route`
 	val=`echo $val|tr '[A-Z]' '[a-z]'`
 	if [ "$val" = "true" -o "$val" = "1" ]; then
-		case $route in
-			"@route_disabled["*)
-			droute="route"
-			;;
-			*)
-			return
-			;;
-		esac
+		[ "`$enable" = "route_disabled" ] && droute="route" || return
 	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		case $route in
-			"@route["*)
-			droute="route_disabled"
-			;;
-			*)
-			return
-			;;
-		esac
+		[ "`$enable" = "route_disabled" ] && droute="route_disabled" || return
 	else
 		return
 	fi
@@ -114,7 +102,8 @@ set_layer3_enable() {
 }
 
 get_layer3_status() {
-	[ "`get_layer3_enable $1`" = "1" ] && echo "Enabled" || echo "Disabled"
+	local eb=`get_layer3_enable "$1"`
+	[ "$eb" = "1" ] && echo "Enabled" || echo "Disabled"
 }
 
 
@@ -122,7 +111,7 @@ get_layer3_type() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.netmask`
 		;;
 		*)
@@ -137,7 +126,7 @@ get_layer3_destip() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.target`
 		;;
 		*)
@@ -159,7 +148,7 @@ get_layer3_destmask() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.netmask`
 		;;
 		*)
@@ -181,7 +170,7 @@ get_layer3_gatewayip() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.gateway`
 		;;
 		*)
@@ -203,7 +192,7 @@ get_layer3_interface() {
 	local route="$1"
 	local val=""
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.interface`
 		;;
 		*)
@@ -247,7 +236,7 @@ get_layer3_metric() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.metric`
 		;;
 		*)
@@ -269,7 +258,7 @@ get_layer3_mtu() {
 	local route="$1"
 	local val
 	case "$route" in
-		*"@route"*)
+		cfg[0-9]*)
 		val=`$UCI_GET network.$route.mtu`
 		;;
 		*)
@@ -327,8 +316,9 @@ get_cache_InternetGatewayDevice_Layer3Forwarding() {
 	get_param_cache_generic "InternetGatewayDevice.Layer3Forwarding.ForwardNumberOfEntries" "0" "get_layer3_nbr_entry" "" "1" "" "xsd:unsignedInt"
 	local route routes=`$UCI_SHOW network | grep "network\.@route[^=]\+=route" | cut -d. -f2 | cut -d= -f1`
 	for route in $routes; do
-		il=`update_layer3_instance $route`
-		get_cache_object_layer3 "$route" "$il" "1"
+		local xroute=`common_get_cfg_section_ref "route" "route" "$route"`
+		il=`update_layer3_instance $xroute`
+		get_cache_object_layer3 "$xroute" "$il" "1"
 	done
 }
 

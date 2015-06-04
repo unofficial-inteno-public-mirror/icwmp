@@ -429,10 +429,13 @@ get_cache_object_bridge() {
 	get_param_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.X_INTENO_COM_AssociatedInterfaces" "1" "\$UCI_GET network.$iface.ifname" "set_associated_interfaces $iface \$val"
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Bridge.$ib.VLAN." "1"
 	update_bridge_all_vlan_config_bybridge $iface $ib
-	local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | cut -f2 -d.`
+	local vb vbs=`$UCI_SHOW dmmap | grep "dmmap\.@vlan_bridge\[[0-9]\+\]\.bridgekey=$ib" | awk -F'[][]' '{print $2}'`
 	for vb in $vbs; do
-		local iv=`$UCI_GET dmmap.$vb.instance`
-		get_cache_object_bridge_vlan "$ib" "$vb" "${iv#*.}"
+	local xvb=`$UCI_SHOW -X dmmap |grep "dmmap\.[^=.]\+=vlan_bridge" | sed "$((vb+1))""q;d" | awk -F'[=.]' '{print $2}'`
+		if [ "$xvb" != "" ]; then 
+			local iv=`$UCI_GET dmmap.$xvb.instance`
+			get_cache_object_bridge_vlan "$ib" "$xvb" "${iv#*.}"
+		fi
 	done
 }
 
@@ -496,10 +499,11 @@ get_cache_InternetGatewayDevice_Layer2Bridging() {
 		fi
 	done
 	get_object_cache_generic "InternetGatewayDevice.Layer2Bridging.Marking." "1"
-	local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.instance=" | cut -f2 -d'.'`
+	local mb mbs=`$UCI_SHOW dmmap | grep "dmmap\.@marking-bridge\[[0-9]\+\]\.instance=" | awk -F'[][]' '{print $2}'`
 	for mb in $mbs; do
-		local im=`$UCI_GET dmmap.$mb.instance`
-		get_cache_object_marking "$im" "$mb"
+		local xmb=`$UCI_SHOW -X dmmap |grep "dmmap\.[^=.]\+=marking-bridge" | sed "$((mb+1))""q;d" | awk -F'[=.]' '{print $2}'`
+		local im=`$UCI_GET dmmap.$xmb.instance`
+		get_cache_object_marking "$im" "$xmb"
 	done
 }
 
