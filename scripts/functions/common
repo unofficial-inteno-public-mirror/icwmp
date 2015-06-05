@@ -593,15 +593,15 @@ else
 	fi
 fi
 
-if [ "$action" = "restart" ]; then
-cat << EOF >> /tmp/end_session.sh
-/etc/init.d/$service stop &> /dev/null
-sleep $delay
-/etc/init.d/$service start &> /dev/null
-EOF
-fi
-
-if [ "$action" = "reload" ]; then
+#if [ "$action" = "restart" ]; then
+#cat << EOF >> /tmp/end_session.sh
+#/etc/init.d/$service stop &> /dev/null
+#sleep $delay
+#/etc/init.d/$service start &> /dev/null
+#EOF
+#fi
+                                                                         
+if [ "$action" = "reload" -o "$action" = "restart" ]; then    
 cat << EOF >> /tmp/end_session.sh
 sleep $delay
 /etc/init.d/$service reload &> /dev/null
