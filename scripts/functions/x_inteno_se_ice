@@ -1,6 +1,7 @@
 #!/bin/sh
 # Copyright (C) 2014 Inteno Broadband Technology AB
 
+append_restart_service_maps "$1" "InternetGatewayDevice.X_INTENO_SE_ICE.:ice-client" || return
 prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_ICE."
 
 get_ice_cloud_enable() {

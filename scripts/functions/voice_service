@@ -11,6 +11,7 @@ local object="InternetGatewayDevice.Services."
 # Add TR-069 object to cache if there is a service
 if [ -e $service ]
 then
+	append_restart_service_maps "$1" "InternetGatewayDevice.Services.:asterisk" || return
 	prefix_list="$prefix_list $object"
 fi
 

@@ -3,6 +3,7 @@
 #  Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 #  Author Simon Kers <simon.kers@inteno.se>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.X_INTENO_SE_PowerManagement.:power_mgmt" || return
 local service="/etc/init.d/power_mgmt"
 local object="InternetGatewayDevice.X_INTENO_SE_PowerManagement."
 

@@ -4,6 +4,7 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.DeviceInfo.:cwmpd" || return
 prefix_list="$prefix_list InternetGatewayDevice.DeviceInfo."
 
 get_device_manufactureroui() {

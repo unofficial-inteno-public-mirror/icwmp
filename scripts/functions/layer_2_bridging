@@ -3,6 +3,7 @@
 # Author Feten Besbes <feten.besbes@pivasoftware.com>
 # Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.Layer2Bridging.:network,layer2_interface_vlan" || return
 prefix_list="$prefix_list InternetGatewayDevice.Layer2Bridging."
 
 set_bridge_bridgename() {

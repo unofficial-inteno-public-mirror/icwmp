@@ -2,6 +2,7 @@
 # Copyright (C) 2013-2015 Inteno Broadband Technology AB
 #   Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.LANInterfaces.:network" || return
 prefix_list="$prefix_list InternetGatewayDevice.LANInterfaces."
 
 get_lan_ethernet_interface_number() {

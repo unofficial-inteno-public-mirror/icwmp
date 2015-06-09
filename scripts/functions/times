@@ -3,6 +3,7 @@
 #   Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.Time.:sysntpd" || return
 prefix_list="$prefix_list InternetGatewayDevice.Time."
 
 get_time_ntpserver() {

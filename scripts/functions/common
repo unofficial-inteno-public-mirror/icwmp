@@ -4,6 +4,12 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+append_restart_service_maps() {
+	[ "$1" = "RESTART_SERVICE_MAP" ] && { restart_service_maps="$restart_service_maps $2"; return 1; }
+	return 0
+}
+
+[ "$1" = "RESTART_SERVICE_MAP" ] && return 0
 common_get_cfg_section_ref() {
 	$UCI_SHOW -X $1 |grep "$1\.[^=.]\+=$2" | sed "$(($3+1))""q;d" | awk -F'[=.]' '{print $2}'
 }

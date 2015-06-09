@@ -3,6 +3,7 @@
 # Copyright (C) 2013 Inteno Broadband Technology AB
 #  Author Feten Besbes <feten.besbes@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.X_INTENO_SE_LoginCfg.:passwords,cwmpd" || return
 prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_LoginCfg."
 
 set_x_bcm_password() {

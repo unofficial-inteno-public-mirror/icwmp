@@ -4,6 +4,7 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.WANDevice.:network,layer2_interface_adsl,layer2_interface_vdsl,layer2_interface_vlan" || return
 prefix_list="$prefix_list InternetGatewayDevice.WANDevice."
 
 WAN_INST_ETH=1

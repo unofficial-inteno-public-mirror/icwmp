@@ -6,6 +6,7 @@
 #  Author Feten Besbes <feten.besbes@pivasoftware.com>
 #  Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.LANDevice.:network,port_management" || return
 prefix_list="$prefix_list InternetGatewayDevice.LANDevice."
 
 get_lan_device_interface() {

@@ -3,6 +3,7 @@
 #   Author Feten Besbes <feten.besbes@pivasoftware.com>
 #   Author Anis Ellouze <anis.ellouze@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.X_INTENO_SE_IpAccCfg.:network,firewall" || return
 prefix_list="$prefix_list InternetGatewayDevice.X_INTENO_SE_IpAccCfg."
 
 get_firewall_rules() {

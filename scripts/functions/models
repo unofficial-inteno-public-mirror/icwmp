@@ -4,6 +4,7 @@
 
 #InternetGatewayDevice.
 
+append_restart_service_maps "$1" "InternetGatewayDevice.:cwmpd" || return
 prefix_list="InternetGatewayDevice. $prefix_list"
 
 get_cache_InternetGatewayDevice() {

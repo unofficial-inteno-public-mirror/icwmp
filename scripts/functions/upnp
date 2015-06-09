@@ -2,6 +2,7 @@
 # Copyright (C) 2014 Inteno Broadband Technology AB
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
+append_restart_service_maps "$1" "InternetGatewayDevice.UPnP.:network,miniupnpd" || return
 prefix_list="$prefix_list InternetGatewayDevice.UPnP."
 
 get_upnp_enable() {
