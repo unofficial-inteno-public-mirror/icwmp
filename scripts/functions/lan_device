@@ -147,7 +147,8 @@ set_wlan_auto_channel_enable() {
 
 set_wlan_ssid() {
 	local num="$1"
-	local val="$2"
+	shift
+	local val="$*"
 	delay_service reload "network" "1"
 	$UCI_SET wireless.@wifi-iface[$num].ssid="$val"
 }
