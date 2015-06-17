@@ -38,8 +38,8 @@ get_catv_enabled () {
 	local val=""
 	val=`$UCI_GET catv.catv.enable`
 	case "$val" in
-		yes) echo 1;;
-		no) echo 0;;
+		on) echo 1;;
+		off) echo 0;;
 	esac
 }
 
@@ -47,11 +47,11 @@ set_catv_enabled () {
 	local val="$1"
 	local stat=""
 	case "$val" in
-		1) stat="yes";;
-		0) stat="no";;
+		1) stat="on";;
+		0) stat="off";;
 	esac
 	$UCI_SET catv.catv.enable="$stat"
-	$UCI_COMMIT
+	delay_service restart "catv" "1"
 }
 
 get_cache_InternetGatewayDevice_DeviceInfo() {
