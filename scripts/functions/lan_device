@@ -13,12 +13,12 @@ get_lan_device_interface() {
 	local ret=""
 	local fislan=0
 	local lan wnet
-	for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`;do
+	for lan in `ubus list|sed -n 's/network\.interface\.//p'|grep -v loopback`; do
 		fislan=0
 		wnet=`$UCI_SHOW wireless |grep "wireless\.@wifi-iface\[[0-9]\+\]\.network=$lan"`
 		[ "$wnet" != "" ] && fislan=1
-		local ifname=`$UCI_GET network.$lan.ifname`
-		[ "${ifname//eth[1-9]/}" != "$ifname" ] && fislan=1
+		local check=`check_physical_interface $lan`
+		[ "$check" = "1" ] && fislan=1
 		local ftype=`$UCI_GET network.$lan.type`
 		if [ "$fislan" = "1" -a  "$ftype" != "alias" ];then
 			dev=$lan
@@ -44,6 +44,18 @@ get_lan_device_interface() {
 	ret=${ret//, / }; ret=${ret%,}
 	ret=${ret//.[0-9]/}; ret=${ret//.[0-9]/}
 	echo $ret
+}
+
+check_physical_interface() {
+	local lan="$1"
+	local phy_int=`db get hw.board.ethernetLanPorts`
+	local int=""
+	local fislan=0
+	local ifname=`$UCI_GET network.$lan.ifname`
+	for int in $phy_int; do
+		[ "${ifname//$int/}" != "$ifname" ] && fislan=1
+	done
+	echo $fislan
 }
 
 update_instance_landevice_wlanconfiguration() {
