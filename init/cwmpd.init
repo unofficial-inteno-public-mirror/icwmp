@@ -104,7 +104,6 @@ run() {
 
 boot() {
 	touch /etc/cwmpd/.cwmpd_boot
-	/bin/sh /usr/sbin/freecwmp clean cache
 	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
 	if [ "$scron" != "" ]; then
 		crontab -l | sed "/\/usr\/sbin\/watchcwmpd/d" | crontab -
@@ -114,9 +113,6 @@ boot() {
 start_cwmpd() {
 	run=$(ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common)
 	if [ "$run" = "" ];then
-		stop_freecwmp_cache
-		echo "Check if the whole cache is built. Wait if the whole cache is not built yet..."
-		/bin/sh /usr/sbin/freecwmp wait cache
 		printf "\033[A"
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
@@ -176,21 +172,6 @@ pidof_freecwmp() {
 	echo "$pids"
 }
 
-stop_freecwmp_cache() {
-	local pid_list="" pid="" pids="" p name state ppid rest cmd
-
-	pid_list="`pidof_freecwmp`"
-	for pid in $pid_list; do
-		read p name state ppid rest < /proc/$pid/stat
-		cmd=`cat /proc/$ppid/cmdline | grep /etc/init.d/cwmpd`
-		if [ "_$cmd" = "_" ]; then
-			continue
-		fi
-		kill_process_childs "$ppid"
-		[ "$ppid" != "" ] && kill -9 "$ppid"
-	done
-}
-
 stop_cwmpd() {
 	echo $stop_msg;printf "\033[A"
 	local pid_list=""  pids="" str=""
@@ -203,7 +184,6 @@ stop_cwmpd() {
 			kill -9 $pid_list
 		fi
 	fi
-	stop_freecwmp_cache
 }
 
 start() {

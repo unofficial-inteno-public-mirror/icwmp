@@ -35,34 +35,15 @@ static int pid;
 static json_object *json_obj_in;
 static int pfds_in[2], pfds_out[2];
 static FILE *fpipe;
-
-LIST_HEAD(external_list_parameter);
-LIST_HEAD(external_list_value_change);
-pthread_mutex_t external_mutex_value_change = PTHREAD_MUTEX_INITIALIZER;
-char *external_MethodStatus = NULL;
 char *external_MethodFault = NULL;
-char *external_ObjectInstance = NULL;
 
-inline void external_add_list_parameter(char *param_name, char *param_data, char *param_type, char *fault_code)
-{
-	parameter_container_add(&external_list_parameter, param_name, param_data, param_type, fault_code);
-}
+pthread_mutex_t external_mutex_value_change = PTHREAD_MUTEX_INITIALIZER;
 
 inline void external_add_list_value_change(char *param_name, char *param_data, char *param_type)
 {
 	pthread_mutex_lock(&(external_mutex_value_change));
-	parameter_container_add(&external_list_value_change, param_name, param_data, param_type, NULL);
+	add_dm_parameter_tolist(&list_value_change, param_name, param_data, param_type);
 	pthread_mutex_unlock(&(external_mutex_value_change));
-}
-
-inline void external_free_list_parameter()
-{
-	parameter_container_delete_all(&external_list_parameter);
-}
-
-inline void external_free_list_value_change()
-{
-	parameter_container_delete_all(&external_list_value_change);
 }
 
 void external_downloadFaultResp (char *fault_code)
@@ -74,70 +55,6 @@ void external_downloadFaultResp (char *fault_code)
 void external_fetch_downloadFaultResp (char **fault)
 {
 	*fault = external_MethodFault;
-	external_MethodFault = NULL;
-}
-
-void external_setParamValRespStatus (char *status)
-{
-	FREE(external_MethodStatus);
-	external_MethodStatus = status ? strdup(status) : NULL;
-}
-
-void external_fetch_setParamValRespStatus (char **status)
-{
-	*status = external_MethodStatus;
-	external_MethodStatus = NULL;
-}
-
-void external_setParamAttrResp (char *status, char *fault)
-{
-	FREE(external_MethodStatus);
-	external_MethodStatus = status ? strdup(status) : NULL;
-	FREE(external_MethodFault);
-	external_MethodFault = fault ? strdup(fault) : NULL;
-}
-
-void external_fetch_setParamAttrResp (char **status, char **fault)
-{
-	*status = external_MethodStatus;
-	external_MethodStatus = NULL;
-	*fault = external_MethodFault;
-	external_MethodFault = NULL;
-}
-
-void external_addObjectResp (char *instance, char *status, char *fault)
-{
-	FREE(external_MethodStatus);
-	FREE(external_ObjectInstance);
-	FREE(external_MethodFault);
-	external_MethodStatus = status ? strdup(status) : NULL;
-	external_ObjectInstance = instance ? strdup(instance) : NULL;
-	external_MethodFault = fault ? strdup(fault) : NULL;
-}
-
-void external_fetch_addObjectResp (char **instance, char **status, char **fault)
-{
-	*instance = external_ObjectInstance;
-	*status = external_MethodStatus;
-	*fault = external_MethodFault;
-	external_ObjectInstance = NULL;
-	external_MethodStatus = NULL;
-	external_MethodFault = NULL;
-}
-
-void external_delObjectResp (char *status, char *fault)
-{
-	FREE(external_MethodStatus);
-	FREE(external_MethodFault);
-	if (status) external_MethodStatus = strdup(status);
-	if (fault) external_MethodFault = strdup(fault);
-}
-
-void external_fetch_delObjectResp (char **status, char **fault)
-{
-	*status = external_MethodStatus;
-	*fault = external_MethodFault;
-	external_MethodStatus = NULL;
 	external_MethodFault = NULL;
 }
 
@@ -163,7 +80,7 @@ static void external_read_pipe_input(int (*external_handler)(char *msg))
 			value = c;
         } else {
         	if (!value) continue;
-        	if (strcmp(value, "EOF")==0) {
+        	if (strcmp(value, "cwmp>")==0) {
         	    FREE(value);
         	    break;
         	}
@@ -217,7 +134,6 @@ void external_init()
 		int i = 0;
 		argv[i++] = "/bin/sh";
 	 	argv[i++] = fc_script;
-	 	argv[i++] = "--json";
 	 	argv[i++] = "json_continuous_input";
 		argv[i++] = NULL;
 		execvp(argv[0], (char **) argv);
@@ -275,71 +191,6 @@ int external_handle_action(int (*external_handler)(char *msg))
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 	json_object_put(json_obj_out);
 	external_read_pipe_input(external_handler);
-	return 0;
-}
-
-
-int external_get_action(char *action, char *name, char *next_level)
-{
-	DD(INFO,"executing get %s '%s'", action, name);
-
-	json_object *json_obj_out;
-
-	/* send data to the script */
-	json_obj_out = json_object_new_object();
-
-	json_obj_out_add(json_obj_out, "command", "get");
-	json_obj_out_add(json_obj_out, "action", action);
-	json_obj_out_add(json_obj_out, "parameter", name);
-	if (next_level) json_obj_out_add(json_obj_out, "next_level", next_level);
-
-	external_write_pipe_output(json_object_to_json_string(json_obj_out));
-
-	json_object_put(json_obj_out);
-
-	return 0;
-}
-
-int external_set_action(char *action, char *name, char *value, char *change)
-{
-	DD(INFO,"executing set %s '%s'", action, name);
-
-	json_object *json_obj_out;
-
-	/* send data to the script */
-	json_obj_out = json_object_new_object();
-
-	json_obj_out_add(json_obj_out, "command", "set");
-	json_obj_out_add(json_obj_out, "action", action);
-	json_obj_out_add(json_obj_out, "parameter", name);
-	json_obj_out_add(json_obj_out, "value", value);
-	if (change) json_obj_out_add(json_obj_out, "change", change);
-
-	external_write_pipe_output(json_object_to_json_string(json_obj_out));
-
-	json_object_put(json_obj_out);
-
-	return 0;
-}
-
-int external_object_action(char *command, char *name, char *parameter_key)
-{
-	DD(INFO,"executing %s object '%s'", command, name);
-
-	json_object *json_obj_out;
-
-	/* send data to the script */
-	json_obj_out = json_object_new_object();
-
-	json_obj_out_add(json_obj_out, "command", command);
-	json_obj_out_add(json_obj_out, "action", "object");
-	json_obj_out_add(json_obj_out, "parameter", name);
-	if (parameter_key) json_obj_out_add(json_obj_out, "parameter_key", parameter_key);
-
-	external_write_pipe_output(json_object_to_json_string(json_obj_out));
-
-	json_object_put(json_obj_out);
-
 	return 0;
 }
 

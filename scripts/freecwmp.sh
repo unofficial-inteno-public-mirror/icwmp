@@ -4,73 +4,28 @@
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 
-. /lib/functions.sh
 . /usr/share/libubox/jshn.sh
-. /usr/share/shflags/shflags.sh
-. /usr/share/freecwmp/defaults
+#TODO help message
 
-# define a 'name' command-line string flag
-DEFINE_boolean 'newline' false 'do not output the trailing newline' 'n'
-DEFINE_boolean 'value' false 'output values only' 'v'
-DEFINE_boolean 'json' false 'send values using json' 'j'
-DEFINE_boolean 'empty' false 'output empty parameters' 'e'
-DEFINE_boolean 'last' false 'output only last line ; for parameters that tend to have huge output' 'l'
-DEFINE_boolean 'debug' false 'give debug output' 'd'
-DEFINE_boolean 'dummy' false 'echo system commands' 'D'
-DEFINE_boolean 'force' false 'force getting values for certain parameters' 'f'
-
-FLAGS_HELP=`cat << EOF
-USAGE: $0 [flags] command [parameter] [values]
-command:
-  get [value|notification|name|cache]
-  set [value|notification]
-  apply [value|notification|download]
-  add [object]
-  delete [object]
-  download
-  factory_reset
-  reboot
-  notify
-  end_session
-  inform
-  wait [cache [status]] 
-  clean [cache]
-  json_continuous_input
-EOF`
-
-FLAGS "$@" || exit 1
-eval set -- "${FLAGS_ARGV}"
-
-if [ ${FLAGS_help} -eq ${FLAGS_TRUE} ]; then
-	exit 1
-fi
-
-if [ ${FLAGS_newline} -eq ${FLAGS_TRUE} ]; then
-	ECHO_newline='-n'
-fi
-
-UCI_GET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q"
-UCI_SET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} set -q"
-UCI_BATCH="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} batch -q"
-UCI_ADD="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add -q"
-UCI_ADD_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} add_list -q"
-UCI_GET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get -q"
-UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
-UCI_DELETE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} delete -q"
-UCI_DEL_LIST="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} del_list -q"
-UCI_COMMIT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} commit -q"
-UCI_RENAME="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} rename -q"
 NEW_LINE='\n'
-SERVICE_RESTART="SERVICE_RESTART"
-cache_path="/etc/cwmpd/.cache"
-tmp_cache="/tmp/.freecwmp_dm"
-set_tmp_file="/tmp/.set_tmp_file"
-set_fault_tmp_file="/tmp/.set_fault_tmp_file"
-cache_linker_dynamic="/etc/cwmpd/.cache_linker_dynamic"
-	
-mkdir -p $cache_path
-rm -f "$cache_path/"*"_dynamic"
+CWMP_PROMPT="cwmp>"
+UCI_GET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q"
+UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
+TMP_SET_VALUE="/tmp/.tmp_set_value"
+TMP_SET_NOTIFICATION="/tmp/.tmp_set_notification"
 
+
+# Fault codes
+FAULT_CPE_NO_FAULT="0"
+FAULT_CPE_INTERNAL_ERROR="2"
+FAULT_CPE_DOWNLOAD_FAILURE="10"
+FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
+
+for ffile in `ls /usr/share/freecwmp/functions/`; do
+. /usr/share/freecwmp/functions/$ffile
+done
+
+	
 case "$1" in
 	set)
 		if [ "$2" = "notification" ]; then
@@ -99,9 +54,6 @@ case "$1" in
 			__arg1="$3"
 			__arg2="$4"
 			action="get_name"
-		elif [ "$2" = "cache" ]; then
-			__arg1="$3"
-			action="get_cache"
 		else
 			__arg1="$2"
 			action="get_value"
@@ -148,15 +100,6 @@ case "$1" in
 	inform)
 		action="inform"
 		;;
-	notify)
-		action="notify"
-		__arg1="$2"
-		__arg2="$3"
-		__arg3="$4"
-		;;
-	end_session)
-		action="end_session"
-		;;
 	allow_cr_ip)
 		action="allow_cr_ip"
 		__arg1="$2"
@@ -165,21 +108,7 @@ case "$1" in
 		action="json_continuous_input"
 		;;
 	end)
-		echo "EOF"
-		;;
-	wait)
-		if [ "$2" = "cache" ]; then
-			if [ "$3" = "status" ]; then
-				action="wait_cache_status"
-			else
-				action="wait_cache"
-			fi
-		fi
-		;;
-	clean)
-		if [ "$2" = "cache" ]; then
-			action="clean_cache"
-		fi
+		echo "$CWMP_PROMPT"
 		;;
 	exit)
 		exit 0
@@ -191,257 +120,67 @@ if [ -z "$action" ]; then
 	exit 1
 fi
 
-if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
-	echo "[debug] started at \"`date`\""
-fi
-
-prefix_list=""
-prefix_list_skip_wait_cache=""
-
-. /lib/functions/network.sh
-for ffile in `ls /usr/share/freecwmp/functions/`; do
-. /usr/share/freecwmp/functions/$ffile
-done
-
-config_load cwmp
-
-# Fault code
-
-FAULT_CPE_NO_FAULT="0"
-FAULT_CPE_REQUEST_DENIED="1"
-FAULT_CPE_INTERNAL_ERROR="2"
-FAULT_CPE_INVALID_ARGUMENTS="3"
-FAULT_CPE_RESOURCES_EXCEEDED="4"
-FAULT_CPE_INVALID_PARAMETER_NAME="5"
-FAULT_CPE_INVALID_PARAMETER_TYPE="6"
-FAULT_CPE_INVALID_PARAMETER_VALUE="7"
-FAULT_CPE_NON_WRITABLE_PARAMETER="8"
-FAULT_CPE_NOTIFICATION_REJECTED="9"
-FAULT_CPE_DOWNLOAD_FAILURE="10"
-FAULT_CPE_UPLOAD_FAILURE="11"
-FAULT_CPE_FILE_TRANSFER_AUTHENTICATION_FAILURE="12"
-FAULT_CPE_FILE_TRANSFER_UNSUPPORTED_PROTOCOL="13"
-FAULT_CPE_DOWNLOAD_FAIL_MULTICAST_GROUP="14"
-FAULT_CPE_DOWNLOAD_FAIL_CONTACT_SERVER="15"
-FAULT_CPE_DOWNLOAD_FAIL_ACCESS_FILE="16"
-FAULT_CPE_DOWNLOAD_FAIL_COMPLETE_DOWNLOAD="17"
-FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
-FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION="19"
-
-handle_get_cache() {
-	local param="$1"
-	local exact="$2"
-	local pid=""
-	local ls_cache=`ls $tmp_cache`
-	for pid in $ls_cache; do
-		if [ ! -d /proc/$pid ]; then
-			rm -rf "$tmp_cache/$pid"
-		fi
-	done
-	pid="$$"
-	mkdir -p "$tmp_cache/$pid"
-
-	for prefix in $prefix_list; do
-		case $prefix in $param*)
-			if [ "$exact" = "1" -a "$param" != "$prefix" ]; then continue; fi
-			local f=${prefix%.}
-			f=${f//./_}
-			f="get_cache_""$f"
-			$f > "$tmp_cache/$pid/$prefix"
-			mv "$tmp_cache/$pid/$prefix" "$cache_path/$prefix"
-			;;
-		esac
-	done
-	
-	rm -rf "$tmp_cache/$pid"
-	ls_cache=`ls $tmp_cache`
-	for pid in $ls_cache; do
-		if [ ! -d /proc/$pid ]; then
-			rm -rf "$tmp_cache/$pid"
-		fi
-	done
-	ls_cache=`ls $tmp_cache`
-	if [ "_$ls_cache" = "_" ]; then
-		rm -rf "$tmp_cache"
-	fi
-}
-
-
 handle_action() {
 	local fault_code=$FAULT_CPE_NO_FAULT
-	if [ "$action" = "get_cache" ]; then
-		if [ "$__arg1" != "" ]; then
-			local found=0
-			for prefix in $prefix_list; do
-				if [ "$prefix" = "$__arg1" ]; then
-					found=1
-					break
-				fi
-			done
-			if [ "$found" != "1" ]; then 
-				echo "Invalid object argument"
-				return
-			fi
-		fi
-		handle_get_cache "$__arg1"
-	fi
-	if [ "$action" = "wait_cache" ]; then
-		local found=0
-		handle_get_cache "InternetGatewayDevice." "1"
-		handle_get_cache "InternetGatewayDevice.ManagementServer."
-		handle_get_cache "InternetGatewayDevice.DeviceInfo."
-		handle_get_cache "InternetGatewayDevice.X_INTENO_SE_LoginCfg."
-		local ls_cache=""
-		while [ "$found" = "0" ]; do
-			ls_prefix=`ls $cache_path`
-			for prefix in $prefix_list; do
-				[ "${prefix_list_skip_wait_cache/$prefix/}" != "$prefix_list_skip_wait_cache" ] && continue
-				found=0
-				for ls_p in $ls_prefix; do
-					if [ "$prefix" = "$ls_p" ]; then
-						found=1
-						break
-					fi
-				done
-				if [ "$found" = "0" ]; then 
-					sleep 1
-					break
-				fi
-			done
-			if [ "$found" = "1" ]; then
-				local cache_running=1
-				while [ "$cache_running" = "1" ]; do
-					ls_cache=`ls $tmp_cache`
-					cache_running=0
-					for pid in $ls_cache; do
-						if [ -d /proc/$pid ]; then
-							cache_running=1
-							sleep 1
-							break
-						fi
-					done
-				done
-			fi
-		done
-	fi
-	if [ "$action" = "wait_cache_status" ]; then
-		local ls_cache=""
-			ls_prefix=" `ls $cache_path` "
-			ls_prefix=${ls_prefix//$'\n'/ }
-			local tmpskip=" $prefix_list_skip_wait_cache "
-			for ls_p in $prefix_list; do
-				if [ "${tmpskip/ $ls_p /}" != "$tmpskip" ]; then
-					echo "skipped $ls_p"
-				elif [ "${ls_prefix/ $ls_p /}" != "$ls_prefix" ]; then
-					echo "done    $ls_p"
-				else 
-					local cache_running=0
-					if [ -d $tmp_cache ]; then
-						ls_cache=`ls $tmp_cache`
-						for pid in $ls_cache; do
-							ls_pid=" `ls $tmp_cache/$pid` "
-							ls_pid=${ls_pid//$'\n'/ }
-							if [ "${ls_pid/ $ls_p /}" != "$ls_pid" -a -d "/proc/$pid" ]; then
-								echo "running $ls_p" 
-								cache_running=1
-								break
-							fi							
-						done
-					fi
-					if [ "$cache_running" = "0" ]; then 
-						echo "waiting $ls_p" 
-					fi
-				fi 
-			done
-	fi
-	if [ "$action" = "clean_cache" ]; then
-		rm -rf "$cache_path/"*
-	fi
-	
-	if [ "$action" = "get_value" ]; then
-		get_param_value_generic "$__arg1"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
-		fi
+	if [ "$action" = "get_value" -o "$action" = "get_notification" ]; then
+		/usr/sbin/cwmpd -m 1 $action "$__arg1"
 	fi
 
 	if [ "$action" = "get_name" ]; then
-		__arg2=`echo $__arg2|tr '[A-Z]' '[a-z]'`
-		if [ "$__arg2" = "true" ]; then
-			__arg2=1
-		elif [ "$__arg2" = "false" ]; then
-			__arg2=0
-		fi
-		if [ "$__arg2" != "0" -a "$__arg2" != "1"  ]; then
-			fault_code="$FAULT_CPE_INVALID_ARGUMENTS"
-		else
-			get_param_name_generic "$__arg1" "$__arg2"
-			fault_code="$?"
-		fi
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
-		fi
+		/usr/sbin/cwmpd -m 1 get_name "$__arg1" "$__arg2"
 	fi
 
-	if [ "$action" = "get_notification" ]; then
-		get_param_notification_generic "$__arg1"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_output "$__arg1" "" "" "" "" "$fault_code"
-		fi
+	if [ "$action" = "set_value" ]; then
+		json_init
+		json_add_string "parameter" "$__arg1"
+		json_add_string "value" "$__arg2"
+		json_dump >> $TMP_SET_VALUE
+		json_close_object
 	fi
 
-	if [ "$action" = "set_value" ]; then	
-		set_param_value_generic "$__arg1" "$__arg2"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_set_parameter_fault "$__arg1" "$fault_code"
-		fi
-	fi
-	
 	if [ "$action" = "set_notification" ]; then
-		__arg3=`echo $__arg3|tr '[A-Z]' '[a-z]'`
-		if [ "$__arg3" = "true" ]; then
-			__arg3=1
-		fi
-		if [ "$__arg3" = "1" ]; then
-			set_param_notification_generic "$__arg1" "$__arg2"
-			fault_code="$?"
-			if [ "$fault_code" != "0" ]; then
-				let fault_code=$fault_code+9000
-				freecwmp_set_parameter_fault "$__arg1" "$fault_code"
-			fi
-		fi
+		json_init
+		json_add_string "parameter" "$__arg1"
+		json_add_string "value" "$__arg2"
+		json_dump >> $TMP_SET_NOTIFICATION
+		json_close_object
+	fi
+
+	if [ "$action" = "apply_value" ]; then
+		local svargs="-m 1 set_value \"$__arg1\""
+		local svp svv
+		while read line; do
+			json_init
+			json_load "$line"
+			json_get_var svp parameter
+			json_get_var svv value
+			svargs="$svargs \"$svp\" \"$svv\""
+		done < $TMP_SET_VALUE
+		eval "/usr/sbin/cwmpd $svargs"
+		rm -f $TMP_SET_VALUE
+	fi
+
+	if [ "$action" = "apply_notification" ]; then
+		local snargs="-m 1 set_notification"
+		local snp snv
+		while read line; do
+			json_init
+			json_load "$line"
+			json_get_var snp parameter
+			json_get_var snv value
+			snargs="$snargs \"$snp\" \"$snv\""
+		done < $TMP_SET_NOTIFICATION
+		eval "/usr/sbin/cwmpd $snargs"
+		rm -f $TMP_SET_NOTIFICATION
 	fi
 
 
-	if [ "$action" = "add_object" ]; then
-		object_fn_generic "$__arg1"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_output "" "" "" "" "" "$fault_code"
-		else
-			$UCI_SET cwmp.acs.ParameterKey=$__arg2
-			$UCI_COMMIT
-		fi
+	if [ "$action" = "add_object" -o "$action" = "delete_object" ]; then
+		/usr/sbin/cwmpd -m 1 get_value "$__arg2" "$__arg1"		
 	fi
 
-	if [ "$action" = "delete_object" ]; then
-		object_fn_generic "$__arg1"
-		fault_code="$?"
-		if [ "$fault_code" != "0" ]; then
-			let fault_code=$fault_code+9000
-			freecwmp_output "" "" "" "" "" "$fault_code"
-		else
-			$UCI_SET cwmp.acs.ParameterKey=$__arg2
-			$UCI_COMMIT
-		fi
+	if [ "$action" = "inform" ]; then
+		/usr/sbin/cwmpd -m 1 "inform"
 	fi
 
 	if [ "$action" = "download" ]; then
@@ -511,140 +250,17 @@ handle_action() {
 	fi
 
 	if [ "$action" = "factory_reset" ]; then
-		if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
-			echo "# factory_reset"
-		else
-			jffs2_mark_erase "rootfs_data"
-			sync
-			ACTION=add INTERFACE=resetbutton /sbin/hotplug-call button
-			reboot
-		fi
+		jffs2_mark_erase "rootfs_data"
+		sync
+		ACTION=add INTERFACE=resetbutton /sbin/hotplug-call button
+		reboot
 	fi
 
 	if [ "$action" = "reboot" ]; then
-		if [ ${FLAGS_dummy} -eq ${FLAGS_TRUE} ]; then
-			echo "# reboot"
-		else
-			sync
-			reboot
-		fi
+		sync
+		reboot
 	fi
 
-	if [ "$action" = "apply_notification" -o "$action" = "apply_value" ]; then
-		if [ ! -f $set_fault_tmp_file ]; then
-			# applying
-			local prefix=""
-			local filename=""
-			local max_len=0
-			local len=0
-
-			case $action in
-				apply_notification)
-				cat $set_tmp_file | while read line; do
-					json_init
-					json_load "$line"
-					json_get_var parameter parameter
-					json_get_var notification notification
-					max_len=0
-					for prefix in $prefix_list; do
-						case  "$parameter" in "$prefix"*)
-							len=${#prefix}
-							if [ $len -gt $max_len ]; then
-								max_len=$len
-								filename="$prefix"
-							fi
-						esac
-					done
-					local l=${#parameter}
-					let l--
-					if [ "${parameter:$l:1}" != "." ]; then
-						sed -i "/\<$parameter\>/s%.*%$line%" $cache_path/$filename
-					else
-						cat $cache_path/$filename|grep "$parameter"|grep "\"notification\""| while read line; do
-							json_init
-							json_load "$line"
-							json_get_var parameter_name parameter
-							json_add_string "notification" "$notification"
-							json_close_object
-							param=`json_dump`
-							sed -i "/\<$parameter_name\>/s%.*%$param%" $cache_path/$filename
-						done
-					fi
-				done
-				freecwmp_output "" "" "" "" "" "" "" "" "0"
-				;;
-				apply_value)
-				local val
-				local param
-				cat $set_tmp_file | while read line; do
-					json_init
-					json_load "$line"
-					json_get_var param parameter
-					json_get_var val value
-					json_get_var secret_value secret_value
-					json_get_var notification notification
-					json_get_var type type
-					json_get_var set_cmd set_cmd
-					eval "$set_cmd"
-					max_len=0
-					for prefix in $prefix_list; do
-						case  "$param" in "$prefix"*)
-							len=${#prefix}
-							if [ $len -gt $max_len ]; then
-								max_len=$len
-								filename="$prefix"
-							fi
-						esac
-					done
-					if [ "$secret_value" != "1" ]; then
-						sed -i "/\<$param\>/s%.*%$line%" $cache_path/$filename
-					fi
-				done
-				$UCI_SET cwmp.acs.ParameterKey=$__arg1
-				freecwmp_output "" "" "" "" "" "" "1"
-				;;
-			esac
-			$UCI_COMMIT
-		else
-			if [ "$action" = "apply_notification" ]; then
-				cat $set_fault_tmp_file | head -1 
-			else
-				cat $set_fault_tmp_file
-			fi
-			rm -f $set_fault_tmp_file
-			/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q revert cwmp
-		fi
-		rm -f $set_tmp_file
-	fi
-
-	if [ "$action" = "inform" ]; then
-		rm -f "$cache_linker_dynamic"
-		rm -f "$cache_path/"*"_dynamic"
-		get_dynamic_InternetGatewayDevice_WANDevice > "$cache_path/InternetGatewayDevice.WANDevice_dynamic"
-		local forced_param=`cat "$cache_path/"* | grep "\"forced_inform\""`
-		echo "$forced_param" | grep "\"value\"" | grep -v "\"dynamic_val\""
-		echo "$forced_param" | grep "\"dynamic_val\"" | while read line; do
-			json_init
-			json_load "$line"
-			json_get_var exec_get_cmd get_cmd
-			json_get_var param parameter
-			json_get_var type type
-			val=`eval "$exec_get_cmd"`
-			freecwmp_output "$param" "$val" "" "" "$type"
-		done
-		rm -f "$cache_linker_dynamic"
-		rm -f "$cache_path/"*"_dynamic"
-	fi
-
-	if [ "$action" = "notify" ]; then
-		freecwmp_notify "$__arg1" "$__arg2"
-	fi
-	
-	if [ "$action" = "end_session" ]; then	
-		echo 'rm -f /tmp/end_session.sh' >> /tmp/end_session.sh
-		/bin/sh /tmp/end_session.sh
-	fi
-	
 	if [ "$action" = "allow_cr_ip" ]; then
 		local port=`$UCI_GET cwmp.cpe.port`
 		local if_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
@@ -657,7 +273,7 @@ handle_action() {
 	fi
 	
 	if [ "$action" = "json_continuous_input" ]; then
-		echo "EOF"
+		echo "$CWMP_PROMPT"
 		while read CMD; do
 			[ -z "$CMD" ] && continue
 			result=""
@@ -683,10 +299,7 @@ handle_action() {
 					fi
 					;;
 				get)
-					if [ "$action" = "cache" ]; then
-						json_get_var __arg1 parameter
-						action="get_cache"
-					elif [ "$action" = "notification" ]; then
+					if [ "$action" = "notification" ]; then
 						json_get_var __arg1 parameter
 						action="get_notification"
 					elif [ "$action" = "value" ]; then
@@ -742,15 +355,12 @@ handle_action() {
 				inform)
 					action="inform"
 					;;
-				end_session)
-					action="end_session"
-					;;
 				allow_cr_ip)
 					action="allow_cr_ip"
 					json_get_var __arg1 arg
 					;;
 				end)
-					echo "EOF"
+					echo "$CWMP_PROMPT"
 					;;
 				exit)
 					exit 0
@@ -768,6 +378,3 @@ handle_action() {
 
 handle_action 2> /dev/null
 
-if [ ${FLAGS_debug} -eq ${FLAGS_TRUE} ]; then
-	echo "[debug] exited at \"`date`\""
-fi

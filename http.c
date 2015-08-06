@@ -201,7 +201,9 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
         if (!ip_acs || strcmp(ip_acs, ip) != 0) {
             FREE(ip_acs);
             ip_acs = strdup(ip);
+            external_init();
             external_simple("allow_cr_ip", ip_acs);
+            external_exit();
         }
     }
 

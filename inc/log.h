@@ -44,18 +44,33 @@ enum log_severity_enum {
 # define DD(SEV,MESSAGE,args...)
 #endif
 
+#ifndef DETECT_CRASH
 #define DETECT_CRASH(MESSAGE,args...) { \
-  const char *A[] = {MESSAGE}; \
-  printf("step: %s %s %d\n",__FUNCTION__,__FILE__,__LINE__); fflush(stdout); sleep(1);\
-  if(sizeof(A) > 0) \
-    printf(*A,##args); \
+	const char *A[] = {MESSAGE}; \
+	printf("DETECT_CRASH: %s %s %d\n",__FUNCTION__,__FILE__,__LINE__); fflush(stdout);\
+	if(sizeof(A) > 0) \
+		printf(*A,##args); \
+	sleep(1); \
 }
+#endif
 
-#define TRACE(MESSAGE,args...) { \
-  const char *A[] = {MESSAGE}; \
-  printf("step: %s %s %d\n",__FUNCTION__,__FILE__,__LINE__); fflush(stdout);\
-  if(sizeof(A) > 0) \
-    printf(*A,##args); \
+#ifndef TRACE
+#define TRACE_TYPE 0
+static inline void trace_empty_func()
+{
 }
+#if TRACE_TYPE == 2
+#define TRACE(MESSAGE,args...) do { \
+	const char *A[] = {MESSAGE}; \
+	printf("TRACE: %s %s %d\n",__FUNCTION__,__FILE__,__LINE__); fflush(stdout);\
+	if(sizeof(A) > 0) \
+		printf(*A,##args); \
+} while(0)
+#elif TRACE_TYPE == 1
+#define TRACE(MESSAGE, ...) printf(MESSAGE, ## __VA_ARGS__)
+#else
+#define TRACE(MESSAGE, ...) trace_empty_func()
+#endif
+#endif
 
 #endif /* _LOG_H_ */

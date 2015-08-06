@@ -21,6 +21,8 @@
 #include "backupSession.h"
 #include "xml.h"
 #include "log.h"
+#include "dmentry.h"
+#include "deviceinfo.h"
 
 typedef enum uci_config_action {
     CMD_SET,
@@ -33,6 +35,8 @@ void show_help()
 {
     fprintf(stdout, "\nUsage: cwmpd [option]\n");
     fprintf(stdout, "-b:    this option should be added only in the load phase\n");
+    fprintf(stdout, "-m:    execute data model commands\n");
+    fprintf(stdout, "-w:    generate wep keys\n");
     fprintf(stdout, "-g:    send GetRPCMethods to ACS\n");
     fprintf(stdout, "-v:    show the application version\n");
     fprintf(stdout, "-h:    show this help\n\n");
@@ -679,6 +683,14 @@ int global_env_init (int argc, char** argv, struct env *env)
             case 'g':
                 env->periodic = CWMP_START_PERIODIC;
                 break;
+            case 'm':
+            	dm_entry_cli(argc, argv);
+            	exit(EXIT_SUCCESS);
+            	break;
+            case 'w':
+            	wepkey_cli(argc, argv);
+            	exit(EXIT_SUCCESS);
+            	break;
             case 'v':
                 show_version();
                 exit(EXIT_SUCCESS);
@@ -718,6 +730,17 @@ int save_acs_bkp_config(struct cwmp *cwmp)
     return CWMP_OK;
 }
 
+int cwmp_get_deviceid(struct cwmp *cwmp) {
+	dm_global_init();
+	cwmp->deviceid.manufacturer = strdup(get_deviceid_manufacturer()); //TODO free
+	cwmp->deviceid.serialnumber = strdup(get_deviceid_serialnumber());
+	cwmp->deviceid.productclass = strdup(get_deviceid_productclass());
+	cwmp->deviceid.oui = strdup(get_deviceid_manufactureroui());
+	cwmp->deviceid.softwareversion = strdup(get_softwareversion());
+	dm_global_clean();
+	return CWMP_OK;
+}
+
 int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 {
     int         error;
@@ -751,6 +774,7 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     {
         return error;
     }
+    cwmp_get_deviceid(cwmp);
     return CWMP_OK;
 }
 

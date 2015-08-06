@@ -1,5 +1,5 @@
 bin_PROGRAMS = cwmpd
-CWMP_VERSION = 2.2
+CWMP_VERSION = 3.0
 
 cwmpd_SOURCES =				\
 	../backupSession.c		\
@@ -15,7 +15,20 @@ cwmpd_SOURCES =				\
 	../netlink.c			\
 	../time.c				\
 	../ubus.c				\
-	../xml.c
+	../xml.c				\
+	../dm/dmcwmp.c			\
+	../dm/dmentry.c			\
+	../dm/dmmem.c			\
+	../dm/dmubus.c			\
+	../dm/dmuci.c			\
+	../dm/dmcommon.c		\
+	../dm/wepkey.c			\
+	../dm/dmtree/deviceinfo.c				\
+	../dm/dmtree/landevice.c				\
+	../dm/dmtree/root.c						\
+	../dm/dmtree/wandevice.c				\
+	../dm/dmtree/x_inteno_se_power_mgmt.c	\
+	../dm/dmtree/managementserver.c
 
 cwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
@@ -44,7 +57,8 @@ cwmpd_LDADD =			\
 	$(LIBCURL_LIBS)		\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)	\
-	$(LIBJSON_LIBS)
+	$(LIBJSON_LIBS)		\
+	$(LBLOBMSG_LIBS)
 
 cwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
@@ -52,3 +66,5 @@ cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 CWMP_BKP_FILE=/etc/cwmpd/.cwmpd_backup_session.xml
 cwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"
 cwmpd_CFLAGS+=-I../inc
+cwmpd_CFLAGS+=-I../dm/
+cwmpd_CFLAGS+=-I../dm/dmtree

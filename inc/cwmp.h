@@ -50,8 +50,6 @@
 #define UCI_CPE_LOG_MAX_SIZE				"cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
-#define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
-
 
 enum end_session {
 	END_SESSION_REBOOT = 1,
@@ -107,17 +105,9 @@ typedef struct event_container {
     struct list_head                    list;
     int 								code;	/* required element of type xsd:string */
 	char 								*command_key;
-    struct list_head                    head_parameter_container;
+    struct list_head                    head_dm_parameter;
     int                                 id;
 } event_container;
-
-typedef struct parameter_container {
-	struct list_head list;
-	char *name;
-	char *data;
-	char *type;
-	char *fault_code;
-} parameter_container;
 
 typedef struct EVENT_CONST_STRUCT
 {
@@ -171,9 +161,18 @@ enum enum_session_status {
     SESSION_SUCCESS
 };
 
+struct deviceid {
+	char *manufacturer;
+	char *oui;
+	char *serialnumber;
+	char *productclass;
+	char *softwareversion;
+};
+
 typedef struct cwmp {
     struct env			env;
     struct config		conf;
+    struct deviceid		deviceid;
     struct list_head	head_session_queue;
     pthread_mutex_t		mutex_session_queue;
     struct session		*session_send;
@@ -209,6 +208,7 @@ typedef struct rpc {
     struct list_head	list;
     int					type;
     void				*extra_data;
+    struct list_head	*list_set_value_fault;
 } rpc;
 
 #define ARRAYSIZEOF(a)  (sizeof(a) / sizeof((a)[0]))
@@ -216,6 +216,7 @@ typedef struct rpc {
 
 extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
+extern struct list_head list_value_change;
 
 struct rpc *cwmp_add_session_rpc_cpe (struct session *session, int type);
 struct session *cwmp_add_queue_session (struct cwmp *cwmp);
@@ -231,5 +232,6 @@ char * mix_get_time_of(time_t t_time);
 void *thread_exit_program (void *v);
 void connection_request_ip_value_change(struct cwmp *cwmp);
 void connection_request_port_value_change(struct cwmp *cwmp, int port);
+void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type);
 
 #endif /* _CWMP_H__ */

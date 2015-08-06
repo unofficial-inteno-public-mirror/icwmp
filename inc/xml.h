@@ -102,6 +102,7 @@ struct rpc_acs_method {
 typedef struct FAULT_CPE
 {
     char                                *CODE;
+    int                                	ICODE;
     int                                 TYPE;
     char                                *DESCRIPTION;
 } FAULT_CPE;
@@ -166,7 +167,7 @@ int cwmp_rpc_acs_destroy_data_transfer_complete(struct session *session, struct 
 int xml_handle_message(struct session *session);
 int xml_prepare_msg_out(struct session *session);
 int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int fault_code);
-int cwmp_get_fault_code (char *fault_code);
+int cwmp_get_fault_code (int fault_code);
 int cwmp_scheduleInform_remove_all();
 int cwmp_scheduledDownload_remove_all();
 struct transfer_complete *cwmp_set_data_rpc_acs_transferComplete();

@@ -22,22 +22,9 @@ static char *fc_script = "/usr/sbin/freecwmp";
 #endif
 
 extern pthread_mutex_t external_mutex_value_change;
-extern struct list_head external_list_value_change;
-extern struct list_head external_list_parameter;
 
 void external_downloadFaultResp (char *fault_code);
 void external_fetch_downloadFaultResp (char **fault_code);
-void external_setParamValRespStatus (char *status);
-void external_fetch_setParamValRespStatus (char **status);
-void external_setParamAttrResp (char *status, char *fault);
-void external_fetch_setParamAttrResp (char **status, char **fault);
-void external_addObjectResp (char *instance, char *status, char *fault);
-void external_fetch_addObjectResp (char **instance, char **status, char **fault);
-void external_delObjectResp (char *status, char *fault);
-void external_fetch_delObjectResp (char **status, char **fault);
-int external_get_action(char *action, char *name, char *next_level);
-int external_set_action(char *action, char *name, char *value, char *change);
-int external_object_action(char *command, char *name, char *parameter_key);
 int external_simple(char *command, char *arg);
 int external_download(char *url, char *size, char *type, char *user, char *pass);
 int external_apply(char *action, char *arg);

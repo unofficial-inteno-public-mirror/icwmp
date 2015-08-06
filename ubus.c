@@ -19,6 +19,8 @@
 #include "external.h"
 #include "xml.h"
 #include "log.h"
+#include "wepkey.h"
+#include "dmentry.h"
 
 static struct ubus_context *ctx = NULL;
 static struct blob_buf b;
@@ -289,7 +291,7 @@ ubus_init(struct cwmp *cwmp)
 	ubus_add_uloop(ctx);
 
 	if (ubus_add_object(ctx, &main_object)) return -1;
-	uloop_run();
+	//uloop_run(); //TODO the uloop_run cause a freeze when used with dm ubus c commands. should be fixed
 	return 0;
 }
 

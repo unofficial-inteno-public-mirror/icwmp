@@ -18,6 +18,8 @@
 #include "xml.h"
 #include "log.h"
 #include "external.h"
+#include "dmentry.h"
+#include "ubus.h"
 
 struct cwmp         	cwmp_main = {0};
 
@@ -91,13 +93,13 @@ int cwmp_get_retry_interval (struct cwmp *cwmp)
 static void cwmp_prepare_value_change (struct cwmp *cwmp, struct session *session)
 {
 	struct event_container *event_container;
-	if (external_list_value_change.next == &(external_list_value_change))
+	if (list_value_change.next == &(list_value_change))
 		return;
 	pthread_mutex_lock(&(cwmp->mutex_session_queue));
 	event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 	if (!event_container) goto end;
 	pthread_mutex_lock(&(external_mutex_value_change));
-	list_splice_init(&(external_list_value_change), &(event_container->head_parameter_container));
+	list_splice_init(&(list_value_change), &(event_container->head_dm_parameter));
 	pthread_mutex_unlock(&(external_mutex_value_change));
 	cwmp_save_event_container (cwmp,event_container);
 
@@ -140,12 +142,12 @@ void cwmp_schedule_session (struct cwmp *cwmp)
         cwmp->session_status.last_start_time = time(NULL);
         cwmp->session_status.last_status = SESSION_RUNNING;
         cwmp->session_status.next_retry = 0;
-        external_init();
+        dm_global_init();
         CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");
         run_session_end_func(session);
-        external_exit();
+        dm_global_clean();
         if (session->error == CWMP_RETRY_SESSION)
         {
             error = cwmp_move_session_to_session_queue (cwmp, session);
@@ -362,8 +364,8 @@ int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *sessi
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        list_splice_init(&(event_container_old->head_parameter_container),
-        		&(event_container_new->head_parameter_container));
+        list_splice_init(&(event_container_old->head_dm_parameter),
+        		&(event_container_new->head_dm_parameter));
         cwmp_save_event_container (cwmp,event_container_new);
     }
     session_queue = list_entry(cwmp->head_event_container,struct session, head_event_container);
@@ -457,20 +459,26 @@ int run_session_end_func (struct session *session)
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");
+		external_init();
 		external_simple("end_session", NULL);
+		external_exit();
 	}
 
 	if (session->end_session & END_SESSION_FACTORY_RESET)
 	{
 		CWMP_LOG (INFO,"Executing factory reset: end session request");
+		external_init();
 		external_simple("factory_reset", NULL);
+		external_exit();
 		exit(EXIT_SUCCESS);
 	}
 
 	if (session->end_session & END_SESSION_REBOOT)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");
+		external_init();
 		external_simple("reboot", NULL);
+		external_exit();
 		exit(EXIT_SUCCESS);
 	}
 

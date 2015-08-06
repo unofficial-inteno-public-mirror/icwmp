@@ -17,6 +17,10 @@
 #include "log.h"
 #include "jshn.h"
 #include "external.h"
+#include "dmcwmp.h"
+#include "deviceinfo.h"
+
+LIST_HEAD(list_value_change);
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_0BOOTSTRAP]                      = {"0 BOOTSTRAP",                       EVENT_TYPE_SINGLE,  EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
@@ -39,7 +43,7 @@ const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container)
 {
     struct list_head                    *ilist;
-    struct parameter_container          *parameter_container;
+    struct dm_parameter                 *dm_parameter;
     char                                section[256];
     mxml_node_t							*b;
 
@@ -47,10 +51,10 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
     {
         b = bkp_session_insert_event(event_container->code, event_container->command_key, event_container->id, "queue");
 
-        list_for_each(ilist,&(event_container->head_parameter_container))
+        list_for_each(ilist,&(event_container->head_dm_parameter))
         {
-            parameter_container = list_entry(ilist, struct parameter_container, list);
-            bkp_session_insert_parameter(b, parameter_container->name);
+            dm_parameter = list_entry(ilist, struct dm_parameter, list);
+            bkp_session_insert_parameter(b, dm_parameter->name);
         }
         bkp_session_save();
     }
@@ -93,7 +97,7 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_c
     {
         return NULL;
     }
-    INIT_LIST_HEAD (&(event_container->head_parameter_container));
+    INIT_LIST_HEAD (&(event_container->head_dm_parameter));
     list_add (&(event_container->list), ilist->prev);
     event_container->code = event_code;
     event_container->command_key = strdup(command_key);
@@ -106,44 +110,41 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_c
     return event_container;
 }
 
-void parameter_container_add(struct list_head *head, char *param_name, char *param_data, char *param_type, char *fault_code)
+void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type)
 {
-	struct parameter_container *parameter_container;
+	struct dm_parameter *dm_parameter;
 	struct list_head *ilist;
 	int cmp;
 	list_for_each (ilist, head) {
-		parameter_container = list_entry(ilist, struct parameter_container, list);
-		cmp = strcmp(parameter_container->name, param_name);
+		dm_parameter = list_entry(ilist, struct dm_parameter, list);
+		cmp = strcmp(dm_parameter->name, param_name);
 		if (cmp == 0) {
 			return;
 		} else if (cmp > 0) {
 			break;
 		}
 	}
-	parameter_container = calloc(1, sizeof(struct parameter_container));
-	_list_add(&parameter_container->list, ilist->prev, ilist);
-	if (param_name) parameter_container->name = strdup(param_name);
-	if (param_data) parameter_container->data = strdup(param_data);
-	if (param_type) parameter_container->type = strdup(param_type);
-	if (fault_code) parameter_container->fault_code = strdup(fault_code);
+	dm_parameter = calloc(1, sizeof(struct dm_parameter));
+	_list_add(&dm_parameter->list, ilist->prev, ilist);
+	if (param_name) dm_parameter->name = strdup(param_name);
+	if (param_data) dm_parameter->data = strdup(param_data);
+	if (param_type) dm_parameter->type = param_type ? param_type : "xsd:string";
 }
 
-void parameter_container_delete(struct parameter_container *parameter_container)
+void delete_dm_parameter_fromlist(struct dm_parameter *dm_parameter)
 {
-	list_del(&parameter_container->list);
-	free(parameter_container->name);
-	free(parameter_container->data);
-	free(parameter_container->type);
-	free(parameter_container->fault_code);
-	free(parameter_container);
+	list_del(&dm_parameter->list);
+	free(dm_parameter->name);
+	free(dm_parameter->data);
+	free(dm_parameter);
 }
 
-void parameter_container_delete_all(struct list_head *list)
+void free_dm_parameter_all_fromlist(struct list_head *list)
 {
-	struct parameter_container *parameter_container;
+	struct dm_parameter *dm_parameter;
 	while (list->next!=list) {
-		parameter_container = list_entry(list->next, struct parameter_container, list);
-		parameter_container_delete(parameter_container);
+		dm_parameter = list_entry(list->next, struct dm_parameter, list);
+		delete_dm_parameter_fromlist(dm_parameter);
 	}
 }
 
@@ -192,14 +193,14 @@ int cwmp_root_cause_event_boot (struct cwmp *cwmp)
 int event_remove_all_event_container(struct session *session, int rem_from)
 {
     struct event_container              *event_container;
-    struct parameter_container          *parameter_container;
+    struct dm_parameter                 *dm_parameter;
 
     while (session->head_event_container.next!=&(session->head_event_container))
     {
         event_container = list_entry(session->head_event_container.next, struct event_container, list);
         bkp_session_delete_event(event_container->id, rem_from?"send":"queue");
         free (event_container->command_key);
-        parameter_container_delete_all(&(event_container->head_parameter_container));
+        free_dm_parameter_all_fromlist(&(event_container->head_dm_parameter));
         list_del(&(event_container->list));
         free (event_container);
     }
@@ -253,8 +254,8 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
-        parameter_container_add(&(event_container->head_parameter_container),
-        		"InternetGatewayDevice.ManagementServer.URL", NULL, NULL, NULL);
+        add_dm_parameter_tolist(&(event_container->head_dm_parameter),
+        		DMROOT".ManagementServer.URL", NULL, NULL);
         cwmp_save_event_container (cwmp,event_container);
         save_acs_bkp_config (cwmp);
         cwmp_scheduleInform_remove_all();
@@ -427,23 +428,12 @@ int cwmp_root_cause_event_periodic (struct cwmp *cwmp)
 
 void sotfware_version_value_change(struct cwmp *cwmp, struct transfer_complete *p)
 {
-	struct parameter_container *parameter_container;
 	char *current_software_version = NULL;
 
 	if (!p->old_software_version || p->old_software_version[0] == 0)
 		return;
 
-	external_init();
-	external_get_action("value", DM_SOFTWARE_VERSION_PATH, NULL);
-	external_handle_action(cwmp_handle_getParamValues);
-	parameter_container = list_entry(external_list_parameter.next, struct parameter_container, list);
-	if ((!parameter_container->fault_code || parameter_container->fault_code[0] != '9') &&
-		strcmp(parameter_container->name, DM_SOFTWARE_VERSION_PATH) == 0)
-	{
-		current_software_version = strdup(parameter_container->data);
-	}
-	external_free_list_parameter();
-	external_exit();
+	current_software_version = cwmp->deviceid.softwareversion;
 	if (p->old_software_version && current_software_version &&
 		strcmp(p->old_software_version, current_software_version) != 0) {
 		pthread_mutex_lock (&(cwmp->mutex_session_queue));

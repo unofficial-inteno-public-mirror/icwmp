@@ -442,8 +442,8 @@ void load_queue_event(mxml_node_t *tree,struct cwmp *cwmp)
 					{
 						if(event_container_save != NULL)
 						{
-							parameter_container_add(&(event_container_save->head_parameter_container),
-									c->value.text.string, NULL, NULL, NULL);
+							add_dm_parameter_tolist(&(event_container_save->head_dm_parameter),
+									c->value.text.string, NULL, NULL);
 						}
 					}
 				}
