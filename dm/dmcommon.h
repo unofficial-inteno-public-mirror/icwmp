@@ -20,5 +20,6 @@ do { \
 } while(0)
 
 char *cut_fx(char *str, char *delimiter, int occurence);
+char *get_pid(char *pname);
 
 #endif

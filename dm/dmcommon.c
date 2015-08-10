@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <dmcwmp.h>
 
 char *cut_fx(char *str, char *delimiter, int occurence)
 {
@@ -24,4 +25,26 @@ char *cut_fx(char *str, char *delimiter, int occurence)
 		pch = strtok(NULL, delimiter);
 	}
 	return pch;
+}
+
+char *get_pid(char *pname)
+{
+	FILE* f = NULL;
+	char str[TAILLE_MAX] = "";
+	char *v;
+	f = popen(pname, "r");
+	if (f != NULL)
+	{
+		fgets(str, TAILLE_MAX, f);
+		if (str[0] == '\0') {
+			pclose(f);
+			return dmstrdup("");
+		}
+		pid_t pid = strtoul(str, NULL, 10);
+		pclose(f);
+		dmasprintf(&v, "%d", pid);
+		return v;
+	}
+	v = dmstrdup("");
+	return v;
 }

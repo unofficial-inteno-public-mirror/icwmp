@@ -11,10 +11,14 @@
 #include "dmuci.h"
 #include "dmcwmp.h"
 #include "root.h"
+#include "upnp.h"
 #include "landevice.h"
 #include "wandevice.h"
 #include "deviceinfo.h"
 #include "managementserver.h"
+#include "x_inteno_se_igmp.h"
+#include "x_inteno_se_wifi.h"
+#include "x_inteno_se_ice.h"
 #include "x_inteno_se_power_mgmt.h"
 
 static char *get_parameter_notification (char *param);
@@ -66,6 +70,10 @@ const struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"LANDevice.", 0, &entry_method_root_LANDevice },
 	{ DMROOT"WANDevice.", 1, &entry_method_root_WANDevice },
+	{ DMROOT"X_INTENO_SE_IGMP.", 0, &entry_method_root_X_INTENO_SE_IGMP },
+	{ DMROOT"X_INTENO_SE_Wifi.", 0, &entry_method_root_SE_Wifi },
+	{ DMROOT"X_INTENO_SE_ICE.", 0, &entry_method_root_X_INTENO_SE_Ice },
+	{ DMROOT"UPnP.", 0, &entry_method_root_upnp },
 	//{ DMROOT"Layer2Bridging.", &entry_method_root_Layer2Bridging },
 };
 
