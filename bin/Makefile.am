@@ -28,6 +28,12 @@ cwmpd_SOURCES =				\
 	../dm/dmtree/root.c						\
 	../dm/dmtree/wandevice.c				\
 	../dm/dmtree/x_inteno_se_power_mgmt.c	\
+	../dm/dmtree/x_inteno_se_igmp.c			\
+	../dm/dmtree/x_inteno_se_wifi.c			\
+	../dm/dmtree/x_inteno_se_ice.c			\
+	../dm/dmtree/upnp.c						\
+	../dm/dmtree/times.c					\
+	../dm/dmtree/x_inteno_se_ipacccfg.c		\
 	../dm/dmtree/managementserver.c
 
 cwmpd_CFLAGS =			\

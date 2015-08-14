@@ -11,6 +11,7 @@
 #include "dmuci.h"
 #include "dmcwmp.h"
 #include "root.h"
+#include "times.h"
 #include "upnp.h"
 #include "landevice.h"
 #include "wandevice.h"
@@ -20,6 +21,7 @@
 #include "x_inteno_se_wifi.h"
 #include "x_inteno_se_ice.h"
 #include "x_inteno_se_power_mgmt.h"
+#include "x_inteno_se_ipacccfg.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -74,6 +76,8 @@ const struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_Wifi.", 0, &entry_method_root_SE_Wifi },
 	{ DMROOT"X_INTENO_SE_ICE.", 0, &entry_method_root_X_INTENO_SE_Ice },
 	{ DMROOT"UPnP.", 0, &entry_method_root_upnp },
+	{ DMROOT"Time.", 0, &entry_method_root_Time },
+	{ DMROOT"X_INTENO_SE_IpAccCfg.", 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
 	//{ DMROOT"Layer2Bridging.", &entry_method_root_Layer2Bridging },
 };
 

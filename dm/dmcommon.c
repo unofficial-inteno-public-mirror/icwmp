@@ -9,11 +9,12 @@
  *		Author: Feten Besbes <feten.besbes@pivasoftware.com>
  */
 
+#include <glob.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <dmcwmp.h>
+#include "dmcwmp.h"
 
 char *cut_fx(char *str, char *delimiter, int occurence)
 {
@@ -33,8 +34,7 @@ char *get_pid(char *pname)
 	char str[TAILLE_MAX] = "";
 	char *v;
 	f = popen(pname, "r");
-	if (f != NULL)
-	{
+	if (f != NULL) {
 		fgets(str, TAILLE_MAX, f);
 		if (str[0] == '\0') {
 			pclose(f);
@@ -47,4 +47,14 @@ char *get_pid(char *pname)
 	}
 	v = dmstrdup("");
 	return v;
+}
+
+int check_file(char *path) 
+{
+	glob_t globbuf;
+	if(glob(path, 0, NULL, &globbuf) == 0) {
+		globfree(&globbuf);
+		return 1;
+	}
+	return 0;
 }
