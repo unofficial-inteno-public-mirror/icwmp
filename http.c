@@ -162,6 +162,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	long http_code = 0;
 	static char *ip_acs = NULL;
 	char *ip = NULL;
+	char errbuf[CURL_ERROR_SIZE];
 	curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
 	curl_easy_setopt(curl, CURLOPT_USERNAME, cwmp->conf.acs_userid);
 	curl_easy_setopt(curl, CURLOPT_PASSWORD, cwmp->conf.acs_passwd);
@@ -183,15 +184,43 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 # ifdef DEVEL
 	curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
 # endif
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
 
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, fc_cookies);
 	curl_easy_setopt(curl, CURLOPT_COOKIEJAR, fc_cookies);
 
-	/* TODO: ssl config (from freecwmp) and test it with real ACS configuration */
+	if (cwmp->conf.acs_ssl_version) {
+		if (strcmp(cwmp->conf.acs_ssl_version, "sslv3") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
+		else if (strcmp(cwmp->conf.acs_ssl_version, "sslv2") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
+		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
+		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.0") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
+		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.1") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
+		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.2") == 0)
+			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
+	}
+	
+	if (cwmp->conf.acs_ssl_capath)
+		curl_easy_setopt(curl, CURLOPT_CAPATH,  cwmp->conf.acs_ssl_capath);
+		
 
 	*msg_in = (char *) calloc (1, sizeof(char));
 
 	res = curl_easy_perform(curl);
+	
+	if(res != CURLE_OK) {
+		size_t len = strlen(errbuf);
+		if(len) {
+			if (errbuf[len - 1] == '\n') errbuf[len - 1] = '\0';
+			CWMP_LOG(ERROR,"libcurl: (%d) %s", res, errbuf);
+		} else {
+			CWMP_LOG(ERROR,"libcurl: (%d) %s", res, curl_easy_strerror(res));
+		}
+	}
 
 	if (!strlen(*msg_in))
 		FREE(*msg_in);

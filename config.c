@@ -491,6 +491,38 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+    if((error = uci_get_value(UCI_ACS_SSL_CAPATH,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (conf->acs_ssl_capath != NULL)
+            {
+                free(conf->acs_ssl_capath);
+            }
+            conf->acs_ssl_capath = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        FREE(conf->acs_ssl_capath);
+    }
+    if((error = uci_get_value(UCI_ACS_SSL_VERSION,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (conf->acs_ssl_version != NULL)
+            {
+                free(conf->acs_ssl_version);
+            }
+            conf->acs_ssl_version = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        FREE(conf->acs_ssl_version);
+    }
     if((error = uci_get_value(UCI_CPE_INTERFACE_PATH,&value)) == CWMP_OK)
     {
         if(value != NULL)
