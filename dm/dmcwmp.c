@@ -92,16 +92,14 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 			sprintf(buf, "%d", 1);
 		else
 			sprintf(buf, "%d", atoi(last_inst)+1);
-		dmfree(instance); //TODO MEM
 		instance = dmuci_set_value_by_section(s, inst_opt, buf);
-		instance = dmstrdup(instance);
 	}
 	return instance;
 }
 
 int get_empty(char *refparam, struct dmctx *args, char **value)
 {
-	*value = dmstrdup("");
+	*value = "";
 	return 0;
 }
 
@@ -121,7 +119,7 @@ void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data,
 	dm_parameter = dmcalloc(1, sizeof(struct dm_parameter));
 	_list_add(&dm_parameter->list, ilist->prev, ilist);
 	dm_parameter->name = param_name;
-	dm_parameter->data = param_data ? param_data : dmstrdup(""); //allocate memory in function
+	dm_parameter->data = param_data ? param_data : ""; //allocate memory in function
 	dm_parameter->type = param_type;
 }
 
@@ -129,7 +127,6 @@ void del_list_parameter(struct dm_parameter *dm_parameter)
 {
 	list_del(&dm_parameter->list);
 	dmfree(dm_parameter->name);
-	dmfree(dm_parameter->data);
 	dmfree(dm_parameter);
 }
 
@@ -261,11 +258,9 @@ static int set_parameter_notification(char *param, char *value)
 	dmuci_get_section_type("cwmp", "@notifications[0]", &tmp);
 	if (!tmp || tmp[0] == '\0') {
 		dmuci_add_section("cwmp", "notifications", &s, &buf);
-		dmfree(buf);
 	} else {
 		remove_parameter_notification(param);
 	}
-	dmfree(tmp);
 
 	notification = get_parameter_notification(param);
 	if (strcmp(notification, value) == 0)  {
@@ -483,7 +478,7 @@ int dm_entry_get_name(struct dmctx *ctx)
 static int get_name_obj(DMOBJECT_API_ARGS)
 {
 	char *obj = dmstrdup(ctx->current_obj);
-	char *p = dmstrdup(permission);
+	char *p = permission;
 	add_list_paramameter(ctx, obj, p, NULL);
 	return 0;
 }
@@ -499,7 +494,7 @@ static int get_name_inparam_isobj_check_obj(DMOBJECT_API_ARGS)
 		ctx->faultcode = 0;
 		if (ctx->nextlevel == 0 || check_obj_is_nl1(ctx->current_obj, ctx->in_param, 2) == 0 ) {
 			char *obj = dmstrdup(ctx->current_obj);
-			char *p = dmstrdup(permission);
+			char *p = permission;
 			add_list_paramameter(ctx, obj, p, NULL);
 			return 0;
 		}
@@ -511,7 +506,7 @@ static int get_name_inparam_isobj_check_obj(DMOBJECT_API_ARGS)
 static int get_name_emptyin_nl1_obj(DMOBJECT_API_ARGS)
 {
 	char *obj = dmstrdup(ctx->current_obj);
-	char *p = dmstrdup(permission);
+	char *p = permission;
 	add_list_paramameter(ctx, obj, p, NULL);
 	return 0;
 }
@@ -519,7 +514,7 @@ static int get_name_emptyin_nl1_obj(DMOBJECT_API_ARGS)
 static int get_name_param(DMPARAM_API_ARGS)
 {
 	char *full_param;
-	char *p = dmstrdup(permission);
+	char *p = permission;
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	add_list_paramameter(ctx, full_param, p, NULL);
 	return 0;
@@ -538,7 +533,7 @@ static int get_name_inparam_isparam_check_param(DMPARAM_API_ARGS)
 		ctx->stop = 1;
 		return FAULT_9003;
 	}
-	char *p = dmstrdup(permission);
+	char *p = permission;
 	add_list_paramameter(ctx, full_param, p, NULL);
 	ctx->stop = 1;
 	return 0;
@@ -551,12 +546,12 @@ static int get_name_inparam_isobj_check_param(DMPARAM_API_ARGS)
 	if (strstr(full_param, ctx->in_param)) {
 		ctx->faultcode = 0;
 		if (ctx->nextlevel == 0 || check_obj_is_nl1(full_param, ctx->in_param, 1) == 0 ) {
-			char *p = dmstrdup(permission);
+			char *p = permission;
 			add_list_paramameter(ctx, full_param, p, NULL);
 			return 0;
 		}
 		dmfree(full_param);
-		return 0;
+		return 0; //TODO check the return value here!
 	}
 	dmfree(full_param);
 	return FAULT_9005;
@@ -620,9 +615,8 @@ static int get_notification_param(DMPARAM_API_ARGS)
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (forced_notify == UNDEF) {
 		notification = get_parameter_notification(full_param);
-		notification = dmstrdup(notification);
 	} else {
-		notification = dmstrdup(notifications[forced_notify].value);
+		notification = notifications[forced_notify].value;
 	}
 	add_list_paramameter(ctx, full_param, notification, NULL);
 	return 0;
@@ -639,9 +633,8 @@ static int get_notification_inparam_isparam_check_param(DMPARAM_API_ARGS)
 	}
 	if (forced_notify == UNDEF) {
 		notification = get_parameter_notification(full_param);
-		notification = dmstrdup(notification);
 	} else {
-		notification = dmstrdup(notifications[forced_notify].value);
+		notification = notifications[forced_notify].value;
 	}
 	add_list_paramameter(ctx, full_param, notification, NULL);
 	ctx->stop = true;
@@ -656,9 +649,8 @@ static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS)
 	if (strstr(full_param, ctx->in_param)) {		
 		if (forced_notify == UNDEF) {
 			notification = get_parameter_notification(full_param);
-			notification = dmstrdup(notification);
 		} else {
-			notification = dmstrdup(notifications[forced_notify].value);
+			notification = notifications[forced_notify].value;
 		}
 		add_list_paramameter(ctx, full_param, notification, NULL);
 		ctx->faultcode = 0;
@@ -873,7 +865,8 @@ static int set_notification_check_obj(DMOBJECT_API_ARGS)
 			return FAULT_9009;
 
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
-	} else if (ctx->setaction == VALUESET) {
+	}
+	else if (ctx->setaction == VALUESET) {
 		set_parameter_notification(ctx->in_param, ctx->in_notification);
 	}
 	return 0;

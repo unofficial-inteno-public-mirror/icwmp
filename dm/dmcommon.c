@@ -38,15 +38,14 @@ char *get_pid(char *pname)
 		fgets(str, TAILLE_MAX, f);
 		if (str[0] == '\0') {
 			pclose(f);
-			return dmstrdup("");
+			return "";
 		}
 		pid_t pid = strtoul(str, NULL, 10);
 		pclose(f);
-		dmasprintf(&v, "%d", pid);
+		dmasprintf(&v, "%d", pid); // MEM WILL BE FREED IN DMMEMCLEAN
 		return v;
 	}
-	v = dmstrdup("");
-	return v;
+	return "";
 }
 
 int check_file(char *path) 

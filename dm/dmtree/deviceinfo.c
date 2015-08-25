@@ -105,7 +105,7 @@ int get_device_hardwareversion(char *refparam, struct dmctx *ctx, char **value)
 {
 	db_get_value_string("hw", "board", "hardwareVersion", value);
 	return 0;
-} 
+}
 
 int get_device_routermodel(char *refparam, struct dmctx *ctx, char **value)
 {

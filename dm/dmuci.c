@@ -38,11 +38,11 @@ char *dmuci_list_to_string(struct uci_list *list, char *delimitor)
 			else
 				strcpy(val, e->name);
 		}
-		return (dmstrdup(val));
+		return (dmstrdup(val)); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	else 
 	{
-		return dmstrdup("");
+		return "";
 	}
 }
 
@@ -129,13 +129,13 @@ int dmuci_get_section_type(char *package, char *section,char **value)
 	struct uci_element *e;
 	struct uci_ptr ptr = {0};
 	if (dmuci_lookup_ptr(uci_ctx, &ptr, package, section, NULL, NULL)) {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	if (ptr.s) {
-		*value = dmstrdup(ptr.s->type);
+		*value = ptr.s->type;
 	} else {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	return 0;
@@ -146,13 +146,13 @@ int dmuci_get_option_value_string(char *package, char *section, char *option, ch
 	struct uci_element *e;
 	struct uci_ptr ptr = {0};
 	if (dmuci_lookup_ptr(uci_ctx, &ptr, package, section, option, NULL)) {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	if (ptr.o) {
-		*value = dmstrdup(ptr.o->v.string);
+		*value = ptr.o->v.string;
 	} else {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	return 0;
@@ -205,9 +205,9 @@ int db_get_value_string(char *package, char *section, char *option, char **value
 	struct uci_option *o;
 	o = dmuci_get_option_ptr(DB_CONFIG, package, section, option);
 	if (o) {
-		*value = dmstrdup(o->v.string);
+		*value = o->v.string;
 	} else {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	return 0;
@@ -359,15 +359,15 @@ int dmuci_add_section(char *package, char *stype, struct uci_section **s, char *
 	*s = NULL;
 
 	if (dmuci_lookup_ptr(uci_ctx, &ptr, package, NULL, NULL, NULL)) {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 	if (uci_add_section(uci_ctx, ptr.p, stype, s) != UCI_OK) {
-		*value = dmstrdup("");
+		*value = "";
 		return -1;
 	}
 
-	*value = dmstrdup((*s)->e.name);
+	*value = (*s)->e.name;
 	return 0;
 }
 
@@ -437,11 +437,11 @@ int dmuci_get_value_by_section_string(struct uci_section *s, char *option, char 
 	uci_foreach_element(&s->options, e) {
 		o = (uci_to_option(e));
 		if (!strcmp(o->e.name, option)) {
-			*value = dmstrdup(o->v.string);
+			*value = o->v.string;
 			return 0;
 		}
 	}
-	*value = dmstrdup("");
+	*value = "";
 	return -1;
 }
 
