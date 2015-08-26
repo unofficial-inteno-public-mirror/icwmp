@@ -30,11 +30,17 @@ inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
 
 int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 {
+	char *freq;
+	json_object *res;
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
-	char *lan_name = dmstrdup(section_name(wifiargs->sewifisection));
+	char *wlan_name = dmstrdup(section_name(wifiargs->sewifisection));
 	
-	*value = dmstrdup("wlctl -i lan_name status |awk  '$1==\"Chanspec:\" {print$2}'");//TODO 
-	dmfree(lan_name);
+	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmfree(wlan_name);
+	DM_ASSERT(res, *value = dmstrdup(""));
+	json_select(res, "frequency", 0, NULL, &freq, NULL);
+	dmastrcat(value, freq, "GHz");
+	dmfree(freq);	
 	return 0;
 }
 
@@ -42,19 +48,16 @@ int get_wifi_maxassoc(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	
-	dmuci_get_value_by_section_string(wifiargs->sewifisection, "maxassoc", value);	
+	dmuci_get_value_by_section_string(wifiargs->sewifisection, "maxassoc", value);
 	return 0;
 }
 
 int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;	
+	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
+		VALUECHECK:			
 			return 0;
 		VALUESET:
 			dmuci_set_value_by_section(wifiargs->sewifisection, "maxassoc", value);
@@ -79,8 +82,8 @@ int entry_method_root_SE_Wifi(struct dmctx *ctx)
 				wnum += 2;
 				dmasprintf(&wnum, "%d", atoi(wnum) + 1);
 				DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
-				DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, "", 0, 1, UNDEF, NULL);
-				DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, "", 0, 1, UNDEF, NULL);
+				DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
+				DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
 				dmfree(wnum);
 			}
 			else 

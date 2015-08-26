@@ -198,16 +198,16 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"ManagementServer.") {
 		DMOBJECT(DMROOT"ManagementServer.", ctx, "0", 0, NULL, NULL, NULL);
-		DMPARAM("URL", ctx, "1", get_management_server_url, set_management_server_url, "", 0, 0, UNDEF, NULL);
-		DMPARAM("Username", ctx, "1", get_management_server_username, set_management_server_username, "", 0, 0, UNDEF, NULL);
-		DMPARAM("Password", ctx, "1", get_empty, set_management_server_passwd, "", 0, 0, UNDEF, NULL);
-		DMPARAM("ParameterKey", ctx, "1", get_management_server_key, set_management_server_key, "", 1, 0, UNDEF, NULL);
+		DMPARAM("URL", ctx, "1", get_management_server_url, set_management_server_url, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("Username", ctx, "1", get_management_server_username, set_management_server_username, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("Password", ctx, "1", get_empty, set_management_server_passwd, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("ParameterKey", ctx, "1", get_management_server_key, set_management_server_key, NULL, 1, 0, UNDEF, NULL);
 		DMPARAM("PeriodicInformEnable", ctx, "1", get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
 		DMPARAM("PeriodicInformInterval", ctx, "1", get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
 		DMPARAM("PeriodicInformTime", ctx, "1", get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, "xsd:dateTime", 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, "", 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, "", 0, 0, UNDEF, NULL);
+		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, NULL, 1, 0, UNDEF, NULL);
+		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 0, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

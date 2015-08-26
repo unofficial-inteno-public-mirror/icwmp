@@ -18,19 +18,6 @@
 #include "dmcommon.h"
 #include "x_inteno_se_igmp.h"
 
-inline void compress_spaces(char *str)
-{
-    char *dst = str;
-    for (; *str; ++str) {
-        *dst++ = *str;        
-        if (isspace(*str)) {
-            do ++str; 
-            while (isspace(*str));
-            --str;
-        }
-    }
-    *dst = '\0';
-}
 
 int get_igmp_dscp_mark(char *refparam, struct dmctx *ctx, char **value)
 {
@@ -40,12 +27,8 @@ int get_igmp_dscp_mark(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_dscp_mark(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_dscp_mark", value);
@@ -65,12 +48,9 @@ int get_igmp_proxy_interface(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_proxy_interface(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	int i;
-	bool b;
 
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			if (value[0] == '\0')
@@ -97,12 +77,8 @@ int get_igmp_default_version(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_default_version(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_default_version", value);
@@ -120,12 +96,8 @@ int get_igmp_query_interval(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_query_interval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_query_interval", value);
@@ -143,12 +115,8 @@ int get_igmp_query_response_interval(char *refparam, struct dmctx *ctx, char **v
 
 int set_igmp_query_response_interval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_query_response_interval", value);
@@ -166,12 +134,8 @@ int get_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, char *
 
 int set_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_last_member_query_interval", value);
@@ -189,12 +153,8 @@ int get_igmp_robustness_value(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_robustness_value(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_robustness_value", value);
@@ -216,8 +176,7 @@ int get_igmp_multicast_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_multicast_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	int check;
+	static bool b;
 	
 	switch (action) {
 		VALUECHECK:
@@ -225,8 +184,6 @@ int set_igmp_multicast_enable(char *refparam, struct dmctx *ctx, int action, cha
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			if (check == -1)
-				return 0;
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_lan_to_lan_multicast", value);
 			else
@@ -249,22 +206,18 @@ int get_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	int check;
-	
+	static bool b;
+
 	switch (action) {
 		VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			check = string_to_bool(value, &b);
-			if (check == -1)
-				return 0;
-			if (b)	
+			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_fast_leave", value);
 			else
-				dmuci_set_value("mcpd", "mcpd", "igmp_fast_leave", "");			
+				dmuci_set_value("mcpd", "mcpd", "igmp_fast_leave", "");
 			//delay_service restart "mcpd" "1" //TODO
 			return 0;
 	}
@@ -283,8 +236,7 @@ int get_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, char **valu
 
 int set_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	int check;
+	static bool b;
 	
 	switch (action) {
 		VALUECHECK:
@@ -292,13 +244,10 @@ int set_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, int action,
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			check = string_to_bool(value, &b);
-			if (check == -1)
-				return 0;
-			if (b)			
+			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_join_immediate", value);
 			else
-				dmuci_set_value("mcpd", "mcpd", "igmp_join_immediate", "");			
+				dmuci_set_value("mcpd", "mcpd", "igmp_join_immediate", "");
 			//delay_service restart "mcpd" "1" //TODO
 			return 0;
 	}
@@ -317,18 +266,14 @@ int get_igmp_proxy_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_proxy_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	int check;	
-	
+	static bool b;
+
 	switch (action) {
 		VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			check = string_to_bool(value, &b);
-			if (check == -1)
-				return 0;
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_proxy_enable", value);
 			else
@@ -347,12 +292,8 @@ int get_igmp_maxgroup(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_maxgroup(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_groups", value);
@@ -370,12 +311,8 @@ int get_igmp_maxsources(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_maxsources(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_sources", value);
@@ -387,18 +324,14 @@ int set_igmp_maxsources(char *refparam, struct dmctx *ctx, int action, char *val
 
 int get_igmp_maxmembers(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_max_members", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_max_members", value);
 	return 0;
 }
 
 int set_igmp_maxmembers(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_members", value);
@@ -410,18 +343,14 @@ int set_igmp_maxmembers(char *refparam, struct dmctx *ctx, int action, char *val
 
 int get_igmp_snooping_mode(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_snooping_enable", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_snooping_enable", value);
 	return 0;
 } 
 
 int set_igmp_snooping_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_snooping_enable", value);
@@ -433,25 +362,22 @@ int set_igmp_snooping_mode(char *refparam, struct dmctx *ctx, int action, char *
 
 int get_igmp_snooping_interface(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_snooping_interfaces", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_snooping_interfaces", value);
 	// echo ${value// /,} TODO
 	return 0;
 }
 
 int set_igmp_snooping_interface(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
 	int i;
 	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			if (value[0] == '\0')
 				return 0;
-			int ln = strlen(value); 
+			int ln = strlen(value);
 			for (i = 0; i< strlen(value); i++) {
 				if (value[i] == ',') {
 					value[i] = ' ';
@@ -469,9 +395,9 @@ int entry_method_root_X_INTENO_SE_IGMP(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IGMP.") {
 		DMOBJECT(DMROOT"X_INTENO_SE_IGMP.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("DifferentiateService", ctx, "1", get_igmp_dscp_mark, set_igmp_dscp_mark, "", 0, 1, UNDEF, NULL);
-		DMPARAM("ProxyInterface", ctx, "1", get_igmp_proxy_interface, set_igmp_proxy_interface, "", 0, 1, UNDEF, NULL);
-		DMPARAM("DefaultVersion", ctx, "1", get_igmp_default_version, set_igmp_default_version, "", 0, 1, UNDEF, NULL);
+		DMPARAM("DifferentiateService", ctx, "1", get_igmp_dscp_mark, set_igmp_dscp_mark, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("ProxyInterface", ctx, "1", get_igmp_proxy_interface, set_igmp_proxy_interface, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DefaultVersion", ctx, "1", get_igmp_default_version, set_igmp_default_version, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("QueryInterval", ctx, "1", get_igmp_query_interval, set_igmp_query_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("QueryResponseInterval", ctx, "1", get_igmp_query_response_interval, set_igmp_query_response_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("LastMemberQueryInterval", ctx, "1", get_igmp_last_member_queryinterval, set_igmp_last_member_queryinterval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
@@ -483,8 +409,8 @@ int entry_method_root_X_INTENO_SE_IGMP(struct dmctx *ctx)
 		DMPARAM("FastLeaveEnable", ctx, "1", get_igmp_fastleave_enable, set_igmp_fastleave_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("JoinImmediateEnable", ctx, "1", get_igmp_joinimmediate_enable, set_igmp_joinimmediate_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("ProxyEnable", ctx, "1", get_igmp_proxy_enable, set_igmp_proxy_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("SnoopingMode", ctx, "1", get_igmp_snooping_mode, set_igmp_snooping_mode, "", 0, 1, UNDEF, NULL);
-		DMPARAM("SnoopingInterfaces", ctx, "1", get_igmp_snooping_interface, set_igmp_snooping_interface, "", 0, 1, UNDEF, NULL);
+		DMPARAM("SnoopingMode", ctx, "1", get_igmp_snooping_mode, set_igmp_snooping_mode, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("SnoopingInterfaces", ctx, "1", get_igmp_snooping_interface, set_igmp_snooping_interface, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

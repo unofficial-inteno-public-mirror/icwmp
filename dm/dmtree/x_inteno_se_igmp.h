@@ -1,7 +1,6 @@
 #ifndef __SE_IGMP_H
 #define __SE_IGMP_H
 
-inline void compress_spaces(char *str);
 int get_igmp_dscp_mark(char *refparam, struct dmctx *ctx, char **value);
 int set_igmp_dscp_mark(char *refparam, struct dmctx *ctx, int action, char *value);
 int get_igmp_proxy_interface(char *refparam, struct dmctx *ctx, char **value);

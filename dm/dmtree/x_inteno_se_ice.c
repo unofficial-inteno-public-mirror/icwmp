@@ -24,19 +24,19 @@ int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_option_value_string("ice", "cloud", "enabled", value);
 	if (strcmp(*value, "1") == 0 || strcmp(*value, "true") == 0 || strcmp(*value, "yes") == 0 || strcmp(*value, "on") == 0) {
 		dmfree(*value);
-		*value = dmstrdup("true");		
-	} 
+		*value = dmstrdup("true");
+	}
 	else if (strcmp(*value, "0") == 0 || strcmp(*value, "false") == 0 || strcmp(*value, "no") == 0 || strcmp(*value, "off") == 0) {
 		dmfree(*value);
-		*value = dmstrdup("false");		
+		*value = dmstrdup("false");
 	}
 	return 0;
 }
 
 int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
-	int check;
+	static bool b;
+	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
 		VALUECHECK:
@@ -44,15 +44,13 @@ int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *va
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			check = string_to_bool(value, &b);
-			if(check == -1)
-				return 0;
 			if (b)
 				dmuci_set_value("ice", "cloud", "enabled", "1");
 			else
 				dmuci_set_value("ice", "cloud", "enabled", "0");
-			//check if *ice-client exit (if [ -f /etc/rc.d/*ice-client ])
-			//delay_service restart "ice-client" "1" TODO
+			if (check_file(path)) {
+				//delay_service restart "ice-client" "1" TODO
+			}
 	}
 }
 
@@ -64,20 +62,18 @@ int get_ice_cloud_server(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ice_cloud_server(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
+	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 		if (value[0] == '\0')
 			return 0;
 		dmuci_set_value("ice", "cloud", "server", value);
-		//check if *ice-client exit (if [ -f /etc/rc.d/*ice-client ])
-		//delay_service restart "ice-client" "1" TODO
-		return 0;		
+		if (check_file(path)) {
+			//delay_service restart "ice-client" "1" TODO
+		}
 	}
 	return 0;
 }
@@ -87,7 +83,7 @@ int entry_method_root_X_INTENO_SE_Ice(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_ICE.") {
 		DMOBJECT(DMROOT"X_INTENO_SE_ICE.", ctx, "0", 1, NULL, NULL, NULL);
 		DMPARAM("Enable", ctx, "1", get_ice_cloud_enable, set_ice_cloud_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Server", ctx, "1", get_ice_cloud_server, set_ice_cloud_server, "", 0, 1, UNDEF, NULL);
+		DMPARAM("Server", ctx, "1", get_ice_cloud_server, set_ice_cloud_server, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
