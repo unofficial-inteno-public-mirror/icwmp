@@ -133,8 +133,8 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
 				ctx->in_param = n->name;
 				ctx->in_value = n->value ? n->value : "";
+				ctx->stop = false;
 				fault = dm_entry_set_value(ctx);
-				del_set_list_tmp(n);
 				if (fault) break;
 			}
 			if (fault) {
@@ -146,6 +146,7 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 				dmuci_change_packages(&head_package_change);
 				dmuci_commit();
 			}
+			free_all_set_list_tmp(ctx);
 			break;
 		case CMD_SET_NOTIFICATION:
 			ctx->setaction = VALUESET;
@@ -153,8 +154,8 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
 				ctx->in_param = n->name;
 				ctx->in_notification = n->value ? n->value : "0";
+				ctx->stop = false;
 				fault = dm_entry_set_notification(ctx);
-				del_set_list_tmp(n);
 				if (fault) break;
 			}
 			if (fault) {
@@ -163,6 +164,7 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 			} else {
 				dmuci_commit();
 			}
+			free_all_set_list_tmp(ctx);
 			break;
 	}
 	return fault;
@@ -266,7 +268,7 @@ void dm_entry_cli(int argc, char** argv)
 	else if (strcmp(cmd, "set_value") == 0) {
 		if (argc < 7 || (argc % 2) == 0) goto invalid_arguments;
 		int i;
-		for (i=5; i<argc; i++) {
+		for (i = 5; i < argc; i+=2) {
 			param = argv[i];
 			value = argv[i+1];
 			dm_entry_param_method(&cli_dmctx, CMD_SET_VALUE, param, value, NULL);
@@ -279,7 +281,7 @@ void dm_entry_cli(int argc, char** argv)
 	else if (strcmp(cmd, "set_notification") == 0) {
 		if (argc < 6 || (argc % 2) != 0) goto invalid_arguments;
 		int i;
-		for (i=4; i<argc; i++) {
+		for (i = 4; i < argc; i+=2) {
 			param = argv[i];
 			value = argv[i+1];
 			dm_entry_param_method(&cli_dmctx, CMD_SET_NOTIFICATION, param, value, "1");
