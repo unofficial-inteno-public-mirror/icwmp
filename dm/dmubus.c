@@ -72,11 +72,11 @@ static void receive_call_result_data(struct ubus_request *req, int type, struct 
 		return;
 	}
 	json_res = json_tokener_parse((const char *)str);
+	free(str); //MEM should be free and not dmfree
 	if (json_res != NULL && (is_error(json_res))) {
 		json_object_put(json_res);
 		json_res = NULL;
 	}
-	//TODO The str should be freed some where. Not sure if it's possible before getting values from json obj
 }
 
 static inline json_object *ubus_call_req(char *obj, char *method, struct ubus_arg u_args[], int u_args_size)
@@ -206,25 +206,9 @@ void dmubus_ctx_free(struct dmubus_ctx *ctx)
 	}
 }
 
-/*printing the value corresponding to boolean, double, integer and strings*/
-void print_json_value(json_object *jobj, char **value)
+static inline void print_json_value(json_object *jobj, char **value)
 {
-	enum json_type type;
-	type = json_object_get_type(jobj); /*Getting the type of the json object*/
-	switch (type) {
-		case json_type_boolean:
-			*value = dmstrdup(json_object_get_boolean(jobj)? "true": "false");
-			break;
-		case json_type_double:
-			dmasprintf(value, "%lf", json_object_get_double(jobj));
-			break;
-		case json_type_int:
-			dmasprintf(value, "%d", json_object_get_int(jobj));
-			break;
-		case json_type_string:
-			*value = dmstrdup(json_object_get_string(jobj));
-			break;
-	}
+	*value = json_object_get_string(jobj);
 }
 
 void json_parse_array( json_object *jobj, char *key, int index, char *next_key, char **value)
@@ -253,7 +237,7 @@ void json_parse_array( json_object *jobj, char *key, int index, char *next_key, 
 			else 
 				strcpy(val, *value);
 		}
-		*value = dmstrdup(val);
+		*value = dmstrdup(val); // MEM WILL BE FREED IN DMMEMCLEAN
 	} else if (index < arraylen) {
 		jvalue = json_object_array_get_idx(jarray, index);/*Getting the array element at position i*/
 		type = json_object_get_type(jvalue);		
@@ -261,18 +245,17 @@ void json_parse_array( json_object *jobj, char *key, int index, char *next_key, 
 			json_parse_array(jvalue, NULL, index, NULL, value);
 		}
 		else if (type == 0) {
-			*value = strdup("");
+			*value = "";
 		}
 		else if (type != json_type_object) {
 			print_json_value(jvalue, value);
 		}
-		
 		else {
 			json_select(jvalue, next_key, index, next_key, value, NULL);
 		}
 	}
 	else {
-		*value = strdup(""); //CHECK IF IT IS NECESSAR
+		*value = "";
 	}
 }
 

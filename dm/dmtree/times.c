@@ -19,19 +19,18 @@
 
 int get_time_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *path = dmstrdup("/etc/rc.d/*sysntpd");
+	char *path = "/etc/rc.d/*sysntpd";
 	
 	if (check_file(path))
-		*value = dmstrdup("true");
+		*value = "1";
 	else
-		*value = dmstrdup("false");
-	dmfree(path);
+		*value = "0";
 	return 0;
 }
 
 int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
+	static bool b;
 	int check; 
 	char *pname, *v;
 	
@@ -41,9 +40,6 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			check = string_to_bool(value, &b);
-			if (check == -1)
-				return 0;
 			if(b) {
 				//delay_service restart "sysntpd" "1" //TODO
 				///etc/init.d/sysntpd enable
@@ -61,88 +57,116 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 }
 
 //WE CAN WORK WITHOUT FOUND VALUE TO UPDATE
-int get_time_ntpserver(char *refparam, struct dmctx *ctx, char **value)
+int get_time_ntpserver(char *refparam, struct dmctx *ctx, char **value, int index)
 {
 	char *pch;
 	bool found = 0;
 	int element = 0;
 	struct uci_list *v;
 	struct uci_element *e;
-	int occurence;
 	
-	pch = dmstrdup(strrchr(refparam,'.'));
-	pch = pch + 10;
-	occurence = atoi(pch);
 	dmuci_get_option_value_list("system","ntp","server", &v);
 	if (v) {
 		uci_foreach_element(v, e) {
 			element++;
-			if (element == occurence) {
-				*value = dmstrdup(e->name);
+			if (element == index) {
+				*value = e->name;
 				found = 1; 
 				break;
 			}
 		}
 	}
 	if (!found) {
-		*value = dmstrdup("");
+		*value = "";
 		return 0;
 	}
 	if (strcmp(*value, "none") == 0) {
-		dmfree(*value);
-		*value = dmstrdup("");
+		*value = "";
 	}
 	return 0;
 }
 
-int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *value)
+int get_time_ntpserver1(char *refparam, struct dmctx *ctx, char **value)
 {
-	bool b;
+	return get_time_ntpserver(refparam, ctx, value, 1);
+}
+
+int get_time_ntpserver2(char *refparam, struct dmctx *ctx, char **value)
+{
+	return get_time_ntpserver(refparam, ctx, value, 2);
+}
+
+int get_time_ntpserver3(char *refparam, struct dmctx *ctx, char **value)
+{
+	return get_time_ntpserver(refparam, ctx, value, 3);
+}
+
+int get_time_ntpserver4(char *refparam, struct dmctx *ctx, char **value)
+{
+	return get_time_ntpserver(refparam, ctx, value, 4);
+}
+
+int get_time_ntpserver5(char *refparam, struct dmctx *ctx, char **value)
+{
+	return get_time_ntpserver(refparam, ctx, value, 5);
+}
+
+int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
 	char *pch, *path;
-	int check, ntp_num;
+	int check;
 	struct uci_list *v;
 	struct uci_element *e;
-	int count = 1;
+	int count = 0;
+	char *ntp[5] = {0};
 	
 	switch (action) {
 		VALUECHECK:
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
-			pch = dmstrdup(strrchr(refparam,'.'));
-			pch = pch + 10;
-			ntp_num = atoi(pch);
 			dmuci_get_option_value_list("system", "ntp", "server", &v);
-			dmuci_del_list_value("system", "ntp", "server", NULL); //TODO CHECK IF WE DON'T HAVE VALUE
 			if (v) {
 				uci_foreach_element(v, e) {
-					if (count == ntp_num) {
-						dmuci_add_list_value("system", "ntp", "server", value);
-					}
-					else {
-						dmuci_add_list_value("system", "ntp", "server", e->name);
-					}
-					count++;
+					ntp[count++] = e->name;
 				}
 			}
-			while (count <= ntp_num) {
-				if (count == ntp_num) {
+			dmuci_del_list_value("system", "ntp", "server", NULL);
+			for (count = 0; count < 5; count++) {
+				if ((count + 1) == index) {
 					dmuci_add_list_value("system", "ntp", "server", value);
 				}
 				else {
-					dmuci_add_list_value("system", "ntp", "server", "none");
+					dmuci_add_list_value("system", "ntp", "server", ntp[count] ? ntp[count] : "none");
 				}
-				count++;
-			}
-			path = dmstrdup("/etc/rc.d/*sysntpd");
-			if (check_file(path)) {
-				//delay_service restart "sysntpd" //TODO
-				dmfree(path);
 			}
 			return 0;
 	}
 	return 0;
+}
+
+int set_time_ntpserver1(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
+	return set_time_ntpserver(refparam, ctx, action, value, 1);
+}
+
+int set_time_ntpserver2(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
+	return set_time_ntpserver(refparam, ctx, action, value, 2);
+}
+
+int set_time_ntpserver3(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
+	return set_time_ntpserver(refparam, ctx, action, value, 3);
+}
+
+int set_time_ntpserver4(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
+	return set_time_ntpserver(refparam, ctx, action, value, 4);
+}
+
+int set_time_ntpserver5(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+{
+	return set_time_ntpserver(refparam, ctx, action, value, 5);
 }
 
 int entry_method_root_Time(struct dmctx *ctx)
@@ -150,11 +174,11 @@ int entry_method_root_Time(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"Time.") {
 		DMOBJECT(DMROOT"Time.", ctx, "0", 1, NULL, NULL, NULL);
 		DMPARAM("Enable", ctx, "1", get_time_enable, set_time_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer1", ctx, "1", get_time_ntpserver, set_time_ntpserver, "", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer2", ctx, "1", get_time_ntpserver, set_time_ntpserver, "", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer3", ctx, "1", get_time_ntpserver, set_time_ntpserver, "", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer4", ctx, "1", get_time_ntpserver, set_time_ntpserver, "", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer5", ctx, "1", get_time_ntpserver, set_time_ntpserver, "", 0, 1, UNDEF, NULL);
+		DMPARAM("NTPServer1", ctx, "1", get_time_ntpserver1, set_time_ntpserver1, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("NTPServer2", ctx, "1", get_time_ntpserver2, set_time_ntpserver2, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("NTPServer3", ctx, "1", get_time_ntpserver3, set_time_ntpserver3, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("NTPServer4", ctx, "1", get_time_ntpserver4, set_time_ntpserver4, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("NTPServer5", ctx, "1", get_time_ntpserver5, set_time_ntpserver5, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
