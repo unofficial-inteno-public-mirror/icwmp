@@ -16,6 +16,19 @@
 #include <stdlib.h>
 #include "dmcwmp.h"
 
+void compress_spaces(char *str) //REMOVE TO DMCOMMON
+{
+    char *dst = str;
+    for (; *str; ++str) {
+        *dst++ = *str;        
+        if (isspace(*str)) {
+            do ++str; 
+            while (isspace(*str));
+            --str;
+        }
+    }
+    *dst = '\0';
+}
 char *cut_fx(char *str, char *delimiter, int occurence)
 {
 	int i = 1;

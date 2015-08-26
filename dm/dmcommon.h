@@ -22,5 +22,6 @@ do { \
 char *cut_fx(char *str, char *delimiter, int occurence);
 char *get_pid(char *pname);
 int check_file(char *path);
+void compress_spaces(char *str);
 
 #endif

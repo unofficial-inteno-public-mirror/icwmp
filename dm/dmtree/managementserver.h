@@ -12,7 +12,6 @@
 #define __MANAGEMENT_SERVER_H
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value);
-int set_management_server();
 int set_management_server_url(char *refparam, struct dmctx *ctx, int action, char *value);
 int get_management_server_username(char *refparam, struct dmctx *ctx, char **value);
 int set_management_server_username(char *refparam, struct dmctx *ctx, int action, char *value);
