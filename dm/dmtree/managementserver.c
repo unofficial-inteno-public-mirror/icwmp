@@ -30,9 +30,9 @@ int set_management_server_url(char *refparam, struct dmctx *ctx, int action, cha
 {
 	char *stat = "";
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "dhcp_discovery", "disable");			
 			dmuci_set_value("cwmp", "acs", "url", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
@@ -50,9 +50,9 @@ int get_management_server_username(char *refparam, struct dmctx *ctx, char **val
 int set_management_server_username(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -62,9 +62,9 @@ int set_management_server_username(char *refparam, struct dmctx *ctx, int action
 int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -80,9 +80,9 @@ int get_management_server_key(char *refparam, struct dmctx *ctx, char **value)
 int set_management_server_key(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "ParameterKey", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -98,9 +98,9 @@ int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "periodic_inform_enable", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -116,9 +116,9 @@ int get_management_server_periodic_inform_interval(char *refparam, struct dmctx 
 int set_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "periodic_inform_interval", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -147,9 +147,9 @@ int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "periodic_inform_time", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -172,9 +172,9 @@ int get_management_server_connection_request_username(char *refparam, struct dmc
 int set_management_server_connection_request_username(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
@@ -184,9 +184,9 @@ int set_management_server_connection_request_username(char *refparam, struct dmc
 int set_management_server_connection_request_passwd(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 	}
