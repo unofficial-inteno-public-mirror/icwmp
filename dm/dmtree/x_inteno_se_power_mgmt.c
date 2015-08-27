@@ -28,25 +28,51 @@ int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, char **value)
 
 int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("TOCODE");
+	*value = "TOCODE"; //TODO
 	return 0;
 }
 
 int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("TOCODE");
+	*value = "TOCODE"; //TODO
 	return 0;
 }
 
 int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	dmuci_set_value("power_mgmt", "power_mgmt", "ethapd", value);
+	static bool b;
+
+	switch (action) {
+		VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+			return 0;
+		VALUESET:
+			if(b)
+				dmuci_set_value("power_mgmt", "power_mgmt", "ethapd", "1");
+			else
+				dmuci_set_value("power_mgmt", "power_mgmt", "ethapd", "0");
+			return 0;
+	}
 	return 0;
 }
 
 int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	dmuci_set_value("power_mgmt", "power_mgmt", "eee", value);
+	static bool b;
+
+	switch (action) {
+		VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+			return 0;
+		VALUESET:
+			if(b)
+				dmuci_set_value("power_mgmt", "power_mgmt", "eee", "1");
+			else
+				dmuci_set_value("power_mgmt", "power_mgmt", "eee", "0");
+			return 0;
+	}
 	return 0;
 }
 

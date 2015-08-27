@@ -28,7 +28,6 @@ int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 
 int set_management_server_url(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *stat = "";
 	switch (action) {
 		case VALUECHECK:			
 			return 0;
@@ -55,6 +54,7 @@ int set_management_server_username(char *refparam, struct dmctx *ctx, int action
 		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;	
 }
@@ -67,6 +67,7 @@ int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, 
 		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;	
 }
@@ -85,6 +86,7 @@ int set_management_server_key(char *refparam, struct dmctx *ctx, int action, cha
 		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "ParameterKey", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;	
 }
@@ -97,12 +99,20 @@ int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 
 int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	static bool b;
+
 	switch (action) {
 		case VALUECHECK:			
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			dmuci_set_value("cwmp", "acs", "periodic_inform_enable", value);
+			if (b)
+				dmuci_set_value("cwmp", "acs", "periodic_inform_enable", "1");
+			else
+				dmuci_set_value("cwmp", "acs", "periodic_inform_enable", "0");
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;	
 }
@@ -121,6 +131,7 @@ int set_management_server_periodic_inform_interval(char *refparam, struct dmctx 
 		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "periodic_inform_interval", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;
 }
@@ -132,14 +143,12 @@ int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_time", value);
 	if ((*value)[0] != '0' && (*value)[0] != '\0') {
 		time_value = atoi(*value);
-		dmfree(*value);
 		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
 		strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&time_value));
-		*value = dmstrdup(s_now);		
+		*value = dmstrdup(s_now); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	else {
-		dmfree(*value);
-		*value = dmstrdup("0001-01-01T00:00:00Z");
+		*value = "0001-01-01T00:00:00Z";
 	}		
 	return 0;	
 }
@@ -150,16 +159,16 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("cwmp", "acs", "periodic_inform_time", value);
+			dmuci_set_value("cwmp", "acs", "periodic_inform_time", value); //TODO check that with script
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;	
 }
 
-//TODO
 int get_management_server_connection_request_url(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("TOCODE");
+	*value = "TOCODE"; //TODO
 	return 0;
 }
 
@@ -177,6 +186,7 @@ int set_management_server_connection_request_username(char *refparam, struct dmc
 		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;
 }
@@ -189,10 +199,10 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
 	}
 	return 0;
 }
-
 
 int entry_method_root_ManagementServer(struct dmctx *ctx)
 {

@@ -51,10 +51,10 @@ int get_upnp_status(char *refparam, struct dmctx *ctx, char **value)
 	pid_t pid = get_pid("miniupnpd");
 	
 	if (pid < 0) {
-		*value = dmstrdup("Down");
+		*value = "Down";
 	}
 	else {		
-		*value = dmstrdup("Up");
+		*value = "Up";
 	}
 	return 0;
 }
