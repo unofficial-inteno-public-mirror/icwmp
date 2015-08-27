@@ -32,7 +32,7 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	static bool b;
 	int check; 
-	char *pname, *v;
+	pid_t pid;
 	
 	switch (action) {
 		VALUECHECK:
@@ -45,9 +45,8 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 				///etc/init.d/sysntpd enable
 			}
 			else {
-				pname = dmstrdup("pidof ntpd");
-				v = get_pid(pname);
-				if (v[0] != '\0') {
+				pid = get_pid("ntpd");
+				if (pid > 0) {
 					//etc/init.d/sysntpd stop; //TODO
 					//etc/init.d/sysntpd disable //TODO
 				}

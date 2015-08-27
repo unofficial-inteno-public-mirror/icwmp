@@ -14,6 +14,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <sys/types.h>
 #include "dmcwmp.h"
 
 void compress_spaces(char *str) //REMOVE TO DMCOMMON
@@ -41,24 +43,45 @@ char *cut_fx(char *str, char *delimiter, int occurence)
 	return pch;
 }
 
-char *get_pid(char *pname)
+pid_t get_pid(char *pname)
 {
-	FILE* f = NULL;
-	char str[TAILLE_MAX] = "";
-	char *v;
-	f = popen(pname, "r");
-	if (f != NULL) {
-		fgets(str, TAILLE_MAX, f);
-		if (str[0] == '\0') {
-			pclose(f);
-			return "";
-		}
-		pid_t pid = strtoul(str, NULL, 10);
-		pclose(f);
-		dmasprintf(&v, "%d", pid); // MEM WILL BE FREED IN DMMEMCLEAN
-		return v;
-	}
-	return "";
+    DIR* dir;
+    struct dirent* ent;
+    char* endptr;
+    char buf[512];
+
+    if (!(dir = opendir("/proc"))) {
+        return -1;
+    }
+
+    while((ent = readdir(dir)) != NULL) {
+        /* if endptr is not a null character, the directory is not
+         * entirely numeric, so ignore it */
+        long lpid = strtol(ent->d_name, &endptr, 10);
+        if (*endptr != '\0') {
+            continue;
+        }
+
+        /* try to open the cmdline file */
+        snprintf(buf, sizeof(buf), "/proc/%ld/cmdline", lpid);
+        FILE* fp = fopen(buf, "r");
+
+        if (fp) {
+            if (fgets(buf, sizeof(buf), fp) != NULL) {
+                /* check the first token in the file, the program name */
+                char* first = strtok(buf, " ");
+                if (strstr(first, name)) {
+                    fclose(fp);
+                    closedir(dir);
+                    return (pid_t)lpid;
+                }
+            }
+            fclose(fp);
+        }
+    }
+
+    closedir(dir);
+    return -1;
 }
 
 int check_file(char *path) 

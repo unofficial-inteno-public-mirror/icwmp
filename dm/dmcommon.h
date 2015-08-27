@@ -11,6 +11,8 @@
 
 #ifndef __DM_COMMON_H
 #define __DM_COMMON_H
+#include <sys/types.h>
+
 #define DM_ASSERT(X, Y) \
 do { \
 	if(!(X)) { \
@@ -20,7 +22,7 @@ do { \
 } while(0)
 
 char *cut_fx(char *str, char *delimiter, int occurence);
-char *get_pid(char *pname);
+pid_t get_pid(char *pname);
 int check_file(char *path);
 void compress_spaces(char *str);
 
