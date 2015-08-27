@@ -43,11 +43,11 @@ int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, c
 	static bool b;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b)
 				dmuci_set_value("power_mgmt", "power_mgmt", "ethapd", "1");
 			else
@@ -62,11 +62,11 @@ int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char
 	static bool b;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b)
 				dmuci_set_value("power_mgmt", "power_mgmt", "eee", "1");
 			else

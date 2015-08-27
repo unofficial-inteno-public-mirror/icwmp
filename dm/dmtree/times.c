@@ -35,11 +35,11 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 	pid_t pid;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b) {
 				//delay_service restart "sysntpd" "1" //TODO
 				///etc/init.d/sysntpd enable

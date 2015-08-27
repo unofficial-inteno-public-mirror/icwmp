@@ -57,9 +57,9 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(wifiargs->sewifisection, "maxassoc", value);
 			// delay_service reload "network" "1" TODO
 			return 0;

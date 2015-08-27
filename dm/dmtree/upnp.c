@@ -21,7 +21,7 @@
 int get_upnp_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_option_value_string("upnpd","config","enabled", value);
-	if (*value[0] == '\0') {
+	if ((*value)[0] == '\0') {
 		*value = "1";
 	}		
 	return 0;
@@ -32,15 +32,15 @@ int set_upnp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 	static bool b;
 	int check;	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b)
 				dmuci_set_value("upnpd", "config", "enabled", "1");
 			else 
-				dmuci_set_value("upnpd", "config", "enabled", "");
+				dmuci_set_value("upnpd", "config", "enabled", "0");
 			return 0;
 	}
 	return 0;

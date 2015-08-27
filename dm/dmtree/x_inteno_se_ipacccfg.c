@@ -59,11 +59,11 @@ int set_x_bcm_com_ip_acc_list_cfgobj_enable(char *refparam, struct dmctx *ctx, i
 	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b) {
 				value = "";
 			}
@@ -95,9 +95,9 @@ int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int a
 	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_delete_by_section(accargs->ipaccsection, "src_ip", NULL); //TODO CHECK
 			value = dmstrdup(value);
 			pch = strtok (value, ",");
@@ -124,9 +124,9 @@ int set_x_bcm_com_ip_acc_list_cfgobj_acc_port(char *refparam, struct dmctx *ctx,
 	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(accargs->ipaccsection, "dest_port", value);
 			return 0;
 	}
@@ -160,9 +160,9 @@ int set_port_forwarding_name(char *refparam, struct dmctx *ctx, int action, char
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "name", value);
 			return 0;
 	}
@@ -187,11 +187,11 @@ int set_port_forwarding_enable(char *refparam, struct dmctx *ctx, int action, ch
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b)
 				dmuci_set_value_by_section(forwardargs->forwardsection, "enabled", "");
 			else 
@@ -218,11 +218,11 @@ int set_port_forwarding_loopback(char *refparam, struct dmctx *ctx, int action, 
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if(b)
 				dmuci_set_value_by_section(forwardargs->forwardsection, "reflection", "");
 			else 
@@ -246,9 +246,9 @@ int set_port_forwarding_protocol(char *refparam, struct dmctx *ctx, int action, 
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "proto", value);
 			return 0;
 	}
@@ -269,9 +269,9 @@ int set_port_forwarding_external_zone(char *refparam, struct dmctx *ctx, int act
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "src", value);
 			return 0;
 	}
@@ -292,9 +292,9 @@ int set_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, int act
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "src", value);
 			return 0;
 	}
@@ -315,9 +315,9 @@ int set_port_forwarding_external_port(char *refparam, struct dmctx *ctx, int act
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "src_dport", value);
 			return 0;
 	}
@@ -341,9 +341,9 @@ int set_port_forwarding_internal_port(char *refparam, struct dmctx *ctx, int act
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
 				value = "";
 			}
@@ -370,9 +370,9 @@ int set_port_forwarding_source_port(char *refparam, struct dmctx *ctx, int actio
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
 				value = "";
 			}
@@ -396,9 +396,9 @@ int set_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, in
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value_by_section(forwardargs->forwardsection, "src_ip", value);
 			return 0;
 	}
@@ -422,9 +422,9 @@ int set_port_forwarding_external_ipaddress(char *refparam, struct dmctx *ctx, in
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
 				value = "";
 			}
@@ -451,9 +451,9 @@ int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int 
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
 				value = "";
 			}
@@ -479,9 +479,9 @@ int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, c
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_del_list_value_by_section(forwardargs->forwardsection, "src_mac", NULL);
 			value = dmstrdup(value);
 			pch = strtok (value, " ");

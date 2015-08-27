@@ -39,11 +39,11 @@ int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *va
 	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (b)
 				dmuci_set_value("ice", "cloud", "enabled", "1");
 			else
@@ -65,9 +65,9 @@ int set_ice_cloud_server(char *refparam, struct dmctx *ctx, int action, char *va
 	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 		if (value[0] == '\0')
 			return 0;
 		dmuci_set_value("ice", "cloud", "server", value);

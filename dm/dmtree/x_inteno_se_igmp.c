@@ -28,9 +28,9 @@ int get_igmp_dscp_mark(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_dscp_mark(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_dscp_mark", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -50,9 +50,9 @@ int set_igmp_proxy_interface(char *refparam, struct dmctx *ctx, int action, char
 	int i;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (value[0] == '\0')
 				return 0;
 			int ln = strlen(value); 
@@ -78,9 +78,9 @@ int get_igmp_default_version(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_default_version(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_default_version", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -97,9 +97,9 @@ int get_igmp_query_interval(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_query_interval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_query_interval", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -116,9 +116,9 @@ int get_igmp_query_response_interval(char *refparam, struct dmctx *ctx, char **v
 int set_igmp_query_response_interval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_query_response_interval", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -135,9 +135,9 @@ int get_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, char *
 int set_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_last_member_query_interval", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -154,9 +154,9 @@ int get_igmp_robustness_value(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_robustness_value(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_robustness_value", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -179,11 +179,11 @@ int set_igmp_multicast_enable(char *refparam, struct dmctx *ctx, int action, cha
 	static bool b;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_lan_to_lan_multicast", value);
 			else
@@ -209,11 +209,11 @@ int set_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, int action, cha
 	static bool b;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_fast_leave", value);
 			else
@@ -239,11 +239,11 @@ int set_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, int action,
 	static bool b;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_join_immediate", value);
 			else
@@ -269,11 +269,11 @@ int set_igmp_proxy_enable(char *refparam, struct dmctx *ctx, int action, char *v
 	static bool b;
 
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_proxy_enable", value);
 			else
@@ -293,9 +293,9 @@ int get_igmp_maxgroup(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_maxgroup(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_groups", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -312,9 +312,9 @@ int get_igmp_maxsources(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_maxsources(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_sources", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -331,9 +331,9 @@ int get_igmp_maxmembers(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_maxmembers(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_max_members", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -350,9 +350,9 @@ int get_igmp_snooping_mode(char *refparam, struct dmctx *ctx, char **value)
 int set_igmp_snooping_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("mcpd", "mcpd", "igmp_snooping_enable", value);
 			//delay_service restart "mcpd" "1" TODO
 			return 0;
@@ -372,9 +372,9 @@ int set_igmp_snooping_interface(char *refparam, struct dmctx *ctx, int action, c
 	int i;
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			if (value[0] == '\0')
 				return 0;
 			int ln = strlen(value);
