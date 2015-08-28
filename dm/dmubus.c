@@ -124,7 +124,7 @@ int dmubus_call(char *obj, char *method, struct ubus_arg u_args[], int u_args_si
 		i = dmcalloc(1, sizeof(struct ubus_obj));
 		//init method head
 		INIT_LIST_HEAD(&i->method_head);
-		i->name = obj;
+		i->name = dmstrdup(obj);
 		list_add(&i->list, &dmubus_ctx.obj_head);
 	}
 	found = false;
@@ -139,7 +139,7 @@ int dmubus_call(char *obj, char *method, struct ubus_arg u_args[], int u_args_si
 		j = dmcalloc(1, sizeof(struct ubus_meth));
 		//init message head
 		INIT_LIST_HEAD(&j->msg_head);
-		j->name = method;
+		j->name = dmstrdup(method);
 		list_add(&j->list, &i->method_head);
 		jr = &j->res;
 	}
@@ -199,9 +199,11 @@ void dmubus_ctx_free(struct dmubus_ctx *ctx)
 			list_del(&j->list);
 			if(j->res)
 				json_object_put(j->res);
+			dmfree(j->name);
 			dmfree(j);
 		}
 		list_del(&i->list);
+		dmfree(i->name);
 		dmfree(i);
 	}
 }
