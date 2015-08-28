@@ -490,7 +490,8 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 		}
 	}
 	ltime[len] = '\0';
-	dmasprintf(*value, "%d", (mtime * atoi(ltime)));//TODO to check // MEM WILL BE FREED IN DMMEMCLEAN
+	int times = mtime * atoi(ltime); 
+	dmasprintf(value, "%d", times);//TODO to check // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 

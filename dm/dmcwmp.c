@@ -97,6 +97,25 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 	return instance;
 }
 
+char *max_instance(char *package, char *stype, char *option, char *inst_opt, char *value)
+{
+	char *tmp = NULL;
+	struct uci_section *s;
+	char *tmp_instance = NULL;
+		
+	uci_foreach_option_cont(package, stype, option, value, s) {
+		dmuci_get_value_by_section_string(s, "inst_option", &tmp);
+		if (tmp[0] == '\0')
+			tmp = update_instance(s, tmp_instance, inst_opt);
+		dmfree(tmp_instance);
+		tmp_instance = dmstrdup(tmp);
+	}
+	if (tmp_instance == NULL)
+		return "1";
+	dmfree(tmp_instance);	
+	return tmp;	
+}
+
 int get_empty(char *refparam, struct dmctx *args, char **value)
 {
 	*value = "";
@@ -228,7 +247,7 @@ static char *get_parameter_notification (char *param)
 
 static int remove_parameter_notification(char *param)
 {
-	unsigned int i;
+	int i;
 	struct uci_list *list_notif;
 	struct uci_element *e;
 	char *pch;
@@ -726,7 +745,7 @@ static int add_object_obj(DMOBJECT_API_ARGS)
 
 	ctx->addobj_instance = instance;
 	char *objinst;
-	dmastrcat(&objinst, ctx->current_obj, instance);
+	dmasprintf(&objinst, "%s%s.", ctx->current_obj, instance);
 	set_parameter_notification(objinst, "0");
 	dmfree(objinst);
 	return 0;

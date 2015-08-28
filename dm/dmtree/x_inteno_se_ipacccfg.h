@@ -47,5 +47,7 @@ int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int 
 int get_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, char **value);
 int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, char *value);
 inline int get_object_port_forwarding(struct dmctx *ctx, char *iforward);
+int add_ipacccfg_port_forwarding(struct dmctx *ctx, char **instancepara);
+int delete_ipacccfg_port_forwarding_all(struct dmctx *ctx);
 int entry_method_root_X_INTENO_SE_IpAccCfg(struct dmctx *ctx);
 #endif

@@ -171,6 +171,7 @@ enum fault_code {
 };
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
+char *max_instance(char *package, char *stype, char *option, char *inst_option, char *value);
 int get_empty(char *refparam, struct dmctx *args, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type);
 void del_list_parameter(struct dm_parameter *dm_parameter);

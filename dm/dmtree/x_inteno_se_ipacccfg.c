@@ -495,9 +495,56 @@ int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, c
 	return 0;
 }
 
+/***** ADD DEL OBJ *******/
+int add_ipacccfg_port_forwarding(struct dmctx *ctx, char **instancepara)
+{
+	char *value;
+	char instance[8] = {0};
+	struct uci_section *redirect = NULL;	
+	
+	dmuci_add_section("firewall", "redirect", &redirect, &value);
+	dmuci_set_value_by_section(redirect, "enabled", false);
+	dmuci_set_value_by_section(redirect, "target", "DNAT");
+	dmuci_set_value_by_section(redirect, "proto", "tcp udp");
+	sprintf(instance, "%s", max_instance("firewall", "redirect", "target", "forwardinstance", "DNAT"));
+	dmuci_commit();
+	*instancepara = dmstrdup(instance);
+	return 0;
+}
+
+
+int delete_ipacccfg_port_forwarding_all(struct dmctx *ctx)
+{
+	struct uci_section *s = NULL; 
+	struct uci_section *ss = NULL;
+	int found = 0;
+	
+	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {	
+		if (found != 0)
+			dmuci_delete_by_section(ss, NULL, NULL); //CHECK IF IT DELETE THE WHOLE SECTION
+		ss = s;
+		found++;
+	}
+	if (ss != NULL)
+		dmuci_delete_by_section(ss, NULL, NULL);
+	dmuci_commit();
+	return 0;
+}
+
+
+int delete_ipacccfg_port_forwarding_instance(struct dmctx *ctx)
+{	
+	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	
+	dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
+	dmuci_commit();
+	return 0;
+}
+/**********************/
+
 inline int get_object_port_forwarding(struct dmctx *ctx, char *iforward)
 {
-	DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iforward);
+	DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", ctx, "0", 1, NULL, delete_ipacccfg_port_forwarding_instance, NULL, iforward);
 	DMPARAM("Name", ctx, "1", get_port_forwarding_name, set_port_forwarding_name, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("Enable", ctx, "1", get_port_forwarding_enable, set_port_forwarding_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 	DMPARAM("EnalbeNatLoopback", ctx, "1", get_port_forwarding_loopback, set_port_forwarding_loopback, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -524,7 +571,7 @@ int entry_method_root_X_INTENO_SE_IpAccCfg(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.") {
 		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.", ctx, "0", 1, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.", ctx, "1", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.", ctx, "1", 1, add_ipacccfg_port_forwarding, delete_ipacccfg_port_forwarding_all, NULL);
 		uci_foreach_sections("firewall", "rule", s) {
 			if (s != NULL ) {
 				init_args_ipacc(ctx, s);

@@ -70,7 +70,7 @@ pid_t get_pid(char *pname)
             if (fgets(buf, sizeof(buf), fp) != NULL) {
                 /* check the first token in the file, the program name */
                 char* first = strtok(buf, " ");
-                if (strstr(first, name)) {
+                if (strstr(first, pname)) {
                     fclose(fp);
                     closedir(dir);
                     return (pid_t)lpid;

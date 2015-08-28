@@ -143,27 +143,27 @@ int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *valu
 	return 0;
 }
 
-int set_time_ntpserver1(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+int set_time_ntpserver1(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	return set_time_ntpserver(refparam, ctx, action, value, 1);
 }
 
-int set_time_ntpserver2(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+int set_time_ntpserver2(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	return set_time_ntpserver(refparam, ctx, action, value, 2);
 }
 
-int set_time_ntpserver3(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+int set_time_ntpserver3(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	return set_time_ntpserver(refparam, ctx, action, value, 3);
 }
 
-int set_time_ntpserver4(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+int set_time_ntpserver4(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	return set_time_ntpserver(refparam, ctx, action, value, 4);
 }
 
-int set_time_ntpserver5(char *refparam, struct dmctx *ctx, int action, char *value, int index)
+int set_time_ntpserver5(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	return set_time_ntpserver(refparam, ctx, action, value, 5);
 }
