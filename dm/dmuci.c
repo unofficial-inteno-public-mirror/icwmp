@@ -149,7 +149,7 @@ int dmuci_get_option_value_string(char *package, char *section, char *option, ch
 		*value = "";
 		return -1;
 	}
-	if (ptr.o) {
+	if (ptr.o && ptr.o->v.string) {
 		*value = ptr.o->v.string;
 	} else {
 		*value = "";
@@ -384,6 +384,19 @@ int dmuci_delete(char *package, char *section, char *option, char *value)
 	return 0;
 }
 
+/**** UCI RENAME SECTION *****/
+int dmuci_rename_section(char *package, char *section, char *value)
+{
+	struct uci_ptr ptr = {0};
+
+	if (dmuci_lookup_ptr(uci_ctx, &ptr, package, section, NULL, value))
+		return -1;
+	if (uci_rename(uci_ctx, &ptr) != UCI_OK)
+		return -1;
+
+	return 0;
+}
+
 /**** UCI LOOKUP by section pointer ****/
 
 int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, struct uci_section *s, char *option, char *value)
@@ -437,7 +450,7 @@ int dmuci_get_value_by_section_string(struct uci_section *s, char *option, char 
 	uci_foreach_element(&s->options, e) {
 		o = (uci_to_option(e));
 		if (!strcmp(o->e.name, option)) {
-			*value = o->v.string;
+			*value = o->v.string ? o->v.string : "";
 			return 0;
 		}
 	}
@@ -510,6 +523,19 @@ int dmuci_del_list_value_by_section(struct uci_section *s, char *option, char *v
 	dmuci_lookup_ptr_by_section(uci_ctx, &up, s, option, value);
 
 	if (uci_del_list(uci_ctx, &up) != UCI_OK)
+		return -1;
+
+	return 0;
+}
+
+/**** UCI RENAME SECTION by section pointer *****/
+int dmuci_rename_section_by_section(struct uci_section *s, char *value)
+{
+	struct uci_ptr up = {0};
+
+	dmuci_lookup_ptr_by_section(uci_ctx, &up, s, NULL, value);
+
+	if (uci_rename(uci_ctx, &up) != UCI_OK)
 		return -1;
 
 	return 0;
