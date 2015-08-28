@@ -17,126 +17,201 @@
 #include "dmcommon.h"
 #include "layer_3_forwarding.h"
 
+enum enum_route_type {
+	ROUTE_STATIC,
+	ROUTE_DYNAMIC,
+	ROUTE_DISABLED
+};
 
 struct routefwdargs cur_routefwdargs = {0};
 
-inline int init_args_rentry(struct dmctx *ctx, struct uci_section *s, char *permission, char *proute)
+inline int init_args_rentry(struct dmctx *ctx, struct uci_section *s, char *permission, struct proc_route *proute, int type)
 {
 	struct routefwdargs *args = &cur_routefwdargs;
 	ctx->args = (void *)args;
-	args->permission = dmstrdup(permission);
+	args->permission = permission;
 	args->routefwdsection = s;
-	args->proute = dmstrdup(proute);
+	args->proute = proute;
+	args->type = type;
 	return 0;
 }
 
 /************************************************************************************* 
 **** function related to get_object_layer3 ****
 **************************************************************************************/
-char *ip_to_hex(char *address)
+void ip_to_hex(char *address, char *ret) //TODO Move to the common.c
 {
 	int i;
-	int len = 0;	
-	char buf[9];
-	char *pch, *val;	
+	int ip[4] = {0};
 	
-	pch = strtok(address,".");	
-	while (pch) {
-		i = atoi(pch);
-		dmasprintf(&val, "%02x", i);
-		strcpy(buf +len, val);
-		dmfree(val);
-		len += 2;
-		pch = strtok(NULL, ".");		
-	}
-	return dmstrdup(buf);
+	sscanf(address, "%d.%d.%d.%d", &(ip[0]), &(ip[1]), &(ip[2]), &(ip[3]));
+	sprintf(ret, "%02X%02X%02X%02X", ip[0], ip[1], ip[2], ip[3]);
 }
 
-char *hex_to_ip(char *address)
+void hex_to_ip(char *address, char *ret) //TODO Move to the common.c
 {
-	int i = 0;
-	int len = 0;
-	long int dec;
-	char *buf, *pch;
-	char ip_address[16];
-	int cur_len;	
-	
-	while (i < 8) {
-		dmasprintf(&buf, "%c%c", address[i], address[i+1]);
-		sscanf(buf, "%x", &dec);
-		if (i != 6)
-			dmasprintf(&pch, "%u.", dec);
-		else
-			dmasprintf(&pch, "%u", dec);
-		cur_len = strlen(pch);
-		strcpy(ip_address +len, pch);
-		len += cur_len;
-		dmfree(pch);
-		i += 2;
-	}
-	return dmstrdup(ip_address);
+	int i;
+	int ip[4] = {0};
+	sscanf(address, "%2x%2x%2x%2x", &(ip[0]), &(ip[1]), &(ip[2]), &(ip[3]));
+	sprintf(ret, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
 }
 
-int proc_get_route_var_by_conf(struct uci_section *s, int name)
+void parse_proc_route_line(char *line, struct proc_route *proute)
 {
-	char *dest, *mask, *dest_h, *mask_h;
-		
+	char *pch;
+	proute->iface = strtok(line, " \t");
+
+	pch = strtok(NULL, " \t");
+	hex_to_ip(pch, proute->destination);
+	pch = strtok(NULL, " \t");
+	hex_to_ip(pch, proute->gateway);
+	proute->flags = strtok(NULL, " \t");
+	proute->refcnt = strtok(NULL, " \t");
+	proute->use = strtok(NULL, " \t");
+	proute->metric = strtok(NULL, " \t");
+	pch = strtok(NULL, " \t");
+	hex_to_ip(pch, proute->mask);
+	proute->mtu = strtok(NULL, " \t");
+	proute->window = strtok(NULL, " \t");
+	proute->irtt = strtok(NULL, " \t\n\r");
+}
+
+bool is_proute_static(struct proc_route *proute)
+{
+	char *mask;
+	struct uci_section *s;
+	uci_foreach_option_eq("network", "route", "target", proute->destination, s) {
+		dmuci_get_value_by_section_string(s, "netmask", &mask);
+		if (strcmp(proute->mask, mask) == 0)
+			return true;
+	}
+	return false;
+}
+
+bool is_cfg_route_active(struct uci_section *s)
+{
+	FILE *fp;
+	char line[MAX_PROC_ROUTE];
+	struct proc_route proute;
+	char *dest, *mask;
+
 	dmuci_get_value_by_section_string(s, "target", &dest);
-	dest_h = ip_to_hex(dest);
-	dmfree(dest);
 	dmuci_get_value_by_section_string(s, "netmask", &mask);
-	mask_h = ip_to_hex(mask);
-	dmfree(mask);
-	//awk '$2=="'"$dest"'" && $8=="'"$mask"'"{print $'"$varn"'}' /proc/net/route //TODO
-	return -1;
+
+	fp = fopen(ROUTE_FILE, "r");
+	if ( fp != NULL)
+	{
+		fgets(line, MAX_PROC_ROUTE, fp);
+		while (fgets(line, MAX_PROC_ROUTE, fp) != NULL )
+		{
+			if (line[0] == '\n')
+				continue;
+			parse_proc_route_line(line, &proute);
+			if (strcmp(dest, proute.destination) == 0 &&
+				strcmp(mask, proute.mask) == 0)
+				return true;
+		}
+		fclose(fp) ;
+	}
+	return false;
+}
+
+int get_forwarding_last_inst()
+{
+	char *rinst = NULL, *drinst = NULL, *dsinst = NULL, *tmp;
+	int r = 0, dr = 0, ds = 0, max;
+	struct uci_section *s;
+	int cnt = 0;
+	FILE *fp;
+	char line[MAX_PROC_ROUTE];
+	struct proc_route proute;
+
+	uci_foreach_sections("network", "route", s) {
+		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
+		if (tmp[0] == '\0')
+			break;
+		rinst = tmp;
+	}
+	uci_foreach_sections("network", "route_disabled", s) {
+		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
+		if (tmp[0] == '\0')
+			break;
+		dsinst = tmp;
+	}
+	uci_foreach_sections("dmmap", "route_dynamic", s) {
+		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
+		if (tmp[0] == '\0')
+			break;
+		drinst = tmp;
+	}
+	if (rinst) r = atoi();
+	if (drinst) ds = atoi();
+	if (drinst) dr = atoi();
+	max = (r>ds&&r>dr?r:ds>dr?ds:dr);
+	return max;
+}
+
+char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *inst_opt, bool *find_max)
+{
+	char *instance;
+	char buf[8] = {0};
+
+	dmuci_get_value_by_section_string(s, inst_opt, &instance);
+	if (instance[0] == '\0') {
+		if (last_inst == NULL) {
+			sprintf(buf, "%d", 1);
+			*find_max = false;
+		}
+		else {
+			if (*find_max) {
+				int m = get_forwarding_last_inst();
+				sprintf(buf, "%d", m+1);
+				*find_max = false;
+			} else {
+				sprintf(buf, "%d", atoi(last_inst)+1);
+			}
+		}
+		instance = dmuci_set_value_by_section(s, inst_opt, buf);
+	}
+	return instance;
+}
+
+char *forwarding_update_instance_dynamic(struct proc_route *proute, char *last_inst, char *inst_opt, bool *find_max)
+{
+	struct uci_section *s;
+	char *instance, *name;
+	char buf[8] = {0};
+
+	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
+		dmuci_get_value_by_section_string(s, "netmask", &mask);
+		if (strcmp(proute->mask, mask) == 0)
+			break;
+	}
+	if (!s) {
+		dmuci_add_section("dmmap", "route_dynamic", &s, &name);
+		dmuci_set_value_by_section(s, "target", proute->destination);
+		dmuci_set_value_by_section(s, "netmask", proute->mask);
+	}
+	instance = forwarding_update_instance(s, last_inst, inst_opt, find_max);
+	return instance;
 }
 
 int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *name;
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 
 	if (routeargs->routefwdsection == NULL) {
-		*value = dmstrdup("1");
+		*value = "1";
 		return 0;
 	}
-	name = dmstrdup(section_name(routeargs->routefwdsection));
-	if (strstr(name, "cfg")) {
-		TRACE("routeargs->routefwdsection->type %s \n", routeargs->routefwdsection->type);
-		if(strcmp(routeargs->routefwdsection->type, "route_disabled") == 0)
-			*value = dmstrdup("0");
-		else {
-			if (proc_get_route_var_by_conf(routeargs->routefwdsection, 1) == 0)
-				*value = dmstrdup("0");
-			else
-				*value = dmstrdup("1");
-		}		
-	}	
+	if(strcmp(routeargs->routefwdsection->type, "route_disabled") == 0)
+		*value = "0";
+	else {
+		*value = "1";
+	}
 	return 0;
 }
 
-/*set_layer3_enable() {
-	local route="$1"
-	local val="$2"
-	local droute sroute="$route"
-	local enable=`$UCI_GET network.$route`
-	val=`echo $val|tr '[A-Z]' '[a-z]'`
-	if [ "$val" = "true" -o "$val" = "1" ]; then
-		[ "`$enable" = "route_disabled" ] && droute="route" || return
-	elif [ "$val" = "false" -o "$val" = "0" ]; then
-		[ "`$enable" = "route_disabled" ] && droute="route_disabled" || return
-	else
-		return
-	fi
-	local rc rconfigs=`$UCI_SHOW network.$sroute |sed -n "s/network\.[^.]\+\.//p"`
-	route=`$UCI_ADD network $droute`
-	for rc in $rconfigs; do
-		$UCI_SET network.$route.$rc
-	done
-	$UCI_DELETE network.$sroute
-	delay_service reload "network" "1"
-}*/
-//TOCODE
 int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	static bool b;
@@ -149,7 +224,16 @@ int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			//TODO
+			if (b) {
+				if (routeargs->type == ROUTE_STATIC)
+					return 0;
+				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route");
+			}
+			else {
+				if (routeargs->type == ROUTE_DISABLED)
+					return 0;
+				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route_disabled");
+			}
 			return 0;
 	}
 	return 0;
@@ -157,65 +241,53 @@ int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value
 
 int get_layer3_status(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *eb;
-	get_layer3_enable(refparam, ctx, &eb);
-	if (eb[0] == '1')
-		*value = dmstrdup("Enabled");
-	else 
-		*value = dmstrdup("Disabled");
-	dmfree(eb);
+	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
+
+	if (routeargs->routefwdsection == NULL) {
+		*value = "Enabled";
+		return 0;
+	}
+	if(strcmp(routeargs->routefwdsection->type, "route_disabled") == 0) {
+		*value = "Disabled";
+	} else {
+		if (is_cfg_route_active(routeargs->routefwdsection))
+			*value = "Enabled";
+		else
+			*value = "Error";
+	}
 	return 0;	
 }
 
 int get_layer3_type(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *name, *netmask;
-	char *delimiter = " \t";
+	char *netmask;
+
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg"))
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);		
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);
 	}	
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		netmask = dmstrdup(cut_fx(proute, delimiter, 8)); //WE HAVE TO ADD PROUTE TO ARGS LIST		
-		*value = dmstrdup(hex_to_ip(netmask));
-		dmfree(netmask);
+		struct proc_route *proute = routeargs->proute;
+		*value = proute->mask;
 	}
-	if (strcmp(*value, "255.255.255.255") == 0 || (*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("Host");
-	}
-	else {
-		dmfree(*value);
-		*value = dmstrdup("Network");
-	}
+	*value = (strcmp(*value, "255.255.255.255") == 0 || (*value)[0] == '\0') ? "Host" : "Network";
 	return 0;		
 }
 
 int get_layer3_destip(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *name, *dest;
-	char *delimiter = " \t";
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "target", value);
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "target", value);
+		if ((*value)[0] == '\0') {
+			*value = "0.0.0.0";
 		}
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		dest = dmstrdup(cut_fx(proute, delimiter, 2));		
-		*value = dmstrdup(hex_to_ip(dest));
-		dmfree(dest);
-	}
-	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("0.0.0.0");
+		struct proc_route *proute = routeargs->proute;
+		*value = dmstrdup(proute->destination); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	return 0;		
 }
@@ -229,7 +301,6 @@ int set_layer3_destip(char *refparam, struct dmctx *ctx, int action, char *value
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(routeargs->routefwdsection, "target", value);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -237,25 +308,17 @@ int set_layer3_destip(char *refparam, struct dmctx *ctx, int action, char *value
 
 int get_layer3_destmask(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *name, *netmask;
-	char *delimiter = " \t";
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);
+		if ((*value)[0] == '\0') {
+			*value = "255.255.255.255";
 		}
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		netmask = dmstrdup(cut_fx(proute, delimiter, 2));		
-		*value = dmstrdup(hex_to_ip(netmask));
-		dmfree(netmask);
-	}
-	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("255.255.255.255");
+		struct proc_route *proute = routeargs->proute;
+		*value = dmstrdup(proute->mask); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	return 0;
 }
@@ -269,7 +332,6 @@ int set_layer3_destmask(char *refparam, struct dmctx *ctx, int action, char *val
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(routeargs->routefwdsection, "netmask", value);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -277,39 +339,30 @@ int set_layer3_destmask(char *refparam, struct dmctx *ctx, int action, char *val
 
 int get_layer3_src_address(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("0.0.0.0");
+	*value = "0.0.0.0";
 	return 0;
 }
 
 int get_layer3_src_mask(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("0.0.0.0");
+	*value = "0.0.0.0";
 	return 0;
 }
 
 int get_layer3_gatewayip(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *name, *gateway;
-	char *delimiter = " \t";
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "gateway", value);
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "gateway", value);
+		if ((*value)[0] == '\0') {
+			*value = "0.0.0.0";
 		}
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		gateway = dmstrdup(cut_fx(proute, delimiter, 2));		
-		*value = dmstrdup(hex_to_ip(gateway));
-		dmfree(gateway);
+		struct proc_route *proute = routeargs->proute;
+		*value = dmstrdup(proute->gateway); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
-	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("0.0.0.0");
-	}
-	dmfree(name);
 	return 0;
 } 
 
@@ -322,7 +375,6 @@ int set_layer3_gatewayip(char *refparam, struct dmctx *ctx, int action, char *va
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(routeargs->routefwdsection, "gateway", value);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -333,42 +385,35 @@ char *get_layer3_interface(struct dmctx *ctx)
 	json_object *res;
 	char *val, *bval, *ifname, *device;
 	char *name;
-	char *delimiter = " \t";
 	struct uci_section *ss;
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "interface", &val);
-			return val;
-		}
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "interface", &val);
+		return val;
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		bval = dmstrdup(cut_fx(proute, delimiter, 1));	
-		if (!strstr(bval, "br-")) {			
-			uci_foreach_option_cont("network", "interface", "ifname", bval + 3, ss) { //TO CHECK
-				if (ss != NULL) {
-					ifname = dmstrdup(section_name(ss));
-					dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname}}, 1, &res);
-					if (res) {
-						json_select(res, "device", 0, NULL, &device, NULL);
-						if (strcmp(bval, device) == 0) {
-							return ifname;
-						}
+		struct proc_route *proute = routeargs->proute;
+		bval = proute->iface;
+		if (!strstr(bval, "br-")) {
+			uci_foreach_option_cont("network", "interface", "ifname", bval, ss) {
+				ifname = section_name(ss);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname}}, 1, &res);
+				if (res) {
+					json_select(res, "device", 0, NULL, &device, NULL);
+					if (strcmp(bval, device) == 0) {
+						return ifname;
 					}
-					dmfree(ifname);					
-				}								
+				}
 			}			
 		}
 	}
-	return dmstrdup("");
+	return "";
 }
 
 int get_parameter_by_linker(char *refparam, struct dmctx *ctx, char **value)
 {	
-	*value = dmstrdup("TOCODE");
+	*value = "TOCODE"; //TODO
 	return 0;
 }
 
@@ -377,12 +422,10 @@ int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, cha
 	char *iface, *linker;
 			
 	iface = get_layer3_interface(ctx);
-	if (iface[0] == '\0') {
-		*value = dmstrdup("");		
-	}		
-	else {
+	if (iface[0] != '\0') {
 		dmastrcat(&linker, "linker_interface:", iface);		
-		get_parameter_by_linker(refparam, ctx, value);//TODO		
+		get_parameter_by_linker(refparam, ctx, value); //TODO
+		dmfree(linker);
 	}
 	return 0;
 }
@@ -392,30 +435,24 @@ int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, int
 	bool b;	
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 	
-	TRACE("TO CODE \n");
+	TRACE("TO CODE \n"); //TODO
 	return 0;
 }
 
 int get_layer3_metric(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *name;
-	char *delimiter = " \t";
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;	
 	
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "metric", value);
-		}
-		dmfree(name);
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "metric", value);
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		*value = dmstrdup(cut_fx(proute, delimiter, 7));		
+		struct proc_route *proute = routeargs->proute;
+		*value = dmstrdup(proute->metric); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("0");
+		*value = "0";
 	}	
 	return 0;
 }
@@ -429,7 +466,6 @@ int set_layer3_metric(char *refparam, struct dmctx *ctx, int action, char *value
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(routeargs->routefwdsection, "metric", value);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -437,25 +473,18 @@ int set_layer3_metric(char *refparam, struct dmctx *ctx, int action, char *value
 
 int get_layer3_mtu(char *refparam, struct dmctx *ctx, char **value)
 {	
-	char *name;
-	char *delimiter = " \t";
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
 
 	if (routeargs->routefwdsection != NULL)	{
-		name = dmstrdup(section_name(routeargs->routefwdsection));
-		if (strstr(name, "cfg")) {
-			dmuci_get_value_by_section_string(routeargs->routefwdsection, "mtu", value);
-		}
+		dmuci_get_value_by_section_string(routeargs->routefwdsection, "mtu", value);
 	}
 	else {
-		char *proute = dmstrdup(routeargs->proute);
-		*value = dmstrdup(cut_fx(proute, delimiter, 9));
+		struct proc_route *proute = routeargs->proute;
+		*value = dmstrdup(proute->mtu); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("1500");
+		*value = "1500";
 	}
-	dmfree(name);
 	return 0;
 }
 
@@ -468,7 +497,6 @@ int set_layer3_mtu(char *refparam, struct dmctx *ctx, int action, char *value)
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(routeargs->routefwdsection, "mtu", value);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -478,12 +506,12 @@ inline int get_object_layer3(struct dmctx *ctx, char *iroute, char *permission)
 {
 	DMOBJECT(DMROOT"InternetGatewayDevice.Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
 	DMPARAM("Enable", ctx, permission, get_layer3_enable, set_layer3_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-	DMPARAM("Status", ctx, 0, get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
-	DMPARAM("Type", ctx, 0, get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
+	DMPARAM("Status", ctx, "0", get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
+	DMPARAM("Type", ctx, "0", get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("DestIPAddress", ctx, permission, get_layer3_destip, set_layer3_destip, "xsd:boolean", 0, 1, UNDEF, NULL);
 	DMPARAM("DestSubnetMask", ctx, permission, get_layer3_destmask, set_layer3_destmask, NULL, 0, 1, UNDEF, NULL);
-	DMPARAM("SourceIPAddress", ctx, 0, get_layer3_src_address, NULL, NULL, 0, 1, UNDEF, NULL);
-	DMPARAM("SourceSubnetMask", ctx, 0, get_layer3_src_mask, NULL, NULL, 0, 1, UNDEF, NULL);
+	DMPARAM("SourceIPAddress", ctx, "0", get_layer3_src_address, NULL, NULL, 0, 1, UNDEF, NULL);
+	DMPARAM("SourceSubnetMask", ctx, "0", get_layer3_src_mask, NULL, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("GatewayIPAddress", ctx, permission, get_layer3_gatewayip, set_layer3_gatewayip, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("Interface", ctx, permission, get_layer3_interface_linker_parameter, set_layer3_interface_linker_parameter, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("ForwardingMetric", ctx, permission, get_layer3_metric, set_layer3_metric, NULL, 0, 1, UNDEF, NULL);
@@ -508,7 +536,7 @@ get_linker_by_parameter() {
 char *get_linker_by_parameter()
 {
 	//TODO
-	return dmstrdup("");
+	return "";
 }
 
 int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char *value)
@@ -520,7 +548,7 @@ int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			linker = get_linker_by_parameter(value); //TODO
+			linker = get_linker_by_parameter(value); //TODO TOCHECK
 			//TO CHECK
 			for (i = 0; i < strlen(linker) -1; i++) {
 				if (linker[i] == ':') {
@@ -531,7 +559,6 @@ int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char
 			if (linker[0] == '\0')
 				return 0;
 			dmuci_set_value("cwmp", "cpe", "default_wan_interface", linker);
-			//delay_service reload "network" "1" //TODO
 			return 0;
 	}
 	return 0;
@@ -539,61 +566,34 @@ int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char
 
 int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 {
-	int pr = 0;
-	int found = 0;
-	FILE* f = NULL;
-	char str[TAILLE_MAX];
-	char *delimiter = " \t";
-	char *buf;
-	char *dest, *dest_ip, *cdest, *mask, *mask_ip, *cmask;
 	struct uci_section *s;
-	char *str1; 
-	
-	f = fopen(ROUTE_FILE, "r");
-	if ( f != NULL)
-	{
-		fgets(str, TAILLE_MAX, f);
-		while (fgets(str, TAILLE_MAX, f) != NULL ) 
-		{			
-			if (str[0] == '\n')
-				continue;			
-			found = 0;
-			str1 = dmstrdup(str);			
-			dest = cut_fx(str, delimiter, 2);
-			dest_ip = hex_to_ip(dest);
-			mask = cut_fx(str1, delimiter, 8);			
-			mask_ip = hex_to_ip(mask);
-			TRACE("dest ip is %s mask ip is %s \n",dest_ip,  mask_ip);
-			uci_foreach_sections("network", "route", s) {
-				if (s != NULL) {
-					dmuci_get_value_by_section_string(s, "target", &cdest);
-					if (strcmp(dest_ip, cdest) == 0 || (strcmp(dest_ip, "0.0.0.0") == 0 && cdest[0] == '\0')) {
-						dmuci_get_value_by_section_string(s, "mask", &cmask);
-						if (strcmp(mask_ip, cmask) == 0 || (strcmp(mask_ip, "255.255.255.255") == 0 && cmask[0] == '\0')) {
-							found++;
-							dmfree(cmask);
-							dmfree(cdest);
-							break;
-						}							
-					}					
-				}
-			}
-			if (!found)
-				pr++;
-		}
-		fclose(f) ;
-	}
+	int cnt = 0;
+	FILE *fp;
+	char line[MAX_PROC_ROUTE];
+	struct proc_route proute;
+
 	uci_foreach_sections("network", "route", s) {
-		if (s != NULL) {
-			pr++;
-		}
+		cnt++;
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
-		if (s != NULL) {
-			pr++;
-		}
+		cnt++;
 	}
-	dmasprintf(value, "%d", pr);
+	fp = fopen(ROUTE_FILE, "r");
+	if ( fp != NULL)
+	{
+		fgets(line, MAX_PROC_ROUTE, fp);
+		while (fgets(line, MAX_PROC_ROUTE, fp) != NULL )
+		{
+			if (line[0] == '\n')
+				continue;
+			parse_proc_route_line(line, &proute);
+			if (is_proute_static(&proute))
+				continue;
+			cnt++;
+		}
+		fclose(fp) ;
+	}
+	dmasprintf(value, "%d", cnt); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -601,8 +601,12 @@ int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 {
 	char *iroute = NULL;
 	char *cur_iroute = NULL;
-	char *permission = dmstrdup("1");
+	char *permission = "1";
 	struct uci_section *s = NULL;
+	FILE* fp = NULL;
+	char line[MAX_PROC_ROUTE];
+	struct proc_route proute;
+	bool find_max = true;
 	
 	IF_MATCH(ctx, DMROOT"Layer3Forwarding.") {
 		DMOBJECT(DMROOT"Layer3Forwarding.", ctx, "0", 1, NULL, NULL, NULL);
@@ -610,21 +614,40 @@ int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 		DMPARAM("DefaultConnectionService", ctx, "1", get_parameter_by_linker, set_layer3_def_conn_serv, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ForwardNumberOfEntries", ctx, "0", get_layer3_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		uci_foreach_sections("network", "route", s) {
-			if (s != NULL ) {
-				init_args_rentry(ctx, s, "1", "");
-				iroute = update_instance(s, cur_iroute, "routeinstance");
-				SUBENTRY(get_object_layer3, ctx, iroute, permission);
-				if (cur_iroute)
-					dmfree(cur_iroute);
-				cur_iroute = dmstrdup(iroute);
-				dmfree(iroute);
-			}
-			else 
-				break;
+			init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);
+			iroute = forwarding_update_instance(s, cur_iroute, "routeinstance", &find_max);
+			SUBENTRY(get_object_layer3, ctx, iroute, permission);
+			dmfree(cur_iroute);
+			cur_iroute = dmstrdup(iroute);
 		}
-		dmfree(permission);
+		uci_foreach_sections("network", "route_disabled", s) {
+			init_args_rentry(ctx, s, "1", NULL, ROUTE_DISABLED);
+			iroute = forwarding_update_instance(s, cur_iroute, "routeinstance", &find_max);
+			SUBENTRY(get_object_layer3, ctx, iroute, permission);
+			dmfree(cur_iroute);
+			cur_iroute = dmstrdup(iroute);
+		}
+		fp = fopen(ROUTE_FILE, "r");
+		if ( fp != NULL)
+		{
+			fgets(line, MAX_PROC_ROUTE, fp);
+			while (fgets(line, MAX_PROC_ROUTE, fp) != NULL )
+			{
+				if (line[0] == '\n')
+					continue;
+				parse_proc_route_line(line, &proute);
+				if (is_proute_static(&proute))
+					continue;
+				init_args_rentry(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
+				iroute = forwarding_update_instance_dynamic(&proute, cur_iroute, "routeinstance", &find_max);
+				SUBENTRY(get_object_layer3, ctx, iroute, permission);
+				dmfree(cur_iroute);
+				cur_iroute = dmstrdup(iroute);
+			}
+			fclose(fp) ;
+		}
+		dmfree(cur_iroute);
 		return 0;
 	}
-	dmfree(permission);
 	return FAULT_9005;
 }
