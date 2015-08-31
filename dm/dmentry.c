@@ -186,6 +186,48 @@ int dm_entry_load_enabled_notify()
 	return 0;
 }
 
+int adm_entry_get_linker_param(char *param, char *linker, char **value)
+{
+	struct dmctx dmctx = {0};
+
+	dm_ctx_init(&dmctx);
+	dmctx.in_param = param ? param : "";
+	dmctx.linker = linker;
+
+
+	if (dmctx.in_param[0] == '\0') {
+		dmctx.tree = true;
+	} else {
+		dmctx.tree = false;
+	}
+
+	dm_entry_get_linker(&dmctx);
+	*value = dmctx.linker_param;
+
+	dm_ctx_clean(&dmctx);
+	return 0;
+}
+
+int adm_entry_get_linker_value(char *param, char **value)
+{
+	struct dmctx dmctx = {0};
+	*value = NULL;
+
+	if (!param || param[0] == '\0') {
+		return 0;
+	}
+
+	dm_ctx_init(&dmctx);
+	dmctx.in_param = param;
+	dmctx.tree = false;
+
+	dm_entry_get_linker_value(&dmctx);
+	*value = dmctx.linker;
+
+	dm_ctx_clean(&dmctx);
+	return 0;
+}
+
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 {
 	if (!out) return 0;

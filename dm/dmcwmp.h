@@ -123,6 +123,8 @@ struct dmctx
 	char *in_notification; 
 	char *in_value;
 	char *addobj_instance;
+	char *linker;
+	char *linker_param;
 	char current_obj[512];
 };
 
@@ -204,6 +206,8 @@ int dm_entry_set_value(struct dmctx *ctx);
 int dm_entry_set_notification(struct dmctx *ctx);
 int dm_entry_set_prefix_methods_enable(void);
 int dm_entry_enabled_notify(struct dmctx *ctx);
+int dm_entry_get_linker(struct dmctx *ctx);
+int dm_entry_get_linker_value(struct dmctx *ctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);

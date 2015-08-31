@@ -60,6 +60,10 @@ static int set_notification_check_obj(DMOBJECT_API_ARGS);
 static int set_notification_check_param(DMPARAM_API_ARGS);
 static int enabled_notify_check_obj(DMOBJECT_API_ARGS);
 static int enabled_notify_check_param(DMPARAM_API_ARGS);
+static int get_linker_check_obj(DMOBJECT_API_ARGS);
+static int get_linker_check_param(DMOBJECT_API_ARGS);
+static int get_linker_value_check_obj(DMOBJECT_API_ARGS);
+static int get_linker_value_check_param(DMOBJECT_API_ARGS);
 
 LIST_HEAD(list_enabled_notify);
 
@@ -997,7 +1001,7 @@ int dm_entry_enabled_notify(struct dmctx *ctx)
 	ctx->method_param = &enabled_notify_check_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (!prefix_methods[i].enable) continue;
-			prefix_methods[i].method(ctx);
+		prefix_methods[i].method(ctx);
 	}
 	return 0;
 }
@@ -1031,3 +1035,80 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
 	dmfree(full_param);
 	return 0;
 }
+
+/******************
+ * get linker param
+ *****************/
+int dm_entry_get_linker(struct dmctx *ctx)
+{
+	int i;
+	ctx->method_obj = &get_linker_check_obj;
+	ctx->method_param = &get_linker_check_param;
+	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
+	}
+	return 0;
+}
+
+static int get_linker_check_obj(DMOBJECT_API_ARGS)
+{
+	if (linker && strcmp(linker, ctx->linker) == 0) {
+		ctx->linker_param = dmstrdup(ctx->current_obj);
+		ctx->stop = true;
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+static int get_linker_check_param(DMPARAM_API_ARGS)
+{
+	if (linker && strcmp(linker, ctx->linker) == 0) {
+		dmastrcat(&(ctx->linker_param), ctx->current_obj, lastname);
+		ctx->stop = true;
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+/******************
+ * get linker value
+ *****************/
+int dm_entry_get_linker_value(struct dmctx *ctx)
+{
+	int i;
+	ctx->method_obj = &get_linker_value_check_obj;
+	ctx->method_param = &get_linker_value_check_param;
+	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
+	}
+	return 0;
+}
+
+static int get_linker_value_check_obj(DMOBJECT_API_ARGS)
+{
+	if (linker && strcmp(ctx->current_obj, ctx->in_param) == 0) {
+		ctx->linker = dmstrdup(linker);
+		ctx->stop = true;
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+static int get_linker_value_check_param(DMPARAM_API_ARGS)
+{
+	char *refparam;
+	dmastrcat(&refparam, ctx->current_obj, lastname);
+	if (linker && strcmp(refparam, ctx->in_param) == 0) {
+		ctx->linker = dmstrdup(linker);
+		ctx->stop = true;
+		return 0;
+	}
+	return FAULT_9005;
+}
+
