@@ -140,11 +140,12 @@ int get_device_devicelog (char *refparam, struct dmctx *ctx, char **value)
 		return 0;
 	buff[len] = '\0';
 	char *p = buff;
-	while (*p++) { //TODO to optimize, we can avoid this if the '<' and '>' does not cause problem in the tests.
+	while (*p) { //TODO to optimize, we can avoid this if the '<' and '>' does not cause problem in the tests.
 		if (*p == '<')
 			*p = '(';
 		else if (*p == '>')
 			*p = ')';
+		p++;
 	}
 	*value = dmstrdup(buff); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
