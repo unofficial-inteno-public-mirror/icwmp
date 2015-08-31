@@ -20,6 +20,7 @@ LIST_HEAD(head_package_change);
 
 int dm_global_init(void)
 {
+	dm_entry_set_prefix_methods_enable();
 	memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
 	INIT_LIST_HEAD(&dmubus_ctx.obj_head);
 	uci_ctx = uci_alloc_context();

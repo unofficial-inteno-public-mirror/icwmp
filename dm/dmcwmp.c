@@ -65,21 +65,33 @@ struct notification notifications[] = {
 	[2] = {"2", "active"}
 };
 
-const struct prefix_method prefix_methods[] = {
-	{ DMROOT, 1, &entry_method_root },
-	{ DMROOT"DeviceInfo.", 1, &entry_method_root_DeviceInfo },
-	{ DMROOT"ManagementServer.", 1, &entry_method_root_ManagementServer },
-	{ DMROOT"X_INTENO_SE_PowerManagement.", 0, &entry_method_root_X_INTENO_SE_PowerManagement },
-	{ DMROOT"LANDevice.", 0, &entry_method_root_LANDevice },
-	{ DMROOT"WANDevice.", 1, &entry_method_root_WANDevice },
-	{ DMROOT"X_INTENO_SE_IGMP.", 0, &entry_method_root_X_INTENO_SE_IGMP },
-	{ DMROOT"X_INTENO_SE_Wifi.", 0, &entry_method_root_SE_Wifi },
-	{ DMROOT"X_INTENO_SE_ICE.", 0, &entry_method_root_X_INTENO_SE_Ice },
-	{ DMROOT"UPnP.", 0, &entry_method_root_upnp },
-	{ DMROOT"Time.", 0, &entry_method_root_Time },
-	{ DMROOT"X_INTENO_SE_IpAccCfg.", 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
-	//{ DMROOT"Layer2Bridging.", &entry_method_root_Layer2Bridging },
+struct prefix_method prefix_methods[] = {
+	{ DMROOT, 1, NULL, 1, &entry_method_root },
+	{ DMROOT"DeviceInfo.", 1, NULL, 1, &entry_method_root_DeviceInfo },
+	{ DMROOT"ManagementServer.", 1, NULL, 1, &entry_method_root_ManagementServer },
+	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
+	{ DMROOT"LANDevice.", 1, NULL, 0, &entry_method_root_LANDevice },
+	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
+	{ DMROOT"X_INTENO_SE_IGMP.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IGMP },
+	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
+	{ DMROOT"X_INTENO_SE_ICE.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_Ice },
+	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
+	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
+	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
+	//{ DMROOT"Layer2Bridging.", 1, NULL, &entry_method_root_Layer2Bridging },
+	//TODO set_enable for service voice and other file if exist
 };
+
+int dm_entry_set_prefix_methods_enable(void)
+{
+	int i = 0;
+	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
+		if (prefix_methods[i].set_enable) {
+			prefix_methods[i].enable = prefix_methods[i].set_enable();
+		}
+	}
+	return 0;
+}
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 {
@@ -111,7 +123,7 @@ char *max_instance(char *package, char *stype, char *option, char *inst_opt, cha
 		tmp_instance = dmstrdup(tmp);
 	}
 	if (tmp_instance == NULL)
-		return "1";
+		return "0";
 	dmfree(tmp_instance);	
 	return tmp;	
 }
@@ -257,7 +269,7 @@ static int remove_parameter_notification(char *param)
 			if (list_notif) {
 				uci_foreach_element(list_notif, e) {
 					pch = e->name;
-					if (strstr(pch, param) == 0) {
+					if (strstr(pch, param)) {
 						dmuci_del_list_value("cwmp", "@notifications[0]", notifications[i].type, pch);
 					}
 				}
@@ -384,9 +396,10 @@ int dm_entry_get_value(struct dmctx *ctx)
 	}
 	
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
 	}
 
 	return ctx->faultcode;
@@ -487,9 +500,10 @@ int dm_entry_get_name(struct dmctx *ctx)
 	}
 	
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop == 1)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop == 1)
+			return ret;
 	}
 	return ctx->faultcode;
 }
@@ -601,9 +615,10 @@ int dm_entry_get_notification(struct dmctx *ctx)
 		ctx->method_param=&get_notification_inparam_isparam_check_param;
 	}	
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop == 1)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop == 1)
+			return ret;
 	}
 	return ctx->faultcode;
 }
@@ -688,6 +703,7 @@ int dm_entry_inform(struct dmctx *ctx)
 	ctx->method_obj = &inform_check_obj;
 	ctx->method_param = &inform_check_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
+		if (!prefix_methods[i].enable) continue;
 		if (prefix_methods[i].forced_inform)
 			prefix_methods[i].method(ctx);
 	}
@@ -722,9 +738,10 @@ int dm_entry_add_object(struct dmctx *ctx)
 	ctx->method_obj=&add_object_obj;
 	ctx->method_param=&add_object_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
 	}	
 	return FAULT_9005;
 }
@@ -767,9 +784,10 @@ int dm_entry_delete_object(struct dmctx *ctx)
 	ctx->method_obj=&delete_object_obj;
 	ctx->method_param=&delete_object_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
 	}
 	return FAULT_9005;
 }
@@ -806,9 +824,10 @@ int dm_entry_set_value(struct dmctx *ctx)
 		ctx->method_param=&set_value_check_param; 
 	}
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
 	}
 	return FAULT_9005; 	
 }
@@ -865,9 +884,10 @@ int dm_entry_set_notification(struct dmctx *ctx)
 		ctx->method_param=&set_notification_check_param; 
 	}	
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		 int ret = prefix_methods[i].method(ctx);
-		 if (ctx->stop)
-			 return ret;
+		if (!prefix_methods[i].enable) continue;
+		int ret = prefix_methods[i].method(ctx);
+		if (ctx->stop)
+			return ret;
 	}
 	return FAULT_9005; 
 }

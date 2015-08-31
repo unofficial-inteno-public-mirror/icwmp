@@ -121,6 +121,8 @@ struct dmctx
 
 struct prefix_method {
 	const char *prefix_name;
+	bool enable;
+	bool (*set_enable)(void);
 	bool forced_inform;
 	int (*method)(struct dmctx *ctx);
 };
@@ -191,6 +193,7 @@ int dm_entry_add_object(struct dmctx *ctx);
 int dm_entry_delete_object(struct dmctx *ctx);
 int dm_entry_set_value(struct dmctx *ctx);
 int dm_entry_set_notification(struct dmctx *ctx);
+int dm_entry_set_prefix_methods_enable(void);
 
 #ifndef TRACE
 #define TRACE_TYPE 0
