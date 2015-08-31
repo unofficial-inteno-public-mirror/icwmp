@@ -147,7 +147,6 @@ void cwmp_schedule_session (struct cwmp *cwmp)
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");
         run_session_end_func(session);
-        dm_global_clean();
         if (session->error == CWMP_RETRY_SESSION)
         {
             error = cwmp_move_session_to_session_queue (cwmp, session);

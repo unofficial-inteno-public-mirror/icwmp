@@ -52,7 +52,6 @@ cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 		pthread_mutex_lock(&(cwmp_main.mutex_session_queue));
 		dm_global_init();
 		cwmp_add_notification();
-		dm_global_clean();
 		pthread_mutex_unlock(&(cwmp_main.mutex_session_queue));
 		blobmsg_add_u32(&b, "status", 0);
 	}
@@ -108,7 +107,6 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 			pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
 			dm_global_init();
 			cwmp_apply_acs_changes();
-			dm_global_clean();
 			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
 			blobmsg_add_u32(&b, "status", 0);
 			if (asprintf(&info, "freecwmp config reloaded") == -1)

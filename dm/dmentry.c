@@ -21,37 +21,61 @@ LIST_HEAD(head_package_change);
 int dm_global_init(void)
 {
 	dm_entry_set_prefix_methods_enable();
-	memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
-	INIT_LIST_HEAD(&dmubus_ctx.obj_head);
-	uci_ctx = uci_alloc_context();
 	return 0;
 }
 
-int dm_global_clean(void)
+static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 {
-	if (uci_ctx) uci_free_context(uci_ctx);
-	uci_ctx= NULL;
-	dmubus_ctx_free(&dmubus_ctx);
-	dmcleanmem();
-	return 0;
-}
-
-int dm_ctx_init(struct dmctx *ctx)
-{
+	if (custom == CTX_INIT_ALL) {
+		memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
+		INIT_LIST_HEAD(&dmubus_ctx.obj_head);
+		uci_ctx = uci_alloc_context();
+	}
 	INIT_LIST_HEAD(&ctx->list_parameter);
 	INIT_LIST_HEAD(&ctx->set_list_tmp);
 	INIT_LIST_HEAD(&ctx->list_fault_param);
 	return 0;
 }
 
-int dm_ctx_clean(struct dmctx *ctx)
+static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 {
+	if (custom == CTX_INIT_ALL) {
+		if (uci_ctx) uci_free_context(uci_ctx);
+		uci_ctx = NULL;
+		dmubus_ctx_free(&dmubus_ctx);
+		dmcleanmem();
+	}
 	free_all_list_parameter(ctx);
 	free_all_set_list_tmp(ctx);
 	free_all_list_fault_param(ctx);
 	DMFREE(ctx->addobj_instance);
 	return 0;
 }
+
+int dm_ctx_init(struct dmctx *ctx)
+{
+	dm_ctx_init_custom(ctx, CTX_INIT_ALL);
+	return 0;
+}
+
+int dm_ctx_clean(struct dmctx *ctx)
+{
+	dm_ctx_clean_custom(ctx, CTX_INIT_ALL);
+	return 0;
+}
+
+int dm_ctx_init_sub(struct dmctx *ctx)
+{
+	dm_ctx_init_custom(ctx, CTX_INIT_SUB);
+	return 0;
+}
+
+int dm_ctx_clean_sub(struct dmctx *ctx)
+{
+	dm_ctx_clean_custom(ctx, CTX_INIT_SUB);
+	return 0;
+}
+
 
 int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1, char *arg2)
 {
@@ -190,7 +214,7 @@ int adm_entry_get_linker_param(char *param, char *linker, char **value)
 {
 	struct dmctx dmctx = {0};
 
-	dm_ctx_init(&dmctx);
+	dm_ctx_init_sub(&dmctx);
 	dmctx.in_param = param ? param : "";
 	dmctx.linker = linker;
 
@@ -204,7 +228,7 @@ int adm_entry_get_linker_param(char *param, char *linker, char **value)
 	dm_entry_get_linker(&dmctx);
 	*value = dmctx.linker_param;
 
-	dm_ctx_clean(&dmctx);
+	dm_ctx_clean_sub(&dmctx);
 	return 0;
 }
 
@@ -217,14 +241,14 @@ int adm_entry_get_linker_value(char *param, char **value)
 		return 0;
 	}
 
-	dm_ctx_init(&dmctx);
+	dm_ctx_init_sub(&dmctx);
 	dmctx.in_param = param;
 	dmctx.tree = false;
 
 	dm_entry_get_linker_value(&dmctx);
 	*value = dmctx.linker;
 
-	dm_ctx_clean(&dmctx);
+	dm_ctx_clean_sub(&dmctx);
 	return 0;
 }
 
@@ -372,12 +396,10 @@ void dm_entry_cli(int argc, char** argv)
 		goto invalid_arguments;
 	}
 	dm_ctx_clean(&cli_dmctx);
-	dm_global_clean();
 	return;
 
 invalid_arguments:
 	dm_ctx_clean(&cli_dmctx);
-	dm_global_clean();
 	fprintf(stdout, "Invalid arguments!\n");;
 }
 

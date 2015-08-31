@@ -731,11 +731,14 @@ int save_acs_bkp_config(struct cwmp *cwmp)
 }
 
 int cwmp_get_deviceid(struct cwmp *cwmp) {
+	struct dmctx dmctx = {0};
+	dm_ctx_init(&dmctx);
 	cwmp->deviceid.manufacturer = strdup(get_deviceid_manufacturer()); //TODO free
 	cwmp->deviceid.serialnumber = strdup(get_deviceid_serialnumber());
 	cwmp->deviceid.productclass = strdup(get_deviceid_productclass());
 	cwmp->deviceid.oui = strdup(get_deviceid_manufactureroui());
 	cwmp->deviceid.softwareversion = strdup(get_softwareversion());
+	dm_ctx_clean(&dmctx);
 	return CWMP_OK;
 }
 
@@ -775,7 +778,6 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 	dm_global_init();
     cwmp_get_deviceid(cwmp);
     dm_entry_load_enabled_notify();
-	dm_global_clean();
     return CWMP_OK;
 }
 
