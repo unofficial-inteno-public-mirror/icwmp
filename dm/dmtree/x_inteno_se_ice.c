@@ -21,15 +21,14 @@
 
 int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
 {
+	bool b;
 	dmuci_get_option_value_string("ice", "cloud", "enabled", value);
-	if (strcmp(*value, "1") == 0 || strcmp(*value, "true") == 0 || strcmp(*value, "yes") == 0 || strcmp(*value, "on") == 0) {
-		dmfree(*value);
-		*value = dmstrdup("true");
-	}
-	else if (strcmp(*value, "0") == 0 || strcmp(*value, "false") == 0 || strcmp(*value, "no") == 0 || strcmp(*value, "off") == 0) {
-		dmfree(*value);
-		*value = dmstrdup("false");
-	}
+
+	string_to_bool(*value, &b);
+	if (b)
+		*value = "1";
+	else
+		*value = "0";
 	return 0;
 }
 
@@ -48,9 +47,7 @@ int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *va
 				dmuci_set_value("ice", "cloud", "enabled", "1");
 			else
 				dmuci_set_value("ice", "cloud", "enabled", "0");
-			if (check_file(path)) {
-				//delay_service restart "ice-client" "1" TODO
-			}
+			return 0;
 	}
 }
 
@@ -62,18 +59,14 @@ int get_ice_cloud_server(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ice_cloud_server(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char path[] = "/etc/rc.d/*ice-client";
-	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-		if (value[0] == '\0')
+			if (value[0] == '\0')
+				return 0;
+			dmuci_set_value("ice", "cloud", "server", value);
 			return 0;
-		dmuci_set_value("ice", "cloud", "server", value);
-		if (check_file(path)) {
-			//delay_service restart "ice-client" "1" TODO
-		}
 	}
 	return 0;
 }

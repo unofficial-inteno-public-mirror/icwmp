@@ -28,11 +28,11 @@ char *get_deviceid_manufactureroui()
 {
 	FILE* f = NULL;
 	char *v;
-	char str[TAILLE_MAX];
+	char str[16];
 	f = fopen(BASE_MAC_ADDR, "r");
 	if (f != NULL)
 	{
-		fgets(str, TAILLE_MAX, f);
+		fgets(str, 16, f);
 		size_t ln = strlen(str);
 		if (ln<9) goto not_found;
 		str[2] = str[3];
@@ -40,12 +40,12 @@ char *get_deviceid_manufactureroui()
 		str[4] = str[6];
 		str[5] = str[7];
 		str[6] = '\0';
-		v = dmstrdup(str);
+		v = dmstrdup(str); // MEM WILL BE FREED IN DMMEMCLEAN
 		fclose(f);
 		return v;
 	}
 not_found:
-	v = dmstrdup("");
+	v = "";
 	return v;
 }
 
@@ -116,11 +116,16 @@ int get_device_routermodel(char *refparam, struct dmctx *ctx, char **value)
 int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
 {
 	FILE* fp = NULL;
-	char wpakey[TAILLE_MAX];
-	fp = fopen("UPTIME", "r");
+	char *pch;
+	char buf[64];
+	*value = "0";
+
+	fp = fopen(UPTIME, "r");
 	if (fp != NULL) {		
-		fgets(wpakey, TAILLE_MAX, fp);		
-		*value = dmstrdup(cut_fx(wpakey, ".", 1));
+		fgets(buf, 64, fp);
+		pch = strtok(buf, ".");
+		if (pch)
+			*value = dmstrdup(pch); // MEM WILL BE FREED IN DMMEMCLEAN
 		fclose(fp);
 	}
 	return 0;
@@ -128,7 +133,7 @@ int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_devicelog (char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = dmstrdup("TOCODE");
+	*value = dmstrdup("TOCODE"); //TODO
 	return 0;
 }
 
@@ -138,8 +143,7 @@ int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_option_value_string("cwmp", "cpe", "specversion", value);
 	TRACE();
 	if ((*value)[0] == '\0') {
-		dmfree(*value);
-		*value = dmstrdup("1.0");
+		*value = "1.0";
 	}		
 	return 0;
 }
@@ -155,8 +159,6 @@ int set_device_provisioningcode(char *refparam, struct dmctx *ctx, int action, c
 	bool b;
 	switch (action) {
 		VALUECHECK:			
-			if (string_to_bool(value, &b))
-				return FAULT_9007;
 			return 0;
 		VALUESET:
 			dmuci_set_value("cwmp", "cpe", "provisioning_code", value);
@@ -170,7 +172,7 @@ int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res;
 	
 	dmubus_call("router", "info", UBUS_ARGS{{}}, 0, &res);
-	DM_ASSERT(res, *value = dmstrdup(""));
+	DM_ASSERT(res, *value = "");
 	json_select(res, "system", 0, "basemac", value, NULL);		
 	return 0;
 }
@@ -180,21 +182,16 @@ int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
 	char *catv;
 	dmuci_get_option_value_string("catv", "catv", "enable", &catv);
 	if (strcmp(catv, "on") == 0) {
-		dmfree(catv);
-		*value = dmstrdup("1");
+		*value = "1";
 	} 
-	else if (strcmp(catv, "off") == 0) {
-		dmfree(catv);
-		*value = dmstrdup("0");
-	}
 	else 
-		*value = dmstrdup("");
+		*value = "0";
 	return 0;	
 }
 
 int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;
+	static bool b;
 	char *stat = "";
 	switch (action) {
 		VALUECHECK:			
@@ -202,14 +199,11 @@ int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *
 				return FAULT_9007;
 			return 0;
 		VALUESET:
-			if (value[0] != '\0') {
-				if (value[0] == '1')
-					stat = dmstrdup("on");
-				else 
-					stat = dmstrdup("off");
-			}
+			if (b)
+				stat = "on";
+			else
+				stat = "off";
 			dmuci_set_value("catv", "catv", "enable", stat);
-			//delay_service restart "catv" "1"
 	}
 	return 0;
 }

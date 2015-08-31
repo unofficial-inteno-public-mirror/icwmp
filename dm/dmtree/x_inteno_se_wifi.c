@@ -33,14 +33,12 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 	char *freq;
 	json_object *res;
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
-	char *wlan_name = dmstrdup(section_name(wifiargs->sewifisection));
+	char *wlan_name = section_name(wifiargs->sewifisection);
 	
 	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
-	dmfree(wlan_name);
-	DM_ASSERT(res, *value = dmstrdup(""));
+	DM_ASSERT(res, *value = "");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
-	dmastrcat(value, freq, "GHz");
-	dmfree(freq);	
+	dmastrcat(value, freq, "GHz");  // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -61,7 +59,6 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(wifiargs->sewifisection, "maxassoc", value);
-			// delay_service reload "network" "1" TODO
 			return 0;
 	}
 	return 0;
