@@ -411,20 +411,19 @@ char *get_layer3_interface(struct dmctx *ctx)
 	return "";
 }
 
-int get_parameter_by_linker(char *refparam, struct dmctx *ctx, char **value)
-{	
-	*value = "TOCODE"; //TODO
-	return 0;
-}
-
 int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *iface, *linker;
 			
 	iface = get_layer3_interface(ctx);
 	if (iface[0] != '\0') {
-		dmastrcat(&linker, "linker_interface:", iface);		
-		get_parameter_by_linker(refparam, ctx, value); //TODO
+		dmastrcat(&linker, "linker_interface:", iface);
+		adm_entry_get_linker_param(DMROOT"WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		if (*value == NULL) {
+			adm_entry_get_linker_param(DMROOT"LANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+			if (*value == NULL)
+				*value = "";
+		}
 		dmfree(linker);
 	}
 	return 0;
@@ -432,10 +431,21 @@ int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, cha
 
 int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	bool b;	
+	char *linker, *iface;
 	struct routefwdargs *routeargs = (struct routefwdargs *)ctx->args;
-	
-	TRACE("TO CODE \n"); //TODO
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			adm_entry_get_linker_value(value, &linker);
+			if (linker) {
+				iface = linker + sizeof("linker_interface:") - 1;
+				dmuci_set_value_by_section(routeargs->routefwdsection, "interface", iface);
+				dmfree(linker);
+			}
+			return 0;
+	}
 	return 0;
 }
 
@@ -504,7 +514,7 @@ int set_layer3_mtu(char *refparam, struct dmctx *ctx, int action, char *value)
 
 inline int get_object_layer3(struct dmctx *ctx, char *iroute, char *permission)
 {
-	DMOBJECT(DMROOT"InternetGatewayDevice.Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
+	DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
 	DMPARAM("Enable", ctx, permission, get_layer3_enable, set_layer3_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 	DMPARAM("Status", ctx, "0", get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("Type", ctx, "0", get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
@@ -533,32 +543,36 @@ get_linker_by_parameter() {
 }
 */
 
-char *get_linker_by_parameter()
+int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
 {
-	//TODO
-	return "";
-}
+	char *iface, *linker;
 
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
+	if (iface[0] != '\0') {
+		dmastrcat(&linker, "linker_interface:", iface);
+		adm_entry_get_linker_param(DMROOT"WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		if (*value == NULL) {
+			*value = "";
+		}
+		dmfree(linker);
+	}
+	return 0;
+}
 int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	int i;
-	char *linker;
+	char *linker, *iface;
 	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			linker = get_linker_by_parameter(value); //TODO TOCHECK
-			//TO CHECK
-			for (i = 0; i < strlen(linker) -1; i++) {
-				if (linker[i] == ':') {
-					linker += i+1;
-					break;
-				}
-			}					
-			if (linker[0] == '\0')
-				return 0;
-			dmuci_set_value("cwmp", "cpe", "default_wan_interface", linker);
+			adm_entry_get_linker_value(value, &linker);
+			if (linker) {
+				iface = linker + sizeof("linker_interface:") - 1;
+				dmuci_set_value("cwmp", "cpe", "default_wan_interface", iface);
+				dmfree(linker);
+			}
 			return 0;
 	}
 	return 0;

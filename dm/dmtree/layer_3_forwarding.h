@@ -43,7 +43,6 @@ int get_layer3_src_mask(char *refparam, struct dmctx *ctx, char **value);
 int get_layer3_gatewayip(char *refparam, struct dmctx *ctx, char **value);
 int set_layer3_gatewayip(char *refparam, struct dmctx *ctx, int action, char *value);
 char *get_layer3_interface(struct dmctx *ctx);
-int get_parameter_by_linker(char *refparam, struct dmctx *ctx, char **value);
 char *get_linker_by_parameter();
 int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, char **value);
 int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, int action, char *value);
