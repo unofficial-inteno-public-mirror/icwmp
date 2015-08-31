@@ -21,6 +21,7 @@
 #include "deviceinfo.h"
 
 LIST_HEAD(list_value_change);
+pthread_mutex_t mutex_value_change = PTHREAD_MUTEX_INITIALIZER;
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_0BOOTSTRAP]                      = {"0 BOOTSTRAP",                       EVENT_TYPE_SINGLE,  EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
@@ -148,15 +149,39 @@ void free_dm_parameter_all_fromlist(struct list_head *list)
 	}
 }
 
-void cwmp_add_notification (char *name, char *value, char *attribute, char *type)
+inline void add_list_value_change(char *param_name, char *param_data, char *param_type)
 {
-	char *notification = NULL;
+	pthread_mutex_lock(&(mutex_value_change));
+	add_dm_parameter_tolist(&list_value_change, param_name, param_data, param_type);
+	pthread_mutex_unlock(&(mutex_value_change));
+}
+
+void cwmp_add_notification(void)
+{
 	struct event_container   *event_container;
 	struct cwmp   *cwmp = &cwmp_main;
+	struct dm_enabled_notify *p;
+	struct dm_parameter *dm_parameter;
+	int fault;
+	bool isactive = false;
 
-	external_add_list_value_change(name, value, type);
+	list_for_each_entry(p, &list_enabled_notify, list) {
+		struct dmctx dmctx = {0};
+		dm_ctx_init(&dmctx);
+		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
+		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
+			dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
+			if (strcmp(dm_parameter->data, p->value) != 0) {
+				dm_update_enabled_notify(p, dm_parameter->data);
+				add_list_value_change(p->name, dm_parameter->data, dm_parameter->type);
+				if (p->notification[0] == '2')
+					isactive = true;
+			}
+		}
+		dm_ctx_clean(&dmctx);
+	}
 	pthread_mutex_lock (&(cwmp->mutex_session_queue));
-	if (attribute[0]=='2')
+	if (isactive)
 	{
 		event_container = cwmp_add_event_container(cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 		if (event_container == NULL)

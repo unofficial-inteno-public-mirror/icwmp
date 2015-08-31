@@ -98,9 +98,9 @@ static void cwmp_prepare_value_change (struct cwmp *cwmp, struct session *sessio
 	pthread_mutex_lock(&(cwmp->mutex_session_queue));
 	event_container = cwmp_add_event_container (cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 	if (!event_container) goto end;
-	pthread_mutex_lock(&(external_mutex_value_change));
+	pthread_mutex_lock(&(mutex_value_change));
 	list_splice_init(&(list_value_change), &(event_container->head_dm_parameter));
-	pthread_mutex_unlock(&(external_mutex_value_change));
+	pthread_mutex_unlock(&(mutex_value_change));
 	cwmp_save_event_container (cwmp,event_container);
 
 end:
@@ -456,6 +456,12 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp)
 
 int run_session_end_func (struct session *session)
 {
+	if (session->end_session & END_SESSION_NOTIFY)
+	{
+		CWMP_LOG (INFO,"notification value change: end session request");
+		cwmp_add_notification();
+	}
+
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");

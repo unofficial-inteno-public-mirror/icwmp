@@ -55,7 +55,8 @@ enum end_session {
 	END_SESSION_REBOOT = 1,
 	END_SESSION_EXTERNAL_ACTION = 1<<1,
 	END_SESSION_RELOAD = 1<<2,
-	END_SESSION_FACTORY_RESET = 1<<3
+	END_SESSION_FACTORY_RESET = 1<<3,
+	END_SESSION_NOTIFY = 1<<4
 };
 
 enum cwmp_start {
@@ -217,6 +218,7 @@ typedef struct rpc {
 extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
 extern struct list_head list_value_change;
+extern pthread_mutex_t mutex_value_change;
 
 struct rpc *cwmp_add_session_rpc_cpe (struct session *session, int type);
 struct session *cwmp_add_queue_session (struct cwmp *cwmp);
@@ -225,7 +227,7 @@ struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_i
 int event_remove_all_event_container(struct session *session, int rem_from);
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container);
 void *thread_event_periodic (void *v);
-void cwmp_add_notification (char *name, char *value, char *attribute, char *type);
+void cwmp_add_notification(void);
 int netlink_init(void);
 char * mix_get_time(void);
 char * mix_get_time_of(time_t t_time);

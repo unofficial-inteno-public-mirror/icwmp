@@ -21,8 +21,6 @@ static char *fc_script = "./ext/openwrt/scripts/freecwmp.sh";
 static char *fc_script = "/usr/sbin/freecwmp";
 #endif
 
-extern pthread_mutex_t external_mutex_value_change;
-
 void external_downloadFaultResp (char *fault_code);
 void external_fetch_downloadFaultResp (char **fault_code);
 int external_simple(char *command, char *arg);

@@ -58,6 +58,10 @@ static int set_value_check_obj(DMOBJECT_API_ARGS);
 static int set_value_check_param(DMPARAM_API_ARGS);
 static int set_notification_check_obj(DMOBJECT_API_ARGS);
 static int set_notification_check_param(DMPARAM_API_ARGS);
+static int enabled_notify_check_obj(DMOBJECT_API_ARGS);
+static int enabled_notify_check_param(DMPARAM_API_ARGS);
+
+LIST_HEAD(list_enabled_notify);
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
@@ -220,6 +224,51 @@ void free_all_list_fault_param(struct dmctx *ctx)
 	while (ctx->list_fault_param.next != &ctx->list_fault_param) {
 		param_fault = list_entry(ctx->list_fault_param.next, struct param_fault, list);
 		del_list_fault_param(param_fault);
+	}
+}
+
+void add_list_enabled_notify(char *param, char *notification, char *value)
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+
+	dm_enabled_notify = calloc(1, sizeof(struct param_fault)); // Should be calloc and not dmcalloc
+	list_add_tail(&dm_enabled_notify->list, &list_enabled_notify);
+	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
+	dm_enabled_notify->value = strdup(value); // Should be strdup and not dmstrdup
+	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
+}
+
+void del_list_enabled_notify(struct dm_enabled_notify *dm_enabled_notify)
+{
+	list_del(&dm_enabled_notify->list); // Should be free and not dmfree
+	free(dm_enabled_notify->name);
+	free(dm_enabled_notify->value);
+	free(dm_enabled_notify->notification);
+	free(dm_enabled_notify);
+}
+
+void free_all_list_enabled_notify()
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+	while (list_enabled_notify.next != &list_enabled_notify) {
+		dm_enabled_notify = list_entry(list_enabled_notify.next, struct dm_enabled_notify, list);
+		del_list_enabled_notify(dm_enabled_notify);
+	}
+}
+
+void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value)
+{
+	free(p->value); // Should be free and not dmfree
+	p->value = strdup(new_value);
+}
+
+void dm_update_enabled_notify_byname(char *name, char *new_value)
+{
+	struct dm_enabled_notify *p;
+
+	list_for_each_entry(p, &list_enabled_notify, list) {
+		if (strcmp(p->name, name) == 0)
+			dm_update_enabled_notify(p, new_value);
 	}
 }
 
@@ -840,6 +889,7 @@ static int set_value_check_obj(DMOBJECT_API_ARGS)
 static int set_value_check_param(DMPARAM_API_ARGS)
 {
 	char *full_param;
+	char *v;
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 
 	if (strcmp(ctx->in_param, full_param) != 0) {
@@ -865,6 +915,8 @@ static int set_value_check_param(DMPARAM_API_ARGS)
 	}
 	else if (ctx->setaction == VALUESET) {
 		(set_cmd)(full_param, ctx, VALUESET, ctx->in_value);
+		(get_cmd)(full_param, ctx, &v);
+		dm_update_enabled_notify_byname(full_param, v);
 	}
 
 	dmfree(full_param);
@@ -931,6 +983,51 @@ static int set_notification_check_param(DMPARAM_API_ARGS)
 		set_parameter_notification(ctx->in_param, ctx->in_notification);
 	}
 
+	dmfree(full_param);
+	return 0;
+}
+
+/*********************
+ * load enabled notify
+ ********************/
+int dm_entry_enabled_notify(struct dmctx *ctx)
+{
+	int i;
+	ctx->method_obj = &enabled_notify_check_obj;
+	ctx->method_param = &enabled_notify_check_param;
+	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
+		if (!prefix_methods[i].enable) continue;
+			prefix_methods[i].method(ctx);
+	}
+	return 0;
+}
+
+static int enabled_notify_check_obj(DMOBJECT_API_ARGS)
+{
+	return FAULT_9005;
+}
+
+static int enabled_notify_check_param(DMPARAM_API_ARGS)
+{
+	if (!forced_inform)
+		return FAULT_9005;
+	char *full_param;
+	char *value = NULL;
+	char *notification;
+
+	dmastrcat(&full_param, ctx->current_obj, lastname);
+	if (forced_notify == UNDEF) {
+		notification = get_parameter_notification(full_param);
+	} else {
+		notification = notifications[forced_notify].value;
+	}
+	if (notification[0] == '0') {
+		dmfree(full_param);
+		return 0;
+	}
+
+	(get_cmd)(full_param, ctx, &value);
+	add_list_enabled_notify(full_param, notification, value);
 	dmfree(full_param);
 	return 0;
 }

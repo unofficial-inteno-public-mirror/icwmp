@@ -7,6 +7,7 @@ int dm_global_init(void);
 int dm_ctx_init(struct dmctx *ctx);
 int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1, char *arg2);
 int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2);
+int dm_entry_load_enabled_notify();
 int dm_ctx_clean(struct dmctx *ctx);
 int dm_global_clean(void);
 void dm_entry_cli(int argc, char** argv);

@@ -32,43 +32,33 @@ static const char *arr_session_status[] = {
     [SESSION_SUCCESS] = "success",
 };
 
-enum notify {
-	NOTIFY_PARAM,
-	NOTIFY_VALUE,
-	NOTIFY_ATTRIB,
-	NOTIFY_TYPE,
-	__NOTIFY_MAX
-};
-
-static const struct blobmsg_policy notify_policy[] = {
-	[NOTIFY_PARAM] = { .name = "parameter", .type = BLOBMSG_TYPE_STRING },
-	[NOTIFY_VALUE] = { .name = "value", .type = BLOBMSG_TYPE_STRING },
-	[NOTIFY_ATTRIB] = { .name = "attribute", .type = BLOBMSG_TYPE_STRING },
-	[NOTIFY_TYPE] = { .name = "type", .type = BLOBMSG_TYPE_STRING },
-};
+static const struct blobmsg_policy notify_policy[] = {};
 
 static int
 cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
 			struct blob_attr *msg)
 {
-	struct blob_attr *tb[__NOTIFY_MAX];
-
-	blobmsg_parse(notify_policy, ARRAYSIZEOF(notify_policy), tb,
-		      blob_data(msg), blob_len(msg));
-
-	if (!tb[NOTIFY_PARAM])
-		return UBUS_STATUS_INVALID_ARGUMENT;
-
-	if (!tb[NOTIFY_ATTRIB])
-			return UBUS_STATUS_INVALID_ARGUMENT;
-
 	CWMP_LOG(INFO, "triggered ubus notification parameter %s",
 						     blobmsg_data(tb[NOTIFY_PARAM]));
-	cwmp_add_notification(blobmsg_data(tb[NOTIFY_PARAM]),
-			tb[NOTIFY_VALUE]? blobmsg_data(tb[NOTIFY_VALUE]) : NULL,
-			blobmsg_data(tb[NOTIFY_ATTRIB]),
-			tb[NOTIFY_TYPE]? blobmsg_data(tb[NOTIFY_TYPE]) : NULL);
+
+	blob_buf_init(&b, 0);
+
+	if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
+		cwmp_set_end_session(END_SESSION_NOTIFY);
+		blobmsg_add_u32(&b, "status", 0);
+	}
+	else {
+		pthread_mutex_lock(&(cwmp_main.mutex_session_queue));
+		dm_global_init();
+		cwmp_add_notification();
+		dm_global_clean();
+		pthread_mutex_unlock(&(cwmp_main.mutex_session_queue));
+		blobmsg_add_u32(&b, "status", 0);
+	}
+
+	ubus_send_reply(ctx, req, b.head);
+	blob_buf_free(&b);
 
 	return 0;
 }
@@ -109,10 +99,21 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 			return -1;
 	} else if (!strcmp("reload", cmd)) {
 		CWMP_LOG(INFO, "triggered ubus reload");
-		cwmp_apply_acs_changes();
-		blobmsg_add_u32(&b, "status", 0);
-		if (asprintf(&info, "freecwmp config reloaded") == -1)
-			return -1;
+		if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			blobmsg_add_u32(&b, "status", 0);
+			blobmsg_add_string(&b, "info", "Session running, reload at the end of the session");
+		}
+		else {
+			pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+			dm_global_init();
+			cwmp_apply_acs_changes();
+			dm_global_clean();
+			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+			blobmsg_add_u32(&b, "status", 0);
+			if (asprintf(&info, "freecwmp config reloaded") == -1)
+				return -1;
+		}
 	} else if (!strcmp("reboot_end_session", cmd)) {
 		CWMP_LOG(INFO, "triggered ubus reboot_end_session");
 		cwmp_set_end_session(END_SESSION_REBOOT);

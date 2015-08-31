@@ -91,6 +91,13 @@ struct param_fault {
 	int fault;
 };
 
+struct dm_enabled_notify {
+	struct list_head list;
+	char *name;
+	char *notification;
+	char *value;
+};
+
 struct dm_parameter {
 	struct list_head list;
 	char *name;
@@ -172,6 +179,8 @@ enum fault_code {
 	__FAULT_MAX
 };
 
+extern struct list_head list_enabled_notify;
+
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *max_instance(char *package, char *stype, char *option, char *inst_option, char *value);
 int get_empty(char *refparam, struct dmctx *args, char **value);
@@ -194,6 +203,10 @@ int dm_entry_delete_object(struct dmctx *ctx);
 int dm_entry_set_value(struct dmctx *ctx);
 int dm_entry_set_notification(struct dmctx *ctx);
 int dm_entry_set_prefix_methods_enable(void);
+int dm_entry_enabled_notify(struct dmctx *ctx);
+void free_all_list_enabled_notify();
+void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
+void dm_update_enabled_notify_byname(char *name, char *new_value);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

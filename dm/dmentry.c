@@ -171,6 +171,21 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 	return fault;
 }
 
+int dm_entry_load_enabled_notify()
+{
+	struct dmctx dmctx = {0};
+
+	dm_ctx_init(&dmctx);
+	dmctx.in_param = "";
+	dmctx.tree = true;
+
+	free_all_list_enabled_notify();
+	dm_entry_enabled_notify(&dmctx);
+
+	dm_ctx_clean(&dmctx);
+	return 0;
+}
+
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 {
 	if (!out) return 0;

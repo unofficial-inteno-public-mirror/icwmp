@@ -37,15 +37,6 @@ static int pfds_in[2], pfds_out[2];
 static FILE *fpipe;
 char *external_MethodFault = NULL;
 
-pthread_mutex_t external_mutex_value_change = PTHREAD_MUTEX_INITIALIZER;
-
-inline void external_add_list_value_change(char *param_name, char *param_data, char *param_type)
-{
-	pthread_mutex_lock(&(external_mutex_value_change));
-	add_dm_parameter_tolist(&list_value_change, param_name, param_data, param_type);
-	pthread_mutex_unlock(&(external_mutex_value_change));
-}
-
 void external_downloadFaultResp (char *fault_code)
 {
 	FREE(external_MethodFault);
