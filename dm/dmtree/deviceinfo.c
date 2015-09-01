@@ -131,23 +131,35 @@ int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_device_devicelog (char *refparam, struct dmctx *ctx, char **value)
+int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 {
 	*value = "";
-	char buff[1024];
-	int len = klogctl(3 , buff, 1024); /* read ring buffer */
+	int i = 0, nbrlines = 4;
+	char buff[512], *msg = NULL;
+	int len = klogctl(3 , buff, 512); /* read ring buffer */
 	if (len <= 0)
 		return 0;
 	buff[len] = '\0';
 	char *p = buff;
 	while (*p) { //TODO to optimize, we can avoid this if the '<' and '>' does not cause problem in the tests.
-		if (*p == '<')
+		if (*p == '<') {
 			*p = '(';
+			if (p == buff || *(p-1) == '\n') {
+				if(msg == NULL) msg = p;
+				i++;
+				if (i == nbrlines) {
+					break;
+				}
+			}
+		}
 		else if (*p == '>')
 			*p = ')';
 		p++;
 	}
-	*value = dmstrdup(buff); // MEM WILL BE FREED IN DMMEMCLEAN
+	if(msg == NULL)
+		*value = "";
+	else
+		*value = dmstrdup(msg);// MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
