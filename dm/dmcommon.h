@@ -21,9 +21,10 @@ do { \
 	} \
 } while(0)
 
+void compress_spaces(char *str);
 char *cut_fx(char *str, char *delimiter, int occurence);
 pid_t get_pid(char *pname);
 int check_file(char *path);
-void compress_spaces(char *str);
+char *cidr2netmask(int bits);
 
 #endif

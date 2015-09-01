@@ -9,6 +9,7 @@
  *		Author: Feten Besbes <feten.besbes@pivasoftware.com>
  */
 
+#include <arpa/inet.h>
 #include <glob.h>
 #include <stdio.h>
 #include <string.h>
@@ -18,18 +19,18 @@
 #include <sys/types.h>
 #include "dmcwmp.h"
 
-void compress_spaces(char *str) //REMOVE TO DMCOMMON
+void compress_spaces(char *str)
 {
-    char *dst = str;
-    for (; *str; ++str) {
-        *dst++ = *str;        
-        if (isspace(*str)) {
-            do ++str; 
-            while (isspace(*str));
-            --str;
-        }
-    }
-    *dst = '\0';
+	char *dst = str;
+	for (; *str; ++str) {
+		*dst++ = *str;
+		if (isspace(*str)) {
+			do ++str;
+			while (isspace(*str));
+			--str;
+		}
+	}
+	*dst = '\0';
 }
 char *cut_fx(char *str, char *delimiter, int occurence)
 {
@@ -45,43 +46,35 @@ char *cut_fx(char *str, char *delimiter, int occurence)
 
 pid_t get_pid(char *pname)
 {
-    DIR* dir;
-    struct dirent* ent;
-    char* endptr;
-    char buf[512];
+	DIR* dir;
+	struct dirent* ent;
+	char* endptr;
+	char buf[512];
 
-    if (!(dir = opendir("/proc"))) {
-        return -1;
-    }
-
-    while((ent = readdir(dir)) != NULL) {
-        /* if endptr is not a null character, the directory is not
-         * entirely numeric, so ignore it */
-        long lpid = strtol(ent->d_name, &endptr, 10);
-        if (*endptr != '\0') {
-            continue;
-        }
-
-        /* try to open the cmdline file */
-        snprintf(buf, sizeof(buf), "/proc/%ld/cmdline", lpid);
-        FILE* fp = fopen(buf, "r");
-
-        if (fp) {
-            if (fgets(buf, sizeof(buf), fp) != NULL) {
-                /* check the first token in the file, the program name */
-                char* first = strtok(buf, " ");
-                if (strstr(first, pname)) {
-                    fclose(fp);
-                    closedir(dir);
-                    return (pid_t)lpid;
-                }
-            }
-            fclose(fp);
-        }
-    }
-
-    closedir(dir);
-    return -1;
+	if (!(dir = opendir("/proc"))) {
+		return -1;
+	}
+	while((ent = readdir(dir)) != NULL) {
+		long lpid = strtol(ent->d_name, &endptr, 10);
+		if (*endptr != '\0') {
+			continue;
+		}
+		snprintf(buf, sizeof(buf), "/proc/%ld/cmdline", lpid);
+		FILE* fp = fopen(buf, "r");
+		if (fp) {
+			if (fgets(buf, sizeof(buf), fp) != NULL) {
+				char* first = strtok(buf, " ");
+				if (strstr(first, pname)) {
+					fclose(fp);
+					closedir(dir);
+					return (pid_t)lpid;
+				}
+			}
+			fclose(fp);
+		}
+	}
+	closedir(dir);
+	return -1;
 }
 
 int check_file(char *path) 
@@ -92,4 +85,18 @@ int check_file(char *path)
 		return 1;
 	}
 	return 0;
+}
+
+char *cidr2netmask(int bits)
+{
+	uint32_t mask;
+	struct in_addr ip_addr;
+	uint8_t u_bits = (uint8_t)bits;
+	char *netmask;
+	char tmp[32] = {0};
+	
+	mask = ((0xFFFFFFFFUL << (32 - u_bits)) & 0xFFFFFFFFUL);
+	mask = htonl(mask);
+	ip_addr.s_addr = mask;
+	return inet_ntoa(ip_addr);
 }

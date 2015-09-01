@@ -13,12 +13,19 @@
 #define __WAN_DEVICE_H
 #include <libubox/blobmsg_json.h>
 #include <json/json.h>
-inline int init_wanargs(struct dmctx *ctx, char *idev, char *fdev);
+inline int init_wanargs(struct dmctx *ctx, int wan_instance, char *fdev);
 inline int init_wancprotoargs(struct dmctx *ctx, struct uci_section *s);
-inline int init_wancdevargs(struct dmctx *ctx, char *fwan);
-char *get_wan_device_wan_dsl_traffic();
+inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index, char *fwan, char *iwan);
+int get_wan_device_wan_dsl_traffic();
 int check_multiwan_interface(struct uci_section *s);
 int network_get_ipaddr(char **value, char *iface);
+int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara);
+int delete_wan_wanconnectiondevice_all(struct dmctx *ctx);
+int delete_wan_wanconnectiondevice(struct dmctx *ctx);
+int delete_wan_wanipconnectiondevice_all(struct dmctx *ctx);
+int delete_wan_wanipconnectiondevice(struct dmctx *ctx);
+int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara);
+int delete_wan_wanpppconnectiondevice_all(struct dmctx *ctx);
 /************************************************************************** 
 **** ****  function related to get_wandevice_wandevice_parameters  **** ****
 ***************************************************************************/
@@ -79,10 +86,6 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 int get_wan_device_ppp_username(char *refparam, struct dmctx *ctx, char **value);
 int set_wan_device_username(char *refparam, struct dmctx *ctx, int action, char *value);
 int set_wan_device_password(char *refparam, struct dmctx *ctx, int action, char *value);
-
-
-
-//OLD
 int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx *ctx, char **value);
 int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, struct dmctx *ctx, char **value);
 int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, char **value);
