@@ -252,6 +252,19 @@ int adm_entry_get_linker_value(char *param, char **value)
 	return 0;
 }
 
+int dm_entry_restart_services()
+{
+	struct package_change *pc;
+	json_object *res;
+
+	list_for_each_entry(pc, &head_package_change, list) {
+		dmubus_call("uci", "commit", UBUS_ARGS{{"config", pc->package}}, 1, &res);
+	}
+	free_all_list_package_change(&head_package_change);
+
+	return 0;
+}
+
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 {
 	if (!out) return 0;

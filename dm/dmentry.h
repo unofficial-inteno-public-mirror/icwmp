@@ -17,6 +17,7 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2);
 int dm_entry_load_enabled_notify();
 int adm_entry_get_linker_param(char *param, char *linker, char **value);
 int adm_entry_get_linker_value(char *param, char **value);
+int dm_entry_restart_services();
 int dm_ctx_clean(struct dmctx *ctx);
 int dm_ctx_clean_sub(struct dmctx *ctx);
 void dm_entry_cli(int argc, char** argv);

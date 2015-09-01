@@ -493,6 +493,8 @@ int run_session_end_func (struct session *session)
 		cwmp_apply_acs_changes();
 	}
 
+	dm_entry_restart_services();
+
 	session->end_session = 0;
 
 	return CWMP_OK;
