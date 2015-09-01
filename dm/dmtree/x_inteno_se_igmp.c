@@ -61,7 +61,7 @@ int set_igmp_proxy_interface(char *refparam, struct dmctx *ctx, int action, char
 			if (value[0] == '\0')
 				return 0;
 			value = dmstrdup(value);
-			p = *value;
+			p = value;
 			while (*p++) {
 				if (*p == ',') *p = ' ';
 			}
@@ -373,7 +373,7 @@ int set_igmp_snooping_interface(char *refparam, struct dmctx *ctx, int action, c
 			if (value[0] == '\0')
 				return 0;
 			value = dmstrdup(value);
-			p = *value;
+			p = value;
 			while (*p++) {
 				if (*p == ',') *p = ' ';
 			}

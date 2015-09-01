@@ -22,6 +22,8 @@
 #include "x_inteno_se_ice.h"
 #include "x_inteno_se_power_mgmt.h"
 #include "x_inteno_se_ipacccfg.h"
+#include "lan_interfaces.h"
+#include "x_inteno_se_logincfg.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -61,9 +63,9 @@ static int set_notification_check_param(DMPARAM_API_ARGS);
 static int enabled_notify_check_obj(DMOBJECT_API_ARGS);
 static int enabled_notify_check_param(DMPARAM_API_ARGS);
 static int get_linker_check_obj(DMOBJECT_API_ARGS);
-static int get_linker_check_param(DMOBJECT_API_ARGS);
+static int get_linker_check_param(DMPARAM_API_ARGS);
 static int get_linker_value_check_obj(DMOBJECT_API_ARGS);
-static int get_linker_value_check_param(DMOBJECT_API_ARGS);
+static int get_linker_value_check_param(DMPARAM_API_ARGS);
 
 LIST_HEAD(list_enabled_notify);
 
@@ -86,6 +88,8 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
 	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
 	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
+	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
+	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
 	//{ DMROOT"Layer2Bridging.", 1, NULL, &entry_method_root_Layer2Bridging },
 	//TODO set_enable for service voice and other file if exist
 };

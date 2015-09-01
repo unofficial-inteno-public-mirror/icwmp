@@ -39,16 +39,16 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 
 static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 {
+	free_all_list_parameter(ctx);
+	free_all_set_list_tmp(ctx);
+	free_all_list_fault_param(ctx);
+	DMFREE(ctx->addobj_instance);
 	if (custom == CTX_INIT_ALL) {
 		if (uci_ctx) uci_free_context(uci_ctx);
 		uci_ctx = NULL;
 		dmubus_ctx_free(&dmubus_ctx);
 		dmcleanmem();
 	}
-	free_all_list_parameter(ctx);
-	free_all_set_list_tmp(ctx);
-	free_all_list_fault_param(ctx);
-	DMFREE(ctx->addobj_instance);
 	return 0;
 }
 
