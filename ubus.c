@@ -34,6 +34,7 @@ static const char *arr_session_status[] = {
 
 static const struct blobmsg_policy notify_policy[] = {};
 
+static int
 cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
 			struct blob_attr *msg)
