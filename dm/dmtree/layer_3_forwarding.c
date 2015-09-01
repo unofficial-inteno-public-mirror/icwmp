@@ -614,7 +614,6 @@ int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 {
 	char *iroute = NULL;
-	char *cur_iroute = NULL;
 	char *permission = "1";
 	struct uci_section *s = NULL;
 	FILE* fp = NULL;
@@ -629,17 +628,13 @@ int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 		DMPARAM("ForwardNumberOfEntries", ctx, "0", get_layer3_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		uci_foreach_sections("network", "route", s) {
 			init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);
-			iroute = forwarding_update_instance(s, cur_iroute, "routeinstance", &find_max);
+			iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
 			SUBENTRY(get_object_layer3, ctx, iroute, permission);
-			dmfree(cur_iroute);
-			cur_iroute = dmstrdup(iroute);
 		}
 		uci_foreach_sections("network", "route_disabled", s) {
 			init_args_rentry(ctx, s, "1", NULL, ROUTE_DISABLED);
-			iroute = forwarding_update_instance(s, cur_iroute, "routeinstance", &find_max);
+			iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
 			SUBENTRY(get_object_layer3, ctx, iroute, permission);
-			dmfree(cur_iroute);
-			cur_iroute = dmstrdup(iroute);
 		}
 		fp = fopen(ROUTE_FILE, "r");
 		if ( fp != NULL)
@@ -653,14 +648,11 @@ int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 				if (is_proute_static(&proute))
 					continue;
 				init_args_rentry(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
-				iroute = forwarding_update_instance_dynamic(&proute, cur_iroute, "routeinstance", &find_max);
+				iroute = forwarding_update_instance_dynamic(&proute, iroute, "routeinstance", &find_max);
 				SUBENTRY(get_object_layer3, ctx, iroute, permission);
-				dmfree(cur_iroute);
-				cur_iroute = dmstrdup(iroute);
 			}
 			fclose(fp) ;
 		}
-		dmfree(cur_iroute);
 		return 0;
 	}
 	return FAULT_9005;
