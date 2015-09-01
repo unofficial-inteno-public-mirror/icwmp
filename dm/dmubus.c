@@ -210,7 +210,7 @@ void dmubus_ctx_free(struct dmubus_ctx *ctx)
 
 static inline void print_json_value(json_object *jobj, char **value)
 {
-	*value = json_object_get_string(jobj);
+	*value = (char *)json_object_get_string(jobj);
 }
 
 void json_parse_array( json_object *jobj, char *key, int index, char *next_key, char **value)
