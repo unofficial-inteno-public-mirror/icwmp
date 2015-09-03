@@ -141,17 +141,16 @@ inline int init_wl_client_args(struct dmctx *ctx, char *value)
 int add_landevice_dhcpstaticaddress(struct dmctx *ctx, char **instancepara)
 {
 	char *value;
-	char instance[8] = {0};
+	char *instance;
 	struct uci_section *s = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
-	sprintf(instance, "%d", atoi(max_instance("dhcp", "host", "interface", "ldhcpinstance", lan_name)) + 1);
+	instance = get_last_instance_lev2("dhcp", "host", "ldhcpinstance", "interface", lan_name);
 	dmuci_add_section("dhcp", "host", &s, &value);
 	dmuci_set_value_by_section(s, "mac", DHCPSTATICADDRESS_DISABLED_CHADDR);
 	dmuci_set_value_by_section(s, "interface", lan_name);
-	dmuci_set_value_by_section(s, "ldhcpinstance", instance);
-	*instancepara = dmstrdup(instance);
+	*instancepara = update_instance(s, instance, "ldhcpinstance");
 	return 0;
 }
 
@@ -187,13 +186,13 @@ int add_landevice_wlanconfiguration(struct dmctx *ctx, char **instancepara)
 {
 	char *value;
 	char ssid[16] = {0};
-	char instance[8] = {0};	
+	char *instance;
 	struct uci_section *s = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
-	sprintf(instance, "%d", atoi(max_instance("wireless", "wifi-iface", "network", "lwlaninstance", lan_name)) + 1);
-	sprintf(ssid, "Inteno_%s_%s", lan_name, instance);
+	instance = get_last_instance_lev2("wireless", "wifi-iface", "lwlaninstance", "network", lan_name);
+	sprintf(ssid, "Inteno_%s_%d", lan_name, instance ? (atoi(instance)+1) : 1);
 	dmuci_add_section("wireless", "wifi-iface", &s, &value);
 	dmuci_set_value_by_section(s, "device", "wl0");
 	dmuci_set_value_by_section(s, "encryption", "none");
@@ -201,8 +200,7 @@ int add_landevice_wlanconfiguration(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value_by_section(s, "mode", "ap");
 	dmuci_set_value_by_section(s, "network", lan_name);
 	dmuci_set_value_by_section(s, "ssid", ssid);
-	dmuci_set_value_by_section(s, "lwlaninstance", instance);
-	*instancepara = dmstrdup(instance);
+	*instancepara = update_instance(s, instance, "lwlaninstance");
 	return 0;
 }
 

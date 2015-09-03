@@ -499,16 +499,15 @@ int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, c
 int add_ipacccfg_port_forwarding(struct dmctx *ctx, char **instancepara)
 {
 	char *value;
-	char instance[8] = {0};
+	char *instance;
 	struct uci_section *redirect = NULL;	
 	
+	instance = get_last_instance_lev2("firewall", "redirect", "forwardinstance", "target", "DNAT");
 	dmuci_add_section("firewall", "redirect", &redirect, &value);
 	dmuci_set_value_by_section(redirect, "enabled", false);
 	dmuci_set_value_by_section(redirect, "target", "DNAT");
 	dmuci_set_value_by_section(redirect, "proto", "tcp udp");
-	sprintf(instance, "%s", max_instance("firewall", "redirect", "target", "forwardinstance", "DNAT"));
-	dmuci_commit();
-	*instancepara = dmstrdup(instance);
+	*instancepara = update_instance(redirect, instance, "forwardinstance");
 	return 0;
 }
 

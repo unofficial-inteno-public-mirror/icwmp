@@ -121,18 +121,16 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 {
 	int iwan;
 	char *value;
-	char instance[8] = {0};
+	char *instance;
 	char ifname[16] = {0};
 	char buf[16] = {0};
 	struct uci_section *s = NULL;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	TRACE("%d \n", wandargs->instance);
 	if (wandargs->instance == WAN_INST_ATM) {
-		sprintf(instance, "%s", max_instance("layer2_interface_adsl", "atm_bridge", "baseifname", "waninstance", "atm"));
-		iwan = atoi(instance);
+		instance = get_last_instance_lev2("layer2_interface_adsl", "atm_bridge", "waninstance", "baseifname", "atm");
 		sprintf(buf,"atm%s",instance);
 		sprintf(ifname,"%s.1",buf);
-		sprintf(instance,"%d",iwan + 1);
 		dmuci_add_section("layer2_interface_adsl", "atm_bridge", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
 		dmuci_set_value_by_section(s, "bridge", "0");
@@ -142,29 +140,19 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 		dmuci_set_value_by_section(s, "unit", buf+3);
 		dmuci_set_value_by_section(s, "vci", "35");
 		dmuci_set_value_by_section(s, "vpi", "8");
-		dmuci_set_value_by_section(s, "waninstance", instance);
-		//delay_service restart "layer2_interface_adsl" "1"
-		*instancepara = dmstrdup(instance);
-		//delay_service restart "layer2_interface" "1"
-		//freecwmp_output "" "" "" "" "" "" "1" "$iwan"
+		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
 	else if (strcmp(wandargs->fdev, "ptm") == 0) {
-		sprintf(instance, "%s", max_instance("layer2_interface_vdsl", "vdsl_interface", "baseifname", "waninstance", "ptm"));
-		iwan = atoi(instance);
+		instance = get_last_instance_lev2("layer2_interface_vdsl", "vdsl_interface", "waninstance", "baseifname", "ptm");
 		sprintf(buf,"ptm%s",instance);
 		sprintf(ifname,"%s.1",buf);
-		sprintf(instance,"%d",iwan + 1);
 		dmuci_add_section("layer2_interface_vdsl", "vdsl_interface", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
 		dmuci_set_value_by_section(s, "bridge", "0");
 		dmuci_set_value_by_section(s, "ifname", ifname);
 		dmuci_set_value_by_section(s, "unit", buf+3);
-		//delay_service restart "layer2_interface_vdsl" "1"
-		dmuci_set_value_by_section(s, "waninstance", instance);
-		*instancepara = dmstrdup(instance);
-		//delay_service restart "layer2_interface" "1"
-		//freecwmp_output "" "" "" "" "" "" "1" "$iwan"
+		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
 	return FAULT_9005;
@@ -205,7 +193,7 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	int found = 0;
 	char sname[16] = {0};
 	char ifname[8] = {0};
-	char instance[8] = {0};
+	char *instance;
 	//TO CHECK NORMALLY THIS IS NOT NECESSAR
 	/*uci_foreach_option_eq(wan_devices[wandcdevargs->index].cdev, wan_devices[wandcdevargs->index].stype, "baseifname", wandcdevargs->fwan, s) {
 		found++;
@@ -214,15 +202,14 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	if(found == 0) {
 		return FAULT_9005;
 	} *///TO CHECK NORMALLY THIS IS NOT NECESSAR $idev""_$iwan""_$iproto""_$((++iconp)
-	sprintf(instance, "%d", atoi(max_instance("network", "interface", "ifname", "conpinstance", wandcdevargs->fwan)) + 1);
-	sprintf(sname,"wan_%s_%s_%s_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
+	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_add_section("network", "interface", &s, &value);
 	dmuci_rename_section_by_section(s, sname);
 	dmuci_set_value_by_section(s, "ifname", ifname);
 	dmuci_set_value_by_section(s, "proto", "dhcp");
-	dmuci_set_value_by_section(s, "conpinstance", instance);
-	*instancepara = dmstrdup(instance);
+	*instancepara = update_instance(s, instance, "conpinstance");
 	return 0;
 }
 
@@ -265,17 +252,16 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	int found = 0;
 	char sname[16] = {0};
 	char ifname[8] = {0};
-	char instance[8] = {0};
+	char *instance;
 
-	sprintf(instance, "%d", atoi(max_instance("network", "interface", "ifname", "conpinstance", wandcdevargs->fwan)) + 1) ;
-	sprintf(sname,"wan_%s_%s_%s_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
+	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_add_section("network", "interface", &s, &value);
 	dmuci_rename_section_by_section(s, sname);
 	dmuci_set_value_by_section(s, "ifname", ifname);
 	dmuci_set_value_by_section(s, "proto", "pppoe");
-	dmuci_set_value_by_section(s, "conpinstance", instance);
-	*instancepara = dmstrdup(instance);
+	*instancepara = update_instance(s, instance, "conpinstance");
 	return 0;
 }
 int delete_wan_wanpppconnectiondevice_all(struct dmctx *ctx)

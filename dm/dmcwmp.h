@@ -184,7 +184,6 @@ enum fault_code {
 extern struct list_head list_enabled_notify;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
-char *max_instance(char *package, char *stype, char *option, char *inst_option, char *value);
 int get_empty(char *refparam, struct dmctx *args, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type);
 void del_list_parameter(struct dm_parameter *dm_parameter);
@@ -211,6 +210,8 @@ int dm_entry_get_linker_value(struct dmctx *ctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
+char *get_last_instance(char *package, char *section, char *opt_inst);
+char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

@@ -121,24 +121,27 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 	return instance;
 }
 
-char *max_instance(char *package, char *stype, char *option, char *inst_opt, char *value)
+char *get_last_instance(char *package, char *section, char *opt_inst)
 {
-	char *tmp = NULL;
 	struct uci_section *s;
-	char *tmp_instance = NULL;
-		
-	uci_foreach_option_cont(package, stype, option, value, s) {
-		dmuci_get_value_by_section_string(s, "inst_option", &tmp);
-		if (tmp[0] == '\0')
-			tmp = update_instance(s, tmp_instance, inst_opt);
-		dmfree(tmp_instance);
-		tmp_instance = dmstrdup(tmp);
+	char *inst = NULL;
+	uci_foreach_sections(package, section, s) {
+		inst = update_instance(s, inst, opt_inst);
 	}
-	if (tmp_instance == NULL)
-		return "0";
-	dmfree(tmp_instance);	
-	return tmp;	
+	return inst;
 }
+
+char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check)
+{
+	struct uci_section *s;
+	char *instance = NULL;
+
+	uci_foreach_option_cont(package, section, opt_check, value_check, s) {
+		instance = update_instance(s, instance, opt_inst);
+	}
+	return instance;
+}
+
 
 int get_empty(char *refparam, struct dmctx *args, char **value)
 {

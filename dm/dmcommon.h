@@ -21,10 +21,32 @@ do { \
 	} \
 } while(0)
 
+#define dmstrappendstr(dest, src) \
+do { \
+	int len = strlen(src); \
+	memcpy(dest, src, len); \
+	dest += len; \
+} while(0)
+
+#define dmstrappendchr(dest, c) \
+do { \
+	*dest = c; \
+	dest += 1; \
+} while(0)
+
+#define dmstrappendend(dest) \
+do { \
+	*dest = '\0'; \
+} while(0)
+
+
+
 void compress_spaces(char *str);
 char *cut_fx(char *str, char *delimiter, int occurence);
 pid_t get_pid(char *pname);
 int check_file(char *path);
 char *cidr2netmask(int bits);
+void remove_substring(char *s, const char *str_remove);
+bool is_strword_in_optionvalue(char *optionvalue, char *str);
 
 #endif

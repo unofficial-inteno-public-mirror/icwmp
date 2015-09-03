@@ -100,3 +100,24 @@ char *cidr2netmask(int bits)
 	ip_addr.s_addr = mask;
 	return inet_ntoa(ip_addr);
 }
+
+void remove_substring(char *s, const char *str_remove)
+{
+	int len = strlen(str_remove);
+	while (s = strstr(s, str_remove)) {
+		memmove(s, s+len, 1+strlen(s+len));
+    }
+}
+
+bool is_strword_in_optionvalue(char *optionvalue, char *str)
+{
+	int len;
+	char *s = optionvalue;
+	while ((s = strstr(s, str))) {
+		len = strlen(str); //should be inside while, optimization reason
+		if(s[len] == '\0' || s[len] == ' ')
+			return true;
+		s++;
+	}
+	return false;
+}
