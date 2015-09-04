@@ -132,7 +132,7 @@ int dmuci_get_section_type(char *package, char *section,char **value)
 		return -1;
 	}
 	if (ptr.s) {
-		*value = ptr.s->type;
+		*value = dmstrdup(ptr.s->type); // MEM WILL BE FREED IN DMMEMCLEAN
 	} else {
 		*value = "";
 		return -1;
@@ -149,7 +149,7 @@ int dmuci_get_option_value_string(char *package, char *section, char *option, ch
 		return -1;
 	}
 	if (ptr.o && ptr.o->v.string) {
-		*value = ptr.o->v.string;
+		*value = ptr.o->v.string ? dmstrdup(ptr.o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
 	} else {
 		*value = "";
 		return -1;
@@ -204,7 +204,7 @@ int db_get_value_string(char *package, char *section, char *option, char **value
 	struct uci_option *o;
 	o = dmuci_get_option_ptr(DB_CONFIG, package, section, option);
 	if (o) {
-		*value = o->v.string;
+		*value = o->v.string ? dmstrdup(o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
 	} else {
 		*value = "";
 		return -1;
@@ -317,7 +317,7 @@ char *dmuci_set_value(char *package, char *section, char *option, char *value)
 		return "";
 	}
 	if (ptr.o) {
-		return ptr.o->v.string;
+		return dmstrdup(ptr.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	return "";
 }
@@ -366,7 +366,7 @@ int dmuci_add_section(char *package, char *stype, struct uci_section **s, char *
 		return -1;
 	}
 
-	*value = (*s)->e.name;
+	*value = dmstrdup((*s)->e.name); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -448,7 +448,7 @@ int dmuci_get_value_by_section_string(struct uci_section *s, char *option, char 
 	uci_foreach_element(&s->options, e) {
 		o = (uci_to_option(e));
 		if (!strcmp(o->e.name, option)) {
-			*value = o->v.string ? o->v.string : "";
+			*value = o->v.string ? dmstrdup(o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
 			return 0;
 		}
 	}
@@ -481,7 +481,7 @@ char *dmuci_set_value_by_section(struct uci_section *s, char *option, char *valu
 		return "";
 
 	if (up.o) {
-		return up.o->v.string;
+		return dmstrdup(up.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	return "";
 
@@ -495,7 +495,7 @@ int dmuci_delete_by_section(struct uci_section *s, char *option, char *value)
 	dmuci_lookup_ptr_by_section(uci_ctx, &up, s, option, value);
 
 	if (uci_delete(uci_ctx, &up) != UCI_OK)
-			return -1;
+		return -1;
 
 	return 0;
 }
