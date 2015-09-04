@@ -88,6 +88,11 @@ void free_all_list_package_change(struct list_head *clist)
 /**** UCI LOOKUP ****/
 int dmuci_lookup_ptr(struct uci_context *ctx, struct uci_ptr *ptr, char *package, char *section, char *option, char *value)
 {
+	/*value*/
+	if (value && value[0]) {
+		ptr->value = value;
+	}
+
 	/*package*/
 	if (!package && !package[0])
 		return -1;
@@ -109,12 +114,6 @@ int dmuci_lookup_ptr(struct uci_context *ctx, struct uci_ptr *ptr, char *package
 	}
 	ptr->target = UCI_TYPE_OPTION;
 	ptr->option = option;
-
-	/*value*/
-	if (!value || !value[0]) {
-		goto lookup;
-	}
-	ptr->value = value;
 
 lookup:
 	if (uci_lookup_ptr(ctx, ptr, NULL, true) != UCI_OK || !UCI_LOOKUP_COMPLETE) {
@@ -403,6 +402,11 @@ int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, st
 {
 	struct uci_element *e;
 
+	/*value*/
+	if (value && value[0]) {
+		ptr->value = value;
+	}
+
 	ptr->flags |= UCI_LOOKUP_DONE;
 
 	/*package*/
@@ -421,12 +425,6 @@ int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, st
 	}
 	ptr->target = UCI_TYPE_OPTION;
 	ptr->option = option;
-
-	/*value*/
-	if (!value || !value[0]) {
-		goto lookup;
-	}
-	ptr->value = value;
 
 lookup:
 	if (ptr->option) {
