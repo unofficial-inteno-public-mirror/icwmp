@@ -21,6 +21,7 @@
 #include "dmmem.h"
 
 struct uci_context *uci_ctx;
+struct uci_context *uci_varstate_ctx;
 
 char *dmuci_list_to_string(struct uci_list *list, char *delimitor)
 {
@@ -226,6 +227,44 @@ int db_get_value_list(char *package, char *section, char *option, struct uci_lis
 	return 0;
 }
 
+int dmuci_get_varstate_string(char *package, char *section, char *option, char **value)
+{
+	struct uci_option *o;
+	struct uci_element *e;
+	struct uci_ptr ptr = {0};
+	uci_add_delta_path(uci_varstate_ctx, uci_varstate_ctx->savedir);
+	uci_set_savedir(uci_varstate_ctx, VARSTATE_CONFIG);
+	if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, section, option, NULL)) {
+		*value = "";
+		return -1;
+	}
+	if (ptr.o && ptr.o->v.string) {
+		*value = ptr.o->v.string;
+	} else {
+		*value = "";
+		return -1;
+	}
+	return 0;
+}
+
+int dmuci_get_varstate_list(char *package, char *section, char *option, struct uci_list **value)
+{
+	struct uci_element *e;
+	struct uci_ptr ptr = {0};
+	*value = NULL;
+	uci_add_delta_path(uci_varstate_ctx, uci_varstate_ctx->savedir);
+	uci_set_savedir(uci_varstate_ctx, VARSTATE_CONFIG);
+	if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, section, option, NULL)) {
+		return -1;
+	}
+	if (ptr.o) {
+		*value = &ptr.o->v.list;
+		printf("value list add%p\n", *value);
+	} else {
+		return -1;
+	}
+	return 0;
+}
 /**** UCI Commit *****/
 int dmuci_commit_package(char *package)
 {

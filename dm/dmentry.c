@@ -30,6 +30,7 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 		memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
 		INIT_LIST_HEAD(&dmubus_ctx.obj_head);
 		uci_ctx = uci_alloc_context();
+		uci_varstate_ctx = uci_alloc_context();
 	}
 	INIT_LIST_HEAD(&ctx->list_parameter);
 	INIT_LIST_HEAD(&ctx->set_list_tmp);
@@ -46,6 +47,8 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 	if (custom == CTX_INIT_ALL) {
 		if (uci_ctx) uci_free_context(uci_ctx);
 		uci_ctx = NULL;
+		if (uci_varstate_ctx) uci_free_context(uci_varstate_ctx);
+		uci_varstate_ctx = NULL;
 		dmubus_ctx_free(&dmubus_ctx);
 		dmcleanmem();
 	}

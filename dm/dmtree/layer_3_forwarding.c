@@ -144,9 +144,9 @@ int get_forwarding_last_inst()
 			break;
 		drinst = tmp;
 	}
-	if (rinst) r = atoi();
-	if (drinst) ds = atoi();
-	if (drinst) dr = atoi();
+	if (rinst) r = atoi(rinst);
+	if (drinst) ds = atoi(drinst);
+	if (drinst) dr = atoi(drinst);
 	max = (r>ds&&r>dr?r:ds>dr?ds:dr);
 	return max;
 }
@@ -179,7 +179,7 @@ char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *i
 char *forwarding_update_instance_dynamic(struct proc_route *proute, char *last_inst, char *inst_opt, bool *find_max)
 {
 	struct uci_section *s;
-	char *instance, *name;
+	char *instance, *name, *mask;
 	char buf[8] = {0};
 
 	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
@@ -624,7 +624,7 @@ int entry_method_root_layer3_forwarding(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"Layer3Forwarding.") {
 		DMOBJECT(DMROOT"Layer3Forwarding.", ctx, "0", 1, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("DefaultConnectionService", ctx, "1", get_parameter_by_linker, set_layer3_def_conn_serv, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DefaultConnectionService", ctx, "1", get_layer3_def_conn_serv, set_layer3_def_conn_serv, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ForwardNumberOfEntries", ctx, "0", get_layer3_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		uci_foreach_sections("network", "route", s) {
 			init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);

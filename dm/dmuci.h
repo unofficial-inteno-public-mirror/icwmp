@@ -22,8 +22,10 @@
 #include <libubox/list.h>
 
 #define DB_CONFIG		"/lib/db/config"
+#define VARSTATE_CONFIG "/var/state"
 
 extern struct uci_context *uci_ctx;
+extern struct uci_context *uci_varstate_ctx;
 
 enum dm_uci_cmp {
 	CMP_SECTION,
@@ -86,6 +88,8 @@ int dmuci_get_option_value_list(char *package, char *section, char *option, stru
 struct uci_option *dmuci_get_option_ptr(char *cfg_path, char *package, char *section, char *option);
 int db_get_value_string(char *package, char *section, char *option, char **value);
 int db_get_value_list(char *package, char *section, char *option, struct uci_list **value);
+int dmuci_get_varstate_string(char *package, char *section, char *option, char **value);
+int dmuci_get_varstate_list(char *package, char *section, char *option, struct uci_list **value);
 int dmuci_commit_package(char *package);
 int dmuci_commit(void);
 int dmuci_revert_package(char *package);

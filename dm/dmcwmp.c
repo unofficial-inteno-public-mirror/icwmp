@@ -24,6 +24,8 @@
 #include "x_inteno_se_ipacccfg.h"
 #include "lan_interfaces.h"
 #include "x_inteno_se_logincfg.h"
+#include "voice_services.h"
+#include "layer_3_forwarding.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -90,7 +92,9 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
 	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
 	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
-	//{ DMROOT"Layer2Bridging.", 1, NULL, &entry_method_root_Layer2Bridging },
+	{ DMROOT"Services.", 1, NULL, 0, &entry_method_root_Service },
+	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
+	//{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
 	//TODO set_enable for service voice and other file if exist
 };
 

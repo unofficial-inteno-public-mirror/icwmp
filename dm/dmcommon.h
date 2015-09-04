@@ -12,6 +12,9 @@
 #ifndef __DM_COMMON_H
 #define __DM_COMMON_H
 #include <sys/types.h>
+#include <libubox/blobmsg_json.h>
+#include <json/json.h>
+
 
 #define DM_ASSERT(X, Y) \
 do { \
@@ -48,5 +51,10 @@ int check_file(char *path);
 char *cidr2netmask(int bits);
 void remove_substring(char *s, const char *str_remove);
 bool is_strword_in_optionvalue(char *optionvalue, char *str);
+int get_interface_enable_ubus(char *refparam, struct dmctx *ctx, char **value);
+int set_interface_enable_ubus(char *refparam, struct dmctx *ctx, int action, char *value);
+int get_interface_firewall_enabled(char *refparam, struct dmctx *ctx, char **value);
+struct uci_section *create_firewall_zone_config(char *fwl, char *iface, char *input, char *forward, char *output);
+int set_interface_firewall_enabled(char *refparam, struct dmctx *ctx, int action, char *value);
 
 #endif

@@ -26,9 +26,6 @@ struct routefwdargs
 	int type;
 };
 
-inline int init_args_rentry(struct dmctx *ctx, struct uci_section *s, char *permission, char *proute);
-char *ip_to_hex(char *address);
-char *hex_to_ip(char *address);
 int proc_get_route_var_by_conf(struct uci_section *s, int name);
 int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value);
 int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value);

@@ -17,7 +17,12 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <uci.h>
 #include "dmcwmp.h"
+#include "dmuci.h"
+#include "dmubus.h"
+#include "dmcommon.h"
+#include "landevice.h"
 
 void compress_spaces(char *str)
 {
@@ -120,4 +125,108 @@ bool is_strword_in_optionvalue(char *optionvalue, char *str)
 		s++;
 	}
 	return false;
+}
+
+int get_interface_enable_ubus(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	
+
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "up", 0, NULL, value, NULL);
+	return 0;
+}
+
+int set_interface_enable_ubus(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	static bool b;
+	json_object *res;
+	char *ubus_object;
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	
+	switch (action) {
+		case VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+			return 0;
+		case VALUESET:
+			dmastrcat(&ubus_object, "network.interface.", lan_name);
+			if(b) {
+				dmubus_call(ubus_object, "up", UBUS_ARGS{}, 0, &res);
+			}
+			else
+				dmubus_call(ubus_object, "down", UBUS_ARGS{}, 0, &res);
+			dmfree(ubus_object);
+			return 0;
+	}	
+	return 0;
+}
+
+int get_interface_firewall_enabled(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *input = "";
+	struct uci_section *s = NULL;
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+
+	uci_foreach_option_cont("firewall", "zone", "network", lan_name, s) {
+		dmuci_get_value_by_section_string(s, "input", &input);
+		if (strcmp(input, "ACCEPT") !=0 && strcmp(input, "forward") !=0) {
+			*value = "1";
+			return 0;
+		}
+		break; //TODO TO CHECK
+	}
+	*value = "0";
+	return 0;
+}
+
+struct uci_section *create_firewall_zone_config(char *fwl, char *iface, char *input, char *forward, char *output)
+{
+	struct uci_section *s;
+	char *value, *name;
+	
+	dmuci_add_section("firewall", "zone", &s, &value);
+	dmasprintf(&name, "%s_%s", fwl, iface);
+	dmuci_set_value_by_section(s, "name", name);
+	dmuci_set_value_by_section(s, "input", input);
+	dmuci_set_value_by_section(s, "forward", forward);
+	dmuci_set_value_by_section(s, "output", output);
+	dmuci_set_value_by_section(s, "network", iface);
+	dmfree(name);
+	return s;
+}
+
+int set_interface_firewall_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	int cnt = 0;
+	struct uci_section *s = NULL;
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);	
+	
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if (value[0] == '1')
+				value = "DROP";
+			else if (value[0] == '0')
+				value = "ACCEPT";
+			else
+				return 0;
+			uci_foreach_option_cont("firewall", "zone", "network", lan_name, s) {
+				dmuci_set_value_by_section(s, "input", value);
+				dmuci_set_value_by_section(s, "forward", value);
+				cnt++;
+			}
+			if (cnt == 0 && strcmp(value,"DROP") ==0)
+				create_firewall_zone_config("fwl", lan_name, "DROP", "DROP", "");
+			//delay_service reload "firewall" "1" //TODO BY IBH
+			return 0;
+	}
+	return 0;
 }

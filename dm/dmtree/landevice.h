@@ -14,5 +14,46 @@
 #include <libubox/blobmsg_json.h>
 #include <json/json.h>
 #define NVRAM_FILE "/proc/nvram/WpaKey"
+
+struct wl_clientargs
+{
+	char *mac;
+};
+
+struct clientargs
+{
+	json_object *client;
+	char *lan_name;
+};
+
+struct ldlanargs
+{
+	struct uci_section *ldlansection;
+	char *ldinstance;
+};
+
+struct ldipargs
+{
+	struct uci_section *ldipsection;
+};
+
+struct lddhcpargs
+{
+	struct uci_section *lddhcpsection;
+};
+
+struct ldwlanargs
+{
+	struct uci_section *lwlansection;
+	int wlctl_num;
+	char *wunit;
+	int pki;
+};
+
+struct ldethargs
+{
+	char *eth;
+};
+
 int entry_method_root_LANDevice(struct dmctx *ctx);
 #endif
