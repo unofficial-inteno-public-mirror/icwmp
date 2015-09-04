@@ -116,14 +116,14 @@ int get_device_routermodel(char *refparam, struct dmctx *ctx, char **value)
 int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
 {
 	FILE* fp = NULL;
-	char *pch;
+	char *pch, *spch;
 	char buf[64];
 	*value = "0";
 
 	fp = fopen(UPTIME, "r");
 	if (fp != NULL) {		
 		fgets(buf, 64, fp);
-		pch = strtok(buf, ".");
+		pch = strtok_r(buf, ".", &spch);
 		if (pch)
 			*value = dmstrdup(pch); // MEM WILL BE FREED IN DMMEMCLEAN
 		fclose(fp);

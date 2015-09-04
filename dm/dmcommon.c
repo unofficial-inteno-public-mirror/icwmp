@@ -35,11 +35,11 @@ void compress_spaces(char *str)
 char *cut_fx(char *str, char *delimiter, int occurence)
 {
 	int i = 1;
-	char *pch;
-	pch = strtok (str, delimiter);
+	char *pch, *spch;
+	pch = strtok_r(str, delimiter, &spch);
 	while (pch != NULL && i<occurence) {
 		i++;
-		pch = strtok(NULL, delimiter);
+		pch = strtok_r(NULL, delimiter, &spch);
 	}
 	return pch;
 }

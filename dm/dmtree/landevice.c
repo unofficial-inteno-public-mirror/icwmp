@@ -595,6 +595,7 @@ int set_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, int actio
 	struct uci_section *s = NULL;
 	struct uci_section *dhcp_section = NULL;
 	char *min, *max, *ip, *val, *local_value;
+	char *pch, *spch;
 	unsigned int n_min, n_max, n_ip;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
@@ -608,7 +609,7 @@ int set_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, int actio
 			n_min = inet_network(min);
 			n_max = inet_network(max);
 			local_value = dmstrdup(value);
-			char *pch = strtok(local_value,",");
+			pch = strtok_r(local_value, ",", &spch);
 			while (pch != NULL) {
 				uci_foreach_option_eq("dhcp", "host", "ip", pch, s) {
 					goto next;
@@ -623,7 +624,7 @@ int set_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, int actio
 					dmuci_set_value_by_section(dhcp_section, "ip", pch);
 				}
 				next:
-					pch = strtok(NULL, ",");
+					pch = strtok_r(NULL, ",", &spch);
 			}
 			dmfree(local_value);
 			uci_foreach_sections("dhcp", "host", s) {
@@ -849,7 +850,7 @@ int filter_lan_device_interface(struct uci_section *s, void *v)
 {
 	char *ifname = NULL; 
 	char *phy_itf = NULL, *phy_itf_local;
-	char *pch, *ftype;
+	char *pch, *spch, *ftype;
 	
 	dmuci_get_value_by_section_string(s, "type", &ftype);
 	if (strcmp(ftype, "alias") != 0) {
@@ -858,13 +859,13 @@ int filter_lan_device_interface(struct uci_section *s, void *v)
 		//TODO KMD: copy  &phy_itf to a local buf
 		phy_itf_local = dmstrdup(phy_itf);
 		TRACE("end db_get_value\n");
-		pch = strtok(phy_itf_local," ");
+		pch = strtok_r(phy_itf_local, " ", &spch);
 		while (pch != NULL) {
 			if (strstr(ifname, pch)) {
 				dmfree(phy_itf_local);
 				return 0;
 			}
-			pch = strtok(NULL, " ");
+			pch = strtok_r(NULL, " ", &spch);
 		}
 		dmfree(phy_itf_local);
 	}
@@ -1220,6 +1221,7 @@ int get_lan_ethernet_interfaces(char *ndev, char *iface[], int var, int *length)
 	int i = 0;
 	int index = 0;
 	char *name, *value;
+	char *pch, *spch;
 	json_object *res = NULL;
 	
 	dmastrcat(&name, "br-", ndev);
@@ -1232,14 +1234,14 @@ int get_lan_ethernet_interfaces(char *ndev, char *iface[], int var, int *length)
 	} else {
 		json_select(res, "bridge-members", -1, NULL, &value, NULL);
 		value = dmstrdup(value); // MEM WILL BE FREED IN DMMEMCLEAN
-		char *pch = strtok(value,",");
+		pch = strtok_r(value, ",", &spch);
 		while (pch != NULL) {
 			if (strstr(pch, "eth") && !strstr(pch, ".")) {
 				TRACE("pch is %s \n", pch);
 				iface[i] = pch;
 				i++;
 			}
-			pch = strtok(NULL, ",");
+			pch = strtok_r(NULL, ",", &spch);
 		}
 	}
 	*length = i--;
@@ -1297,7 +1299,7 @@ int get_lan_eth_iface_cfg_status(char *refparam, struct dmctx *ctx, char **value
 
 int get_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *pch, *v;
+	char *pch, *spch, *v;
 	int len;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 	
@@ -1309,7 +1311,7 @@ int get_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, char **v
 			*value = "Auto";
 		else {
 			v = dmstrdup(*value); // MEM WILL BE FREED IN DMMEMCLEAN
-			pch = strtok(v, "FHfh");
+			pch = strtok_r(v, "FHfh", &spch);
 			len = strlen(pch) + 1;
 			if ((*value)[len] == 'D' || (*value)[len] == 'd')
 				*value = pch;
@@ -1376,7 +1378,7 @@ int get_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, char **v
 
 int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *m, *rate, *val = NULL;
+	char *m, *spch, *rate, *val = NULL;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	switch (action) {
@@ -1393,7 +1395,7 @@ int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int acti
 			if (strcmp(rate, "auto") == 0)
 				rate = "100";
 			else {
-				strtok(rate, "FHfh");
+				strtok_r(rate, "FHfh", &spch);
 			}
 			if (strcmp(value, "full") == 0)
 				dmastrcat(&val, rate, "FD");

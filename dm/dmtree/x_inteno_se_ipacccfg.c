@@ -91,7 +91,7 @@ int get_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, char 
 
 int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *pch;
+	char *pch, *spch;
 	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
 	
 	switch (action) {
@@ -100,10 +100,10 @@ int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int a
 		case VALUESET:
 			dmuci_delete_by_section(accargs->ipaccsection, "src_ip", NULL); //TODO CHECK
 			value = dmstrdup(value);
-			pch = strtok (value, ",");
+			pch = strtok_r (value, ",", &pch);
 			while (pch != NULL) {
 				dmuci_add_list_value_by_section(accargs->ipaccsection, "src_ip", pch);
-				pch = strtok(NULL, ",");
+				pch = strtok_r(NULL, ",", &pch);
 			}
 			dmfree(value);
 			return 0;
@@ -475,7 +475,7 @@ int get_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, char **value)
 
 int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *pch;
+	char *pch, *spch;
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
@@ -484,10 +484,10 @@ int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, c
 		case VALUESET:
 			dmuci_del_list_value_by_section(forwardargs->forwardsection, "src_mac", NULL);
 			value = dmstrdup(value);
-			pch = strtok (value, " ");
+			pch = strtok_r(value, " ", &spch);
 			while (pch != NULL) {
 				dmuci_add_list_value_by_section(forwardargs->forwardsection, "src_mac", pch);
-				pch = strtok(NULL, " ");
+				pch = strtok_r(NULL, " ", &spch);
 			}
 			dmfree(value);
 			return 0;

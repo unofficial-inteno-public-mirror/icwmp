@@ -923,19 +923,20 @@ int get_wandevice_wandevice_parameters(struct dmctx *ctx, char *dev, char *fdev)
 int check_multiwan_interface(struct uci_section *s)
 {
 	char *type, *value;
+	char *pch, *spch;
 	dmuci_get_value_by_section_string(s, "ifname", &value);
 	dmuci_get_value_by_section_string(s, "type", &type);
 	if (type[0] == '\0')
 		return 0;
 	value = dmstrdup(value);
-	char *pch = strtok(value," ");
+	pch = strtok_r(value," ", &spch);
 	while (pch != NULL) {
 		if(strstr(pch, "atm") || strstr(pch, "ptm") || strstr(pch, "eth0"))
 		{
 			dmfree(value);
 			return 1;
 		}
-		pch = strtok(NULL, " ");
+		pch = strtok_r(NULL, " ", &spch);
 	}
 	dmfree(value);
 	return 0;
@@ -1025,7 +1026,7 @@ int get_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 
 int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *vpi = NULL, *vci = NULL;
+	char *vpi = NULL, *vci = NULL, *spch;
 	struct uci_section *s;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 	
@@ -1040,9 +1041,9 @@ int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 				else
 					return 0;
 				value = dmstrdup(value);
-				vpi = strtok(value, "/");
+				vpi = strtok_r(value, "/", &spch);
 				if (vpi) {
-					vci = strtok(NULL, "/");
+					vci = strtok_r(NULL, "/", &spch);
 				}
 				if (vpi && vci) {
 					dmuci_set_value_by_section(s, "vpi", vpi);

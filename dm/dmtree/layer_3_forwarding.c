@@ -58,22 +58,22 @@ void hex_to_ip(char *address, char *ret) //TODO Move to the common.c
 
 void parse_proc_route_line(char *line, struct proc_route *proute)
 {
-	char *pch;
-	proute->iface = strtok(line, " \t");
+	char *pch, *spch;
+	proute->iface = strtok_r(line, " \t", &spch);
 
-	pch = strtok(NULL, " \t");
+	pch = strtok_r(NULL, " \t", &spch);
 	hex_to_ip(pch, proute->destination);
-	pch = strtok(NULL, " \t");
+	pch = strtok_r(NULL, " \t", &spch);
 	hex_to_ip(pch, proute->gateway);
-	proute->flags = strtok(NULL, " \t");
-	proute->refcnt = strtok(NULL, " \t");
-	proute->use = strtok(NULL, " \t");
-	proute->metric = strtok(NULL, " \t");
-	pch = strtok(NULL, " \t");
+	proute->flags = strtok_r(NULL, " \t", &spch);
+	proute->refcnt = strtok_r(NULL, " \t", &spch);
+	proute->use = strtok_r(NULL, " \t", &spch);
+	proute->metric = strtok_r(NULL, " \t", &spch);
+	pch = strtok_r(NULL, " \t", &spch);
 	hex_to_ip(pch, proute->mask);
-	proute->mtu = strtok(NULL, " \t");
-	proute->window = strtok(NULL, " \t");
-	proute->irtt = strtok(NULL, " \t\n\r");
+	proute->mtu = strtok_r(NULL, " \t", &spch);
+	proute->window = strtok_r(NULL, " \t", &spch);
+	proute->irtt = strtok_r(NULL, " \t\n\r", &spch);
 }
 
 bool is_proute_static(struct proc_route *proute)

@@ -545,7 +545,8 @@ int dmuci_rename_section_by_section(struct uci_section *s, char *value)
 struct uci_section *dmuci_walk_section (char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk) {
 	struct uci_section *s = NULL;
 	struct uci_element *e, *m;
-	char *value;
+	char *value, *dup;
+	char *pch, *spch;
 	struct uci_list *list_value, *list_section;
 	struct uci_ptr ptr = {0};
 	if (walk == GET_FIRST_SECTION) {
@@ -576,15 +577,18 @@ struct uci_section *dmuci_walk_section (char *package, char *stype, void *arg1, 
 						goto end;
 					}
 					break;
-				case CMP_OPTION_CONT_WORD:
-					dmuci_get_value_by_section_string(s, (char *)arg1, &value);					
-					char *pch = strtok(value, " ");
+				case CMP_OPTION_CONT_WORD: //TODO optimize this
+					dmuci_get_value_by_section_string(s, (char *)arg1, &value);
+					dup = dmstrdup(value);
+					pch = strtok_r(dup, " ", &spch);
 					while (pch != NULL) {
 						if (strcmp((char *)arg2, pch) == 0) {
+							dmfree(dup);
 							goto end;
 						}
-						pch = strtok(NULL, " ");
-					}	
+						pch = strtok_r(NULL, " ", &spch);
+					}
+					dmfree(dup);
 					break;
 				case CMP_LIST_CONTAINING:
 					dmuci_get_value_by_section_list(s, (char *)arg1, &list_value);
