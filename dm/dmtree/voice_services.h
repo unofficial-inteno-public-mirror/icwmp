@@ -20,14 +20,31 @@ struct codec_args
 	char *id;
 };
 
+struct rtp_tos
+{
+	char *key;
+	char *val;
+};
+struct cap_sip_codec
+{
+ char *c1;
+ char *c2;
+ char *c3;
+ char *c4;
+ char *c5;
+};
+
 struct sip_args
 {
 	struct uci_section *sip_section;
+	char *profile_num;
 };
 
 struct brcm_args
 {
 	struct uci_section *brcm_section;
+	struct uci_section *sip_section;
+	char *profile_num;
 };
 
 struct allow_sip_codec
@@ -36,10 +53,24 @@ struct allow_sip_codec
 	char *allowed_cdc;
 };
 
+struct line_codec_args
+{
+	char *sip_id;
+	char *cdc;
+	char *id;
+	struct uci_section *sip_section;
+};
 struct region
 {
 	char *country;
 	char *id;
+};
+
+struct codec
+{
+	char *cdc;
+	char *id;
+	char *pid;
 };
 
 int get_max_profile_count(char *refparam, struct dmctx *ctx, char **value);
