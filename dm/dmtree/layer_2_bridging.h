@@ -4,7 +4,7 @@
  *	the Free Software Foundation, either version 2 of the License, or
  *	(at your option) any later version.
  *
- *	Copyright (C) 2012-2014 PIVA SOFTWARE (www.pivasoftware.com)
+ *	Copyright (C) 2012-2015 PIVA SOFTWARE (www.pivasoftware.com)
  *		Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
  *
  */
