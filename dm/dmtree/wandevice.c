@@ -1173,9 +1173,9 @@ int get_wandevice_wanprotoclconnection_parameters(struct dmctx *ctx, char *idev,
 	bool notif_b = true;
 	bool forced_inform_eip = 0;
 	char *forced_notify= "";
-	char *linker;
+	char linker[32] = "linker_interface:";
 	char *lan_name = section_name(wandcprotoargs->wancprotosection);
-	dmastrcat(&linker, "linker_interface:", lan_name);
+	strcat(linker, lan_name);
 	if (strcmp(lan_name, default_wan) == 0) {
 		forced_inform_eip = 1;
 		forced_notify = "2"; //TODO fix that and should be int and not char
@@ -1205,7 +1205,6 @@ int get_wandevice_wanprotoclconnection_parameters(struct dmctx *ctx, char *idev,
 		DMPARAM("Username", ctx, "1", get_wan_device_ppp_username, set_wan_device_username, NULL, 0, 0, UNDEF, NULL);
 		DMPARAM("Password", ctx, "1", get_empty, set_wan_device_password, NULL, 0, 0, UNDEF, NULL);
 	}
-	dmfree(linker);
 	return 0;
 }
 

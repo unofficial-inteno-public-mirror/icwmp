@@ -2940,8 +2940,10 @@ inline int get_landevice_lanhostconfigmanagement_ipinterface (struct dmctx *ctx,
 {
 	//ctx->args = (void *)args; //TO CHECK 
 	struct ldipargs *ipargs = (struct ldipargs *)(ctx->args);
+	char linker[32] = "linker_interface:";
+	strcat(linker, section_name(ipargs->ldipsection));
 	
-	DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", ctx, "0", 1, NULL, NULL, section_name(ipargs->ldipsection), idev, ilan);//TO CHECK "linker_interface:$nlan"
+	DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", ctx, "0", 1, NULL, NULL, linker, idev, ilan);
 	DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 0, UNDEF, NULL);
 	DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled, set_interface_firewall_enabled, NULL, 0, 0, UNDEF, NULL);
 	DMPARAM("IPInterfaceIPAddress", ctx, "1", get_interface_ipaddress, set_interface_ipaddress, NULL, 0, 0, UNDEF, NULL);
