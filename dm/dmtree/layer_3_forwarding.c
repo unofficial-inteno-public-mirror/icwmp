@@ -227,12 +227,12 @@ int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value
 			if (b) {
 				if (routeargs->type == ROUTE_STATIC)
 					return 0;
-				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route");
+				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route"); //TODO test
 			}
 			else {
 				if (routeargs->type == ROUTE_DISABLED)
 					return 0;
-				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route_disabled");
+				dmuci_set_value_by_section(routeargs->routefwdsection, NULL, "route_disabled"); //TODO test
 			}
 			return 0;
 	}

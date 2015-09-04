@@ -205,10 +205,9 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
 	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
-	dmuci_add_section("network", "interface", &s, &value);
-	dmuci_rename_section_by_section(s, sname);
-	dmuci_set_value_by_section(s, "ifname", ifname);
-	dmuci_set_value_by_section(s, "proto", "dhcp");
+	dmuci_set_value("network", sname, NULL, "interface");
+	dmuci_set_value("network", sname, "ifname", ifname);
+	dmuci_set_value("network", sname, "proto", "dhcp");
 	*instancepara = update_instance(s, instance, "conpinstance");
 	return 0;
 }
@@ -257,13 +256,14 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
 	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
-	dmuci_add_section("network", "interface", &s, &value);
-	dmuci_rename_section_by_section(s, sname);
-	dmuci_set_value_by_section(s, "ifname", ifname);
-	dmuci_set_value_by_section(s, "proto", "pppoe");
+	sprintf(ifname, "%s.1", wandcdevargs->fwan);
+	dmuci_set_value("network", sname, NULL, "interface");
+	dmuci_set_value("network", sname, "ifname", ifname);
+	dmuci_set_value("network", sname, "proto", "pppoe");
 	*instancepara = update_instance(s, instance, "conpinstance");
 	return 0;
 }
+
 int delete_wan_wanpppconnectiondevice_all(struct dmctx *ctx)
 {
 	int found = 0;
