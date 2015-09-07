@@ -51,9 +51,13 @@ not_found:
 
 char *get_deviceid_productclass()
 {
-	char *v;
+	char *v, *tmp, *val;
+	char delimiter[] = "_";
+	
 	db_get_value_string("hw", "board", "iopVersion", &v);
-	return v;
+	tmp = dmstrdup(v);// MEM WILL BE FREED IN DMMEMCLEAN
+	val = cut_fx(tmp, delimiter, 1);
+	return val;
 }
 
 
@@ -66,9 +70,13 @@ char *get_deviceid_serialnumber()
 
 char *get_softwareversion()
 {
-	char *v;
+	char *v, *tmp, *val;
+	char delimiter[] = "_";
+	
 	db_get_value_string("hw", "board", "iopVersion", &v);
-	return v;
+	tmp = dmstrdup(v);// MEM WILL BE FREED IN DMMEMCLEAN
+	val = cut_fx(tmp, delimiter, 2);
+	return val;
 }
 
 int get_device_manufacturer(char *refparam, struct dmctx *ctx, char **value)
@@ -165,9 +173,7 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
 {
-	TRACE();
 	dmuci_get_option_value_string("cwmp", "cpe", "specversion", value);
-	TRACE();
 	if ((*value)[0] == '\0') {
 		*value = "1.0";
 	}		
@@ -184,11 +190,12 @@ int set_device_provisioningcode(char *refparam, struct dmctx *ctx, int action, c
 {
 	bool b;
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:			
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "provisioning_code", value);
-	}			
+			return 0;
+	}
 	return 0;
 }
 
@@ -217,19 +224,21 @@ int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
 
 int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
-	char *stat = "";
+	bool b;
+	char *stat;
 	switch (action) {
-		VALUECHECK:			
+		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		VALUESET:
+		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				stat = "on";
 			else
 				stat = "off";
 			dmuci_set_value("catv", "catv", "enable", stat);
+			return 0;
 	}
 	return 0;
 }
@@ -238,19 +247,19 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"DeviceInfo.") {
 		DMOBJECT(DMROOT"DeviceInfo.", ctx, "0", 0, NULL, NULL, NULL);
-		DMPARAM("Manufacturer", ctx, "0", get_device_manufacturer, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("ManufacturerOUI", ctx, "0", get_device_manufactureroui, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("ModelName", ctx, "0", get_device_routermodel, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("ProductClass", ctx, "0", get_device_productclass, NULL, "xsd:boolean", 1, 0, UNDEF, NULL);
-		DMPARAM("SerialNumber", ctx, "0", get_device_serialnumber, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("HardwareVersion", ctx, "0", get_device_hardwareversion, NULL, "xsd:boolean", 1, 0, UNDEF, NULL);
-		DMPARAM("SoftwareVersion", ctx, "0", get_device_softwareversion, NULL, "xsd:boolean", 1, 0, UNDEF, NULL);
-		DMPARAM("UpTime", ctx, "0", get_device_info_uptime, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("DeviceLog", ctx, "0", get_device_devicelog, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("SpecVersion", ctx, "0", get_device_specversion, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("ProvisioningCode", ctx, "1", get_device_provisioningcode, set_device_provisioningcode, "", 1, 0, UNDEF, NULL);
-		DMPARAM("X_INTENO_SE_BaseMacAddr", ctx, "0", get_base_mac_addr, NULL, "", 1, 0, UNDEF, NULL);
-		DMPARAM("X_INTENO_SE_CATVEnabled", ctx, "1", get_catv_enabled, set_device_catvenabled, "", 1, 0, UNDEF, NULL);
+		DMPARAM("Manufacturer", ctx, "0", get_device_manufacturer, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("ManufacturerOUI", ctx, "0", get_device_manufactureroui, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("ModelName", ctx, "0", get_device_routermodel, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("ProductClass", ctx, "0", get_device_productclass, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
+		DMPARAM("SerialNumber", ctx, "0", get_device_serialnumber, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("HardwareVersion", ctx, "0", get_device_hardwareversion, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
+		DMPARAM("SoftwareVersion", ctx, "0", get_device_softwareversion, NULL, "xsd:boolean", 1, 0, 2, NULL);
+		DMPARAM("UpTime", ctx, "0", get_device_info_uptime, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DeviceLog", ctx, "0", get_device_devicelog, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("SpecVersion", ctx, "0", get_device_specversion, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("ProvisioningCode", ctx, "1", get_device_provisioningcode, set_device_provisioningcode, NULL, 1, 0, 2, NULL);
+		DMPARAM("X_INTENO_SE_BaseMacAddr", ctx, "0", get_base_mac_addr, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_CATVEnabled", ctx, "1", get_catv_enabled, set_device_catvenabled, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
