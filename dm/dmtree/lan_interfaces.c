@@ -19,37 +19,29 @@
 struct linterfargs
 {
 	char *linterf;
+	char *eths[16];
+	int eths_size;
 };
 
 struct linterfargs cur_linterfargs = {0};
+static inline void laninterface_lookup(char *eths[], int *size);
+inline int entry_laninterface_lan(struct dmctx *ctx);
+inline int entry_laninterface_wlan(struct dmctx *ctx);
 
-inline int init_lan_interface_args(struct dmctx *ctx, char *lif)
+static inline int init_lan_interface_args(char *lif)
 {
-	struct linterfargs *args = &cur_linterfargs;
-	ctx->args = (void *)args;
-	args->linterf = lif;
+	cur_linterfargs.linterf = lif;
 	return 0;
 }
 
 int get_lan_ethernet_interface_number(char *refparam, struct dmctx *ctx, char **value)
 {
-	int nbr = 0;
-	char *pch, *phy_itf, *phy_itf_local;
-
-	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
-	phy_itf_local = dmstrdup(phy_itf);		
-	
-	pch = strtok(phy_itf_local," ");
-	while (pch != NULL) {
-		nbr++;
-		pch = strtok(NULL, " ");
-	}
-	dmfree(phy_itf_local);
-	dmasprintf(value, "%d", nbr); // MEM WILL BE FREED IN DMMEMCLEAN
+	struct linterfargs *lifargs = (struct linterfargs *)ctx->args;
+	dmasprintf(value, "%d", lifargs->eths_size);// MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
-int lan_wlan_configuration_number()
+static inline int lan_wlan_configuration_number()
 {
 	int cnt = 0;
 	struct uci_section *s;
@@ -64,7 +56,8 @@ int lan_wlan_configuration_number()
 int get_lan_wlan_configuration_number(char *refparam, struct dmctx *ctx, char **value)
 {
 	int cnt = lan_wlan_configuration_number();
-	dmasprintf(value, "%d", cnt); // MEM WILL BE FREED IN DMMEMCLEAN
+	
+	dmasprintf(value, "%d", cnt);// MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -72,53 +65,84 @@ int get_eth_name(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct linterfargs *lifargs = (struct linterfargs *)ctx->args;
 	
-	*value = dmstrdup(lifargs->linterf); // MEM WILL BE FREED IN DMMEMCLEAN	 
+	*value = lifargs->linterf;
 	return 0;
 }
 
+static inline void laninterface_lookup(char *eths[], int *size)
+{
+	static char eths_buf[64];
+	char *phy_itf;
+	char *savepch;
+	int n = 0;
+
+	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
+	strcpy(eths_buf, phy_itf);
+	eths[n] = strtok_r(eths_buf, " ", &savepch);
+	while (eths[n] != NULL) {
+		eths[++n] = strtok_r(NULL, " ", &savepch);
+	}
+	*size = n;
+}
+
+inline void init_laninterface_lan(struct dmctx *ctx)
+{
+	struct linterfargs *args = &cur_linterfargs;
+	ctx->args = (void *)args;
+	laninterface_lookup(args->eths, &(args->eths_size));
+}
+/////////////SUB ENTRIES///////////////
+inline int entry_laninterface_lan(struct dmctx *ctx)
+{
+	int ei=1, i=0;
+	struct linterfargs *args = &cur_linterfargs;
+	ctx->args = (void *)args;
+	laninterface_lookup(args->eths, &(args->eths_size));
+	while (args->eths[i]) {
+		init_lan_interface_args(args->eths[i]);
+		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
+		i++;
+		ei++;
+	}
+	return 0;
+}
+
+inline int entry_laninterface_wlan(struct dmctx *ctx)
+{
+	struct uci_section *s = NULL;
+	int wi=1;
+	uci_foreach_sections("wireless", "wifi-iface", s) {
+		SUBENTRY(entry_laninterface_wlan_instance, ctx, wi);
+		wi++;
+	}
+	return 0;
+}
+////////////////////////////////////////
 int entry_method_root_InternetGatewayDevice_LANInterfaces(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"LANInterfaces.") {
-		int wi=1;
-		int nwi;
-		char wli[8];
-		char *phy_itf, *phy_itf_local;
-		
+		init_laninterface_lan(ctx);
 		DMOBJECT(DMROOT"LANInterfaces.", ctx, "0", 1, NULL, NULL, NULL);
 		DMPARAM("LANEthernetInterfaceNumberOfEntries", ctx, "0", get_lan_ethernet_interface_number, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("LANWLANConfigurationNumberOfEntries", ctx, "0", get_lan_wlan_configuration_number, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL);
-		db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
-		//TODO KMD: copy  &phy_itf to a local buf
-		phy_itf_local = dmstrdup(phy_itf);
-		char *pch = strtok(phy_itf_local," ");
-		while (pch != NULL) {
-			init_lan_interface_args(ctx, pch);
-			SUBENTRY(get_lan_interface, ctx, pch+3);
-			pch = strtok(NULL, " ");
-		}
-		dmfree(phy_itf_local);
 		DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.", ctx, "0", 1, NULL, NULL, NULL);
-		nwi = lan_wlan_configuration_number();
-		while (wi <= nwi) {
-			sprintf(wli, "%d", wi);
-			SUBENTRY(get_wlan_interface, ctx, wli);
-			wi++;
-		}
+		SUBENTRY(entry_laninterface_lan, ctx);
+		SUBENTRY(entry_laninterface_wlan, ctx);
 		return 0;
 	}
 	return FAULT_9005;
 }
 
-int get_lan_interface(struct dmctx *ctx, char *li)
+inline int entry_laninterface_lan_instance(struct dmctx *ctx, int li)
 {
-	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%s.", ctx, "0", 1, NULL, NULL, NULL, li);
+	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%d.", ctx, "0", 1, NULL, NULL, NULL, li);
 	DMPARAM("X_INTENO_COM_EthName", ctx, "0", get_eth_name, NULL, NULL, 0, 1, UNDEF, NULL);
 	return 0;
 }
 
-int get_wlan_interface(struct dmctx *ctx, char *wli)
+inline int entry_laninterface_wlan_instance(struct dmctx *ctx, int wli)
 {
-	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%s", ctx, "0", 1, NULL, NULL, NULL, wli);
+	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%d.", ctx, "0", 1, NULL, NULL, NULL, wli);
 	return 0;
 }
