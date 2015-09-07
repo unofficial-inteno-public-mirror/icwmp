@@ -142,7 +142,7 @@ int get_interface_enable_ubus(char *refparam, struct dmctx *ctx, char **value)
 
 int set_interface_enable_ubus(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	json_object *res;
 	char *ubus_object;
 	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
@@ -154,6 +154,7 @@ int set_interface_enable_ubus(char *refparam, struct dmctx *ctx, int action, cha
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			dmastrcat(&ubus_object, "network.interface.", lan_name);
 			if(b) {
 				dmubus_call(ubus_object, "up", UBUS_ARGS{}, 0, &res);

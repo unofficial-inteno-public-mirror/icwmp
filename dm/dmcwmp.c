@@ -82,21 +82,20 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT, 1, NULL, 1, &entry_method_root },
 	{ DMROOT"DeviceInfo.", 1, NULL, 1, &entry_method_root_DeviceInfo },
 	{ DMROOT"ManagementServer.", 1, NULL, 1, &entry_method_root_ManagementServer },
-	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"LANDevice.", 1, NULL, 0, &entry_method_root_LANDevice },
+	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
 	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
+	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
+	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
+	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
+	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
+	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
 	{ DMROOT"X_INTENO_SE_IGMP.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IGMP },
 	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
 	{ DMROOT"X_INTENO_SE_ICE.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_Ice },
-	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
-	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
 	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
-	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
 	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
-	{ DMROOT"Services.", 1, NULL, 0, &entry_method_root_Service },
-	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
-	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
-	//TODO set_enable for service voice and other file if exist
+	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 };
 
 int dm_entry_set_prefix_methods_enable(void)
