@@ -11,6 +11,7 @@
  *		Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
  */
 
+#include <unistd.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 
@@ -28,19 +29,19 @@ int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, char **value)
 
 int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "TOCODE"; //TODO
+	*value = "";//TODO WHEN UBUS CMD IS PROVIDED
 	return 0;
 }
 
 int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "TOCODE"; //TODO
+	*value = "";//TODO WHEN UBUS CMD IS PROVIDED
 	return 0;
 }
 
 int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 
 	switch (action) {
 		case VALUECHECK:
@@ -48,6 +49,7 @@ int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, c
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(b)
 				dmuci_set_value("power_mgmt", "power_mgmt", "ethapd", "1");
 			else
@@ -59,7 +61,7 @@ int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, c
 
 int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 
 	switch (action) {
 		case VALUECHECK:
@@ -67,6 +69,7 @@ int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(b)
 				dmuci_set_value("power_mgmt", "power_mgmt", "eee", "1");
 			else
@@ -76,7 +79,16 @@ int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char
 	return 0;
 }
 
-int entry_method_root_X_INTENO_SE_PowerManagement(struct dmctx *ctx) 
+bool dm_powermgmt_enable_set(void)
+{
+	if( access("/etc/init.d/power_mgmt", F_OK ) != -1 ) {
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+int entry_method_root_X_INTENO_SE_PowerManagement(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_PowerManagement.") {
 		DMOBJECT(DMROOT"X_INTENO_SE_PowerManagement.", ctx, "0", 1, NULL, NULL, NULL);

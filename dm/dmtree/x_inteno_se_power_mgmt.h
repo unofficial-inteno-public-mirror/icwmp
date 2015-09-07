@@ -12,11 +12,6 @@
 #ifndef __POWER_MGMT_H
 #define __POWER_MGMT_H
 
-int get_pwr_mgmt_value_ethapd(char *refparam, struct dmctx *ctx, char **value);
-int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, char **value);
-int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value);
-int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value);
-int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, char *value);
-int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char *value);
+bool dm_powermgmt_enable_set(void);
 int entry_method_root_X_INTENO_SE_PowerManagement(struct dmctx *ctx);
 #endif
