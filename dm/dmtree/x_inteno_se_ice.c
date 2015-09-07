@@ -9,7 +9,6 @@
  *
  */ 
  
- 
 #include <uci.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -34,7 +33,7 @@ int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
@@ -43,6 +42,7 @@ int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *va
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("ice", "cloud", "enabled", "1");
 			else
