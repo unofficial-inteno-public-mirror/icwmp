@@ -23,22 +23,23 @@ int get_upnp_enable(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_option_value_string("upnpd","config","enabled", value);
 	if ((*value)[0] == '\0') {
 		*value = "1";
-	}		
+	}
 	return 0;
 }
 
 int set_upnp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
-	int check;	
+	bool b;
+	int check;
 	switch (action) {
 		case VALUECHECK:
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(b)
-				dmuci_set_value("upnpd", "config", "enabled", "1");
+				dmuci_set_value("upnpd", "config", "enabled", "");
 			else 
 				dmuci_set_value("upnpd", "config", "enabled", "0");
 			return 0;
@@ -53,7 +54,7 @@ int get_upnp_status(char *refparam, struct dmctx *ctx, char **value)
 	if (pid < 0) {
 		*value = "Down";
 	}
-	else {		
+	else {
 		*value = "Up";
 	}
 	return 0;
@@ -69,4 +70,4 @@ int entry_method_root_upnp(struct dmctx *ctx)
 		return 0;
 	}
 	return FAULT_9005;
-}			
+}
