@@ -75,7 +75,7 @@ int set_igmp_proxy_interface(char *refparam, struct dmctx *ctx, int action, char
 
 int get_igmp_default_version(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_default_version", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_default_version", value);
 	return 0;
 } 
 
@@ -111,7 +111,7 @@ int set_igmp_query_interval(char *refparam, struct dmctx *ctx, int action, char 
 
 int get_igmp_query_response_interval(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_query_response_interval", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_query_response_interval", value);
 	return 0;
 } 
 
@@ -129,7 +129,7 @@ int set_igmp_query_response_interval(char *refparam, struct dmctx *ctx, int acti
 
 int get_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_last_member_query_interval", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_last_member_query_interval", value);
 	return 0;
 } 
 
@@ -147,7 +147,7 @@ int set_igmp_last_member_queryinterval(char *refparam, struct dmctx *ctx, int ac
 
 int get_igmp_robustness_value(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_robustness_value", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_robustness_value", value);
 	return 0;
 } 
 
@@ -174,7 +174,7 @@ int get_igmp_multicast_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_multicast_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -182,10 +182,11 @@ int set_igmp_multicast_enable(char *refparam, struct dmctx *ctx, int action, cha
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_lan_to_lan_multicast", "1");
 			else
-				dmuci_set_value("mcpd", "mcpd", "igmp_lan_to_lan_multicast", "");			
+				dmuci_set_value("mcpd", "mcpd", "igmp_lan_to_lan_multicast", "");
 			return 0;
 	}
 	return 0;
@@ -202,7 +203,7 @@ int get_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 
 	switch (action) {
 		case VALUECHECK:
@@ -210,6 +211,7 @@ int set_igmp_fastleave_enable(char *refparam, struct dmctx *ctx, int action, cha
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_fast_leave", "1");
 			else
@@ -230,7 +232,7 @@ int get_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, char **valu
 
 int set_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -238,6 +240,7 @@ int set_igmp_joinimmediate_enable(char *refparam, struct dmctx *ctx, int action,
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_join_immediate", "1");
 			else
@@ -258,7 +261,7 @@ int get_igmp_proxy_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_igmp_proxy_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 
 	switch (action) {
 		case VALUECHECK:
@@ -266,6 +269,7 @@ int set_igmp_proxy_enable(char *refparam, struct dmctx *ctx, int action, char *v
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("mcpd", "mcpd", "igmp_proxy_enable", "1");
 			else
@@ -295,7 +299,7 @@ int set_igmp_maxgroup(char *refparam, struct dmctx *ctx, int action, char *value
 
 int get_igmp_maxsources(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_max_sources", value); 
+	dmuci_get_option_value_string("mcpd", "mcpd", "igmp_max_sources", value);
 	return 0;
 } 
 
