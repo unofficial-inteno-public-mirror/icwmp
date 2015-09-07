@@ -23,18 +23,23 @@ cwmpd_SOURCES =				\
 	../dm/dmuci.c			\
 	../dm/dmcommon.c		\
 	../dm/wepkey.c			\
-	../dm/dmtree/deviceinfo.c				\
-	../dm/dmtree/landevice.c				\
-	../dm/dmtree/root.c						\
-	../dm/dmtree/wandevice.c				\
-	../dm/dmtree/x_inteno_se_power_mgmt.c	\
-	../dm/dmtree/x_inteno_se_igmp.c			\
-	../dm/dmtree/x_inteno_se_wifi.c			\
-	../dm/dmtree/x_inteno_se_ice.c			\
-	../dm/dmtree/upnp.c						\
-	../dm/dmtree/times.c					\
-	../dm/dmtree/x_inteno_se_ipacccfg.c		\
-	../dm/dmtree/managementserver.c
+	../dm/dmtree/deviceinfo.c					\
+	../dm/dmtree/lan_interfaces.c				\
+	../dm/dmtree/landevice.c					\
+	../dm/dmtree/layer_2_bridging.c				\
+	../dm/dmtree/layer_3_forwarding.c			\
+	../dm/dmtree/managementserver.c				\	
+	../dm/dmtree/root.c							\
+	../dm/dmtree/times.c						\
+	../dm/dmtree/upnp.c							\
+	../dm/dmtree/voice_services.c				\
+	../dm/dmtree/wandevice.c					\
+	../dm/dmtree/x_inteno_se_ice.c				\
+	../dm/dmtree/x_inteno_se_igmp.c				\
+	../dm/dmtree/x_inteno_se_ipacccfg.c			\
+	../dm/dmtree/x_inteno_se_logincfg.c			\
+	../dm/dmtree/x_inteno_se_power_mgmt.c		\
+	../dm/dmtree/x_inteno_se_wifi.c			
 
 cwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
