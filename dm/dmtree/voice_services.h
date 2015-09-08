@@ -73,33 +73,7 @@ struct codec
 	char *pid;
 };
 
-int get_max_profile_count(char *refparam, struct dmctx *ctx, char **value);
-int get_max_line_count(char *refparam, struct dmctx *ctx, char **value);
-int get_max_session_per_line(char *refparam, struct dmctx *ctx, char **value);
-int get_max_session_count(char *refparam, struct dmctx *ctx, char **value);
-int get_signal_protocols(char *refparam, struct dmctx *ctx, char **value);
-int get_regions(char *refparam, struct dmctx *ctx, char **value);
-int get_true_value (char *refparam, struct dmctx *ctx, char **value);
-int get_false_value (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_role (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_extension (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_transport (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_tls_auth_protocols (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_tls_enc_protocols (char *refparam, struct dmctx *ctx, char **value);
-int get_sip_tls_key_protocols (char *refparam, struct dmctx *ctx, char **value);
-int get_entry_id (char *refparam, struct dmctx *ctx, char **value);
-int get_capabilities_sip_codecs (char *refparam, struct dmctx *ctx, char **value);
-int get_capabilities_sip_bitrate (char *refparam, struct dmctx *ctx, char **value);
-int get_capabilities_sip_pperiod (char *refparam, struct dmctx *ctx, char **value);
-
-int get_voice_service_max_line ();
-int get_voice_profile_enable (char *refparam, struct dmctx *ctx, char **value);
-int set_voice_profile_enable (char *refparam, struct dmctx *ctx, int action, char *value);
-int get_voice_profile_name (char *refparam, struct dmctx *ctx, char **value);
-
-
-
-inline int get_voice_service_capabilities_codecs_generic(struct dmctx *ctx, char *idev, char *id);
 
 int entry_method_root_Service(struct dmctx *ctx);
+bool dm_service_enable_set(void);
 #endif

@@ -11,12 +11,22 @@
 
 #include <ctype.h>
 #include <uci.h>
+#include <unistd.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "voice_services.h"
 
+struct codec_args cur_codec_args = {0};
+struct sip_args cur_sip_args = {0};
+struct brcm_args cur_brcm_args = {0};
+struct line_codec_args cur_line_codec_args = {0};
+
+inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoice);
+inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *ivoice);
+inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, char *profile_num);
+inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num);
 struct allow_sip_codec allowed_sip_codecs[] = {
 	{"1", "ulaw"},
 	{"2", "alaw"},
@@ -108,10 +118,6 @@ inline int init_sip_args(struct dmctx *ctx, struct uci_section *section, char *p
 	return 0;
 }
 
-struct codec_args cur_codec_args = {0};
-struct sip_args cur_sip_args = {0};
-struct brcm_args cur_brcm_args = {0};
-struct line_codec_args cur_line_codec_args = {0};
 
 inline int init_codec_args(struct dmctx *ctx, char *cdc, char *id)
 {
@@ -155,7 +161,7 @@ int add_profile_object(struct dmctx *ctx, char **instancepara)
 	instance = get_last_instance("voice_client", "sip_service_provider", "profileinstance");
 	sprintf(sname, "sip%s", instance);
 	int profileinstance = atoi(instance) + 1;
-	sprintf(account, "Account %d", profileinstance);	
+	sprintf(account, "Account %d", profileinstance);// TODO check space in the name!!!???
 	dmuci_set_value("voice_client", sname, NULL, "sip_service_provider");
 	dmuci_set_value("voice_client", sname, "name", account);
 	dmuci_set_value("voice_client", sname, "enabled", "0");
@@ -1637,193 +1643,226 @@ end:
 	return 0;
 }
 
-/******************* SUBENTRY ***********************************/
-inline int get_voice_service_capabilities_codecs_generic(struct dmctx *ctx, char *idev, char *id)
+//////////////ENABLE SET////////////////
+bool dm_service_enable_set(void)
 {
-	DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.Codecs.%s.", ctx, "0", 0, NULL, NULL, NULL, idev, id);
-	DMPARAM("EntryID", ctx, "0", get_entry_id, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("Codec", ctx, "0", get_capabilities_sip_codec, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("BitRate", ctx, "0", get_capabilities_sip_bitrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("PacketizationPeriod", ctx, "0", get_capabilities_sip_pperiod, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("SilenceSuppression", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
+	if( access("/etc/init.d/asterisk", F_OK ) != -1 ) {
+		return true;
+	} else {
+		return false;
+	}
 }
+///////////////////////////////////////
 
-inline int get_services_voice_service_line_codec_list_generic(struct dmctx *ctx, char *profile_num, char *line_num, char *codec_num)
-{	
-	DMOBJECT(DMROOT"Services.VoiceService.1.VoiceProfile.%s.Line.%s.Codec.List.%s.", ctx, "0", 1, NULL, NULL, NULL, profile_num, line_num, codec_num);
-	DMPARAM("EntryID", ctx, "0", get_codec_entry_id, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("Codec", ctx, "0", capabilities_sip_codecs_get_codec, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("BitRate", ctx, "0", capabilities_sip_codecs_get_bitrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("PacketizationPeriod", ctx, "1", get_capabilities_sip_pperiod, set_line_codec_list_packetization, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("SilenceSuppression", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMPARAM("Enable", ctx, "1", get_line_codec_list_enable, set_line_codec_list_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMPARAM("Priority", ctx, "1", get_line_codec_list_priority, set_line_codec_list_priority, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
+/////////////SUB ENTRIES///////////////
+
+inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoice)
+{
+	int i = 0;
+	for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
+		init_codec_args(ctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id);
+		SUBENTRY(entry_voice_service_capabilities_codecs_instance, ctx, ivoice, allowed_sip_codecs[i].id);
+	}
 	return 0;
 }
 
-inline int get_services_voice_service_line_generic(struct dmctx *ctx, char *idev, char *profile_num, char *line_num)
+inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *ivoice)
+{
+	struct uci_section *sip_section;
+	char *profile_num = NULL;
+
+	uci_foreach_sections("voice_client", "sip_service_provider", sip_section) {
+		profile_num = update_instance(sip_section, profile_num, "profileinstance");
+		init_sip_args(ctx, sip_section, profile_num);
+		SUBENTRY(entry_services_voice_service_voiceprofile_instance, ctx, ivoice, profile_num);
+	}
+	return 0;
+}
+
+inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, char *profile_num)
+{
+	int maxLine;
+	char *line_num = NULL;
+	struct uci_section *b_section = NULL;
+	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
+	maxLine = get_voice_service_max_line();
+	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", section_name(sipargs->sip_section), b_section) {
+		line_num = update_instance(b_section, line_num, "lineinstance");
+		if ( atoi(line_num) > maxLine )
+			break;
+		init_brcm_args(ctx, b_section, sipargs->sip_section, profile_num);
+		SUBENTRY(entry_services_voice_service_line_instance, ctx, ivoice, profile_num, line_num);
+	}
+	return 0;
+}
+
+inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num)
 {
 	int codec_num, i = 0;
 	struct brcm_args *brcmargs = (struct brcm_args *)(ctx->args);
-	
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.", ctx, "0", 1, NULL, delete_line_object, NULL, idev, profile_num, line_num);
-	DMPARAM("Enable", ctx, "1", get_voice_profile_enable, set_voice_profile_enable, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("DirectoryNumber", ctx, "1", get_line_directory_number, set_line_directory_number, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("Status", ctx, "0", get_voice_profile_line_status, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("CallState", ctx, "0", get_voice_profile_line_callstate, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("X_002207_LineProfile", ctx, "1", get_line_x_002207_line_profile, set_line_x_002207_line_profile, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("X_002207_BRCMLine", ctx, "1", get_line_x_002207_brcm_line, set_line_x_002207_brcm_line, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.CallingFeatures.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num, line_num);
-	DMPARAM("CallerIDName", ctx, "1", get_line_calling_features_caller_id_name, set_line_calling_features_caller_id_name, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("CallWaitingEnable", ctx, "1", get_line_calling_features_callwaiting, set_line_calling_features_callwaiting, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.SIP.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num, line_num);
-	DMPARAM("AuthUserName", ctx, "1", get_line_sip_auth_username, set_line_sip_auth_username, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("AuthPassword", ctx, "1", get_empty, set_line_sip_auth_password, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("URI" , ctx, "1", get_line_sip_uri, set_line_sip_uri, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.codec.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num, line_num);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.codec.List.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num, line_num);
-	
+
 	codec_priority_update(ctx);
 	for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
 		codec_num = i + 1;
 		init_line_code_args(ctx, section_name(brcmargs->sip_section) + 3, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, brcmargs->sip_section);
-		SUBENTRY(get_services_voice_service_line_codec_list_generic, ctx, profile_num, line_num, allowed_sip_codecs[i].id); 
-	}
-}
-
-inline int get_services_voice_service_generic (struct dmctx *ctx, char *idev, char *profile_num)
-{
-	int maxLine;
-	char *line_num = NULL, *cur_line_num = NULL;
-	struct uci_section *b_section = NULL;
-	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
-	
-	maxLine = get_voice_service_max_line();
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.", ctx, "0", 1, NULL, delete_profile_object, NULL, idev, profile_num);
-	DMPARAM("Enable", ctx, "1", get_voice_profile_enable, set_voice_profile_enable, "xsd:unsignedInt", 0, 0, UNDEF, "linker"); //TODO GET LINKER VALUE
-	DMPARAM("Reset", ctx, "1", get_false_value, set_voice_profile_reset, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMPARAM("Name", ctx, "0", get_voice_profile_name, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("SignalingProtocol", ctx, "1" ,get_voice_profile_signalprotocol, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("MaxSessions", ctx, "0" ,get_voice_profile_max_sessions, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("NumberOfLines", ctx, "0" ,get_voice_profile_numberlines, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.SIP.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("ProxyServer", ctx, "1" ,get_voice_profile_sip_proxyserver, set_voice_profile_sip_proxyserver, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("ProxyServerPort", ctx, "1" ,get_empty, set_sip_proxy_server_port, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("ProxyServerTransport", ctx, "1" ,get_sip_proxy_server_transport, set_sip_proxy_server_transport, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("RegistrarServer", ctx, "1" ,get_voice_profile_sip_registerserver, set_voice_profile_sip_registerserver, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("RegistrarServerPort", ctx, "1" ,get_voice_profile_sip_registerserverport, set_voice_profile_sip_registerserverport, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("RegistrarServerTransport", ctx, "1" ,get_sip_registrar_server_transport, set_sip_registrar_server_transport, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("UserAgentDomain", ctx, "1", get_sip_user_agent_domain, set_sip_user_agent_domain, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("UserAgentPort", ctx, "1", get_sip_user_agent_port, set_sip_user_agent_port, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("UserAgentTransport", ctx, "1", get_sip_user_agent_transport, set_sip_user_agent_transport, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("OutboundProxy", ctx, "1", get_sip_outbound_proxy, set_sip_outbound_proxy, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("OutboundProxyPort", ctx, "1", get_sip_outbound_proxy_port, set_sip_outbound_proxy_port, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	//DMPARAM("Organization", ctx, "1", get_empty, set_voice_profile_sip_organization, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("RegistrationPeriod", ctx, "1", get_sip_registration_period, set_sip_registration_period, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	//DMPARAM("InviteExpires", ctx, "1", get_empty, set_sip_invite_expires, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("ReInviteExpires", ctx, "1", get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("RegisterExpires", ctx, "1", get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	//DMPARAM("RegistersMinExpires", ctx, "1", get_empty, set_voice_profile_sip_registersminexpires, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("RegisterRetryInterval", ctx, "1",get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	//DMPARAM("InboundAuth", ctx, "1", get_empty, set_voice_profile_sip_inbound, NULL, 0, 0, UNDEF, NULL);
-	//DMPARAM("InboundAuthUsername", ctx, "1", get_empty, set_voice_profile_sip_inbound, NULL, 0, 0, UNDEF, NULL);
-	//DMPARAM("InboundAuthPassword", ctx, "1", get_empty, set_voice_profile_sip_inbound, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("X_002207_CallLines", ctx, "1", get_sip_x_002207_call_lines, set_sip_x_002207_call_lines, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("DTMFMethod", ctx, "1", get_voice_profile_sip_dtmfmethod, set_voice_profile_sip_dtmfmethod, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("Region", ctx, "1", get_sip_profile_region, set_sip_profile_region, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.ServiceProviderInfo.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("Name", ctx, "0", get_voice_service_serviceproviderinfo_name, set_voice_service_serviceproviderinfo_name, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.FaxT38.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("Enable", ctx, "1", get_sip_fax_t38_enable, set_sip_fax_t38_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("LocalPortMin", ctx, "1", get_voice_service_vp_rtp_portmin, set_voice_service_vp_rtp_portmin, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("LocalPortMax", ctx, "1", get_voice_service_vp_rtp_portmax, set_voice_profile_rtp_localportmax, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("DSCPMark", ctx, "1", get_voice_service_vp_rtp_dscp, set_voice_service_vp_rtp_dscp, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.RTCP.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("Enable", ctx, "0", get_voice_service_vp_rtp_rtcp_enable, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMPARAM("TxRepeatInterval", ctx, "1", get_voice_service_vp_rtp_rtcp_txrepeatinterval, set_voice_service_vp_rtp_rtcp_txrepeatinterval, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.SRTP.", ctx, "0", 0, NULL, NULL, NULL, idev, profile_num);
-	DMPARAM("Enable", ctx, "1", get_voice_service_vp_rtp_srtp_enable, set_voice_service_vp_rtp_srtp_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.", ctx, "0", 1, add_line_object, delete_line_object_all, NULL, idev, profile_num);
-	cur_line_num = NULL;
-	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", section_name(sipargs->sip_section), b_section) {
-		line_num = update_instance(b_section, cur_line_num, "lineinstance");
-		if ( atoi(line_num) > maxLine )
-			break;
-		init_brcm_args(ctx, b_section, sipargs->sip_section, profile_num);
-		SUBENTRY(get_services_voice_service_line_generic, ctx, idev, profile_num, line_num);
-		dmfree(cur_line_num);
-		cur_line_num = dmstrdup(line_num);
+		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, allowed_sip_codecs[i].id);
 	}
 	return 0;
 }
-
+//////////////////////////////////////
 int entry_method_root_Service(struct dmctx *ctx)
 {
-	struct uci_section *sip_section, *s_section;
-	char *idev = NULL;
-	int i = 0;
-	char *profile_num = NULL;
-	char *cur_profile_num = NULL;
-	
-	idev = dmstrdup("1");
+	char *ivoice = "1";
 	IF_MATCH(ctx, DMROOT"Services.") {
-		DMOBJECT(DMROOT"Services.", ctx, "0", 0, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Services.VoiceService.%s.", ctx, "0", 0, NULL, NULL, NULL, idev);
-		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.", ctx, "0", 0, NULL, NULL, NULL, idev);
-		DMPARAM("MaxProfileCount", ctx, "0", get_max_profile_count, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("MaxLineCount", ctx, "0", get_max_line_count, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("MaxSessionsPerLine", ctx, "0", get_true_value, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("MaxSessionsCount", ctx, "0", get_max_session_count, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("SignalingProtocols", ctx, "0", get_signal_protocols, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Regions", ctx, "0", get_regions, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("RTCP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("SRTP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("RTPRedundancy", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("PSTNSoftSwitchOver", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("FaxT38", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("FaxPassThrough", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ModemPassThrough", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ToneDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("PatternBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("FileBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ToneFileFormats", ctx, "0", get_empty, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("RingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("RingDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("PatternBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("RingPatternEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("FileBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("RingFileFormats", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("DigitMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("NumberingPlan", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ButtonMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("VoicePortTests", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.SIP.", ctx, "0", 0, NULL, NULL, NULL, idev);
-		DMPARAM("Role", ctx, "0", get_sip_role, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Extensions", ctx, "0", get_sip_extension, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Transports", ctx, "0", get_sip_transport, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("URISchemes", ctx, "0", get_empty, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("EventSubscription", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ResponseMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("TLSAuthenticationProtocols", ctx, "0", get_sip_tls_auth_protocols, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("TLSEncryptionProtocols", ctx, "0", get_sip_tls_enc_protocols, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("TLSKeyExchangeProtocols", ctx, "0", get_sip_tls_key_protocols, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.Codecs.", ctx, "0", 0, NULL, NULL, NULL, idev);
-		for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
-			init_codec_args(ctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id);
-			SUBENTRY(get_voice_service_capabilities_codecs_generic, ctx, idev, allowed_sip_codecs[i].id);
-		}
-		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.", ctx, "1", 0, add_profile_object, delete_profile_object_all, NULL, idev);
-		cur_profile_num = NULL;
-		uci_foreach_sections("voice_client", "sip_service_provider", sip_section) {
-			profile_num = update_instance(sip_section, cur_profile_num, "profileinstance");
-		init_sip_args(ctx, sip_section, profile_num);
-			SUBENTRY(get_services_voice_service_generic, ctx, idev, profile_num);
-			dmfree(cur_profile_num);
-			cur_profile_num = dmstrdup(profile_num);
-		}
-		dmfree(cur_profile_num);
+		DMOBJECT(DMROOT"Services.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
+		DMPARAM("MaxProfileCount", ctx, "0", get_max_profile_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MaxLineCount", ctx, "0", get_max_line_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MaxSessionsPerLine", ctx, "0", get_true_value, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MaxSessionsCount", ctx, "0", get_max_session_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("SignalingProtocols", ctx, "0", get_signal_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Regions", ctx, "0", get_regions, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RTCP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("SRTP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RTPRedundancy", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("PSTNSoftSwitchOver", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("FaxT38", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("FaxPassThrough", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ModemPassThrough", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ToneDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("PatternBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("FileBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ToneFileFormats", ctx, "0", get_empty, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RingDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("PatternBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RingPatternEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("FileBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RingFileFormats", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("DigitMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("NumberingPlan", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ButtonMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("VoicePortTests", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.SIP.", ctx, "0", 0, NULL, NULL, NULL, ivoice);
+		DMPARAM("Role", ctx, "0", get_sip_role, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Extensions", ctx, "0", get_sip_extension, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Transports", ctx, "0", get_sip_transport, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("URISchemes", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("EventSubscription", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ResponseMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("TLSAuthenticationProtocols", ctx, "0", get_sip_tls_auth_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("TLSEncryptionProtocols", ctx, "0", get_sip_tls_enc_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("TLSKeyExchangeProtocols", ctx, "0", get_sip_tls_key_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.Codecs.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.", ctx, "1", 1, add_profile_object, delete_profile_object_all, NULL, ivoice);
+		SUBENTRY(entry_voice_service_capabilities_codecs, ctx, ivoice);
+		SUBENTRY(entry_services_voice_service_voiceprofile, ctx, ivoice);
+		return 0;
+	}
+	return FAULT_9005;
+}
+inline int entry_voice_service_capabilities_codecs_instance(struct dmctx *ctx, char *ivoice, char *id)
+{
+	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.Capabilities.Codecs.%s.", ivoice, id) {
+		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.Codecs.%s.", ctx, "0", 1, NULL, NULL, NULL, ivoice, id);
+		DMPARAM("EntryID", ctx, "0", get_entry_id, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Codec", ctx, "0", get_capabilities_sip_codec, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("BitRate", ctx, "0", get_capabilities_sip_bitrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("PacketizationPeriod", ctx, "0", get_capabilities_sip_pperiod, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("SilenceSuppression", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_services_voice_service_voiceprofile_instance (struct dmctx *ctx, char *ivoice, char *profile_num)
+{
+	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.VoiceProfile.%s.", ivoice, profile_num) {
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.", ctx, "1", 1, NULL, delete_profile_object, NULL, ivoice, profile_num);
+		DMPARAM("Enable", ctx, "1", get_voice_profile_enable, set_voice_profile_enable, "xsd:unsignedInt", 0, 1, UNDEF, "linker"); //TODO GET LINKER VALUE
+		DMPARAM("Reset", ctx, "1", get_false_value, set_voice_profile_reset, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("Name", ctx, "0", get_voice_profile_name, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("SignalingProtocol", ctx, "1" ,get_voice_profile_signalprotocol, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("MaxSessions", ctx, "0" ,get_voice_profile_max_sessions, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("NumberOfLines", ctx, "0" ,get_voice_profile_numberlines, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("DTMFMethod", ctx, "1", get_voice_profile_sip_dtmfmethod, set_voice_profile_sip_dtmfmethod, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Region", ctx, "1", get_sip_profile_region, set_sip_profile_region, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.SIP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("ProxyServer", ctx, "1" ,get_voice_profile_sip_proxyserver, set_voice_profile_sip_proxyserver, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("ProxyServerPort", ctx, "1" ,get_empty, set_sip_proxy_server_port, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("ProxyServerTransport", ctx, "1" ,get_sip_proxy_server_transport, set_sip_proxy_server_transport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegistrarServer", ctx, "1" ,get_voice_profile_sip_registerserver, set_voice_profile_sip_registerserver, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("RegistrarServerPort", ctx, "1" ,get_voice_profile_sip_registerserverport, set_voice_profile_sip_registerserverport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegistrarServerTransport", ctx, "1" ,get_sip_registrar_server_transport, set_sip_registrar_server_transport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("UserAgentDomain", ctx, "1", get_sip_user_agent_domain, set_sip_user_agent_domain, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UserAgentPort", ctx, "1", get_sip_user_agent_port, set_sip_user_agent_port, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("UserAgentTransport", ctx, "1", get_sip_user_agent_transport, set_sip_user_agent_transport, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("OutboundProxy", ctx, "1", get_sip_outbound_proxy, set_sip_outbound_proxy, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("OutboundProxyPort", ctx, "1", get_sip_outbound_proxy_port, set_sip_outbound_proxy_port, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegistrationPeriod", ctx, "1", get_sip_registration_period, set_sip_registration_period, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("ReInviteExpires", ctx, "1", get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegisterExpires", ctx, "1", get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegisterRetryInterval", ctx, "1",get_sip_re_invite_expires, set_sip_re_invite_expires, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("X_002207_CallLines", ctx, "1", get_sip_x_002207_call_lines, set_sip_x_002207_call_lines, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.ServiceProviderInfo.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("Name", ctx, "1", get_voice_service_serviceproviderinfo_name, set_voice_service_serviceproviderinfo_name, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.FaxT38.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("Enable", ctx, "1", get_sip_fax_t38_enable, set_sip_fax_t38_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("LocalPortMin", ctx, "1", get_voice_service_vp_rtp_portmin, set_voice_service_vp_rtp_portmin, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("LocalPortMax", ctx, "1", get_voice_service_vp_rtp_portmax, set_voice_profile_rtp_localportmax, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("DSCPMark", ctx, "1", get_voice_service_vp_rtp_dscp, set_voice_service_vp_rtp_dscp, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.RTCP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("Enable", ctx, "0", get_voice_service_vp_rtp_rtcp_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("TxRepeatInterval", ctx, "1", get_voice_service_vp_rtp_rtcp_txrepeatinterval, set_voice_service_vp_rtp_rtcp_txrepeatinterval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.RTP.SRTP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
+		DMPARAM("Enable", ctx, "1", get_voice_service_vp_rtp_srtp_enable, set_voice_service_vp_rtp_srtp_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.", ctx, "1", 1, add_line_object, delete_line_object_all, NULL, ivoice, profile_num);
+		SUBENTRY(entry_services_voice_service_line, ctx, ivoice, profile_num);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_services_voice_service_line_instance(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num)
+{
+	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.", ivoice, profile_num, line_num) {
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.", ctx, "1", 1, NULL, delete_line_object, NULL, ivoice, profile_num, line_num);
+		DMPARAM("Enable", ctx, "1", get_voice_profile_enable, set_voice_profile_enable, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DirectoryNumber", ctx, "1", get_line_directory_number, set_line_directory_number, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Status", ctx, "0", get_voice_profile_line_status, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("CallState", ctx, "0", get_voice_profile_line_callstate, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_002207_LineProfile", ctx, "1", get_line_x_002207_line_profile, set_line_x_002207_line_profile, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_002207_BRCMLine", ctx, "1", get_line_x_002207_brcm_line, set_line_x_002207_brcm_line, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.CallingFeatures.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num, line_num);
+		DMPARAM("CallerIDName", ctx, "1", get_line_calling_features_caller_id_name, set_line_calling_features_caller_id_name, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("CallWaitingEnable", ctx, "1", get_line_calling_features_callwaiting, set_line_calling_features_callwaiting, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.SIP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num, line_num);
+		DMPARAM("AuthUserName", ctx, "1", get_line_sip_auth_username, set_line_sip_auth_username, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("AuthPassword", ctx, "1", get_empty, set_line_sip_auth_password, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("URI" , ctx, "1", get_line_sip_uri, set_line_sip_uri, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.codec.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num, line_num);
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.codec.List.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num, line_num);
+		SUBENTRY(entry_services_voice_service_line_codec_list, ctx, ivoice, profile_num, line_num);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_services_voice_service_line_codec_list_instance(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num, char *codec_num)
+{
+	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.Codec.List.%s.", ivoice, profile_num, line_num, codec_num) {
+		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.Line.%s.Codec.List.%s.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num, line_num, codec_num);
+		DMPARAM("EntryID", ctx, "0", get_codec_entry_id, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Codec", ctx, "0", capabilities_sip_codecs_get_codec, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("BitRate", ctx, "0", capabilities_sip_codecs_get_bitrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("PacketizationPeriod", ctx, "1", get_capabilities_sip_pperiod, set_line_codec_list_packetization, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("SilenceSuppression", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("Enable", ctx, "1", get_line_codec_list_enable, set_line_codec_list_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("Priority", ctx, "1", get_line_codec_list_priority, set_line_codec_list_priority, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
