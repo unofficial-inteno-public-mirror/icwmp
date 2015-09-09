@@ -18,6 +18,7 @@ struct codec_args
 {
 	char *cdc;
 	char *id;
+	int enumid;
 };
 
 struct rtp_tos
@@ -25,13 +26,15 @@ struct rtp_tos
 	char *key;
 	char *val;
 };
+
 struct cap_sip_codec
 {
- char *c1;
- char *c2;
- char *c3;
- char *c4;
- char *c5;
+	int enumid;
+	char *c1;
+	char *c2;
+	char *c3;
+	char *c4;
+	char *c5;
 };
 
 struct sip_args
@@ -49,17 +52,24 @@ struct brcm_args
 
 struct allow_sip_codec
 {
+	int enumid;
 	char *id;
 	char *allowed_cdc;
+	char *priority_cdc;
+	char *ptime_cdc;
 };
 
 struct line_codec_args
 {
+	int enumid;
 	char *sip_id;
 	char *cdc;
 	char *id;
+	char *priority_cdc;
+	char *ptime_cdc;
 	struct uci_section *sip_section;
 };
+
 struct region
 {
 	char *country;
@@ -71,6 +81,7 @@ struct codec
 	char *cdc;
 	char *id;
 	char *pid;
+	char *priority;
 };
 
 

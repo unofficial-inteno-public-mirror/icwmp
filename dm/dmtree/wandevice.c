@@ -24,6 +24,9 @@
 #define WAN_INST_PTM 3
 #define DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP "" //TODO ASK KMD
 
+inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritable, bool notif_permission);
+inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm);
+inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, char *idev, char *iwan, char *iconp, int proto, bool notif_permission, bool forced_inform_eip, int forced_notify);
 enum WAN_TYPE_CONNECTION {
 	WAN_IP_CONNECTION,
 	WANPPPConnection
@@ -35,6 +38,17 @@ enum enum_wan_dsl {
 	WAN_DSL_VDSL
 };
 
+enum enum_wandevice_idx {
+	WAN_IDX_ETH,
+	WAN_IDX_ATM,
+	WAN_IDX_PTM
+};
+
+enum enum_wan_proto {
+	WAN_PROTO_NIL,
+	WAN_PROTO_PPP,
+	WAN_PROTO_IP
+};
 struct wan_device 
 {
 	char *instance;
@@ -44,12 +58,15 @@ struct wan_device
 };
 
 struct wan_device wan_devices[WAN_DEVICE] = {
-	{"1", "eth0", "ethernet_interface", "layer2_interface_ethernet"},
-	{"2", "atm", "atm_bridge", "layer2_interface_adsl"},
-	{"3", "ptm", "vdsl_interface", "layer2_interface_vdsl"}
+	[WAN_IDX_ETH] = {"1", "eth0", "ethernet_interface", "layer2_interface_ethernet"},
+	[WAN_IDX_ATM] = {"2", "atm", "atm_bridge", "layer2_interface_adsl"},
+	[WAN_IDX_PTM] = {"3", "ptm", "vdsl_interface", "layer2_interface_vdsl"}
 };
 
-char *default_wan;
+static char *default_wan;
+static char *default_wan_ifname;
+static int default_wan_proto;
+static char *eth_wan = NULL;
 
 struct wanargs
 {
@@ -110,26 +127,97 @@ int network_get_ipaddr(char **value, char *iface)
 {
 	json_object *res;
 	
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 0, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "ipv4-address", 0, "address", value, NULL);
 	return 0;
 }
 
+int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
+{
+	char *si, *value;
+	int idx = 0, max = 0;
+	struct uci_section *s = NULL;
+
+	uci_foreach_sections(pack, section_type, s) {
+		dmuci_get_value_by_section_string(s, option, &value);
+		si = value + shift;
+		idx = atoi(si);
+		if (idx > max)
+			max = idx;
+	}
+	return (max + 1);
+}
+
+int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
+{
+	char *ifname, *type, *device = NULL, *dup, *pch, *spch;
+	json_object *res;
+	int cn = 0;
+	
+	dmuci_get_value_by_section_string(interface_section, "type", &type);
+	dmuci_get_value_by_section_string(interface_section, "ifname", &ifname);
+	dup = dmstrdup(ifname);
+	pch = strtok_r(dup, " ", &spch);
+	while (pch != NULL) {
+		if (strstr(pch, "atm"))
+			cn++;
+		if (strstr(pch, "ptm"))
+			cn++;
+		if (strstr(pch, eth_wan))
+			cn++;
+		pch = strtok_r(NULL, " ", &spch);
+	}
+	dmfree(dup);
+	if (type[0] == '\0' || cn < 2)
+		return 0;
+
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(interface_section)}}, 1, &res);
+	if (res) {
+		json_select(res, "device", -1, NULL, &device, NULL);
+	}
+	if (!res || device[0] == '\0') {
+		cn = 0;
+		dup = dmstrdup(ifname);
+		pch = strtok_r(dup, " ", &spch);
+		while (pch != NULL) {
+			if (strstr(pch, "atm")) {
+				cn++;
+				break;
+			}
+			if (strstr(pch, "ptm")) {
+				cn++;
+				break;
+			}
+			if (strstr(pch, eth_wan)) {
+				cn++;
+				break;
+			}
+			pch = strtok_r(NULL, " ", &spch);
+		}
+		dmfree(dup);
+		if (cn && strstr(pch, fwan))
+			return 0;
+		return -1;
+	}
+	else if (strstr(device, fwan)) {
+		return 0;
+	}	
+	return -1;
+}
 /****** ADD-DEL OBJECT *******************/
 int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 {
-	int iwan;
+	int iwan, idx;
 	char *value;
 	char *instance;
 	char ifname[16] = {0};
 	char buf[16] = {0};
 	struct uci_section *s = NULL;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
-	TRACE("%d \n", wandargs->instance);
 	if (wandargs->instance == WAN_INST_ATM) {
-		instance = get_last_instance_lev2("layer2_interface_adsl", "atm_bridge", "waninstance", "baseifname", "atm");
-		sprintf(buf,"atm%s",instance);
+		idx = get_cfg_layer2idx("layer2_interface_adsl", "atm_bridge", "baseifname", sizeof("atm")-1);
+		sprintf(buf, "atm%d",idx);
 		sprintf(ifname,"%s.1",buf);
 		dmuci_add_section("layer2_interface_adsl", "atm_bridge", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
@@ -140,18 +228,20 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 		dmuci_set_value_by_section(s, "unit", buf+3);
 		dmuci_set_value_by_section(s, "vci", "35");
 		dmuci_set_value_by_section(s, "vpi", "8");
+		instance = get_last_instance_lev2("layer2_interface_adsl", "atm_bridge", "waninstance", "baseifname", "atm");
 		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
-	else if (strcmp(wandargs->fdev, "ptm") == 0) {
-		instance = get_last_instance_lev2("layer2_interface_vdsl", "vdsl_interface", "waninstance", "baseifname", "ptm");
-		sprintf(buf,"ptm%s",instance);
+	else if (wandargs->instance == WAN_INST_PTM) {
+		idx = get_cfg_layer2idx("layer2_interface_vdsl", "vdsl_interface", "baseifname", sizeof("ptm")-1);
+		sprintf(buf,"ptm%d", idx);
 		sprintf(ifname,"%s.1",buf);
 		dmuci_add_section("layer2_interface_vdsl", "vdsl_interface", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
 		dmuci_set_value_by_section(s, "bridge", "0");
 		dmuci_set_value_by_section(s, "ifname", ifname);
 		dmuci_set_value_by_section(s, "unit", buf+3);
+		instance = get_last_instance_lev2("layer2_interface_vdsl", "vdsl_interface", "waninstance", "baseifname", "ptm");
 		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
@@ -164,7 +254,6 @@ int delete_wan_wanconnectiondevice_all(struct dmctx *ctx)
 	struct uci_section *s = NULL; 
 	struct uci_section *ss = NULL;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
-	TRACE("%d \n", wandargs->instance);
 	
 	uci_foreach_option_cont(wan_devices[wandargs->instance - 1].cdev, wan_devices[wandargs->instance - 1].stype, "baseifname", wandargs->fdev, s) {	
 		if (found != 0)
@@ -352,7 +441,6 @@ int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx 
 		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "status", &status, NULL);
-		TRACE("get_wan_device_wan_dsl_interface_config_status after select %s \n", status);
 		if (strcmp(status, "Showtime") == 0)
 			*value = "Up";
 		else if (strcmp(status, "Training") == 0)
@@ -387,7 +475,6 @@ int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, stru
 		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "mode", &mode, NULL);
-		TRACE("get_wan_device_wan_dsl_interface_config_modulation_type %s\n", mode);
 		if (strcmp(mode, "G.Dmt") == 0)
 			*value = "ADSL_G.dmt";
 		else if (strcmp(mode, "G.lite") == 0)
@@ -459,7 +546,6 @@ int get_wan_device_dsl_downstreamcurrrate(char *refparam, struct dmctx *ctx, cha
 			json_select(sub_obj, "bearers", 0, "rate_down", &rate_down, NULL);
 		else 
 			return 0;
-		TRACE("get_wan_device_dsl_downstreamcurrrate rate down %s", rate_down);
 		if (rate_down && rate_down[0] != '\0') {
 			*value = rate_down;
 		}
@@ -664,12 +750,14 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 
 int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
 {
+	char *val = "";
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
+	
 	if (wandargs->instance == WAN_INST_ATM) {
-		dmuci_get_option_value_string("layer2_interface", "capabilities", "AnnexM", value);	
+		dmuci_get_option_value_string("layer2_interface", "capabilities", "AnnexM", &val);	
 	}
-	if (*value != NULL) {
-		if (strcasecmp(*value, "enabled") == 0) {
+	if (val[0] != '\0') {
+		if (strcasecmp(val, "enabled") == 0) {
 			*value = "1";
 			return 0;
 		}
@@ -680,7 +768,7 @@ int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
 
 int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 		
 	switch (action) {
@@ -689,40 +777,35 @@ int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			if (wandargs->instance == WAN_INST_ATM) {
-				if (b)
-					value = "Enabled";
-				else
-					value = "";
+			if (wandargs->instance != WAN_INST_ATM) {
+				return 0;
 			}
-			dmuci_set_value("layer2_interface", "capabilities", "AnnexM", value);
-			return 0;
+			string_to_bool(value, &b);			
+			if(b) {
+				dmuci_set_value("layer2_interface", "capabilities", "AnnexM", "Enabled");					
+			}
+			else
+				dmuci_set_value("layer2_interface", "capabilities", "AnnexM", "");				
+			return 0;			
 	}
 	return 0;
 }
 
-/*get_wan_eth_intf_enable() {
-	local fdev="$1"
-	local val
-	json_load "$(devstatus $fdev)"
-	json_get_var val up
-	[ "$val" != "true" -a "$val" != "1" ] && val="false"
-	echo $val
-}*/
 
 //TO CHECK IF NO VALUE RETURNE BY UBUS CMD
 int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, char **value)
 {
+	char *val;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
-	//dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", wandargs->fdev}}, 1, &res);
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
-	json_select(res, "up", -1, NULL, value, NULL);
-	TRACE("get_wan_eth_intf_enable \n");
-	if (*value) {
-		if (strcmp(*value, "true") != 0 || (*value)[0] != '1') 
+	json_select(res, "up", -1, NULL, &val, NULL);
+	if (val) {
+		if (strcmp(val, "true") != 0 || (val[0] != '1'))
 			*value = "0";
+		else
+			*value = "1";
 	}
 	return 0;
 }
@@ -731,8 +814,8 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 {		
 	struct uci_section *s;
 	json_object *res;
-	char *enable, *type, *device;
-	static bool b;
+	char *enable, *type, *device, json_name[32];
+	bool b;
 	bool enable_b;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	
@@ -742,43 +825,39 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
-			if (!res)
-				return 0;
-			json_select(res, "up", 0, NULL, &enable, NULL);
-			string_to_bool(value, &enable_b);
-			if (b == enable_b)
-				return 0;
+			if (res) {
+				json_select(res, "up", 0, NULL, &enable, NULL);
+				string_to_bool(enable, &enable_b);
+				if (b == enable_b)
+					return 0;
+			}
 			if(b) {
-				uci_foreach_option_eq("network", "interface", "ifname", wandargs->fdev, s) {
-					if(s != NULL) {
-					//ubus call network.interface.$intf up '{}' &	$intf is section name //TODO
-					}
-					else 
-						goto end;
+				uci_foreach_option_cont("network", "interface", "ifname", wandargs->fdev, s) {
+					sprintf(json_name, "network.interface.%s", section_name(s));
+					dmubus_call(json_name, "up", UBUS_ARGS{}, 0, &res);
 				}
 			}
 			else {
-				uci_foreach_option_eq("network", "interface", "ifname", wandargs->fdev, s) {
-					if(s != NULL) {
-						dmuci_get_value_by_section_string(s, "type", &type);
-						if (strcmp(type, "anywan") != 0 && strcmp(type, "multiwan") != 0) {
-							//ubus call network.interface.$intf down '{}' & //TODO
-							goto end;
-						}
-						else {
-							dmubus_call("network.device", "status", UBUS_ARGS{{"name", section_name(s)}}, 1, &res);
-							if (res) {
-								json_select(res, "device", -1, NULL, &device, NULL);
-								if (strstr(device, wandargs->fdev)) {
-									//ubus call network.interface.$intf down '{}' & //TODO
-									goto end;
-								}
+				uci_foreach_option_cont("network", "interface", "ifname", wandargs->fdev, s) {
+					dmuci_get_value_by_section_string(s, "type", &type);
+					if (strcmp(type, "anywan") != 0 && strcmp(type, "multiwan") != 0) {
+						sprintf(json_name, "network.interface.%s", section_name(s));
+						dmubus_call(json_name, "up", UBUS_ARGS{}, 0, &res);
+						goto end;
+					}
+					else {
+						dmubus_call("network.interface", "status", UBUS_ARGS{{"name", section_name(s)}}, 1, &res);
+						if (res) {
+							json_select(res, "device", -1, NULL, &device, NULL);
+							if (strstr(device, wandargs->fdev)) {
+								sprintf(json_name, "network.interface.%s", section_name(s));
+								dmubus_call(json_name, "down", UBUS_ARGS{}, 0, &res);
+								goto end;
 							}
 						}
 					}
-					else 
-						goto end;
 				}
 			}
 			return 0;
@@ -867,138 +946,12 @@ int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, char **
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);
-	TRACE("get_wan_eth_intf_stats_rx_packets %s", value);
 	if (!(*value) || (*value)[0] == '\0') {
 		*value = "0";
 	}
 	return 0;
 }
 
-int get_wandevice_wandevice_parameters(struct dmctx *ctx, char *dev, char *fdev)
-{
-	char *notif_permission;
-	char cwritable[] = "1";
-	
-	dmuci_get_option_value_string("network", default_wan, "ifname", &notif_permission); //TODO check this with script notif_permission is bool??
-	if (strcmp(dev, wan_devices[0].instance) == 0)
-		cwritable[0] = '0';
-	if (notif_permission[0] != '\0')
-		notif_permission = "0"; //notif_permission is bool
-	bool notif_b; 
-	string_to_bool(notif_permission, &notif_b);
-	TRACE("get_wandevice_wandevice_parameters %s\n", dev);
-	DMOBJECT(DMROOT"WANDevice.%s.", ctx, "0", notif_b, NULL, NULL, NULL, dev); //TODO CHECK NOTIF PERMISSION AND PERMISSION
-	DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.", ctx, cwritable, notif_b, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice_all, NULL, dev);
-	DMOBJECT(DMROOT"WANDevice.%s.WANCommonInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev);
-	DMPARAM("WANAccessType", ctx, "0", get_wan_device_wan_access_type, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMOBJECT(DMROOT"WANDevice.%s.WANDSLInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev);
-	DMPARAM("Status", ctx, "0", get_wan_device_wan_dsl_interface_config_status, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("ModulationType", ctx, "0", get_wan_device_wan_dsl_interface_config_modulation_type, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("DataPath", ctx, "0", get_wan_device_dsl_datapath, NULL, NULL, 0, 0, UNDEF, NULL);
-	DMPARAM("DownstreamCurrRate", ctx, "0", get_wan_device_dsl_downstreamcurrrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("DownstreamMaxRate", ctx, "0", get_wan_device_dsl_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("DownstreamAttenuation", ctx, "0", get_wan_device_dsl_downstreamattenuation, NULL, "xsd:int", 0, 0, UNDEF, NULL);
-	DMPARAM("DownstreamNoiseMargin", ctx, "0", get_wan_device_dsl_downstreamnoisemargin, NULL, "xsd:int", 0, 0, UNDEF, NULL);
-	DMPARAM("UpstreamCurrRate", ctx, "0", get_wan_device_dsl_upstreamcurrrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("UpstreamMaxRate", ctx, "0", get_wan_device_dsl_upstreammaxrate, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	DMPARAM("UpstreamAttenuation", ctx, "0", get_wan_device_dsl_upstreamattenuation, NULL, "xsd:int", 0, 0, UNDEF, NULL);
-	DMPARAM("UpstreamNoiseMargin", ctx, "0", get_wan_device_dsl_upstreamnoisemargin, NULL, "xsd:int", 0, 0, UNDEF, NULL);
-	DMPARAM("X_INTENO_SE_AnnexMEnable", ctx, "1", get_annexm_status, set_annexm_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-	TRACE("AFTER X_INTENO_SE_AnnexMEnable %s \n", cwritable);
-	if( cwritable[0] == '0' ) {
-		DMOBJECT(DMROOT"WANDevice.%s.WANEthernetInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev); //TODO CHECK NOTIF PERMISSION AND PERMISSION
-		DMPARAM("Enable", ctx, "1", get_wan_eth_intf_enable, set_wan_eth_intf_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("Status", ctx, "0", get_wan_eth_intf_status, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("MACAddress", ctx, "0", get_wan_eth_intf_mac, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMOBJECT(DMROOT"WANDevice.%s.WANEthernetInterfaceConfig.Stats.", ctx, "0", 1, NULL, NULL, NULL, dev); //TODO CHECK NOTIF PERMISSION AND PERMISSION
-		DMPARAM("BytesSent", ctx, "0", get_wan_eth_intf_stats_tx_bytes, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("BytesReceived", ctx, "0", get_wan_eth_intf_stats_rx_bytes, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("PacketsSent", ctx, "0", get_wan_eth_intf_stats_tx_packets, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("PacketsReceived", ctx, "0", get_wan_eth_intf_stats_rx_packets, NULL, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-	}
-  return 0;
-}
-
-//TO CHECK
-int check_multiwan_interface(struct uci_section *s)
-{
-	char *type, *value;
-	char *pch, *spch;
-	dmuci_get_value_by_section_string(s, "ifname", &value);
-	dmuci_get_value_by_section_string(s, "type", &type);
-	if (type[0] == '\0')
-		return 0;
-	value = dmstrdup(value);
-	pch = strtok_r(value," ", &spch);
-	while (pch != NULL) {
-		if(strstr(pch, "atm") || strstr(pch, "ptm") || strstr(pch, "eth0"))
-		{
-			dmfree(value);
-			return 1;
-		}
-		pch = strtok_r(NULL, " ", &spch);
-	}
-	dmfree(value);
-	return 0;
-}
-
-int entry_method_root_WANDevice(struct dmctx *ctx)
-{
-	int i;
-	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &default_wan);
-	struct uci_section *s = NULL;
-	struct uci_section *ss = NULL;
-	char *fwan;
-	char *iwan = NULL;
-	char *cur_iwan = NULL;
-	char *pack, *stype, *proto;
-	char *iconp, *cur_iconp = NULL;
-	struct uci_ptr ptr = {0};
-	struct uci_ptr ptr_dev = {0};
-	IF_MATCH(ctx, DMROOT"WANDevice.") {
-		DMOBJECT(DMROOT"WANDevice.", ctx, "0", 1, NULL, NULL, NULL);
-		for (i=0; i < WAN_DEVICE; i++) {
-			init_wanargs(ctx, i+1, wan_devices[i].fdev);
-			SUBENTRY(get_wandevice_wandevice_parameters, ctx, wan_devices[i].instance, wan_devices[i].fdev); //param have to be setted as args
-			pack = wan_devices[i].cdev;
-			stype = wan_devices[i].stype;
-			cur_iwan = NULL;
-			uci_foreach_sections(pack, stype, s) {
-				TRACE("found section %s \n", section_name(s));
-				dmuci_get_value_by_section_string(s, "baseifname", &fwan);
-				TRACE("entry_method_root_WANDevice call update_instance \n");
-//					char *update_instance(char *package, char *stype, char *inst_opt, char *last_inst, struct uci_section *s, struct uci_ptr *uci_ptr)
-				iwan = update_instance(s, cur_iwan, "waninstance");
-				TRACE("entry_method_root_WANDevice call update_instance %s\n", iwan);
-				TRACE("entry_method_root_WANDevice call update_instance end\n");
-				//wanconnectiondevice
-				init_wancdevargs(ctx, s, i, fwan, iwan);
-				SUBENTRY(get_wandevice_wanconnectiondevice_parameters, ctx, wan_devices[i].instance, iwan);//"$idev" "$iwan" "$fwan"	 ONLY fdev will be used as arg for get and set function
-				//BREAK POINT1
-				cur_iconp = NULL;
-				uci_foreach_option_cont("network", "interface", "ifname", fwan, ss) {
-					//fconp is ss name
-					TRACE("BREAK POINT1 \n");
-					if (check_multiwan_interface(ss) != 0) //TODO
-						continue;
-					dmuci_get_value_by_section_string(ss, "proto", &proto);
-					init_wancprotoargs(ctx, ss);
-					iconp = update_instance(ss, cur_iconp, "conpinstance");
-					SUBENTRY(get_wandevice_wanprotoclconnection_parameters, ctx, wan_devices[i].instance, iwan, iconp, proto);// "$idev" "$iwan" "$iconp" "$fconp" "$proto" //ONLY fconp will be usedad parameter of get and set method
-					TRACE("BREAK SUBENTRY \n");
-					dmfree(cur_iconp);
-					cur_iconp = dmstrdup(iconp);
-				}
-				dmfree(cur_iconp);
-				dmfree(cur_iwan);
-				cur_iwan = dmstrdup(iwan);
-			}
-			dmfree(cur_iwan);
-		}
-		return 0;
-	}
-	return FAULT_9005;
-}
 
 /************************************************************************** 
 **** ****  function related to get_wandevice_wanconnectiondevice_parameters **** ****
@@ -1131,82 +1084,11 @@ int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 	return 0;
 }
 
-int get_wandevice_wanconnectiondevice_parameters(struct dmctx *ctx, char *idev, char *iwan)
-{
-	bool b_notif;
-	bool ipn_perm = 1;
-	bool pppn_perm = 1;
-	char *proto, *notif_permission;
-	char cwritable[] = "1";
-	
-	dmuci_get_option_value_string("network", default_wan, "ifname", &notif_permission); //TODO bool!!!??
-	if (strcmp(idev, wan_devices[0].instance) == 0)
-		cwritable[0] = '0';
-	if (notif_permission[0] != '\0') {
-		notif_permission[0] = '0';
-		dmuci_get_option_value_string("network", default_wan, "proto", &proto);
-		if (strcmp(proto, "dhcp") == 0 || strcmp(proto, "static") == 0)
-			ipn_perm = 0; 
-		if (strcmp(proto, "pppoa") == 0 || strcmp(proto, "pppoe") == 0)
-			pppn_perm = 0;
-	}
-	DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.", ctx, cwritable, string_to_bool(notif_permission, &b_notif), NULL, delete_wan_wanconnectiondevice, NULL, idev, iwan);//noti permission is bool ADD notif_permission,
-	DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.", ctx, "1", ipn_perm, add_wan_wanipconnection, delete_wan_wanipconnectiondevice_all, NULL, idev, iwan); //ADD notif_permission:ipn_perm, 
-	DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.", ctx, "1", pppn_perm, add_wan_wanpppconnection, delete_wan_wanpppconnectiondevice_all, NULL, idev, iwan); //ADD notif_permission:pppn_perm, 
-	if (strcmp(idev, wan_devices[1].instance) == 0) {
-		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANDSLLinkConfig.", ctx, "0", 1, NULL, NULL, NULL, idev, iwan); //ADD notif_permission:, true
-		DMPARAM("Enable", ctx, "0", get_wan_dsl_link_config_enable, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("DestinationAddress", ctx, "1", get_wan_dsl_link_config_destination_address, set_wan_dsl_link_config_destination_address, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("ATMEncapsulation", ctx, "1", get_wan_dsl_link_config_atm_encapsulation, set_wan_dsl_link_config_atm_encapsulation, NULL, 0, 0, UNDEF, NULL);
-	}
-	return 0;
-}
 
 /************************************************************************** 
 **** ****  function related to get_wandevice_wanprotoclconnection_parameters **** ****
 ***************************************************************************/
 
-int get_wandevice_wanprotoclconnection_parameters(struct dmctx *ctx, char *idev, char *iwan, char *iconp, char *proto)
-{
-	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
-	//ifname is section name
-	bool notif_b = true;
-	bool forced_inform_eip = 0;
-	char *forced_notify= "";
-	char linker[32] = "linker_interface:";
-	char *lan_name = section_name(wandcprotoargs->wancprotosection);
-	strcat(linker, lan_name);
-	if (strcmp(lan_name, default_wan) == 0) {
-		forced_inform_eip = 1;
-		forced_notify = "2"; //TODO fix that and should be int and not char
-		notif_b = false;
-	}
-	
-	if (strcmp(proto, "dhcp") == 0 || strcmp(proto, "static") == 0) {
-		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_b, NULL, delete_wan_wanconnectiondevice, section_name(wandcprotoargs->wancprotosection), idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
-		DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, notif_b, forced_inform_eip, UNDEF, NULL);	//TO ADD "$forced_notify"
-		DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 0, UNDEF, NULL);//TOCHECK
-		DMPARAM("ConnectionType", ctx, "1", get_wan_ip_link_connection_connection_type, set_wan_ip_link_connection_connection_type, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("AddressingType", ctx, "1", get_wan_ip_link_connection_addressing_type, set_wan_ip_link_connection_addressing_type, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("NATEnabled", ctx, "1", get_wan_ip_link_connection_nat_enabled, set_wan_ip_link_connection_nat_enabled, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled, set_interface_firewall_enabled, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("X_BROADCOM_COM_IGMPEnabled", ctx, "1", get_wan_ip_link_connection_igmp_enabled, set_wan_ip_link_connection_igmp_enabled, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("DNSEnabled", ctx, "1", get_wan_ip_link_connection_dns_enabled, set_wan_ip_link_connection_dns_enabled, "xsd:boolean", 0, 0, UNDEF, NULL);
-		//DMPARAM("DNSOverrideAllowed", ctx, "", , , "xsd:boolean", 0, 0, UNDEF, NULL);	
-	}
-	else if (strcmp(proto, "pppoa") == 0 || strcmp(proto, "pppoe") == 0) {
-		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", ctx, "1", 1, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
-		DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_ppp_status, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_ppp_interface_ip, NULL, NULL, notif_b, forced_inform_eip, UNDEF, NULL);	//TO ADD "$forced_notify"
-		DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Username", ctx, "1", get_wan_device_ppp_username, set_wan_device_username, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Password", ctx, "1", get_empty, set_wan_device_password, NULL, 0, 0, UNDEF, NULL);
-	}
-	return 0;
-}
 
 //THE same as get_wan_device_ppp_status WHY DO WE CREATE A SEPARATED FUNCTION
 int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
@@ -1358,7 +1240,7 @@ int get_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, ch
 
 int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	char *intf;
 	int found = 0;
 	struct uci_section *s = NULL;
@@ -1371,6 +1253,7 @@ int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, in
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(!b)
 				value = "";
 			else
@@ -1444,7 +1327,7 @@ int get_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, c
 
 int set_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	static bool b;
+	bool b;
 	int found = 0;
 	char *intf, *enable, *zname, buf[32];
 	struct uci_section *rule = NULL;
@@ -1458,6 +1341,7 @@ int set_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, i
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				value = "ACCEPT";
 			else
@@ -1495,7 +1379,7 @@ int get_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, ch
 
 int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	static bool b;
+	bool b;
 	char *intf;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 	
@@ -1506,6 +1390,7 @@ int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, in
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(b)
 				value = "";
 			else
@@ -1567,7 +1452,6 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "device", 0, NULL, &device, NULL) != -1) {
-		TRACE("device %s \n", device);
 		dmubus_call("network.device", "status", UBUS_ARGS{{"name", device}}, 1, &res);
 		if (res) {
 			json_select(res, "macaddr", 0, NULL, value, NULL);
@@ -1611,4 +1495,212 @@ int set_wan_device_password(char *refparam, struct dmctx *ctx, int action, char 
 			return 0;
 	}
 	return 0;
+}
+
+/////////////SUB ENTRIES///////////////
+inline int entry_wandevice_sub(struct dmctx *ctx)
+{
+	int i;
+	bool notif_permission;
+	char *cwritable;
+	char *defwanproto;
+
+	dmuci_get_option_value_string("network", default_wan, "ifname", &default_wan_ifname);
+	dmuci_get_option_value_string("network", default_wan, "proto", &defwanproto);
+	dmuci_get_option_value_string("layer2_interface_ethernet", "ethernet_interface", "baseifname", &eth_wan);
+
+	if (strstr(defwanproto, "ppp"))
+		default_wan_proto = WAN_PROTO_PPP;
+	else if (strcmp(defwanproto, "dhcp") == 0 || strcmp(defwanproto, "static") == 0)
+		default_wan_proto = WAN_PROTO_IP;
+	else
+		default_wan_proto = WAN_PROTO_NIL;
+
+	for (i=0; i < WAN_DEVICE; i++) {
+		init_wanargs(ctx, i+1, wan_devices[i].fdev);
+
+		if (strstr(default_wan_ifname, wan_devices[i].fdev))
+			notif_permission = false;
+		else
+			notif_permission = true;
+
+		if (i == WAN_IDX_ETH)
+			cwritable = "0";
+		else
+			cwritable = "1";
+
+		SUBENTRY(entry_wandevice_sub_instance, ctx, i, cwritable, notif_permission); //param have to be setted as args
+	}
+	return 0;
+}
+
+inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *cwritable)
+{
+	struct uci_section *s = NULL;
+	char *fwan;
+	char *iwan = NULL;
+	char *pack, *stype;
+	bool ipn_perm = true;
+	bool pppn_perm = true;
+	bool notif_permission = true;
+
+	pack = wan_devices[i].cdev;
+	stype = wan_devices[i].stype;
+	uci_foreach_sections(pack, stype, s) {
+		dmuci_get_value_by_section_string(s, "baseifname", &fwan);
+		if (strstr(default_wan_ifname, fwan)) {
+			notif_permission = false;
+			if (default_wan_proto == WAN_PROTO_IP) ipn_perm = false;
+			else if (default_wan_proto == WAN_PROTO_PPP) pppn_perm = false;
+		}
+		iwan = update_instance(s, iwan, "waninstance");
+		init_wancdevargs(ctx, s, i, fwan, iwan);
+		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, i, iwan, fwan,  cwritable, notif_permission, ipn_perm, pppn_perm);
+	}
+	return 0;
+}
+
+inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, char *iwan, char *fwan)
+{
+	struct uci_section *ss = NULL;
+	char *pack, *stype, *p;
+	char *iconp = NULL;
+	int proto;
+	bool notif_permission = true;
+	bool forced_inform_eip = false;
+	int forced_notify = UNDEF;
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *lan_name;
+
+	uci_foreach_option_cont("network", "interface", "ifname", fwan, ss) {
+		dmuci_get_value_by_section_string(ss, "proto", &p);
+		lan_name = section_name(ss);
+		if (strstr(p, "ppp"))
+			proto = WAN_PROTO_PPP;
+		else if (strcmp(p, "dhcp") == 0 || strcmp(p, "static") == 0)
+			proto = WAN_PROTO_IP;
+		else
+			proto = WAN_PROTO_NIL;
+		if (strcmp(lan_name, default_wan) == 0) {
+			forced_inform_eip = true;
+			forced_notify = 2;
+			notif_permission = false;
+		}
+		if (check_multiwan_interface(ss, fwan) != 0)
+			continue;
+		init_wancprotoargs(ctx, ss);
+		iconp = update_instance(ss, iconp, "conpinstance");
+		SUBENTRY(entry_wandevice_wanprotocolconnection_instance, ctx, idev, iwan, iconp, proto,
+				notif_permission, forced_inform_eip, forced_notify);
+	}
+	return 0;
+}
+
+/*************************************************/
+int entry_method_root_WANDevice(struct dmctx *ctx)
+{
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &default_wan);
+	IF_MATCH(ctx, DMROOT"WANDevice.") {
+		DMOBJECT(DMROOT"WANDevice.", ctx, "0", 0, NULL, NULL, NULL);
+		SUBENTRY(entry_wandevice_sub, ctx);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritable, bool notif_permission)
+{
+	char *dev = wan_devices[i].instance;
+	IF_MATCH(ctx, DMROOT"WANDevice.", dev) {		
+		DMOBJECT(DMROOT"WANDevice.%s.", ctx, "0", notif_permission, NULL, NULL, NULL, dev);
+		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.", ctx, cwritable, notif_permission, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice_all, NULL, dev);
+		DMOBJECT(DMROOT"WANDevice.%s.WANCommonInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev);
+		DMPARAM("WANAccessType", ctx, "0", get_wan_device_wan_access_type, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"WANDevice.%s.WANDSLInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev);
+		DMPARAM("Status", ctx, "0", get_wan_device_wan_dsl_interface_config_status, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("ModulationType", ctx, "0", get_wan_device_wan_dsl_interface_config_modulation_type, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DataPath", ctx, "0", get_wan_device_dsl_datapath, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DownstreamCurrRate", ctx, "0", get_wan_device_dsl_downstreamcurrrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("DownstreamMaxRate", ctx, "0", get_wan_device_dsl_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("DownstreamAttenuation", ctx, "0", get_wan_device_dsl_downstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+		DMPARAM("DownstreamNoiseMargin", ctx, "0", get_wan_device_dsl_downstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+		DMPARAM("UpstreamCurrRate", ctx, "0", get_wan_device_dsl_upstreamcurrrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("UpstreamMaxRate", ctx, "0", get_wan_device_dsl_upstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("UpstreamAttenuation", ctx, "0", get_wan_device_dsl_upstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+		DMPARAM("UpstreamNoiseMargin", ctx, "0", get_wan_device_dsl_upstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_AnnexMEnable", ctx, "1", get_annexm_status, set_annexm_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		if( i == WAN_IDX_ETH ) {
+			DMOBJECT(DMROOT"WANDevice.%s.WANEthernetInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, dev); //TODO CHECK NOTIF PERMISSION AND PERMISSION
+			DMPARAM("Enable", ctx, "1", get_wan_eth_intf_enable, set_wan_eth_intf_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("Status", ctx, "0", get_wan_eth_intf_status, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("MACAddress", ctx, "0", get_wan_eth_intf_mac, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMOBJECT(DMROOT"WANDevice.%s.WANEthernetInterfaceConfig.Stats.", ctx, "0", 1, NULL, NULL, NULL, dev); //TODO CHECK NOTIF PERMISSION AND PERMISSION
+			DMPARAM("BytesSent", ctx, "0", get_wan_eth_intf_stats_tx_bytes, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("BytesReceived", ctx, "0", get_wan_eth_intf_stats_rx_bytes, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("PacketsSent", ctx, "0", get_wan_eth_intf_stats_tx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("PacketsReceived", ctx, "0", get_wan_eth_intf_stats_rx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		}
+		SUBENTRY(entry_wandevice_wanconnectiondevice, ctx, i, cwritable);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm)
+{
+	char *idev = wan_devices[i].instance;
+	IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.", idev, iwan) {		
+		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.", ctx, cwritable, notif_permission, NULL, delete_wan_wanconnectiondevice, NULL, idev, iwan);
+		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.", ctx, "1", ipn_perm, add_wan_wanipconnection, delete_wan_wanipconnectiondevice_all, NULL, idev, iwan);
+		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.", ctx, "1", pppn_perm, add_wan_wanpppconnection, delete_wan_wanpppconnectiondevice_all, NULL, idev, iwan);
+		if (i == WAN_IDX_ATM) {
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANDSLLinkConfig.", ctx, "0", 1, NULL, NULL, NULL, idev, iwan); //ADD notif_permission:, true
+			DMPARAM("Enable", ctx, "0", get_wan_dsl_link_config_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("DestinationAddress", ctx, "1", get_wan_dsl_link_config_destination_address, set_wan_dsl_link_config_destination_address, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("ATMEncapsulation", ctx, "1", get_wan_dsl_link_config_atm_encapsulation, set_wan_dsl_link_config_atm_encapsulation, NULL, 0, 1, UNDEF, NULL);
+		}
+		SUBENTRY(entry_wandevice_wanprotocolconnection, ctx, idev, iwan, fwan);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, char *idev, char *iwan, char *iconp, int proto,
+														bool notif_permission, bool forced_inform_eip, int forced_notify)
+{
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	//ifname is section name
+	char linker[32] = "linker_interface:";
+	char *lan_name = section_name(wandcprotoargs->wancprotosection);
+	strcat(linker, lan_name);
+	if (proto == WAN_PROTO_IP) {
+		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", idev, iwan, iconp) {
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, section_name(wandcprotoargs->wancprotosection), idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
+			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, notif_permission, forced_inform_eip, forced_notify, NULL);
+			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);//TOCHECK
+			DMPARAM("ConnectionType", ctx, "1", get_wan_ip_link_connection_connection_type, set_wan_ip_link_connection_connection_type, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("AddressingType", ctx, "1", get_wan_ip_link_connection_addressing_type, set_wan_ip_link_connection_addressing_type, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("NATEnabled", ctx, "1", get_wan_ip_link_connection_nat_enabled, set_wan_ip_link_connection_nat_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled, set_interface_firewall_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("X_BROADCOM_COM_IGMPEnabled", ctx, "1", get_wan_ip_link_connection_igmp_enabled, set_wan_ip_link_connection_igmp_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("DNSEnabled", ctx, "1", get_wan_ip_link_connection_dns_enabled, set_wan_ip_link_connection_dns_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
+			//DMPARAM("DNSOverrideAllowed", ctx, "", , , "xsd:boolean", 0, 1, UNDEF, NULL);
+			return 0;
+		}
+	}
+	else if (proto == WAN_PROTO_PPP) {
+		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", idev, iwan, iconp) {
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
+			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_ppp_status, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_ppp_interface_ip, NULL, NULL, notif_permission, forced_inform_eip, forced_notify, NULL);
+			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Username", ctx, "1", get_wan_device_ppp_username, set_wan_device_username, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Password", ctx, "1", get_empty, set_wan_device_password, NULL, 0, 1, UNDEF, NULL);
+			return 0;
+		}			
+	}
+	return FAULT_9005;
 }
