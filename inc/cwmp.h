@@ -126,6 +126,8 @@ typedef struct config {
     char                                *acsurl;
     char                                *acs_userid;
     char                                *acs_passwd;
+	char								*acs_ssl_capath;
+    char 								*acs_ssl_version;
     char                                *cpe_userid;
     char                                *cpe_passwd;
     char                                *dhcp_url_path;
