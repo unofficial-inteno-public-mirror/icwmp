@@ -266,6 +266,8 @@ int json_select(json_object *jobj, char *search, int index, char *next_key, char
 {
 	enum json_type type;
 	json_object *jobj1 = NULL;
+	if (value != NULL) *value = "";
+	if (jobjres != NULL) *jobjres = NULL;
 	json_object_object_foreach(jobj, key, val) {
 		if (strcmp(key, search) == 0) {
 			type = json_object_get_type(val);

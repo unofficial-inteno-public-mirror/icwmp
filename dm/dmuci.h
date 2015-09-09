@@ -78,6 +78,24 @@ struct package_change {
 
 #define section_name(s) (s)->e.name
 
+static inline void uci_list_insert(struct uci_list *list, struct uci_list *ptr)
+{
+	list->next->prev = ptr;
+	ptr->prev = list;
+	ptr->next = list->next;
+	list->next = ptr;
+}
+
+static inline void uci_list_add(struct uci_list *head, struct uci_list *ptr)
+{
+	uci_list_insert(head->prev, ptr);
+}
+
+static inline void uci_list_init(struct uci_list *ptr)
+{
+	ptr->prev = ptr;
+	ptr->next = ptr;
+}
 char *dmuci_list_to_string(struct uci_list *list, char *delimitor);
 void add_list_package_change(struct list_head *clist, char *package);
 void free_all_list_package_change(struct list_head *clist);

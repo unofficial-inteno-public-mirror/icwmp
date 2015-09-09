@@ -160,12 +160,35 @@ int dmuci_get_option_value_list(char *package, char *section, char *option, stru
 {
 	struct uci_element *e;
 	struct uci_ptr ptr = {0};
+	struct uci_list *list;
+	char *pch, *spch, *dup;
 	*value = NULL;
 	if (dmuci_lookup_ptr(uci_ctx, &ptr, package, section, option, NULL)) {
 		return -1;
 	}
 	if (ptr.o) {
-		*value = &ptr.o->v.list;
+		switch(ptr.o->type) {
+			case UCI_TYPE_LIST:
+				*value = &ptr.o->v.list;
+				break;
+			case UCI_TYPE_STRING:
+				if (!ptr.o->v.string || (ptr.o->v.string)[0] == '\0')
+					return 0;
+				list = dmcalloc(1, sizeof(struct uci_list)); // MEM WILL BE FREED IN DMMEMCLEAN
+				uci_list_init(list);
+				dup = dmstrdup(ptr.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
+				pch = strtok_r(dup, " ", &spch);
+				while (pch != NULL) {
+					e = dmcalloc(1, sizeof(struct uci_element)); // MEM WILL BE FREED IN DMMEMCLEAN
+					e->name = pch;
+					uci_list_add(list, &e->list);
+					pch = strtok_r(NULL, " ", &spch);
+				}
+				*value = list;
+				break;
+			default:
+				return -1;
+		}
 	} else {
 		return -1;
 	}
@@ -442,8 +465,6 @@ int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, st
 	/*value*/
 	ptr->value = value;
 
-	ptr->flags |= UCI_LOOKUP_DONE;
-
 	/*package*/
 	ptr->package = s->package->e.name;
 	ptr->p = s->package;
@@ -451,7 +472,6 @@ int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, st
 	/* section */
 	ptr->section = s->e.name;
 	ptr->s = s;
-	ptr->last = e;
 
 	/*option*/
 	if (!option || !option[0]) {
@@ -462,16 +482,9 @@ int dmuci_lookup_ptr_by_section(struct uci_context *ctx, struct uci_ptr *ptr, st
 	ptr->option = option;
 
 lookup:
-	if (ptr->option) {
-		uci_foreach_element(&ptr->s->options, e) {
-			if (strcmp(e->name, ptr->option) == 0) {
-				ptr->o = uci_to_option(e);
-				ptr->last = e;
-				break;
-			}
-		}
+	if (uci_lookup_ptr(ctx, ptr, NULL, true) != UCI_OK || !UCI_LOOKUP_COMPLETE) {
+		return -1;
 	}
-	ptr->flags |= UCI_LOOKUP_COMPLETE;
 	return 0;
 }
 
@@ -495,14 +508,37 @@ int dmuci_get_value_by_section_list(struct uci_section *s, char *option, struct 
 {
 	struct uci_element *e;
 	struct uci_option *o;
+	struct uci_ptr ptr = {0};
+	struct uci_list *list;
+	char *pch, *spch, *dup;
+	*value = NULL;
 	uci_foreach_element(&s->options, e) {
 		o = (uci_to_option(e));
-		if (!strcmp(o->e.name, option)) {
-			*value = &o->v.list;
-			return 0;
+		if (strcmp(o->e.name, option) == 0) {
+			switch(o->type) {
+				case UCI_TYPE_LIST:
+					*value = &o->v.list;
+					return 0;
+				case UCI_TYPE_STRING:
+					if (!o->v.string || (o->v.string)[0] == '\0')
+						return 0;
+					list = dmcalloc(1, sizeof(struct uci_list)); // MEM WILL BE FREED IN DMMEMCLEAN
+					uci_list_init(list);
+					dup = dmstrdup(o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
+					pch = strtok_r(dup, " ", &spch);
+					while (pch != NULL) {
+						e = dmcalloc(1, sizeof(struct uci_element)); // MEM WILL BE FREED IN DMMEMCLEAN
+						e->name = pch;
+						uci_list_add(list, &e->list);
+						pch = strtok_r(NULL, " ", &spch);
+					}
+					*value = list;
+					return 0;
+				default:
+					return -1;
+			}
 		}
 	}
-	*value = NULL;
 	return -1;
 }
 
