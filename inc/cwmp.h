@@ -40,6 +40,8 @@
 #define UCI_ACS_USERID_PATH					"cwmp.acs.userid"
 #define UCI_ACS_PASSWD_PATH					"cwmp.acs.passwd"
 #define UCI_ACS_PARAMETERKEY_PATH			"cwmp.acs.ParameterKey"
+#define UCI_ACS_SSL_CAPATH					"cwmp.acs.ssl_capath"
+#define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
 #define UCI_LOG_SEVERITY_PATH				"cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH					"cwmp.cpe.userid"
 #define UCI_CPE_PASSWD_PATH					"cwmp.cpe.passwd"
@@ -50,6 +52,8 @@
 #define UCI_CPE_LOG_MAX_SIZE				"cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
+#define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+
 
 enum end_session {
 	END_SESSION_REBOOT = 1,
