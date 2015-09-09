@@ -579,11 +579,13 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the http connection request server thread!");
     }
+#if 0
     error = pthread_create(&ubus_thread, NULL, &thread_uloop_run, NULL);
     if (error<0)
 	{
 		CWMP_LOG(ERROR,"Error when creating the ubus thread!");
 	}
+#endif
     error = pthread_create(&periodic_event_thread, NULL, &thread_event_periodic, (void *)cwmp);
     if (error<0)
     {
@@ -601,7 +603,9 @@ int main(int argc, char **argv)
     }
 
     cwmp_schedule_session(cwmp);
+#if 0
     pthread_join(ubus_thread, NULL);
+#endif
     pthread_join(periodic_event_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
