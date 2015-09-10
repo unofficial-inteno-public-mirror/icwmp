@@ -423,9 +423,9 @@ int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value)
 				dmstrappendend(p);
 				remove_substring(ifname, iface);
 			}
-			else
+			else {
 			remove_substring(ifname, baseifname);
-
+			}
 			dmuci_set_value_by_section(s, "ifname",  ifname);
 		}
 		uci_foreach_option_eq("network", "interface", "bridge_instance", value, s)
@@ -706,7 +706,7 @@ int get_bridge_key(char *refparam, struct dmctx *ctx, char **value)
 int get_bridge_name(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
-	section_name(args->layer2section);
+	*value = dmstrdup(section_name(args->layer2section));
 	return 0;
 }
 
