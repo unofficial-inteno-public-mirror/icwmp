@@ -2837,14 +2837,12 @@ inline int entry_landevice_lanethernetinterfaceconfig(struct dmctx *ctx, struct 
 
 	dmuci_get_value_by_section_string(landevice_section, "ifname", &ifname);
 	ifname = dmstrdup(ifname);
-	pch = strtok_r(ifname, " ", &spch);
-	while (pch != NULL) {
+	for(pch = strtok_r(ifname, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
 		if (strncmp(pch, "eth", 3) != 0 || strncmp(pch, wan_eth, 4) == 0)
 			continue;
 		init_ldargs_eth_cfg(ctx, pch);
 		sprintf(ieth, "%d", ++i);
 		SUBENTRY(entry_landevice_lanethernetinterfaceconfig_instance, ctx, idev, ieth);
-		pch = strtok_r(NULL, " ", &spch);
 	}
 	dmfree(ifname);
 	return 0;
