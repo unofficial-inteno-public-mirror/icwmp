@@ -188,26 +188,10 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 
 	curl_easy_setopt(curl, CURLOPT_COOKIEFILE, fc_cookies);
 	curl_easy_setopt(curl, CURLOPT_COOKIEJAR, fc_cookies);
-
-	if (cwmp->conf.acs_ssl_version) {
-		if (strcmp(cwmp->conf.acs_ssl_version, "sslv3") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv3);
-		else if (strcmp(cwmp->conf.acs_ssl_version, "sslv2") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_SSLv2);
-		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1);
-		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.0") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_0);
-		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.1") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_1);
-		else if (strcmp(cwmp->conf.acs_ssl_version, "tlsv1.2") == 0)
-			curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
-	}
 	
 	if (cwmp->conf.acs_ssl_capath)
 		curl_easy_setopt(curl, CURLOPT_CAPATH,  cwmp->conf.acs_ssl_capath);
 		
-
 	*msg_in = (char *) calloc (1, sizeof(char));
 
 	res = curl_easy_perform(curl);
