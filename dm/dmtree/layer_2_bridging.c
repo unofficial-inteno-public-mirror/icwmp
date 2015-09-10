@@ -416,9 +416,31 @@ int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value)
 		uci_foreach_option_eq("network", "interface", "bridge_instance", old_bridge_key, s)
 		{
 			dmuci_get_value_by_section_string(s, "ifname", &ifname);
+			if (strlen(ifname) > 5) {
+				p = iface;
+				dmstrappendchr(p, ' ');
+				dmstrappendstr(p, baseifname);
+				dmstrappendend(p);
+				remove_substring(ifname, iface);
+			}
+			else
 			remove_substring(ifname, baseifname);
+
 			dmuci_set_value_by_section(s, "ifname",  ifname);
 		}
+		uci_foreach_option_eq("network", "interface", "bridge_instance", value, s)
+		{
+			dmuci_get_value_by_section_string(s, "ifname", &ifname);
+			p = new_ifname;
+			if (ifname[0] != '\0') {
+				dmstrappendstr(p, ifname);
+				dmstrappendchr(p, ' ');
+			}
+			dmstrappendstr(p, baseifname);
+			dmstrappendend(p);
+			dmuci_set_value_by_section(s, "ifname",  new_ifname);
+		}
+
 	}
 	return 0;
 }
