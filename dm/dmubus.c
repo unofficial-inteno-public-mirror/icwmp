@@ -220,8 +220,13 @@ void json_parse_array( json_object *jobj, char *key, int index, char *next_key, 
 	int len;
 	char val[512] = {0};
 	json_object *jarray = jobj;/*Simply get the array*/
+
+	*value = "";
 	if(key) {
 		jarray = json_object_object_get(jobj, key);/*Getting the array if it is a key value pair*/
+	}
+	if(!jarray) {
+		return;
 	}
 	int arraylen = json_object_array_length(jarray);/*Getting the length of the array*/
 	json_object *jvalue;
