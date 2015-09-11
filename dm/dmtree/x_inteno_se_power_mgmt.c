@@ -29,13 +29,33 @@ int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, char **value)
 
 int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "";//TODO WHEN UBUS CMD IS PROVIDED
+	char buf[256];
+	int pp, r;
+
+	*value = "";
+	pp = dmcmd("pwrctl", 1, "show"); //TODO wait ubus command
+	if (pp) {
+		r = dmcmd_read(pp, buf, 256);
+		close(pp);
+		//TODO output command is changed
+		return 0;
+	}
 	return 0;
 }
 
 int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "";//TODO WHEN UBUS CMD IS PROVIDED
+	char buf[256];
+	int pp, r;
+
+	*value = "";
+	pp = dmcmd("pwrctl", 1, "show"); //TODO wait ubus command
+	if (pp) {
+		r = dmcmd_read(pp, buf, 256);
+		close(pp);
+		//TODO output command is changed
+		return 0;
+	}
 	return 0;
 }
 
@@ -84,7 +104,7 @@ bool dm_powermgmt_enable_set(void)
 	if( access("/etc/init.d/power_mgmt", F_OK ) != -1 ) {
 		return true;
 	}
-	else {
+  else {
 		return false;
 	}
 }

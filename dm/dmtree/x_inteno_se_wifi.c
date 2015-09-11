@@ -20,6 +20,7 @@
 
 struct sewifiargs cur_wifiargs = {0};
 
+inline int entry_sewifi_radio(struct dmctx *ctx);
 inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
 {
 	struct sewifiargs *args = &cur_wifiargs;
@@ -64,28 +65,40 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
-int entry_method_root_SE_Wifi(struct dmctx *ctx)
+/////////////SUB ENTRIES///////////////
+inline int entry_sewifi_radio(struct dmctx *ctx)
 {
 	char *wnum;
 	struct uci_section *s = NULL;
-	
+	uci_foreach_sections("wireless", "wifi-device", s) {
+		init_se_wifi(ctx, s);
+		wnum = section_name(s);
+		wnum += 2;
+		dmasprintf(&wnum, "%d", atoi(wnum) + 1);
+		SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
+		dmfree(wnum);
+	}
+	return 0;
+}
+//////////////////////////////////////
+
+int entry_method_root_SE_Wifi(struct dmctx *ctx)
+{
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_Wifi.") {
 		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.", ctx, "0", 1, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.", ctx, "0", 1, NULL, NULL, NULL);
-		uci_foreach_sections("wireless", "wifi-device", s) {
-			if (s != NULL) {
-				init_se_wifi(ctx, s);
-				wnum = section_name(s);
-				wnum += 2;
-				dmasprintf(&wnum, "%d", atoi(wnum) + 1);
-				DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
-				DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
-				DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
-				dmfree(wnum);
-			}
-			else 
-				break;
-		}
+		SUBENTRY(entry_sewifi_radio, ctx);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_sewifi_radio_instance(struct dmctx *ctx, char *wnum)
+{
+	IF_MATCH(ctx, DMROOT"X_INTENO_SE_Wifi.Radio.%s.", wnum) {
+		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
+		DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
