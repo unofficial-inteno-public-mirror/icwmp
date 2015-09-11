@@ -625,7 +625,7 @@ int get_voice_profile_signalprotocol(char *refparam, struct dmctx *ctx, char **v
 	return 0;
 }
 
-int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, char **value)
+int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
 		case VALUECHECK:
