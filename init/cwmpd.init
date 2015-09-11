@@ -85,11 +85,34 @@ set_wan_interface() {
 start_msg="Start cwmpd ..."
 stop_msg="Stop cwmpd ..."
 
+cwmp_wait_voice() {
+	if [ -e /etc/rc.d/S*asterisk ]
+	then
+		local max_line=""
+		while [ "$max_line" = "" -o "$max_line" = "0" ]; do
+			max_line=`/usr/sbin/asterisk -rx "brcm show status" | grep -c "Line id"`
+			if [ "$max_line" = "" -o "$max_line" = "0" ]; then
+				sleep 1
+			fi
+		done
+	fi
+}
+
+cwmp_wait_net() {
+	local tm=1
+	while [ "$(nvram get wlmngr)" != "done" ]; do
+		sleep $tm
+		[ $tm -ge 10 ] && break
+		tm=$((tm+1))
+	done
+}
 run() {
 	echo $start_msg;printf "\033[A" ;sleep 1
 	set_wan_interface
 	check_dhcp
 	check_acs_url
+	cwmp_wait_voice
+	cwmp_wait_net
 	if [ "_$1" = "_boot" ];then
 		opt=$opt"-b "
 	fi

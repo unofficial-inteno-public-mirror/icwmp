@@ -80,7 +80,6 @@ struct codec
 {
 	char *cdc;
 	char *id;
-	char *pid;
 	char *priority;
 };
 

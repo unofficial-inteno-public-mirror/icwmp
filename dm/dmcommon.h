@@ -43,6 +43,11 @@ do { \
 } while(0)
 
 
+#define DMCMD(CMD, N, ...) \
+do { \
+	int mpp = dmcmd(CMD, N, ## __VA_ARGS__); \
+	if (mpp) close (mpp); \
+} while (0)
 
 void compress_spaces(char *str);
 char *cut_fx(char *str, char *delimiter, int occurence);
@@ -56,5 +61,7 @@ int set_interface_enable_ubus(char *refparam, struct dmctx *ctx, int action, cha
 int get_interface_firewall_enabled(char *refparam, struct dmctx *ctx, char **value);
 struct uci_section *create_firewall_zone_config(char *fwl, char *iface, char *input, char *forward, char *output);
 int set_interface_firewall_enabled(char *refparam, struct dmctx *ctx, int action, char *value);
+int dmcmd(char *cmd, int n, ...);
+int dmcmd_read(int pipe, char *buffer, int size);
 
 #endif

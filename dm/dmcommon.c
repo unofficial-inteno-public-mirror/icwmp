@@ -226,8 +226,65 @@ int set_interface_firewall_enabled(char *refparam, struct dmctx *ctx, int action
 			}
 			if (cnt == 0 && strcmp(value,"DROP") ==0)
 				create_firewall_zone_config("fwl", lan_name, "DROP", "DROP", "");
-			//delay_service reload "firewall" "1" //TODO BY IBH
 			return 0;
 	}
 	return 0;
+}
+
+int dmcmd(char *cmd, int n, ...)
+{
+	va_list arg;
+	int i, pid;
+	const char *argv[n+1];
+	static int dmcmd_pfds[2];
+
+	argv[0] = cmd;
+
+	va_start(arg,n);
+	for (i=0; i<n; i++)
+	{
+		argv[i+1] = va_arg(arg, char*);
+	}
+	va_end(arg);
+
+
+	if (pipe(dmcmd_pfds) < 0)
+		return -1;
+
+	if ((pid = fork()) == -1)
+		return -1;
+
+	if (pid == 0) {
+		/* child */
+		close(dmcmd_pfds[0]);
+		dup2(dmcmd_pfds[1], 1);
+		close(dmcmd_pfds[1]);
+
+		execvp(argv[0], (char **) argv);
+		exit(0);
+	} else if (pid < 0)
+		return -1;
+
+	/* parent */
+	close(dmcmd_pfds[1]);
+
+	int status;
+	while (waitpid(pid, &status, 0) != pid);
+
+	return dmcmd_pfds[0];
+}
+
+int dmcmd_read(int pipe, char *buffer, int size)
+{
+	int rd;
+	if (size < 2) return -1;
+	if ((rd = read(pipe, buffer, (size-1))) > 0) {
+		buffer[rd] = '\0';
+		return (rd + 1);
+	}
+	else {
+		buffer[0] = '\0';
+		return -1;
+	}
+	return -1;
 }
