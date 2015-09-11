@@ -330,6 +330,7 @@ void dm_entry_cli(int argc, char** argv)
 	int output = 1;
 	char *param, *next_level, *parameter_key, *value, *cmd;
 	int fault = 0, status = -1;
+	bool set_fault = false;
 
 	dm_global_init();
 	dm_ctx_init(&cli_dmctx);
@@ -368,10 +369,13 @@ void dm_entry_cli(int argc, char** argv)
 		for (i = 5; i < argc; i+=2) {
 			param = argv[i];
 			value = argv[i+1];
-			dm_entry_param_method(&cli_dmctx, CMD_SET_VALUE, param, value, NULL);
+			fault = dm_entry_param_method(&cli_dmctx, CMD_SET_VALUE, param, value, NULL);
+			if (fault) set_fault = true;
 		}
 		parameter_key = argv[4];
-		fault = dm_entry_apply(&cli_dmctx, CMD_SET_VALUE, parameter_key, NULL);
+		if (!set_fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_SET_VALUE, parameter_key, NULL);
+		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_SET_VALUE, output);
 	}
 	/* SET NOTIFICATION */
@@ -381,9 +385,12 @@ void dm_entry_cli(int argc, char** argv)
 		for (i = 4; i < argc; i+=2) {
 			param = argv[i];
 			value = argv[i+1];
-			dm_entry_param_method(&cli_dmctx, CMD_SET_NOTIFICATION, param, value, "1");
+			fault = dm_entry_param_method(&cli_dmctx, CMD_SET_NOTIFICATION, param, value, "1");
+			if (fault) set_fault = true;
 		}
-		fault = dm_entry_apply(&cli_dmctx, CMD_SET_NOTIFICATION, NULL, NULL);
+		if(!set_fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_SET_NOTIFICATION, NULL, NULL);
+		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_SET_NOTIFICATION, output);
 	}
 	/* ADD OBJECT */
