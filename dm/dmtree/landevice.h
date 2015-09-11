@@ -18,6 +18,7 @@
 struct wl_clientargs
 {
 	char *mac;
+	char *wiface;
 };
 
 struct clientargs
@@ -46,7 +47,10 @@ struct ldwlanargs
 {
 	struct uci_section *lwlansection;
 	int wlctl_num;
+	struct uci_section *device_section;
 	char *wunit;
+	char *wiface;
+	json_object *res;
 	int pki;
 };
 
