@@ -34,7 +34,6 @@ int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
 int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	char path[] = "/etc/rc.d/*ice-client";
 	
 	switch (action) {
 		case VALUECHECK:

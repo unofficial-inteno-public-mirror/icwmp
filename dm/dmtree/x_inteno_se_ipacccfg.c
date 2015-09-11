@@ -110,10 +110,10 @@ int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int a
 		case VALUESET:
 			dmuci_delete_by_section(accargs->ipaccsection, "src_ip", "");
 			val = dmstrdup(value);
-			pch = strtok_r(val, " ", &spch);
+			pch = strtok_r(val, " ,", &spch);
 			while (pch != NULL) {
 				dmuci_add_list_value_by_section(accargs->ipaccsection, "src_ip", pch);
-				pch = strtok_r(NULL, " ", &spch);
+				pch = strtok_r(NULL, " ,", &spch);
 			}
 			dmfree(val);
 			return 0;
@@ -286,7 +286,7 @@ int get_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, char **
 {
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
-	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src", value);
+	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dst", value);
 	return 0;
 }
 
@@ -299,7 +299,7 @@ int set_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, int act
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(forwardargs->forwardsection, "src", value);
+			dmuci_set_value_by_section(forwardargs->forwardsection, "dst", value);
 			return 0;
 	}
 	return 0;
@@ -487,21 +487,21 @@ int get_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, char **value)
 
 int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *pch, *spch, *val;
+	char *pch, *spch;
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_delete_by_section(forwardargs->forwardsection, "src_mac", "");
-			val = dmstrdup(value);
+			dmuci_delete_by_section(forwardargs->forwardsection, "src_mac", NULL);
+			value = dmstrdup(value);
 			pch = strtok_r(value, " ", &spch);
 			while (pch != NULL) {
 				dmuci_add_list_value_by_section(forwardargs->forwardsection, "src_mac", pch);
 				pch = strtok_r(NULL, " ", &spch);
 			}
-			dmfree(val);
+			dmfree(value);
 			return 0;
 	}
 	return 0;
@@ -516,7 +516,7 @@ int add_ipacccfg_port_forwarding(struct dmctx *ctx, char **instancepara)
 	
 	instance = get_last_instance_lev2("firewall", "redirect", "forwardinstance", "target", "DNAT");
 	dmuci_add_section("firewall", "redirect", &redirect, &value);
-	dmuci_set_value_by_section(redirect, "enabled", false);
+	dmuci_set_value_by_section(redirect, "enabled", "0");
 	dmuci_set_value_by_section(redirect, "target", "DNAT");
 	dmuci_set_value_by_section(redirect, "proto", "tcp udp");
 	*instancepara = update_instance(redirect, instance, "forwardinstance");
@@ -532,13 +532,12 @@ int delete_ipacccfg_port_forwarding_all(struct dmctx *ctx)
 	
 	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {	
 		if (found != 0)
-			dmuci_delete_by_section(ss, NULL, NULL); //CHECK IF IT DELETE THE WHOLE SECTION
+			dmuci_delete_by_section(ss, NULL, NULL);
 		ss = s;
 		found++;
 	}
 	if (ss != NULL)
 		dmuci_delete_by_section(ss, NULL, NULL);
-	dmuci_commit();
 	return 0;
 }
 
@@ -548,7 +547,6 @@ int delete_ipacccfg_port_forwarding_instance(struct dmctx *ctx)
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 	
 	dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
-	dmuci_commit();
 	return 0;
 }
 /**********************/
