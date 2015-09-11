@@ -63,5 +63,8 @@ struct uci_section *create_firewall_zone_config(char *fwl, char *iface, char *in
 int set_interface_firewall_enabled(char *refparam, struct dmctx *ctx, int action, char *value);
 int dmcmd(char *cmd, int n, ...);
 int dmcmd_read(int pipe, char *buffer, int size);
+int ipcalc(char *ip_str, char *mask_str, char *start_str, char *end_str, char *ipstart_str, char *ipend_str);
+int ipcalc_rev_start(char *ip_str, char *mask_str, char *ipstart_str, char *start_str);
+int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_str, char *end_str);
 
 #endif

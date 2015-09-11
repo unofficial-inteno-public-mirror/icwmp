@@ -288,3 +288,67 @@ int dmcmd_read(int pipe, char *buffer, int size)
 	}
 	return -1;
 }
+
+int ipcalc(char *ip_str, char *mask_str, char *start_str, char *end_str, char *ipstart_str, char *ipend_str)
+{
+//TODO test it in accordance with inteno issue #7467
+	struct in_addr ip;
+	struct in_addr mask;
+	struct in_addr ups;
+	struct in_addr upe;
+	int start, end;
+	unsigned int umask;
+	unsigned int addr;
+
+	inet_aton(ip_str, &ip);
+	inet_aton(mask_str, &mask);
+
+	start = atoi(start_str);
+
+	ups.s_addr = htonl(ntohl(ip.s_addr & mask.s_addr) + start);
+	strcpy(ipstart_str, inet_ntoa(ups));
+
+	if (end_str) {
+		end = atoi(end_str);
+		upe.s_addr = htonl(ntohl(ups.s_addr) + end);
+		strcpy(ipend_str, inet_ntoa(upe));
+	}
+	return 0;
+}
+
+int ipcalc_rev_start(char *ip_str, char *mask_str, char *ipstart_str, char *start_str)
+{
+//TODO test it in accordance with inteno issue #7467
+	struct in_addr ip;
+	struct in_addr mask;
+	struct in_addr ups;
+	struct in_addr upe;
+	int start;
+	unsigned int umask;
+	unsigned int addr;
+
+	inet_aton(ip_str, &ip);
+	inet_aton(mask_str, &mask);
+	inet_aton(ipstart_str, &ups);
+
+	start = ntohl(ups.s_addr) - ntohl(ip.s_addr & mask.s_addr);
+	sprintf(start_str, "%d", start);
+	return 0;
+}
+
+int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_str, char *end_str)
+{
+//TODO test it in accordance with inteno issue #7467
+	struct in_addr ip;
+	struct in_addr mask;
+	struct in_addr upe;
+	int end;
+
+	inet_aton(ip_str, &ip);
+	inet_aton(mask_str, &mask);
+	inet_aton(ipend_str, &upe);
+
+	end = ntohl(upe.s_addr) - ntohl(ip.s_addr & mask.s_addr) - atoi(start_str);
+	sprintf(end_str, "%d", end);
+	return 0;
+}
