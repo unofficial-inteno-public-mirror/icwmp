@@ -22,11 +22,11 @@
 #define WAN_INST_ETH 1
 #define WAN_INST_ATM 2
 #define WAN_INST_PTM 3
-#define DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP "" //TODO ASK KMD
 
 inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritable, bool notif_permission);
 inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm);
 inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, char *idev, char *iwan, char *iconp, int proto, bool notif_permission, bool forced_inform_eip, int forced_notify);
+
 enum WAN_TYPE_CONNECTION {
 	WAN_IP_CONNECTION,
 	WANPPPConnection
@@ -49,6 +49,7 @@ enum enum_wan_proto {
 	WAN_PROTO_PPP,
 	WAN_PROTO_IP
 };
+
 struct wan_device 
 {
 	char *instance;
@@ -58,7 +59,7 @@ struct wan_device
 };
 
 struct wan_device wan_devices[WAN_DEVICE] = {
-	[WAN_IDX_ETH] = {"1", "eth0", "ethernet_interface", "layer2_interface_ethernet"},
+	[WAN_IDX_ETH] = {"1", NULL, "ethernet_interface", "layer2_interface_ethernet"},
 	[WAN_IDX_ATM] = {"2", "atm", "atm_bridge", "layer2_interface_adsl"},
 	[WAN_IDX_PTM] = {"3", "ptm", "vdsl_interface", "layer2_interface_vdsl"}
 };
@@ -122,7 +123,6 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	return 0;
 }
 
-//TO CHECK
 int network_get_ipaddr(char **value, char *iface)
 {
 	json_object *res;
@@ -169,6 +169,7 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 		pch = strtok_r(NULL, " ", &spch);
 	}
 	dmfree(dup);
+	TRACE("type is %s and cn is %d \n", type, cn);
 	if (type[0] == '\0' || cn < 2)
 		return 0;
 
@@ -176,6 +177,7 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 	if (res) {
 		json_select(res, "device", -1, NULL, &device, NULL);
 	}
+	TRACE("device is %s \n", device);
 	if (!res || device[0] == '\0') {
 		cn = 0;
 		dup = dmstrdup(ifname);
@@ -201,9 +203,35 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 		return -1;
 	}
 	else if (strstr(device, fwan)) {
+		TRACE("device %s fwan %s \n", device, fwan);
 		return 0;
 	}	
 	return -1;
+}
+int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev)
+{
+	char *ifname, new_ifname[64], *p, *pch, *spch;
+	new_ifname[0] = '\0';
+	p = new_ifname;
+	dmuci_get_value_by_section_string(interface_setion, "ifname", &ifname);
+	ifname = dmstrdup(ifname);
+	for (pch = strtok_r(ifname, " ", &spch); pch; pch = strtok_r(NULL, " ", &spch)) {
+		if (!strstr(pch, dev)) {
+			if (new_ifname[0] != '\0') {
+				dmstrappendchr(p, ' ');
+			}
+			dmstrappendstr(p, pch);
+		}
+	}
+	dmstrappendend(p);
+	dmfree(ifname);
+	if (new_ifname[0] == '\0') {
+		dmuci_delete_by_section(interface_setion, NULL, NULL);
+	}
+	else {
+		dmuci_set_value_by_section(interface_setion, "ifname", new_ifname);
+	}
+	return 0;
 }
 /****** ADD-DEL OBJECT *******************/
 int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
@@ -215,10 +243,12 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 	char buf[16] = {0};
 	struct uci_section *s = NULL;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
+
 	if (wandargs->instance == WAN_INST_ATM) {
 		idx = get_cfg_layer2idx("layer2_interface_adsl", "atm_bridge", "baseifname", sizeof("atm")-1);
 		sprintf(buf, "atm%d",idx);
 		sprintf(ifname,"%s.1",buf);
+		instance = get_last_instance_lev2("layer2_interface_adsl", "atm_bridge", "waninstance", "baseifname", "atm");
 		dmuci_add_section("layer2_interface_adsl", "atm_bridge", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
 		dmuci_set_value_by_section(s, "bridge", "0");
@@ -228,7 +258,6 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 		dmuci_set_value_by_section(s, "unit", buf+3);
 		dmuci_set_value_by_section(s, "vci", "35");
 		dmuci_set_value_by_section(s, "vpi", "8");
-		instance = get_last_instance_lev2("layer2_interface_adsl", "atm_bridge", "waninstance", "baseifname", "atm");
 		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
@@ -236,12 +265,12 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 		idx = get_cfg_layer2idx("layer2_interface_vdsl", "vdsl_interface", "baseifname", sizeof("ptm")-1);
 		sprintf(buf,"ptm%d", idx);
 		sprintf(ifname,"%s.1",buf);
+		instance = get_last_instance_lev2("layer2_interface_vdsl", "vdsl_interface", "waninstance", "baseifname", "ptm");
 		dmuci_add_section("layer2_interface_vdsl", "vdsl_interface", &s, &value);
 		dmuci_set_value_by_section(s, "baseifname", buf);
 		dmuci_set_value_by_section(s, "bridge", "0");
 		dmuci_set_value_by_section(s, "ifname", ifname);
 		dmuci_set_value_by_section(s, "unit", buf+3);
-		instance = get_last_instance_lev2("layer2_interface_vdsl", "vdsl_interface", "waninstance", "baseifname", "ptm");
 		*instancepara = update_instance(s, instance, "waninstance");
 		return 0;
 	}
@@ -250,30 +279,46 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 
 int delete_wan_wanconnectiondevice_all(struct dmctx *ctx)
 {
-	int found = 0;
 	struct uci_section *s = NULL; 
 	struct uci_section *ss = NULL;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	
-	uci_foreach_option_cont(wan_devices[wandargs->instance - 1].cdev, wan_devices[wandargs->instance - 1].stype, "baseifname", wandargs->fdev, s) {	
-		if (found != 0)
+	uci_foreach_option_cont(wan_devices[wandargs->instance - 1].cdev, wan_devices[wandargs->instance - 1].stype, "baseifname", wandargs->fdev, s) {
+		if (ss)
 			dmuci_delete_by_section(ss, NULL, NULL);
 		ss = s;
-		found++;
 	}
 	if (ss != NULL)
 		dmuci_delete_by_section(ss, NULL, NULL);
+	
+	ss = NULL;
+	uci_foreach_option_cont("network", "interface", "ifname", wandargs->fdev, s) {
+		if (ss)
+			wan_remove_dev_interface(ss, wandargs->fdev);
+		ss = s;
+	}
+	if (ss != NULL)
+		wan_remove_dev_interface(ss, wandargs->fdev);
 	return 0;
 }
 
 int delete_wan_wanconnectiondevice(struct dmctx *ctx)
 {
+	struct uci_section *s = NULL; 
+	struct uci_section *ss = NULL;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 	
 	dmuci_delete_by_section(wandcdevargs->wandevsection, NULL, NULL);
-	dmuci_commit();
+	uci_foreach_option_cont("network", "interface", "ifname", wandcdevargs->fwan, s) {
+		if (ss)
+			wan_remove_dev_interface(ss, wandcdevargs->fwan);
+		ss = s;
+	}
+	if (ss != NULL)
+		wan_remove_dev_interface(ss, wandcdevargs->fwan);
 	return 0;
 }
+
 int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 {
 	struct uci_section *s;
@@ -283,16 +328,8 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
-	//TO CHECK NORMALLY THIS IS NOT NECESSAR
-	/*uci_foreach_option_eq(wan_devices[wandcdevargs->index].cdev, wan_devices[wandcdevargs->index].stype, "baseifname", wandcdevargs->fwan, s) {
-		found++;
-		break;
-	}
-	if(found == 0) {
-		return FAULT_9005;
-	} *///TO CHECK NORMALLY THIS IS NOT NECESSAR $idev""_$iwan""_$iproto""_$((++iconp)
 	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
@@ -303,7 +340,6 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 
 int delete_wan_wanipconnectiondevice_all(struct dmctx *ctx)
 {
-	int found = 0;
 	char *ifname, *iproto;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
@@ -312,12 +348,11 @@ int delete_wan_wanipconnectiondevice_all(struct dmctx *ctx)
 	dmuci_get_value_by_section_string(wandcdevargs->wandevsection, "ifname", &ifname);
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, s) {
 		dmuci_get_value_by_section_string(s, "proto", &iproto);
-		if (strcmp(iproto, "dhcp") == 0) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be static
-			if (found != 0)
+		if (strcmp(iproto, "dhcp") == 0 || strcmp(iproto, "static") == 0) {
+			if (ss)
 				dmuci_delete_by_section(ss, NULL, NULL);
 			ss = s;
-			found++;
-		}		
+		}
 	}
 	if (ss != NULL)
 		dmuci_delete_by_section(ss, NULL, NULL);
@@ -343,8 +378,7 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	char *instance;
 
 	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance); //TODO ADD FUNCTION TO RENAME A SECTION"wan_""$idev""_$iwan""_$iproto""_$((++iconp))"
-	sprintf(ifname, "%s.1", wandcdevargs->fwan);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
@@ -364,12 +398,11 @@ int delete_wan_wanpppconnectiondevice_all(struct dmctx *ctx)
 	dmuci_get_value_by_section_string(wandcdevargs->wandevsection, "ifname", &ifname);
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, s) {
 		dmuci_get_value_by_section_string(s, "proto", &iproto);
-		if (strcmp(iproto, "pppoe") == 0) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be pppoa
-			if (found != 0)
+		if (strstr(iproto, "ppp") == 0) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be pppoa
+			if (ss)
 				dmuci_delete_by_section(ss, NULL, NULL);
 			ss = s;
-			found++;
-		}		
+		}
 	}
 	if (ss != NULL)
 		dmuci_delete_by_section(ss, NULL, NULL);
@@ -422,11 +455,12 @@ int get_wan_device_wan_access_type(char *refparam, struct dmctx *ctx, char **val
 
 int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct wanargs *wandargs = (struct wanargs *)ctx->args;
-	
+	struct wanargs *wandargs = (struct wanargs *)ctx->args;	
 	char *status;
 	int dsl;
 	json_object *res;
+
+	*value = "";
 	if (wandargs->instance == WAN_INST_ETH)
 		*value = "NoSignal Not a dsl interface";
 	else {
@@ -462,6 +496,7 @@ int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, stru
 	char *mode;
 	int dsl;
 	json_object *res = NULL;
+	*value = "";
 
 	if (wandargs->instance == WAN_INST_ETH)
 		*value = "Not a dsl interface";
@@ -496,27 +531,43 @@ int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, stru
 int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
-	char *val = "";
-	int dsl;
-	if (wandargs->instance == WAN_INST_ETH)
-		*value = "None";
-	else {
+	char buf[512], *val = "", *pch, *spch, *pch2, *spch2, *dup;
+	int dsl, pp, r;
+	*value = "None";
+
+	if (wandargs->instance != WAN_INST_ETH) {
 		dsl = get_wan_device_wan_dsl_traffic();
 		if (!(wandargs->instance == WAN_INST_ATM && dsl == WAN_DSL_ADSL) &&
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
-			*value = "";
 			return 0;
 		}
 
-		val = "`adsl info --state|grep \"Upstream rate\"| awk -F'['$'\t'' ,]' '$1!=\"Max:\" {print $2}'`"; //TODO IS THER AN EQUIVALENT UBUS CMD
-		if (strcmp(val, "FAST")) {
-			*value = "Fast";
+		buf[0] = '\0';
+		pp = dmcmd("adsl", 2, "info", "--state"); //TODO wait ubus command
+		if (pp) {
+			r = dmcmd_read(pp, buf, 512);
+			close(pp);
 		}
-		else if (strcmp(val, "INTR")) {
-			*value = "Interleaved";
-		}
-		else {
-			*value = "None";
+		for (pch = strtok_r(buf, "\n\r", &spch); pch; pch = strtok_r(NULL, "\n\r", &spch)) {
+			if (!strstr(pch, "Upstream rate"))
+				continue;
+			if (strstr(pch, "Max:"))
+				continue;
+			dup = dmstrdup(pch);
+			pch2 = strtok_r(dup, " \t", &spch2);
+			pch2 = strtok_r(NULL, " \t", &spch2);
+			if (pch2 != NULL) {
+				if (strcasecmp(pch2, "FAST")) {
+					*value = "Fast";
+				}
+				else if (strcasecmp(pch2, "INTR")) {
+					*value = "Interleaved";
+				}
+				else {
+					*value = "None";
+				}
+			}
+			dmfree(dup);
 		}
 	}
 	return 0;
@@ -602,7 +653,7 @@ int get_wan_device_dsl_downstreamattenuation(char *refparam, struct dmctx *ctx, 
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_down_x100", &attn_down_x100, NULL);
 		if (attn_down_x100) {
-			dmasprintf(&attn_down_x100, "%d", (atoi(attn_down_x100) % 10));// MEM WILL BE FREED IN DMMEMCLEAN
+			dmasprintf(&attn_down_x100, "%d", (atoi(attn_down_x100) / 10));// MEM WILL BE FREED IN DMMEMCLEAN
 			*value = attn_down_x100;
 		}
 	}
@@ -628,7 +679,7 @@ int get_wan_device_dsl_downstreamnoisemargin(char *refparam, struct dmctx *ctx, 
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_down_x100", &snr_down_x100, NULL);
 		if (snr_down_x100) {
-			dmasprintf(&snr_down_x100, "%d", (atoi(snr_down_x100) % 10));// MEM WILL BE FREED IN DMMEMCLEAN
+			dmasprintf(&snr_down_x100, "%d", (atoi(snr_down_x100) / 10));// MEM WILL BE FREED IN DMMEMCLEAN
 			*value = snr_down_x100;
 		}
 	}
@@ -710,7 +761,7 @@ int get_wan_device_dsl_upstreamattenuation(char *refparam, struct dmctx *ctx, ch
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_up_x100", &attn_up_x100, NULL);
 		if (attn_up_x100) {
-			dmasprintf(&attn_up_x100, "%d", (atoi(attn_up_x100) % 10)); // MEM WILL BE FREED IN DMMEMCLEAN
+			dmasprintf(&attn_up_x100, "%d", (atoi(attn_up_x100) / 10)); // MEM WILL BE FREED IN DMMEMCLEAN
 			*value = attn_up_x100;
 		}
 	}
@@ -738,7 +789,7 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_up_x100", &snr_up_x100, NULL);
 		if (snr_up_x100) {
-			dmasprintf(&snr_up_x100, "%d", (atoi(snr_up_x100) % 10));// MEM WILL BE FREED IN DMMEMCLEAN
+			dmasprintf(&snr_up_x100, "%d", (atoi(snr_up_x100) / 10));// MEM WILL BE FREED IN DMMEMCLEAN
 			*value = snr_up_x100;
 		}
 		else {
@@ -750,25 +801,25 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 
 int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *val = "";
+	char *val = "0";
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	
 	if (wandargs->instance == WAN_INST_ATM) {
-		dmuci_get_option_value_string("layer2_interface", "capabilities", "AnnexM", &val);	
-	}
-	if (val[0] != '\0') {
-		if (strcasecmp(val, "enabled") == 0) {
-			*value = "1";
-			return 0;
+		dmuci_get_option_value_string("layer2_interface", "capabilities", "AnnexM", &val);
+		if (val[0] != '\0') {
+			if (strcasecmp(val, "enabled") == 0) {
+				*value = "1";
+				return 0;
+			}
 		}
 	}
-	*value = "0";
 	return 0;
 }
 
 int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
+
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 		
 	switch (action) {
@@ -780,7 +831,7 @@ int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value
 			if (wandargs->instance != WAN_INST_ATM) {
 				return 0;
 			}
-			string_to_bool(value, &b);			
+			string_to_bool(value, &b);
 			if(b) {
 				dmuci_set_value("layer2_interface", "capabilities", "AnnexM", "Enabled");					
 			}
@@ -791,21 +842,23 @@ int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
-
 //TO CHECK IF NO VALUE RETURNE BY UBUS CMD
 int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *val;
+	bool b;
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
+
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "up", -1, NULL, &val, NULL);
 	if (val) {
-		if (strcmp(val, "true") != 0 || (val[0] != '1'))
-			*value = "0";
-		else
+		string_to_bool(val, &b);
+		if (b)
 			*value = "1";
+		else
+			*value = "0";
 	}
 	return 0;
 }
@@ -824,7 +877,7 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 			if (string_to_bool(value, &b))
 				return FAULT_9007;
 			return 0;
-		case VALUESET:
+		case VALUESET: //ENHANCEMENT look for function to start and stop the ethernet driver
 			string_to_bool(value, &b);
 			dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 			if (res) {
@@ -844,7 +897,7 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 					dmuci_get_value_by_section_string(s, "type", &type);
 					if (strcmp(type, "anywan") != 0 && strcmp(type, "multiwan") != 0) {
 						sprintf(json_name, "network.interface.%s", section_name(s));
-						dmubus_call(json_name, "up", UBUS_ARGS{}, 0, &res);
+						dmubus_call(json_name, "down", UBUS_ARGS{}, 0, &res);
 						goto end;
 					}
 					else {
@@ -870,12 +923,13 @@ int get_wan_eth_intf_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
-	//dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", wandargs->fdev}}, 1, &res);
+	bool b;
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "Disabled");
 	json_select(res, "up", 0, NULL, value, NULL);
 	if (*value) {
-		if (strcmp(*value, "true") != 0 || (*value)[0] != '1') 
+		string_to_bool(*value, &b);
+		if (!b)
 			*value = "Disabled";
 		else
 			*value = "Up";
@@ -887,7 +941,7 @@ int get_wan_eth_intf_mac(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res); //TOCHECK
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "00:00:00:00:00:00");
 	json_select(res, "macaddr", 0, NULL, value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -952,7 +1006,6 @@ int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, char **
 	return 0;
 }
 
-
 /************************************************************************** 
 **** ****  function related to get_wandevice_wanconnectiondevice_parameters **** ****
 ***************************************************************************/
@@ -969,17 +1022,18 @@ int get_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 	char *vpi, *vci;
 	struct uci_section *s;
 	
-	uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) { 
+	uci_foreach_option_cont("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) { 
 		dmuci_get_value_by_section_string(s, "vpi", &vpi);
 		dmuci_get_value_by_section_string(s, "vci", &vci);
 		dmasprintf(value, "PVC: %s/%s", vpi, vci); // MEM WILL BE FREED IN DMMEMCLEAN
+		break;
 	}
 	return 0;
 }
 
 int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *vpi = NULL, *vci = NULL, *spch;
+	char *vpi = NULL, *vci = NULL, *spch, *val;
 	struct uci_section *s;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 	
@@ -987,14 +1041,13 @@ int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
-				//PVC: VPI/VCI
+			uci_foreach_option_cont("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
 				if (strstr(value, "PVC: "))
 					value += 5;
 				else
 					return 0;
-				value = dmstrdup(value);
-				vpi = strtok_r(value, "/", &spch);
+				val = dmstrdup(value);
+				vpi = strtok_r(val, "/", &spch);
 				if (vpi) {
 					vci = strtok_r(NULL, "/", &spch);
 				}
@@ -1002,7 +1055,7 @@ int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 					dmuci_set_value_by_section(s, "vpi", vpi);
 					dmuci_set_value_by_section(s, "vci", vci);
 				}
-				dmfree(value);
+				dmfree(val);
 				break;
 			}
 			return 0;
@@ -1016,8 +1069,8 @@ int get_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 	struct uci_section *s;
 	char *type, *encapsulation, *encaptype;
 	*value = "";
-
-	uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
+	
+	uci_foreach_option_cont("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
 		dmuci_get_value_by_section_string(s,"link_type", &type);
 		if (strcmp(type, "EoA") == 0 ) {
 			type = "encapseoa";
@@ -1027,10 +1080,10 @@ int get_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 			type = "encapsipoa";
 		}
 		dmuci_get_value_by_section_string(s, type, &encapsulation);
-		if (strcmp(encapsulation, "vcmux") == 0) {
+		if (strstr(encapsulation, "vcmux")) {
 			*value = "VCMUX";
 		}
-		else if (strcmp(encapsulation, "llc") == 0) {
+		else if (strstr(encapsulation, "llc")) {
 			*value = "LLC";
 		} else {
 			*value = "";
@@ -1051,7 +1104,7 @@ int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
+			uci_foreach_option_cont("layer2_interface_adsl", "atm_bridge", "ifname", wandcdevargs->fwan, s) {
 				dmuci_get_value_by_section_string(s, "link_type", &type);
 				int enc;
 				if (strstr(value, "VCMUX")) {
@@ -1084,11 +1137,9 @@ int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 	return 0;
 }
 
-
 /************************************************************************** 
 **** ****  function related to get_wandevice_wanprotoclconnection_parameters **** ****
 ***************************************************************************/
-
 
 //THE same as get_wan_device_ppp_status WHY DO WE CREATE A SEPARATED FUNCTION
 int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
@@ -1098,21 +1149,23 @@ int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
 	char *intf;
 	char *status = NULL;
 	char *uptime = NULL;
+	bool b = false;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 
 	intf = section_name(wandcprotoargs->wancprotosection);
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
-	DM_ASSERT(res, *value = "");
+	DM_ASSERT(res, *value = "Disconnected");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
-		if (strcmp(status, "true") == 0) {
+		if (strcasecmp(status, "true") == 0) {
 			json_select(res, "uptime", 0, NULL, &uptime, NULL);
 			json_select(res, "pending", 0, NULL, &pending, NULL);
+			string_to_bool(pending, &b);
 		}
 	}
 	if (uptime && atoi(uptime) > 0)
 		*value = "Connected";
-	else if (pending && (strcmp(pending, "true") == 0)) {
+	else if (pending && b) {
 		*value = "Pending Disconnect";
 	}
 	else
@@ -1125,12 +1178,8 @@ int get_wan_device_mng_interface_ip(char *refparam, struct dmctx *ctx, char **va
 	char *intf;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 	
-	if (DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP[0] != '\0')
-		*value = DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP;
-	else {
-		intf = section_name(wandcprotoargs->wancprotosection);
-		network_get_ipaddr(value, intf); //TODO FUNCTION NOT FOUND
-	}	
+	intf = section_name(wandcprotoargs->wancprotosection);
+	network_get_ipaddr(value, intf);
 	return 0;
 }
 
@@ -1149,7 +1198,7 @@ int get_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 
 int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *type;
+	char *type = "";
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 	
 	switch (action) {
@@ -1224,13 +1273,11 @@ int get_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, ch
 	intf = section_name(wandcprotoargs->wancprotosection);
 	uci_foreach_sections("firewall", "zone", s) {
 		dmuci_get_value_by_section_string(s, "masq", &masq);
-		if (masq[0] != '\0') {
-			if (masq[0] == '1' && masq[1] == '\0') {
-				dmuci_get_value_by_section_string(s, "network", &network);
-				if (strstr(network, intf)) {
-					*value = "1";
-					return 0;
-				}
+		if (masq[0] == '1' && masq[1] == '\0') {
+			dmuci_get_value_by_section_string(s, "network", &network);
+			if (strstr(network, intf)) {
+				*value = "1";
+				return 0;
 			}
 		}
 	}
@@ -1273,8 +1320,6 @@ int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, in
 	return 0;
 }
 
-//TODO get_interface_firewall_enabled PRESENT IN LANDEVICE.C TO REMOVE IN DMCOMMON FILE
-//TODO set_interface_firewall_enabled PRESENT IN LANDEVICE.C TO REMOVE IN DMCOMMON FILE
 
 
 int get_wan_igmp_rule_idx(char *iface, struct uci_section **rule, struct uci_section **zone, char **enable)
@@ -1282,6 +1327,7 @@ int get_wan_igmp_rule_idx(char *iface, struct uci_section **rule, struct uci_sec
 	char *input, *proto, *target;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
+	*enable = "0";
 	
 	uci_foreach_option_cont("firewall", "zone", "network", iface, *zone) {
 		dmuci_get_value_by_section_string(*zone, "input", &input);
@@ -1392,7 +1438,7 @@ int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, in
 		case VALUESET:
 			string_to_bool(value, &b);
 			if(b)
-				value = "";
+				value = "1";
 			else
 				value = "0";
 			dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "peerdns", value);
@@ -1407,6 +1453,7 @@ int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	char *uptime = NULL;
 	char *pending = NULL;
 	json_object *res = NULL;
+	bool bstatus = false, bpend = false;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 
 	intf = section_name(wandcprotoargs->wancprotosection);
@@ -1414,14 +1461,16 @@ int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
-		if (status[0] == '1' && status[1] == '\0') {
+		string_to_bool(status, &bstatus);
+		if (bstatus) {
 			json_select(res, "uptime", 0, NULL, &uptime, NULL);
 			json_select(res, "pending", 0, NULL, &pending, NULL);
+			string_to_bool(pending, &bpend);
 		}
 	}
 	if (uptime && atoi(uptime) > 0)
 		*value = "Connected";
-	else if (pending && strcmp(pending, "true") == 0)
+	else if (pending && bpend)
 		*value = "Pending Disconnect";
 	else
 		*value = "Disconnected";
@@ -1433,12 +1482,8 @@ int get_wan_device_ppp_interface_ip(char *refparam, struct dmctx *ctx, char **va
 	char *intf, *val;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 
-	if (DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP[0] != '\0')
-		*value = DEFAULT_WAN_DEVICE_MNG_INTERFACE_IP;
-	else {
-		intf = section_name(wandcprotoargs->wancprotosection);
-		network_get_ipaddr(value, intf); //TODO FUNCTION NOT FOUND
-	}
+	intf = section_name(wandcprotoargs->wancprotosection);
+	network_get_ipaddr(value, intf);
 	return 0;
 }
 
@@ -1447,6 +1492,7 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 	char *intf, *device;
 	json_object *res;
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	*value = "";
 	intf = section_name(wandcprotoargs->wancprotosection);
 	
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
@@ -1458,7 +1504,6 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 			return 0;
 		}
 	}
-	*value = "";
 	return 0;
 }
 
@@ -1508,6 +1553,7 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 	dmuci_get_option_value_string("network", default_wan, "ifname", &default_wan_ifname);
 	dmuci_get_option_value_string("network", default_wan, "proto", &defwanproto);
 	dmuci_get_option_value_string("layer2_interface_ethernet", "ethernet_interface", "baseifname", &eth_wan);
+	wan_devices[WAN_IDX_ETH].fdev = eth_wan;
 
 	if (strstr(defwanproto, "ppp"))
 		default_wan_proto = WAN_PROTO_PPP;
@@ -1555,7 +1601,8 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *c
 		}
 		iwan = update_instance(s, iwan, "waninstance");
 		init_wancdevargs(ctx, s, i, fwan, iwan);
-		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, i, iwan, fwan,  cwritable, notif_permission, ipn_perm, pppn_perm);
+		TRACE("fwan is %s \n", fwan);
+		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, i, iwan, fwan, cwritable, notif_permission, ipn_perm, pppn_perm);
 	}
 	return 0;
 }
@@ -1586,6 +1633,7 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 			forced_notify = 2;
 			notif_permission = false;
 		}
+		TRACE("fwan is %s \n", fwan);
 		if (check_multiwan_interface(ss, fwan) != 0)
 			continue;
 		init_wancprotoargs(ctx, ss);
@@ -1704,3 +1752,4 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 	}
 	return FAULT_9005;
 }
+

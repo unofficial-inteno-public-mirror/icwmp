@@ -30,7 +30,7 @@ int get_time_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 	int check; 
 	pid_t pid;
 	
@@ -40,17 +40,22 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if(b) {
-				//delay_service restart "sysntpd" "1" //TODO
-				///etc/init.d/sysntpd enable
-			}
-			else {
+				DMCMD("etc/init.d/sysntpd", 1, "enable"); //TODO wait ubus command
 				pid = get_pid("ntpd");
-				if (pid > 0) {
-					//etc/init.d/sysntpd stop; //TODO
-					//etc/init.d/sysntpd disable //TODO
+				if (pid < 0) {
+					DMCMD("etc/init.d/sysntpd", 1, "start"); //TODO may be should be updated with ubus call uci
 				}
 			}
+			else {
+				DMCMD("etc/init.d/sysntpd", 1, "disable"); //TODO wait ubus command
+				pid = get_pid("ntpd");
+				if (pid > 0) {
+					DMCMD("etc/init.d/sysntpd", 1, "stop"); //TODO may be should be updated with ubus call uci
+				}
+			}
+			return 0;
 	}
 	return 0;
 }
@@ -129,7 +134,7 @@ int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *valu
 					ntp[count++] = e->name;
 				}
 			}
-			dmuci_del_list_value("system", "ntp", "server", NULL);
+			dmuci_delete("system", "ntp", "server", NULL);
 			for (count = 0; count < 5; count++) {
 				if ((count + 1) == index) {
 					dmuci_add_list_value("system", "ntp", "server", value);

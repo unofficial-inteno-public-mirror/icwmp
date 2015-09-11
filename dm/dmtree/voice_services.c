@@ -1012,8 +1012,8 @@ int set_sip_profile_region(char *refparam, struct dmctx *ctx, int action, char *
 			return 0;
 		case VALUESET:
 			for (i = 0; i < ARRAY_SIZE(capabilities_regions); i++) {
-				if(strcasecmp(value, capabilities_regions[i].country) == 0){
-					dmuci_set_value("voice_client", "BRCM", "country", capabilities_regions[i].id);
+				if(strcasecmp(value, capabilities_regions[i].id) == 0){
+					dmuci_set_value("voice_client", "BRCM", "country", capabilities_regions[i].country);
 					break;
 				}
 			}
