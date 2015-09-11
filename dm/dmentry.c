@@ -93,7 +93,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	} else {
 		ctx->tree = false;
 	}
-
+	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
 			fault = dm_entry_get_value(ctx);
@@ -328,6 +328,8 @@ void dm_entry_cli(int argc, char** argv)
 {
 	struct dmctx cli_dmctx = {0};
 	int output = 1;
+	char *param, *next_level, *parameter_key, *value, *cmd;
+	int fault = 0, status = -1;
 
 	dm_global_init();
 	dm_ctx_init(&cli_dmctx);
@@ -335,10 +337,7 @@ void dm_entry_cli(int argc, char** argv)
 	if (argc < 4) goto invalid_arguments;
 
 	output = atoi(argv[2]);
-	char *cmd = argv[3];
-
-	char *param, *next_level, *parameter_key, *value;
-	int fault = 0, status = -1;
+	cmd = argv[3];
 
 	/* GET NAME */
 	if (strcmp(cmd, "get_name") == 0) {
