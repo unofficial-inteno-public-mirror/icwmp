@@ -89,11 +89,15 @@ cwmp_wait_voice() {
 	if [ -e /etc/rc.d/S*asterisk ]
 	then
 		local max_line=""
+		local i=0;
 		while [ "$max_line" = "" -o "$max_line" = "0" ]; do
 			max_line=`/usr/sbin/asterisk -rx "brcm show status" | grep -c "Line id"`
 			if [ "$max_line" = "" -o "$max_line" = "0" ]; then
 				sleep 1
 			fi
+			let i++
+			[ "$i" = "60" ] && {echo "cwmpd: warning: voice service did not start!"; break; }
+			[ "$((i%10))" =  "0" ] && echo "cwmpd: waiting the start of voice service..."
 		done
 	fi
 }

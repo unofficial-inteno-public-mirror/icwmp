@@ -1798,7 +1798,7 @@ inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, ch
 	maxLine = get_voice_service_max_line();
 	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", section_name(sipargs->sip_section), b_section) {
 		line_id = atoi(section_name(b_section) + sizeof("brcm") - 1);
-		if ( line_id > maxLine )
+		if ( line_id >= maxLine )
 			continue;
 		line_num = update_vp_line_instance(b_section, section_name(sipargs->sip_section));
 		init_brcm_args(ctx, b_section, sipargs->sip_section, profile_num);
@@ -1833,7 +1833,7 @@ int entry_method_root_Service(struct dmctx *ctx)
 		DMPARAM("MaxSessionsPerLine", ctx, "0", get_true_value, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("MaxSessionsCount", ctx, "0", get_max_session_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("SignalingProtocols", ctx, "0", get_signal_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Regions", ctx, "0", get_regions, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Regions", ctx, "0", get_regions, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("RTCP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("SRTP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("RTPRedundancy", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -1851,7 +1851,7 @@ int entry_method_root_Service(struct dmctx *ctx)
 		DMPARAM("PatternBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("RingPatternEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("FileBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("RingFileFormats", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("RingFileFormats", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DigitMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("NumberingPlan", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("ButtonMap", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -1879,7 +1879,7 @@ inline int entry_voice_service_capabilities_codecs_instance(struct dmctx *ctx, c
 	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.Capabilities.Codecs.%s.", ivoice, id) {
 		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.Codecs.%s.", ctx, "0", 1, NULL, NULL, NULL, ivoice, id);
 		DMPARAM("EntryID", ctx, "0", get_entry_id, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("Codec", ctx, "0", get_capabilities_sip_codec, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Codec", ctx, "0", get_capabilities_sip_codec, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("BitRate", ctx, "0", get_capabilities_sip_bitrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("PacketizationPeriod", ctx, "0", get_capabilities_sip_pperiod, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("SilenceSuppression", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
