@@ -99,7 +99,7 @@ int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 
 int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	static bool b;
+	bool b;
 
 	switch (action) {
 		case VALUECHECK:			
@@ -107,6 +107,7 @@ int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			string_to_bool(value, &b);
 			if (b)
 				dmuci_set_value("cwmp", "acs", "periodic_inform_enable", "1");
 			else
@@ -155,11 +156,18 @@ int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 
 int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	struct tm tm;
+	char *p, buf[16];
 	switch (action) {
 		case VALUECHECK:			
+			if (strptime(value, "%Y-%m-%dT%H:%M:%S", &tm) == NULL) {
+				return FAULT_9007;
+			}
 			return 0;
 		case VALUESET:
-			dmuci_set_value("cwmp", "acs", "periodic_inform_time", value); //TODO check that with script
+			strptime(value, "%Y-%m-%dT%H:%M:%S", &tm);
+			sprintf(buf, "%d", mktime(&tm));
+			dmuci_set_value("cwmp", "acs", "periodic_inform_time", buf);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -168,7 +176,15 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 
 int get_management_server_connection_request_url(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "TOCODE"; //TODO
+	char *ip, *port;
+	*value = "";
+	dmuci_get_varstate_string("cwmp", "cpe", "ip", &ip);
+	dmuci_get_varstate_string("cwmp", "cpe", "port", &port);
+	if (ip[0] != '\0' && port[0] != '\0') {
+		char buf[64];
+		sprintf(buf,"http://%s:%s/", ip, port);
+		*value = dmstrdup(buf); //  MEM WILL BE FREED IN DMMEMCLEAN
+	}
 	return 0;
 }
 
@@ -208,16 +224,16 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"ManagementServer.") {
 		DMOBJECT(DMROOT"ManagementServer.", ctx, "0", 0, NULL, NULL, NULL);
-		DMPARAM("URL", ctx, "1", get_management_server_url, set_management_server_url, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Username", ctx, "1", get_management_server_username, set_management_server_username, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("Password", ctx, "1", get_empty, set_management_server_passwd, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("ParameterKey", ctx, "1", get_management_server_key, set_management_server_key, NULL, 1, 0, UNDEF, NULL);
-		DMPARAM("PeriodicInformEnable", ctx, "1", get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable, "xsd:boolean", 0, 0, UNDEF, NULL);
-		DMPARAM("PeriodicInformInterval", ctx, "1", get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, "xsd:unsignedInt", 0, 0, UNDEF, NULL);
-		DMPARAM("PeriodicInformTime", ctx, "1", get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, "xsd:dateTime", 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, NULL, 1, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, 0, 0, UNDEF, NULL);
-		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("URL", ctx, "1", get_management_server_url, set_management_server_url, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Username", ctx, "1", get_management_server_username, set_management_server_username, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Password", ctx, "1", get_empty, set_management_server_passwd, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("ParameterKey", ctx, "1", get_management_server_key, set_management_server_key, NULL, 1, 0, 0, NULL);
+		DMPARAM("PeriodicInformEnable", ctx, "1", get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("PeriodicInformInterval", ctx, "1", get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("PeriodicInformTime", ctx, "1", get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, "xsd:dateTime", 0, 1, UNDEF, NULL);
+		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, NULL, 1, 0, 2, NULL);
+		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
