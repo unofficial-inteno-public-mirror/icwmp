@@ -253,8 +253,10 @@ int set_lan_dns(char *refparam, struct dmctx *ctx, int action, char *value)
 			while (*p) {
 				if (*p == ',')
 					*p++ = ' ';
+				else
+					p++;
 			}
-			dmuci_set_value_by_section(lanargs->ldlansection, "dns", value);
+			dmuci_set_value_by_section(lanargs->ldlansection, "dns", dup);
 			dmfree(dup);
 			return 0;
 	}
@@ -679,7 +681,7 @@ int set_lan_dhcp_iprouters(char *refparam, struct dmctx *ctx, int action, char *
 int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 {
 	int len, mtime = 0;
-	char *ltime = "", *pch, *spch;
+	char *ltime = "", *pch, *spch, *ltime_ini;
 	struct uci_section *s = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
@@ -693,12 +695,15 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 		return 0;
 	}
 	ltime = dmstrdup(ltime);
-	pch = strtok_r(ltime, "hm", &spch);
-	mtime = 60 * atoi(pch);
-	pch = strtok_r(NULL, "hm", &spch);
-	if (pch)
-		mtime = mtime * 60 + 60 * atoi(pch);
+	ltime_ini = dmstrdup(ltime);
+	pch = strtok_r(ltime, "h", &spch);
+	if (strcmp(pch, ltime_ini) != 0)
+		mtime = 3600 * atoi(pch);
+	pch = strtok_r(ltime, "m", &spch);
+	if (strcmp(pch, ltime_ini) != 0)
+		mtime += 60 * atoi(pch);
 	dmfree(ltime);
+	dmfree(ltime_ini);
 
 	dmasprintf(value, "%d", mtime); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
@@ -741,7 +746,7 @@ int get_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, char **value)
 			uci_foreach_element(val, e)
 			{
 				if (str = strstr(e->name, "15,")) {
-					*value = str + sizeof("15,") - 1;
+					*value = dmstrdup(str + sizeof("15,") - 1); //MEM WILL BE FREED IN DMMEMCLEAN
 					goto end;
 				}
 			}
@@ -1095,10 +1100,10 @@ int set_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, int action, 
 		case VALUESET:
 			string_to_bool(value, &b);
 			if (b) {
-				DMCMD("ethctl", 3, ethargs->eth, "phy-power" "up"); //TODO wait ubus command
+				DMCMD("ethctl", 3, ethargs->eth, "phy-power", "up"); //TODO wait ubus command
 			}
 			else {
-				DMCMD("ethctl", 3, ethargs->eth, "phy-power" "down"); //TODO wait ubus command
+				DMCMD("ethctl", 3, ethargs->eth, "phy-power", "down"); //TODO wait ubus command
 			}
 			return 0;
 	}
@@ -1453,10 +1458,10 @@ int get_wlan_status (char *refparam, struct dmctx *ctx, char **value)
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "disabled", value);
-	if (*value[0] == '1' && *value[1] == '\0')
-		*value = "Disabled";
-	else
+	if ((*value)[0] == '\0' || (*value)[0] == '0')
 		*value = "Up";
+	else
+		*value = "Disabled";		
 	return 0;
 }
 
@@ -1628,7 +1633,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 			return 0;
 		case VALUESET:
 			dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
-			if (strcmp(value, "None") != 0) {
+			if (strcmp(value, "None") == 0) {
 				value = "none";
 				reset_wlan(wlanargs->lwlansection);
 				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", value);
@@ -1934,6 +1939,8 @@ int get_wlan_wpa_encryption_modes(char *refparam, struct dmctx *ctx, char **valu
 {
 	char *encryption;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+
+	*value = "";
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strcmp(encryption, "psk+tkip") == 0 || strcmp(encryption, "mixed-psk+tkip") == 0)
 		*value = "TKIPEncryption";
@@ -2106,7 +2113,7 @@ int get_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, cha
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	*value = "";
-	if (strcmp(*value, "psk2") == 0 || strncmp(*value, "psk2+", 5) == 0 || strncmp(*value, "mixed-psk", 9) == 0 )
+	if (strcmp(encryption, "psk2") == 0 || strncmp(encryption, "psk2+", 5) == 0 || strncmp(encryption, "mixed-psk", 9) == 0 )
 		*value = "PSKAuthentication";
 	else if (strcmp(encryption, "wpa2") == 0 || strcmp(encryption, "mixed-wpa") == 0)
 		*value = "EAPAuthentication";
@@ -2135,7 +2142,7 @@ int set_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, int
 				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "psk2");
 			}
 			else if (strcmp(value, "EAPAuthentication") == 0) {
-				if (strcmp(value, "wpa") != 0 && strcmp(value, "wpa2") != 0 && strcmp(value, "mixed-wpa") != 0) {
+				if (strcmp(encryption, "wpa") != 0 && strcmp(encryption, "wpa2") != 0 && strcmp(encryption, "mixed-wpa") != 0) {
 					reset_wlan(wlanargs->lwlansection);
 					dmuci_set_value_by_section(wlanargs->lwlansection, "radius_server", "");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "radius_port", "1812");
@@ -2241,7 +2248,7 @@ int set_wlan_authentication_service_mode(char *refparam, struct dmctx *ctx, int 
 				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "none");
 			}
 			else if (strcmp(value, "RadiusClient") == 0) {
-				if (strcmp(encryption, "wpa") == 0 || strcmp(encryption, "wpa2") == 0 || strcmp(encryption, "mixed-wpa") == 0) {
+				if (strcmp(encryption, "wpa") != 0 || strcmp(encryption, "wpa2") != 0 || strcmp(encryption, "mixed-wpa") != 0) {
 					reset_wlan(wlanargs->lwlansection);
 					dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "wpa");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "radius_server", "");
@@ -2586,7 +2593,7 @@ int get_wlan_associated_authenticationstate(char *refparam, struct dmctx *ctx, c
 	if (pp) {
 		r = dmcmd_read(pp, buf, 256);
 		close(pp);
-		if (r > 0 && strstr(buf, clientwlargs->mac))
+		if (r > 0 && strcasestr(buf, clientwlargs->mac))
 			*value = "1";
 		else
 			*value = "0";
@@ -2628,6 +2635,7 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 		dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, sta_pki, -1, "macaddr", value, NULL);
+		return 0;
 	}
 	*value = "";
 	return 0;
@@ -2679,9 +2687,10 @@ inline int entry_landevice_wlanconfiguration(struct dmctx *ctx, struct uci_secti
 	char *iwlan = NULL;
 	char *network , *wiface, buf[8];
 
+	iwlan = NULL;
+	get_last_instance("wireless", "wifi-iface", "lwlaninstance");
 	uci_foreach_sections("wireless", "wifi-device", ss) {
-		int wlctl_num=0;
-		iwlan = NULL;
+		int wlctl_num=0;		
 		uci_foreach_option_eq("wireless", "wifi-iface", "device", section_name(ss), sss) {
 			dmuci_get_value_by_section_string(sss, "network", &network);
 			if (strcmp(network, section_name(landevice_section)) != 0)
@@ -2746,9 +2755,9 @@ inline int entry_landevice_lanethernetinterfaceconfig(struct dmctx *ctx, struct 
 
 	dmuci_get_value_by_section_string(landevice_section, "ifname", &ifname);
 	ifname = dmstrdup(ifname);
-	for (pch = strtok_r(ifname, ",", &spch);
+	for (pch = strtok_r(ifname, " ,", &spch);
 		pch != NULL;
-		pch = strtok_r(NULL, ",", &spch)) {
+		pch = strtok_r(NULL, " ,", &spch)) {
 		if (strncmp(pch, "eth", 3) != 0 || strncmp(pch, wan_eth, 4) == 0)
 			continue;
 		init_ldargs_eth_cfg(ctx, pch);
