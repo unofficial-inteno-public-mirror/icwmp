@@ -42,17 +42,17 @@ int set_time_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUESET:
 			string_to_bool(value, &b);
 			if(b) {
-				DMCMD("etc/init.d/sysntpd", 1, "enable"); //TODO wait ubus command
+				DMCMD("/etc/rc.common", 2, "/etc/init.d/sysntpd", "enable"); //TODO wait ubus command
 				pid = get_pid("ntpd");
 				if (pid < 0) {
-					DMCMD("etc/init.d/sysntpd", 1, "start"); //TODO may be should be updated with ubus call uci
+					DMCMD("/etc/rc.common", 2, "/etc/init.d/sysntpd", "start"); //TODO wait ubus command
 				}
 			}
 			else {
-				DMCMD("etc/init.d/sysntpd", 1, "disable"); //TODO wait ubus command
+				DMCMD("/etc/rc.common", 2, "/etc/init.d/sysntpd", "disable"); //TODO wait ubus command
 				pid = get_pid("ntpd");
 				if (pid > 0) {
-					DMCMD("etc/init.d/sysntpd", 1, "stop"); //TODO may be should be updated with ubus call uci
+					DMCMD("/etc/rc.common", 2, "/etc/init.d/sysntpd", "stop"); //TODO may be should be updated with ubus call uci
 				}
 			}
 			return 0;
@@ -74,7 +74,7 @@ int get_time_ntpserver(char *refparam, struct dmctx *ctx, char **value, int inde
 		uci_foreach_element(v, e) {
 			element++;
 			if (element == index) {
-				*value = e->name;
+				*value = dmstrdup(e->name); // MEM WILL BE FREED IN DMMEMCLEAN
 				found = 1; 
 				break;
 			}
@@ -125,22 +125,25 @@ int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *valu
 	char *ntp[5] = {0};
 	
 	switch (action) {
-		VALUECHECK:
+		case VALUECHECK:
 			return 0;
-		VALUESET:
+		case VALUESET:
 			dmuci_get_option_value_list("system", "ntp", "server", &v);
 			if (v) {
 				uci_foreach_element(v, e) {
-					ntp[count++] = e->name;
+					ntp[count] = dmstrdup(e->name);
+					count++;					
 				}
 			}
 			dmuci_delete("system", "ntp", "server", NULL);
 			for (count = 0; count < 5; count++) {
 				if ((count + 1) == index) {
 					dmuci_add_list_value("system", "ntp", "server", value);
+					dmfree(ntp[count]);
 				}
 				else {
 					dmuci_add_list_value("system", "ntp", "server", ntp[count] ? ntp[count] : "none");
+					dmfree(ntp[count]);
 				}
 			}
 			return 0;

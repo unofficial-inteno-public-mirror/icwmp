@@ -160,7 +160,7 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 	char *p, buf[16];
 	switch (action) {
 		case VALUECHECK:			
-			if (strptime(value, "%Y-%m-%dT%H:%M:%S", &tm) == NULL) {
+			if (!(strptime(value, "%Y-%m-%dT%H:%M:%S", &tm))) {
 				return FAULT_9007;
 			}
 			return 0;
