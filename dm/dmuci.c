@@ -147,8 +147,11 @@ int dmuci_get_option_value_string(char *package, char *section, char *option, ch
 		*value = "";
 		return -1;
 	}
-	if (ptr.o && ptr.o->v.string) {
-		*value = ptr.o->v.string ? dmstrdup(ptr.o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
+	if (ptr.o && ptr.o->type == UCI_TYPE_LIST) {
+		*value = dmuci_list_to_string(&ptr.o->v.list, " ");
+	}
+	else if (ptr.o && ptr.o->v.string) {
+		*value = dmstrdup(ptr.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
 	} else {
 		*value = "";
 		return -1;
@@ -213,6 +216,7 @@ struct uci_option *dmuci_get_option_ptr(char *cfg_path, char *package, char *sec
 	switch(e->type) {
 		case UCI_TYPE_OPTION:
 			o = ptr.o;
+			break;
 		default:
 			break;
 	}
@@ -357,7 +361,7 @@ int dmuci_change_packages(struct list_head *clist)
 		if (uci_lookup_ptr(uci_ctx, &ptr, *p, true) != UCI_OK) {
 			continue;
 		}
-		if (ptr.p->saved_delta.next == &ptr.p->saved_delta)
+		if (uci_list_empty(&ptr.p->delta))
 			continue;
 		add_list_package_change(clist, *p);
 	}
@@ -496,7 +500,12 @@ int dmuci_get_value_by_section_string(struct uci_section *s, char *option, char 
 	uci_foreach_element(&s->options, e) {
 		o = (uci_to_option(e));
 		if (!strcmp(o->e.name, option)) {
-			*value = o->v.string ? dmstrdup(o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
+			if (o->type == UCI_TYPE_LIST) {
+				*value = dmuci_list_to_string(&o->v.list, " ");
+			}
+			else {
+				*value = o->v.string ? dmstrdup(o->v.string) : ""; // MEM WILL BE FREED IN DMMEMCLEAN
+			}
 			return 0;
 		}
 	}

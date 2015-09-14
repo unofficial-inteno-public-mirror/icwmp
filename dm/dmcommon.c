@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
 #include <uci.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
@@ -235,8 +238,8 @@ int dmcmd(char *cmd, int n, ...)
 {
 	va_list arg;
 	int i, pid;
-	const char *argv[n+1];
 	static int dmcmd_pfds[2];
+	char *argv[n+2];
 
 	argv[0] = cmd;
 
@@ -247,6 +250,7 @@ int dmcmd(char *cmd, int n, ...)
 	}
 	va_end(arg);
 
+	argv[n+1] = NULL;
 
 	if (pipe(dmcmd_pfds) < 0)
 		return -1;
@@ -261,7 +265,7 @@ int dmcmd(char *cmd, int n, ...)
 		close(dmcmd_pfds[1]);
 
 		execvp(argv[0], (char **) argv);
-		exit(0);
+		exit(ESRCH);
 	} else if (pid < 0)
 		return -1;
 

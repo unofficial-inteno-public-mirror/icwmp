@@ -18,7 +18,7 @@
 int entry_method_root(struct dmctx *ctx)
 {
 	char *val = NULL;
-	IF_MATCH(ctx, DMROOT) {
+	IF_MATCH_ROOT(ctx) {
 		DMOBJECT(DMROOT, ctx, "0", 0, NULL, NULL, NULL);
 		return 0;
 	}

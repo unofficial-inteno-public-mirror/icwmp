@@ -31,14 +31,26 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
-#define IF_MATCH(ctx, prefix, ...)																				\
-	(ctx)->match = (ctx)->tree; 																				\
-	if (!(ctx)->tree) {																							\
-		sprintf((ctx)->current_obj, prefix, ##__VA_ARGS__);														\
-		if (strstr((ctx)->in_param, (ctx)->current_obj) || strstr((ctx)->current_obj, (ctx)->in_param)) {		\
-			(ctx)->match = true; 																				\
-		}																										\
-	}																											\
+#define IF_MATCH(ctx, prefix, ...)									\
+	(ctx)->match = (ctx)->tree; 									\
+	if (!(ctx)->tree) {												\
+		sprintf((ctx)->current_obj, prefix, ##__VA_ARGS__);			\
+		if (strstr((ctx)->in_param, (ctx)->current_obj) || 			\
+			(strstr((ctx)->current_obj, (ctx)->in_param) && 		\
+			(ctx)->in_param[strlen((ctx)->in_param)-1] == '.')) {	\
+			(ctx)->match = true; 									\
+		}															\
+	}																\
+	if ((ctx)->match)
+
+#define IF_MATCH_ROOT(ctx)											\
+	(ctx)->match = (ctx)->tree;										\
+	if (!(ctx)->tree) {												\
+		if (strstr((ctx)->in_param, DMROOT) &&						\
+			!strchr(((ctx)->in_param + sizeof(DMROOT) - 1), '.')) {	\
+			(ctx)->match = true;									\
+		}															\
+	}																\
 	if ((ctx)->match)
 
 #define DMOBJECT(name, ctx, permission, notif_permission, addobj, delobj, linker, ...) {	\
