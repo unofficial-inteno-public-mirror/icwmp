@@ -86,6 +86,11 @@ bool is_proute_static(struct proc_route *proute)
 		if (mask[0] == '\0' || strcmp(proute->mask, mask) == 0)
 			return true;
 	}
+	uci_foreach_option_eq("network", "route_disabled", "target", proute->destination, s) {
+		dmuci_get_value_by_section_string(s, "netmask", &mask);
+		if (mask[0] == '\0' || strcmp(proute->mask, mask) == 0)
+			return true;
+	}
 	return false;
 }
 
@@ -109,8 +114,10 @@ bool is_cfg_route_active(struct uci_section *s)
 				continue;
 			parse_proc_route_line(line, &proute);
 			if (strcmp(dest, proute.destination) == 0 &&
-				strcmp(mask, proute.mask) == 0)
+				(mask[0] == '\0' || strcmp(mask, proute.mask) == 0)) {
+				fclose(fp) ;
 				return true;
+			}
 		}
 		fclose(fp) ;
 	}
@@ -146,7 +153,7 @@ int get_forwarding_last_inst()
 		drinst = tmp;
 	}
 	if (rinst) r = atoi(rinst);
-	if (drinst) ds = atoi(drinst);
+	if (dsinst) ds = atoi(dsinst);
 	if (drinst) dr = atoi(drinst);
 	max = (r>ds&&r>dr?r:ds>dr?ds:dr);
 	return max;
@@ -159,18 +166,16 @@ char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *i
 
 	dmuci_get_value_by_section_string(s, inst_opt, &instance);
 	if (instance[0] == '\0') {
-		if (last_inst == NULL) {
-			sprintf(buf, "%d", 1);
+		if (*find_max) {
+			int m = get_forwarding_last_inst();
+			sprintf(buf, "%d", m+1);
 			*find_max = false;
 		}
+		else if (last_inst == NULL) {
+			sprintf(buf, "%d", 1);
+		}
 		else {
-			if (*find_max) {
-				int m = get_forwarding_last_inst();
-				sprintf(buf, "%d", m+1);
-				*find_max = false;
-			} else {
-				sprintf(buf, "%d", atoi(last_inst)+1);
-			}
+			sprintf(buf, "%d", atoi(last_inst)+1);
 		}
 		instance = dmuci_set_value_by_section(s, inst_opt, buf);
 	}
@@ -397,6 +402,7 @@ char *get_layer3_interface(struct dmctx *ctx)
 	else {
 		struct proc_route *proute = routeargs->proute;
 		bval = proute->iface;
+		val = bval;
 		if (!strstr(bval, "br-")) {
 			uci_foreach_option_cont("network", "interface", "ifname", bval, ss) {
 				ifname = section_name(ss);
@@ -409,6 +415,10 @@ char *get_layer3_interface(struct dmctx *ctx)
 				}
 			}			
 		}
+		else {
+			val = bval + sizeof("br-") - 1;
+		}
+		return val;
 	}
 	return "";
 }

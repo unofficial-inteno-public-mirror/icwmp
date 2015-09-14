@@ -1723,7 +1723,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 	strcat(linker, lan_name);
 	if (proto == WAN_PROTO_IP) {
 		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", idev, iwan, iconp) {
-			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, section_name(wandcprotoargs->wancprotosection), idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
 			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, notif_permission, forced_inform_eip, forced_notify, NULL);
