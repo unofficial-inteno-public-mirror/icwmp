@@ -852,7 +852,7 @@ int add_layer2bridging_bridge(struct dmctx *ctx, char **instance)
 	char bridge_name[16], ib[8];
 	char *p = bridge_name;
 
-	last_instance = get_last_instance("network", "interface", "bridge_instance");
+	last_instance = get_last_instance_lev2("network", "interface", "bridge_instance", "type", "bridge");
 	sprintf(ib, "%d", last_instance ? atoi(last_instance)+1 : 0);
 	dmstrappendstr(p, "bridge_0_");
 	dmstrappendstr(p,ib);
