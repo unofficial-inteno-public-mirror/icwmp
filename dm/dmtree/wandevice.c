@@ -225,6 +225,28 @@ int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev)
 	return 0;
 }
 /****** ADD-DEL OBJECT *******************/
+char *get_last_instance_proto(char *package, char *section, char *opt_inst, char *opt_check, char *value_check, char *opt_check1, int value_check1)
+{
+	struct uci_section *s;
+	char *instance = NULL;
+	char *value = NULL;
+	int proto = -1;
+	
+	uci_foreach_option_cont(package, section, opt_check, value_check, s) {			
+		dmuci_get_value_by_section_string(s, opt_check1, &value);
+		if (strstr(value, "ppp"))
+			proto = WAN_PROTO_PPP;
+		else if (strcmp(value, "dhcp") == 0 || strcmp(value, "static") == 0)
+			proto = WAN_PROTO_IP;
+		else
+			proto = WAN_PROTO_NIL;			
+		if (proto == value_check1) {
+			instance = update_instance(s, instance, opt_inst);
+		}		
+	}
+	return instance;
+}
+
 int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 {
 	int iwan, idx;
@@ -319,14 +341,14 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
-	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
+	instance = get_last_instance_proto("network", "interface", "conipinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_IP);
 	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "dhcp");
-	dmasprintf(instancepara, "%d", atoi(instance) + 1); //MEM WILL BE FREED IN DMMEMCLEAN
-	dmuci_set_value("network", sname, "conpinstance", *instancepara);
+	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1); //MEM WILL BE FREED IN DMMEMCLEAN
+	dmuci_set_value("network", sname, "conipinstance", *instancepara);
 	return 0;
 }
 
@@ -369,14 +391,14 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	char ifname[8] = {0};
 	char *instance;
 
-	instance = get_last_instance_lev2("network", "interface", "conpinstance", "ifname", wandcdevargs->fwan);
+	instance = get_last_instance_proto("network", "interface", "conpppinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_PPP);
 	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "pppoe");
-	dmasprintf(instancepara, "%d", atoi(instance) + 1);
-	dmuci_set_value("network", sname, "conpinstance", *instancepara); //MEM WILL BE FREED IN DMMEMCLEAN
+	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1);
+	dmuci_set_value("network", sname, "conpppinstance", *instancepara); //MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -1604,7 +1626,7 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 {
 	struct uci_section *ss = NULL;
 	char *pack, *stype, *p;
-	char *iconp = NULL;
+	char *iconp = NULL, *iconp_ip = NULL, *iconp_ppp = NULL, *iconp_nil = NULL;
 	int proto;
 	bool notif_permission = true;
 	bool forced_inform_eip = false;
@@ -1630,7 +1652,14 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 		if (check_multiwan_interface(ss, fwan) != 0)
 			continue;
 		init_wancprotoargs(ctx, ss);
-		iconp = update_instance(ss, iconp, "conpinstance");
+		if (proto == WAN_PROTO_IP) {
+			iconp_ip = update_instance(ss, iconp_ip, "conipinstance");
+			iconp = iconp_ip;
+		}			
+		else if (proto == WAN_PROTO_PPP) {
+			iconp_ppp = update_instance(ss, iconp_ppp, "conpppinstance");
+			iconp = iconp_ppp;
+		}			
 		SUBENTRY(entry_wandevice_wanprotocolconnection_instance, ctx, idev, iwan, iconp, proto,
 				notif_permission, forced_inform_eip, forced_notify);
 	}
