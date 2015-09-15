@@ -191,7 +191,7 @@ inline int init_brcm_args(struct dmctx *ctx, struct uci_section *section, struct
 int get_cfg_sipidx(void)
 {
 	char *si;
-	int idx = 0, max = 0;
+	int idx = 0, max = -1;
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("voice_client", "sip_service_provider", s) {
@@ -1497,12 +1497,6 @@ int set_line_sip_uri(char *refparam, struct dmctx *ctx, int action, char *value)
 	
   switch (action) {
 		case VALUECHECK:
-			str1 = dmstrdup(value);
-			pch = strtok_r(str1, "@", &spch);
-			pch = strtok_r(NULL, "@", &spch);
-			dmfree(str1);
-			if (pch == NULL)
-				return FAULT_9007;
 			return 0;
 		case VALUESET:
 			str1 = dmstrdup(value);
