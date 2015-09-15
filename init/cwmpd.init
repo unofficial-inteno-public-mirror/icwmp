@@ -96,7 +96,10 @@ cwmp_wait_voice() {
 				sleep 1
 			fi
 			let i++
-			[ "$i" = "60" ] && {echo "cwmpd: warning: voice service did not start!"; break; }
+			[ "$i" = "60" ] && {
+				echo "cwmpd: warning: voice service did not start!"
+				break
+			}
 			[ "$((i%10))" =  "0" ] && echo "cwmpd: waiting the start of voice service..."
 		done
 	fi
