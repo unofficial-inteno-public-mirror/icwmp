@@ -356,3 +356,13 @@ int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_st
 	sprintf(end_str, "%d", end);
 	return 0;
 }
+
+int network_get_ipaddr(char **value, char *iface)
+{
+	json_object *res;
+	
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "ipv4-address", 0, "address", value, NULL);
+	return 0;
+}

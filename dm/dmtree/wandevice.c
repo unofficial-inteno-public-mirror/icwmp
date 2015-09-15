@@ -123,20 +123,11 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	return 0;
 }
 
-int network_get_ipaddr(char **value, char *iface)
-{
-	json_object *res;
-	
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
-	DM_ASSERT(res, *value = "");
-	json_select(res, "ipv4-address", 0, "address", value, NULL);
-	return 0;
-}
 
 int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
 {
 	char *si, *value;
-	int idx = 0, max = 0;
+	int idx = 0, max = -1;
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections(pack, section_type, s) {
@@ -334,7 +325,8 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "dhcp");
-	*instancepara = update_instance(s, instance, "conpinstance");
+	dmasprintf(instancepara, "%d", atoi(instance) + 1); //MEM WILL BE FREED IN DMMEMCLEAN
+	dmuci_set_value("network", sname, "conpinstance", *instancepara);
 	return 0;
 }
 
@@ -383,7 +375,8 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "pppoe");
-	*instancepara = update_instance(s, instance, "conpinstance");
+	dmasprintf(instancepara, "%d", atoi(instance) + 1);
+	dmuci_set_value("network", sname, "conpinstance", *instancepara); //MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
@@ -398,7 +391,7 @@ int delete_wan_wanpppconnectiondevice_all(struct dmctx *ctx)
 	dmuci_get_value_by_section_string(wandcdevargs->wandevsection, "ifname", &ifname);
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, s) {
 		dmuci_get_value_by_section_string(s, "proto", &iproto);
-		if (strstr(iproto, "ppp") == 0) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be pppoa
+		if (strstr(iproto, "ppp")) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be pppoa
 			if (ss)
 				dmuci_delete_by_section(ss, NULL, NULL);
 			ss = s;
@@ -1726,7 +1719,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
 			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 1, UNDEF, NULL);
-			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, notif_permission, forced_inform_eip, forced_notify, NULL);
+			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, forced_inform_eip, notif_permission, forced_notify, NULL);
 			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);//TOCHECK
 			DMPARAM("ConnectionType", ctx, "1", get_wan_ip_link_connection_connection_type, set_wan_ip_link_connection_connection_type, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("AddressingType", ctx, "1", get_wan_ip_link_connection_addressing_type, set_wan_ip_link_connection_addressing_type, NULL, 0, 1, UNDEF, NULL);
@@ -1743,7 +1736,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);//TO CHECK "linker_interface:$nlan"
 			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_ppp_status, NULL, NULL, 0, 1, UNDEF, NULL);
-			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_ppp_interface_ip, NULL, NULL, notif_permission, forced_inform_eip, forced_notify, NULL);
+			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_ppp_interface_ip, NULL, NULL, forced_inform_eip, notif_permission,  forced_notify, NULL);
 			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Username", ctx, "1", get_wan_device_ppp_username, set_wan_device_username, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Password", ctx, "1", get_empty, set_wan_device_password, NULL, 0, 1, UNDEF, NULL);

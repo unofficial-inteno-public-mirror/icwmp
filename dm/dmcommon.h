@@ -66,5 +66,6 @@ int dmcmd_read(int pipe, char *buffer, int size);
 int ipcalc(char *ip_str, char *mask_str, char *start_str, char *end_str, char *ipstart_str, char *ipend_str);
 int ipcalc_rev_start(char *ip_str, char *mask_str, char *ipstart_str, char *start_str);
 int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_str, char *end_str);
+int network_get_ipaddr(char **value, char *iface);
 
 #endif

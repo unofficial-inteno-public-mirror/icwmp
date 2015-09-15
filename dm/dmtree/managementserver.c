@@ -176,10 +176,12 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 
 int get_management_server_connection_request_url(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *ip, *port;
+	char *ip, *port, *iface;
+
 	*value = "";
-	dmuci_get_varstate_string("cwmp", "cpe", "ip", &ip);
-	dmuci_get_varstate_string("cwmp", "cpe", "port", &port);
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
+	network_get_ipaddr(&ip, iface);	
+	dmuci_get_option_value_string("cwmp", "cpe", "port", &port);
 	if (ip[0] != '\0' && port[0] != '\0') {
 		char buf[64];
 		sprintf(buf,"http://%s:%s/", ip, port);
