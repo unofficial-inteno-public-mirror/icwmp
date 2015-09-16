@@ -350,10 +350,10 @@ int add_line_object(struct dmctx *ctx, char **instancepara)
 	*instancepara = update_vp_line_instance(s, section_name(sipargs->sip_section)); //TODO: To Check
 	dmuci_get_value_by_section_string(sipargs->sip_section, "call_lines", &value);
 	if (value[0] == '\0') {
-		sprintf(call_lines, "%d", i);
+		sprintf(call_lines, "%d", i - 1);
 	}
 	else {
-		sprintf(call_lines, "%s %d", value, i);
+		sprintf(call_lines, "%s %d", value, i - 1);
 	}
 	dmuci_set_value_by_section(sipargs->sip_section, "call_lines", call_lines);
 	return 0;

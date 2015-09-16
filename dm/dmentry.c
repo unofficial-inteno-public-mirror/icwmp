@@ -136,12 +136,14 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			fault = dm_entry_add_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
+				dmuci_change_packages(&head_package_change);
 			}
 			break;
 		case CMD_DEL_OBJECT:
 			fault = dm_entry_delete_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
+				dmuci_change_packages(&head_package_change);
 			}
 			break;
 	}
@@ -261,6 +263,8 @@ int dm_entry_restart_services()
 	json_object *res;
 
 	list_for_each_entry(pc, &head_package_change, list) {
+		if(strcmp(pc->package, "cwmp") == 0)
+			continue;
 		dmubus_call("uci", "commit", UBUS_ARGS{{"config", pc->package}}, 1, &res);
 	}
 	free_all_list_package_change(&head_package_change);
