@@ -212,7 +212,7 @@ void update_add_vlan_to_bridge_interface(char *bridge_key, struct uci_section *d
 		uci_foreach_option_eq("dmmap", "marking-bridge", "bridgekey", bridge_key, marking_bridge_s)
 		{
 			dmuci_get_value_by_section_string(marking_bridge_s, "baseifname", &baseifname);
-			if(strncmp(baseifname, wan_baseifname, 4) == 0
+			if (strncmp(baseifname, wan_baseifname, 4) == 0
 				|| strncmp(baseifname, "ptm", 3) == 0
 				|| strncmp(baseifname, "atm", 3) == 0) {
 				p = baseifname_dup;
@@ -262,7 +262,7 @@ char *layer2_get_last_section_instance(char *package, char *section, char *opt_i
 	return inst;
 }
 
-void update_markinginterface_list(struct uci_section *interface_section, char *bridge_key) //TODO argument missing bridge instance (local bkey="$1")
+void update_markinginterface_list(struct uci_section *interface_section, char *bridge_key)
 {
 	char *ifname, *dupifname, *ifname_element, *bridgekey, *instance;
 	char *add_value, *interfacekey="", *spch;
@@ -272,7 +272,6 @@ void update_markinginterface_list(struct uci_section *interface_section, char *b
 	char baseifname[8];
 
 	dmuci_get_value_by_section_string(interface_section, "ifname", &ifname);
-	dmuci_get_value_by_section_string(interface_section, "bridge_instance", &bridge_key); //TODO move this line
 	dupifname = dmstrdup(ifname);
 	ifname_element = strtok_r(dupifname, " ", &spch);
 	while (ifname_element != NULL) {
@@ -281,7 +280,7 @@ void update_markinginterface_list(struct uci_section *interface_section, char *b
 		uci_foreach_option_eq("dmmap", "marking-bridge", "baseifname", baseifname, marking_section)
 		{
 			dmuci_get_value_by_section_string(marking_section, "bridgekey", &bridgekey);
-			if(strcmp(bridgekey, bridge_key) == 0) {
+			if (strcmp(bridgekey, bridge_key) == 0) {
 				found = true;
 				break;
 			}
@@ -294,7 +293,7 @@ void update_markinginterface_list(struct uci_section *interface_section, char *b
 			dmuci_get_value_by_section_string(ciface, "key", &interfacekey);
 			break;
 		}
-		if(!ciface) goto nextifname;
+		if (!ciface) goto nextifname;
 		instance = layer2_get_last_section_instance("dmmap", "marking-bridge", "marking_instance");
 		dmuci_add_section("dmmap", "marking-bridge", &new_marking_section, &add_value);
 		dmuci_set_value_by_section(new_marking_section, "baseifname", baseifname);
@@ -307,12 +306,12 @@ nextifname:
 	}
 	dmfree(dupifname);
 	new_marking_section = NULL;
-	uci_foreach_option_eq("wireless", "wifi-iface", "network", ifname, wireless_section) {
+	uci_foreach_option_eq("wireless", "wifi-iface", "network",  section_name(interface_section), wireless_section) {
 		found = false;
 		uci_foreach_option_eq("dmmap", "marking-bridge", "baseifname", section_name(wireless_section), marking_section)
 		{
 			dmuci_get_value_by_section_string(marking_section, "bridgekey", &bridgekey);
-			if(strcmp(bridgekey, bridge_key) == 0) {
+			if (strcmp(bridgekey, bridge_key) == 0) {
 				found = true;
 				break;
 			}
@@ -323,7 +322,7 @@ nextifname:
 			dmuci_get_value_by_section_string(ciface, "key", &interfacekey);
 			break;
 		}
-		if(!ciface) continue;
+		if (!ciface) continue;
 		instance = layer2_get_last_section_instance("dmmap", "marking-bridge", "marking_instance");
 		dmuci_add_section("dmmap", "marking-bridge", &new_marking_section, &add_value);
 		dmuci_set_value_by_section(new_marking_section, "baseifname", section_name(wireless_section));
@@ -376,7 +375,7 @@ int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value)
 		uci_foreach_option_eq("dmmap", "marking-bridge", "baseifname", baseifname, s)
 		{
 			dmuci_get_value_by_section_string(s, "bridgekey", &bridgekey);
-			if(strcmp(bridgekey, old_bridge_key) == 0) {
+			if (strcmp(bridgekey, old_bridge_key) == 0) {
 				found = true;
 				break;
 			}
@@ -479,7 +478,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 	uci_foreach_option_eq("dmmap", "available-bridge", "key", value, ab) {
 		break;
 	}
-	if (!ab) return;
+	if (!ab) return 0;
 
 	dmuci_get_value_by_section_string(mb, "bridgekey", &bkey);
 	if (bkey[0] != '\0') {
@@ -923,9 +922,9 @@ void remove_config_interfaces(char *baseifname, char *bridge_key, struct uci_sec
 	char new_ifname[128];
 	char *p, iface[16];
 
-	if (strncmp(baseifname, "cfg", 3) == 0)
+	if (strncmp(baseifname, "cfg", 3) == 0) {
 		dmuci_delete("wireless", baseifname , "network", NULL);
-
+	}
 	else if (strncmp(baseifname, wan_baseifname, 4) == 0
 			|| strncmp(baseifname, "ptm", 3) == 0
 			|| strncmp(baseifname, "atm", 3) == 0)
@@ -940,7 +939,7 @@ void remove_config_interfaces(char *baseifname, char *bridge_key, struct uci_sec
 		}
 		if (!found)
 		{
-			uci_foreach_option_eq("network", "vlan_bridge", "bridgekey", bridge_key, vlan_s) {
+			uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", bridge_key, vlan_s) {
 				dmuci_get_value_by_section_string(vlan_s, "vid", &vid);
 				if(vid[0] == '\0')
 					continue;
@@ -972,7 +971,7 @@ int delete_layer2bridging_marking(struct dmctx *ctx)
 	dmuci_get_value_by_section_string(args_bridge->layer2section, "baseifname", &bifname);
 	dmuci_delete_by_section(args_bridge->layer2section, NULL, NULL);
 	if(b_key[0] == '\0')
-		return;
+		return 0;
 	uci_foreach_option_eq("network", "interface", "bridge_instance", b_key, bridge_s) {
 		remove_config_interfaces(bifname, b_key, bridge_s, "");
 		break;
@@ -989,10 +988,11 @@ int delete_layer2bridging_marking_all(struct dmctx *ctx)
 	uci_foreach_sections("dmmap", "marking-bridge", mark_s) {
 		dmuci_get_value_by_section_string(mark_s, "bridgekey", &b_key);
 		dmuci_get_value_by_section_string(mark_s, "baseifname", &bifname);
-		if(prev_s != NULL)
+		if (prev_s != NULL) {
 			dmuci_delete_by_section(prev_s, NULL, NULL);
+		}
 		prev_s = mark_s;
-		if(b_key[0] == '\0')
+		if (b_key[0] == '\0')
 			continue;
 		uci_foreach_option_eq("network", "interface", "bridge_instance", b_key, bridge_s) {
 			remove_config_interfaces(bifname, b_key, bridge_s, "");
