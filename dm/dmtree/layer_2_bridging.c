@@ -489,7 +489,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 			dmuci_get_value_by_section_string(mb, "baseifname", &obifname);
 			dmuci_get_value_by_section_string(mb, "marking_instance", &instance);
 			if (obifname[0] != '\0') {
-				remove_config_interfaces(obifname, bkey, s, instance);
+				remove_config_interfaces(obifname, bkey, sbridge, instance);
 			}
 		}
 	}
@@ -500,7 +500,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 		{
 			break;
 		}
-		if (!s) return 0;
+		if (s) return 0;
 		dmuci_set_value_by_section(mb, "interfacekey",  value);
 		dmuci_set_value_by_section(mb, "baseifname",  baseifname);
 		if (bkey[0] == '\0' || !sbridge) return 0;
@@ -528,7 +528,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 		{
 			break;
 		}
-		if (!s) return 0;
+		if (s) return 0;
 		dmuci_set_value_by_section(mb, "interfacekey",  value);
 		dmuci_set_value_by_section(mb, "baseifname",  baseifname);
 		if (bkey[0] == '\0' || !sbridge) return 0;
@@ -932,7 +932,7 @@ void remove_config_interfaces(char *baseifname, char *bridge_key, struct uci_sec
 		uci_foreach_option_eq("dmmap", "marking-bridge", "baseifname", baseifname, marking_s) {
 			dmuci_get_value_by_section_string(marking_s, "bridgekey", &b_key);
 			dmuci_get_value_by_section_string(marking_s, "marking_instance", &m_instance);
-			if(strcmp(b_key, bridge_key) == 0 && strcmp(m_instance, mbi) == 0) {
+			if(strcmp(b_key, bridge_key) == 0 && strcmp(m_instance, mbi) != 0) {
 				found = true;
 				break;
 			}
@@ -964,16 +964,17 @@ void remove_config_interfaces(char *baseifname, char *bridge_key, struct uci_sec
 int delete_layer2bridging_marking(struct dmctx *ctx)
 {
 	struct args_layer2 *args_bridge = (struct args_layer2 *)ctx->args;
-	char *b_key, *bifname;
+	char *b_key, *bifname, *m_instance;
 	struct uci_section *bridge_s;
 
 	dmuci_get_value_by_section_string(args_bridge->layer2section, "bridgekey", &b_key);
 	dmuci_get_value_by_section_string(args_bridge->layer2section, "baseifname", &bifname);
+	dmuci_get_value_by_section_string(args_bridge->layer2section, "marking_instance", &m_instance);
 	dmuci_delete_by_section(args_bridge->layer2section, NULL, NULL);
 	if(b_key[0] == '\0')
 		return 0;
 	uci_foreach_option_eq("network", "interface", "bridge_instance", b_key, bridge_s) {
-		remove_config_interfaces(bifname, b_key, bridge_s, "");
+		remove_config_interfaces(bifname, b_key, bridge_s, m_instance);
 		break;
 	}
 	return 0;
@@ -982,12 +983,13 @@ int delete_layer2bridging_marking(struct dmctx *ctx)
 int delete_layer2bridging_marking_all(struct dmctx *ctx)
 {
 	struct uci_section *mark_s, *prev_s = NULL;
-	char *bifname, *b_key;
+	char *bifname, *b_key, *m_instance;
 	struct uci_section *bridge_s;
 
 	uci_foreach_sections("dmmap", "marking-bridge", mark_s) {
 		dmuci_get_value_by_section_string(mark_s, "bridgekey", &b_key);
 		dmuci_get_value_by_section_string(mark_s, "baseifname", &bifname);
+		dmuci_get_value_by_section_string(mark_s, "marking_instance", &m_instance);
 		if (prev_s != NULL) {
 			dmuci_delete_by_section(prev_s, NULL, NULL);
 		}
@@ -995,7 +997,7 @@ int delete_layer2bridging_marking_all(struct dmctx *ctx)
 		if (b_key[0] == '\0')
 			continue;
 		uci_foreach_option_eq("network", "interface", "bridge_instance", b_key, bridge_s) {
-			remove_config_interfaces(bifname, b_key, bridge_s, "");
+			remove_config_interfaces(bifname, b_key, bridge_s, m_instance);
 			break;
 		}
 	}
