@@ -325,14 +325,14 @@ static int remove_parameter_notification(char *param)
 {
 	int i;
 	struct uci_list *list_notif;
-	struct uci_element *e;
+	struct uci_element *e, *tmp;
 	char *pch;
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
 		if (param[strlen(param)-1] == '.') {
 			dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 			if (list_notif) {
-				uci_foreach_element(list_notif, e) {
-					pch = e->name;
+				uci_foreach_element_safe(list_notif, e, tmp) {
+					pch = tmp->name;
 					if (strstr(pch, param)) {
 						dmuci_del_list_value("cwmp", "@notifications[0]", notifications[i].type, pch);
 					}
