@@ -1374,7 +1374,7 @@ int set_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, int action, c
 			}
 			dmuci_get_option_value_string("voice_client", bname, "sip_account", &sipaccount);
 			dmuci_get_option_value_string("voice_client", bname, "lineinstance", &lineinstance);
-			if ((sipaccount[0] != '\0' && sipaccount[0] != '-') || lineinstance[0] != '\0')
+			if ((sipaccount[0] != '\0' && sipaccount[0] != '-'))
 				return 0;
 			dmuci_get_value_by_section_string(brcmargs->brcm_section, "sip_account", &sipaccount);
 			dmuci_get_value_by_section_string(brcmargs->brcm_section, "lineinstance", &lineinstance);
