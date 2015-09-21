@@ -572,10 +572,10 @@ int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, char **value)
 			pch2 = strtok_r(dup, " \t", &spch2);
 			pch2 = strtok_r(NULL, " \t", &spch2);
 			if (pch2 != NULL) {
-				if (strcasecmp(pch2, "FAST")) {
+				if (strcasecmp(pch2, "FAST") == 0) {
 					*value = "Fast";
 				}
-				else if (strcasecmp(pch2, "INTR")) {
+				else if (strcasecmp(pch2, "INTR") == 0) {
 					*value = "Interleaved";
 				}
 				else {
@@ -1749,14 +1749,14 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("ExternalIPAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, forced_inform_eip, notif_permission, forced_notify, NULL);
-			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);//TOCHECK
-			DMPARAM("ConnectionType", ctx, "1", get_wan_ip_link_connection_connection_type, set_wan_ip_link_connection_connection_type, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("ConnectionType", ctx, "1", get_wan_ip_link_connection_connection_type, set_wan_ip_link_connection_connection_type, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("AddressingType", ctx, "1", get_wan_ip_link_connection_addressing_type, set_wan_ip_link_connection_addressing_type, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("NATEnabled", ctx, "1", get_wan_ip_link_connection_nat_enabled, set_wan_ip_link_connection_nat_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled, set_interface_firewall_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("X_BROADCOM_COM_IGMPEnabled", ctx, "1", get_wan_ip_link_connection_igmp_enabled, set_wan_ip_link_connection_igmp_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("DNSEnabled", ctx, "1", get_wan_ip_link_connection_dns_enabled, set_wan_ip_link_connection_dns_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
-			//DMPARAM("DNSOverrideAllowed", ctx, "", , , "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("DNSOverrideAllowed", ctx, 0, get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
 			return 0;
 		}
 	}
