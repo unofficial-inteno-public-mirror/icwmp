@@ -7,7 +7,7 @@ config 'cwmp' 'acs'
 	option 'periodic_inform_time' '0'
 	option 'ParameterKey' ''
 	option 'dhcp_discovery' 'enable'
-	option 'dhcp_url_path' 'provisioning.iup.url'
+	option 'dhcp_url_path' 'provisioning.iupcwmp.url'
 
 config 'cwmp' 'cpe'
 	option 'interface' 'eth0.1'
