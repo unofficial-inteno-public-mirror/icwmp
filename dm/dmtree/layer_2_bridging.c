@@ -851,9 +851,9 @@ int add_layer2bridging_bridge(struct dmctx *ctx, char **instance)
 	char *p = bridge_name;
 
 	last_instance = get_last_instance_lev2("network", "interface", "bridge_instance", "type", "bridge");
-	sprintf(ib, "%d", last_instance ? atoi(last_instance)+1 : 0);
+	sprintf(ib, "%d", last_instance ? atoi(last_instance)+1 : 1);
 	dmstrappendstr(p, "bridge_0_");
-	dmstrappendstr(p,ib);
+	dmstrappendstr(p, ib);
 	dmstrappendend(p);
 	dmuci_set_value("network", bridge_name, "", "interface");
 	dmuci_set_value("network", bridge_name, "type", "bridge");
@@ -871,11 +871,11 @@ int delete_layer2bridging_bridge(struct dmctx *ctx)
 	dmuci_set_value_by_section(args_bridge->layer2section, "type", "");
 	dmuci_set_value_by_section(args_bridge->layer2section, "bridge_instance", "");
 	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", bridge_instance, vlan_s) {
-		if(prev_s)
+		if (prev_s)
 			dmuci_delete_by_section(prev_s, NULL, NULL);
 		prev_s = vlan_s;
 	}
-	if(prev_s)
+	if (prev_s)
 		dmuci_delete_by_section(prev_s, NULL, NULL);
 	return 0;
 }
