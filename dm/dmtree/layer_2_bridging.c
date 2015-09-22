@@ -337,10 +337,10 @@ int set_marking_bridge_key(char *refparam, struct dmctx *ctx, int action, char *
 {
 	switch (action) {
 		case VALUECHECK:
-			if (value[0] == '\0')
-				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			if (value[0] == '\0')
+				return 0;
 			set_marking_bridge_key_sub(refparam, ctx, value);
 			return 0;
 	}
@@ -456,10 +456,10 @@ int set_marking_interface_key(char *refparam, struct dmctx *ctx, int action, cha
 {
 	switch (action) {
 		case VALUECHECK:
-			if (value[0] == '\0')
-				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			if (value[0] == '\0')
+				return 0;
 		set_marking_interface_key_sub(refparam, ctx, value);
 			return 0;
 	}
@@ -673,7 +673,6 @@ int get_bridge_status(char *refparam, struct dmctx *ctx, char **value)
 
 int set_bridge_status(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	json_object *res;
 	bool b;
 	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
 
@@ -685,10 +684,10 @@ int set_bridge_status(char *refparam, struct dmctx *ctx, int action, char *value
 			return 0;
 		case VALUESET:
 			if (b) {
-				dmubus_call("network.interface", "up", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1, &res);
+				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1);
 			}
 			else {
-				dmubus_call("network.interface", "down", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1, &res);
+				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1);
 			}
 			return 0;
 	}

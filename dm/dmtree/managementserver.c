@@ -160,12 +160,11 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 	char *p, buf[16];
 	switch (action) {
 		case VALUECHECK:			
-			if (!(strptime(value, "%Y-%m-%dT%H:%M:%S", &tm))) {
-				return FAULT_9007;
-			}
 			return 0;
 		case VALUESET:
-			strptime(value, "%Y-%m-%dT%H:%M:%S", &tm);
+			if (!(strptime(value, "%Y-%m-%dT%H:%M:%S", &tm))) {
+				return 0;
+			}
 			sprintf(buf, "%d", mktime(&tm));
 			dmuci_set_value("cwmp", "acs", "periodic_inform_time", buf);
 			cwmp_set_end_session(END_SESSION_RELOAD);
@@ -212,7 +211,7 @@ int set_management_server_connection_request_username(char *refparam, struct dmc
 int set_management_server_connection_request_passwd(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
-		case VALUECHECK:			
+		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			dmuci_set_value("cwmp", "cpe", "passwd", value);

@@ -56,6 +56,7 @@ extern struct dmubus_ctx dmubus_ctx;
 extern struct ubus_context *ubus_ctx;
 
 int dmubus_call(char *obj, char *method, struct ubus_arg u_args[], int u_args_size, json_object **req_res);
+int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_args_size);
 void dmubus_ctx_free(struct dmubus_ctx *ctx);
 void json_parse_array( json_object *jobj, char *key, int index, char *next_key, char **value);
 int json_select(json_object *jobj, char *search, int index, char *next_key, char **value, json_object **jobjres);

@@ -8,6 +8,7 @@
  */
 
 #include <uci.h>
+#include "cwmp.h"
 #include "dmuci.h"
 #include "dmcwmp.h"
 #include "root.h"
@@ -974,6 +975,7 @@ static int set_notification_check_obj(DMOBJECT_API_ARGS)
 	}
 	else if (ctx->setaction == VALUESET) {
 		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 	return 0;
 }
@@ -996,6 +998,7 @@ static int set_notification_check_param(DMPARAM_API_ARGS)
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
 	} else if (ctx->setaction == VALUESET) {
 		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 
 	dmfree(full_param);
@@ -1024,8 +1027,6 @@ static int enabled_notify_check_obj(DMOBJECT_API_ARGS)
 
 static int enabled_notify_check_param(DMPARAM_API_ARGS)
 {
-	if (!forced_inform)
-		return FAULT_9005;
 	char *full_param;
 	char *value = NULL;
 	char *notification;

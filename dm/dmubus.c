@@ -20,10 +20,13 @@
 #include <stdio.h>
 #include "dmubus.h"
 #include "dmmem.h"
+#include "dmcommon.h"
 
 #define DELIMITOR ","
+#define UBUS_BUFFEER_SIZE 1024 * 8
 
 struct dmubus_ctx dmubus_ctx;
+#if 0
 struct ubus_context *ubus_ctx;
 
 static int timeout = 1000;
@@ -49,6 +52,7 @@ static inline bool dmblobmsg_json_object_from_uargs(struct blob_buf *b, char *ke
 	json_object_put(jobj);
 	return status;
 }
+#endif
 
 static inline int ubus_arg_cmp(struct ubus_arg *src_args, int src_size, struct ubus_arg dst_args[], int dst_size)
 {
@@ -62,6 +66,7 @@ static inline int ubus_arg_cmp(struct ubus_arg *src_args, int src_size, struct u
 	return 0;
 }
 
+#if 0
 static void receive_call_result_data(struct ubus_request *req, int type, struct blob_attr *msg) 
 {
 	if (!msg)
@@ -78,9 +83,70 @@ static void receive_call_result_data(struct ubus_request *req, int type, struct 
 		json_res = NULL;
 	}
 }
+#endif
+
+int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_args_size)
+{
+	char bufargs[256], *p;
+	int i, r;
+	p = bufargs;
+
+	if (u_args_size) {
+		sprintf(p, "{");
+		for (i = 0; i < u_args_size; i++) {
+			p += strlen(p);
+			if (i == 0)
+				sprintf(p, "\"%s\": \"%s\"", u_args[i].key, u_args[i].val);
+			else
+				sprintf(p, ", \"%s\": \"%s\"", u_args[i].key, u_args[i].val);
+		}
+		p += strlen(p);
+		sprintf(p, "}");
+		DMCMD("ubus", 7, "-S", "-t", "1", "call", obj, method, bufargs); //TODO wait to fix uloop ubus freeze
+	}
+	else {
+		DMCMD("ubus", 6, "-S", "-t", "1", "call", obj, method); //TODO wait to fix uloop ubus freeze
+	}
+	return 0;
+}
 
 static inline json_object *ubus_call_req(char *obj, char *method, struct ubus_arg u_args[], int u_args_size)
 {
+	json_object *res = NULL;
+	char bufres[UBUS_BUFFEER_SIZE], bufargs[256], *p;
+	int i, pp = 0, r;
+	p = bufargs;
+
+	if (u_args_size) {
+		sprintf(p, "{");
+		for (i = 0; i < u_args_size; i++) {
+			p += strlen(p);
+			if (i == 0)
+				sprintf(p, "\"%s\": \"%s\"", u_args[i].key, u_args[i].val);
+			else
+				sprintf(p, ", \"%s\": \"%s\"", u_args[i].key, u_args[i].val);
+		}
+		p += strlen(p);
+		sprintf(p, "}");
+		pp = dmcmd("ubus", 7, "-S", "-t", "1", "call", obj, method, bufargs); //TODO wait to fix uloop ubus freeze
+	}
+	else {
+		pp = dmcmd("ubus", 6, "-S", "-t", "1", "call", obj, method); //TODO wait to fix uloop ubus freeze
+	}
+	if (pp) {
+		r = dmcmd_read(pp, bufres, UBUS_BUFFEER_SIZE);
+		close(pp);
+		if (r > 0) {
+			res = json_tokener_parse((const char *)bufres);
+			if (res != NULL && (is_error(res))) {
+				json_object_put(res);
+				res = NULL;
+			}
+		}
+	}
+	return res;
+
+#if 0
 	struct blob_buf b = {0};
 	uint32_t id;
 	int ret;
@@ -104,6 +170,7 @@ static inline json_object *ubus_call_req(char *obj, char *method, struct ubus_ar
 end_error:
 	blob_buf_free(&b);
 	return NULL;
+#endif
 }
 
 int dmubus_call(char *obj, char *method, struct ubus_arg u_args[], int u_args_size, json_object **req_res)

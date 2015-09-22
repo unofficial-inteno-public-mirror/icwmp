@@ -594,7 +594,6 @@ int set_voice_profile_enable(char *refparam, struct dmctx *ctx, int action, char
 int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	json_object *res;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -604,7 +603,7 @@ int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char 
 		case VALUESET:
 			string_to_bool(value, &b);
 			if(b) {				
-				dmubus_call("uci", "commit", UBUS_ARGS{{"config", "voice_client"}}, 1, &res);
+				dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", "voice_client"}}, 1);
 				return 0;
 			}
 			return 0;

@@ -858,6 +858,33 @@ int filter_lan_ip_interface(struct uci_section *ss, void *v)
 **** function related to landevice_lanhostconfigmanagement_ipinterface ****
 ***************************************************************************/
 
+int get_interface_enable_ipinterface(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	return get_interface_enable_ubus(lan_name, refparam, ctx, value);
+}
+
+int set_interface_enable_ipinterface(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	return set_interface_enable_ubus(lan_name, refparam, ctx, action, value);
+}
+
+int get_interface_firewall_enabled_ipinterface(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	return get_interface_firewall_enabled(lan_name, refparam, ctx, value);
+}
+
+int set_interface_firewall_enabled_ipinterface(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	char *lan_name = section_name(ipargs->ldipsection);
+	return set_interface_firewall_enabled(lan_name, refparam, ctx, action, value);
+}
 
 int get_interface_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 {
@@ -884,10 +911,10 @@ int set_interface_ipaddress(char *refparam, struct dmctx *ctx, int action, char 
 	
 	switch (action) {
 		case VALUECHECK:
-			if (value[0] == '\0')
-				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			if (value[0] == '\0')
+				return 0;
 			dmuci_set_value_by_section(ipargs->ldipsection, "ipaddr", value);
 			return 0;
 	}
@@ -922,10 +949,10 @@ int set_interface_subnetmask(char *refparam, struct dmctx *ctx, int action, char
 	
 	switch (action) {
 		case VALUECHECK:
-			if (value[0] == '\0')
-				return FAULT_9007;
 			return 0;
 		case VALUESET:
+			if (value[0] == '\0')
+				return 0;
 			dmuci_set_value_by_section(ipargs->ldipsection, "netmask", value);
 			return 0;
 	}
@@ -2841,8 +2868,8 @@ inline int entry_landevice_ipinterface_instance (struct dmctx *ctx, char *idev, 
 		strcat(linker, section_name(ipargs->ldipsection));
 
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", ctx, "0", 1, NULL, NULL, linker, idev, ilan);
-		DMPARAM("Enable", ctx, "1", get_interface_enable_ubus, set_interface_enable_ubus, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled, set_interface_firewall_enabled, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Enable", ctx, "1", get_interface_enable_ipinterface, set_interface_enable_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled_ipinterface, set_interface_firewall_enabled_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPInterfaceIPAddress", ctx, "1", get_interface_ipaddress, set_interface_ipaddress, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("IPInterfaceSubnetMask", ctx, "1", get_interface_subnetmask, set_interface_subnetmask, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("IPInterfaceAddressingType", ctx, "1", get_interface_addressingtype, set_interface_addressingtype, NULL, 0, 1, UNDEF, NULL);
