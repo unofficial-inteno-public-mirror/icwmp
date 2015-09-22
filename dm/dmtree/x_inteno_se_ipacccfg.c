@@ -459,7 +459,7 @@ int get_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, char
 
 int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	char *pch;
+	char *pch, *val, *spch;
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	switch (action) {
@@ -467,9 +467,18 @@ int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int 
 			return 0;
 		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
-				value = "";
+				dmuci_delete_by_section(forwardargs->forwardsection, "src_ip", "");;				
 			}
-			dmuci_set_value_by_section(forwardargs->forwardsection, "src_ip", value);
+			else {
+				dmuci_delete_by_section(forwardargs->forwardsection, "src_ip", "");
+				val = dmstrdup(value);
+				pch = strtok_r(val, " ,", &spch);
+				while (pch != NULL) {
+					dmuci_add_list_value_by_section(forwardargs->forwardsection, "src_ip", pch);
+					pch = strtok_r(NULL, " ,", &spch);
+				}
+				dmfree(val);
+			}						
 			return 0;
 	}
 	return 0;
