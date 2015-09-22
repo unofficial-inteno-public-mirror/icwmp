@@ -205,7 +205,7 @@ int get_cfg_sipidx(void)
 
 int add_profile_object(struct dmctx *ctx, char **instancepara)
 {
-	char sname[8];
+	char *sname;
 	char account[8];
 	char bufinst[4];
 	int sipidx;
@@ -213,7 +213,7 @@ int add_profile_object(struct dmctx *ctx, char **instancepara)
 	struct uci_section *voice_profile_section;
 	
 	sipidx = get_cfg_sipidx();
-	sprintf(sname, "sip%d", sipidx);
+	dmasprintf(&sname, "sip%d", sipidx);
 	sprintf(account, "Account %d", sipidx);
 	dmuci_set_value("voice_client", sname, NULL, "sip_service_provider");
 	dmuci_set_value("voice_client", sname, "name", account);
@@ -233,6 +233,7 @@ int add_profile_object(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value("voice_client", sname, "cbbs_retrytime", "300");
 	dmuci_set_value("voice_client", sname, "cbbs_waittime", "30");
 	*instancepara = get_last_instance("voice_client", "sip_service_provider", "profileinstance");
+	dmfree(sname);
 	return 0;
 }
 
