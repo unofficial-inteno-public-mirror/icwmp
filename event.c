@@ -162,12 +162,18 @@ void cwmp_add_notification(void)
 	struct cwmp   *cwmp = &cwmp_main;
 	struct dm_enabled_notify *p;
 	struct dm_parameter *dm_parameter;
+	struct dmctx dmctx = {0};
 	int fault;
 	bool isactive = false;
 
+	pthread_mutex_lock(&(cwmp->mutex_session_send));
+	pthread_mutex_lock(&(cwmp->mutex_handle_notify));
+	cwmp->count_handle_notify = 0;
+	pthread_mutex_unlock(&(cwmp->mutex_handle_notify));
+
+	dm_ctx_init(&dmctx);
 	list_for_each_entry(p, &list_enabled_notify, list) {
-		struct dmctx dmctx = {0};
-		dm_ctx_init(&dmctx);
+		dm_ctx_init_sub(&dmctx);
 		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
 		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
 			dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
@@ -178,23 +184,24 @@ void cwmp_add_notification(void)
 					isactive = true;
 			}
 		}
-		dm_ctx_clean(&dmctx);
+		dm_ctx_clean_sub(&dmctx);
 	}
-	pthread_mutex_lock (&(cwmp->mutex_session_queue));
+	dm_ctx_clean(&dmctx);
+	pthread_mutex_unlock(&(cwmp->mutex_session_send));
 	if (isactive)
 	{
+		pthread_mutex_lock(&(cwmp->mutex_session_queue));
 		event_container = cwmp_add_event_container(cwmp, EVENT_IDX_4VALUE_CHANGE, "");
 		if (event_container == NULL)
 		{
-			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+			pthread_mutex_unlock(&(cwmp->mutex_session_queue));
 			return;
 		}
 		cwmp_save_event_container(cwmp,event_container);
-		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		pthread_mutex_unlock(&(cwmp->mutex_session_queue));
 		pthread_cond_signal(&(cwmp->threshold_session_send));
 		return;
 	}
-	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 }
 
 int cwmp_root_cause_event_boot (struct cwmp *cwmp)
@@ -348,6 +355,23 @@ int cwmp_root_cause_getRPCMethod (struct cwmp *cwmp)
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
     }
 
+    return CWMP_OK;
+}
+
+void *thread_handle_notify(void *v)
+{
+    struct cwmp                 *cwmp = (struct cwmp *) v;
+
+    for(;;)
+    {
+        pthread_mutex_lock(&(cwmp->mutex_handle_notify));
+        pthread_cond_wait(&(cwmp->threshold_handle_notify), &(cwmp->mutex_handle_notify));
+        pthread_mutex_unlock(&(cwmp->mutex_handle_notify));
+		while(cwmp->count_handle_notify) {
+			cwmp_add_notification();
+		}
+
+    }
     return CWMP_OK;
 }
 

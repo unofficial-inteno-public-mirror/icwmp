@@ -39,22 +39,20 @@ cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
 			struct blob_attr *msg)
 {
+	bool send_signal = false;
 	CWMP_LOG(INFO, "triggered ubus notification");
 
 	blob_buf_init(&b, 0);
 
-	if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
-		cwmp_set_end_session(END_SESSION_NOTIFY);
-		blobmsg_add_u32(&b, "status", 0);
-	}
-	else {
-		pthread_mutex_lock(&(cwmp_main.mutex_session_queue));
-		dm_global_init();
-		cwmp_add_notification();
-		pthread_mutex_unlock(&(cwmp_main.mutex_session_queue));
-		blobmsg_add_u32(&b, "status", 0);
-	}
+	pthread_mutex_lock(&(cwmp_main.mutex_handle_notify));
+	if (!cwmp_main.count_handle_notify)
+		send_signal = true;
+	cwmp_main.count_handle_notify++;
+	pthread_mutex_unlock(&(cwmp_main.mutex_handle_notify));
+	if (send_signal)
+		pthread_cond_signal(&(cwmp_main.threshold_handle_notify));
 
+	blobmsg_add_u32(&b, "status", 1);
 	ubus_send_reply(ctx, req, b.head);
 	blob_buf_free(&b);
 

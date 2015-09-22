@@ -455,11 +455,6 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp)
 
 int run_session_end_func (struct session *session)
 {
-	if (session->end_session & END_SESSION_NOTIFY)
-	{
-		CWMP_LOG (INFO,"notification value change: end session request");
-		cwmp_add_notification();
-	}
 
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
@@ -545,6 +540,7 @@ int main(int argc, char **argv)
     struct cwmp                     *cwmp = &cwmp_main;
     int                             error;
     pthread_t                       periodic_event_thread;
+    pthread_t                       handle_notify_thread;
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
     pthread_t                       ubus_thread;
@@ -579,7 +575,7 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the http connection request server thread!");
     }
-#if 0
+#if 1
     error = pthread_create(&ubus_thread, NULL, &thread_uloop_run, NULL);
     if (error<0)
 	{
@@ -591,6 +587,11 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error error when creating the periodic event thread!");
     }
+    error = pthread_create(&handle_notify_thread, NULL, &thread_handle_notify, (void *)cwmp);
+	if (error<0)
+	{
+		CWMP_LOG(ERROR,"Error error when creating the handle notify thread!");
+	}
     error = pthread_create(&scheduleInform_thread, NULL, &thread_cwmp_rpc_cpe_scheduleInform, (void *)cwmp);
     if (error<0)
     {
@@ -603,10 +604,11 @@ int main(int argc, char **argv)
     }
 
     cwmp_schedule_session(cwmp);
-#if 0
+#if 1
     pthread_join(ubus_thread, NULL);
 #endif
     pthread_join(periodic_event_thread, NULL);
+    pthread_join(handle_notify_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);

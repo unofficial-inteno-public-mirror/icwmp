@@ -60,7 +60,6 @@ enum end_session {
 	END_SESSION_EXTERNAL_ACTION = 1<<1,
 	END_SESSION_RELOAD = 1<<2,
 	END_SESSION_FACTORY_RESET = 1<<3,
-	END_SESSION_NOTIFY = 1<<4
 };
 
 enum cwmp_start {
@@ -187,6 +186,9 @@ typedef struct cwmp {
     pthread_cond_t		threshold_session_send;
     pthread_mutex_t		mutex_periodic;
     pthread_cond_t		threshold_periodic;
+    pthread_mutex_t		mutex_handle_notify;
+    pthread_cond_t		threshold_handle_notify;
+    int					count_handle_notify;
     int					retry_count_session;
     struct list_head	*head_event_container;
     int					pid_file;
@@ -241,5 +243,7 @@ void *thread_exit_program (void *v);
 void connection_request_ip_value_change(struct cwmp *cwmp);
 void connection_request_port_value_change(struct cwmp *cwmp, int port);
 void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type);
+void cwmp_set_end_session (unsigned int end_session_flag);
+void *thread_handle_notify(void *v);
 
 #endif /* _CWMP_H__ */

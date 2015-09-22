@@ -801,6 +801,7 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     pthread_mutex_init(&cwmp->mutex_periodic, NULL);
     pthread_mutex_init(&cwmp->mutex_session_queue, NULL);
     pthread_mutex_init(&cwmp->mutex_session_send, NULL);
+    pthread_mutex_init(&cwmp->mutex_handle_notify, NULL);
     memcpy(&(cwmp->env),&env,sizeof(struct env));
     INIT_LIST_HEAD(&(cwmp->head_session_queue));
     if(error = global_conf_init(&(cwmp->conf)))
