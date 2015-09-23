@@ -1704,7 +1704,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 					dmuci_set_value_by_section(wlanargs->lwlansection, "wps_pbc", "1");
 					dmfree(gnw);
 				}
-				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "value");
+				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", value);
 			}
 			else if(strcmp(value, "WPAand11i") == 0) {
 				value = "mixed-psk";
@@ -1716,7 +1716,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 					dmuci_set_value_by_section(wlanargs->lwlansection, "wps_pbc", "1");
 					dmfree(gnw);
 				}
-				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "value");
+				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", value);
 			}
 			return 0;
 	}
