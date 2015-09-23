@@ -6,8 +6,8 @@
 include /lib/network
 . /usr/share/libubox/jshn.sh
 
-START=10
-STOP=40
+START=99
+STOP=10
 
 EXTRA_HELP="	start	[GetRPCMethods] Start cwmpd service and send GetRPCMethods"
 
