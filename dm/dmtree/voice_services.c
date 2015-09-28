@@ -205,15 +205,15 @@ int get_cfg_sipidx(void)
 
 int add_profile_object(struct dmctx *ctx, char **instancepara)
 {
-	char *sname;
-	char account[8];
+	char sname[8];
+	char account[16];
 	char bufinst[4];
 	int sipidx;
 	char *add_value, *instance, *max_instance;	
 	struct uci_section *voice_profile_section;
 	
 	sipidx = get_cfg_sipidx();
-	dmasprintf(&sname, "sip%d", sipidx);
+	sprintf(sname, "sip%d", sipidx);
 	sprintf(account, "Account %d", sipidx);
 	dmuci_set_value("voice_client", sname, NULL, "sip_service_provider");
 	dmuci_set_value("voice_client", sname, "name", account);
@@ -233,7 +233,6 @@ int add_profile_object(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value("voice_client", sname, "cbbs_retrytime", "300");
 	dmuci_set_value("voice_client", sname, "cbbs_waittime", "30");
 	*instancepara = get_last_instance("voice_client", "sip_service_provider", "profileinstance");
-	dmfree(sname);
 	return 0;
 }
 
@@ -550,15 +549,20 @@ int get_capabilities_sip_pperiod(char *refparam, struct dmctx *ctx, char **value
 
 int get_voice_service_max_line()
 {
-	char *lines;
 	int num = 0;
 	json_object *res;
+	json_object *brcm;
 	
-	dmubus_call("asterisk.brcm", "dump", UBUS_ARGS{}, 0, &res);
-	if (!res)
-		return 0;
-	json_select(res, "num_lines", 0, NULL, &lines, NULL);
-	num = atoi(lines);
+  //dmubus_call("asterisk.brcm", "dump", UBUS_ARGS{}, 0, &res);
+	dmubus_call("asterisk", "status", UBUS_ARGS{}, 0, &res);
+	if(res)
+		json_select(res, "brcm", -1, NULL, NULL, &brcm);
+	if(brcm) {
+		json_object_object_foreach(brcm, key, val) {
+			if (strstr(key, "brcm"))
+				num++;
+		}
+	}
 	return num;
 }
 
@@ -829,11 +833,15 @@ int set_sip_user_agent_port(char *refparam, struct dmctx *ctx, int action, char 
 
 int get_sip_user_agent_transport(char *refparam, struct dmctx *ctx, char **value)
 {
-	json_object *res;
-
-	dmubus_call("asterisk.sip", "dump", UBUS_ARGS{}, 0, &res);
-	DM_ASSERT(res, *value = "");
-	json_select(res, "transports", -1, "allowed", value, NULL);
+	//dmubus_call("asterisk.sip", "dump", UBUS_ARGS{}, 0, &res);
+	char *tmp;
+	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
+	
+	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", &tmp);
+	if (tmp[0] == '\0')
+		*value = "udp";
+	else
+		*value = tmp;
 	return 0;
 }
 
