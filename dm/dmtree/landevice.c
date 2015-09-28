@@ -1689,6 +1689,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 					reset_wlan(wlanargs->lwlansection);
 					char *gnw = get_nvram_wpakey();
 					dmuci_set_value_by_section(wlanargs->lwlansection, "key", gnw);
+					dmuci_set_value_by_section(wlanargs->lwlansection, "cipher", "tkip");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "gtk_rekey", "3600");
 					dmfree(gnw);
 				}
@@ -1700,6 +1701,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 					reset_wlan(wlanargs->lwlansection);
 					char *gnw = get_nvram_wpakey();
 					dmuci_set_value_by_section(wlanargs->lwlansection, "key", gnw);
+					dmuci_set_value_by_section(wlanargs->lwlansection, "cipher", "ccmp");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "gtk_rekey", "3600");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "wps_pbc", "1");
 					dmfree(gnw);
@@ -1712,6 +1714,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 					reset_wlan(wlanargs->lwlansection);
 					char *gnw = get_nvram_wpakey();
 					dmuci_set_value_by_section(wlanargs->lwlansection, "key", gnw);
+					dmuci_set_value_by_section(wlanargs->lwlansection, "cipher", "tkip+ccmp");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "gtk_rekey", "3600");
 					dmuci_set_value_by_section(wlanargs->lwlansection, "wps_pbc", "1");
 					dmfree(gnw);
