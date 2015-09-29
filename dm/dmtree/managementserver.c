@@ -22,7 +22,7 @@
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("cwmp", "acs", "url", value);
+	dmuci_get_varstate_string("cwmp", "acs", "url", value);
 	return 0;	
 }
 

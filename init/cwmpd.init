@@ -33,12 +33,14 @@ check_acs_url() {
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
 		url=`uci -P /var/state -q get $dhcp_url_path`
 		echo "ACS URL from dhcp: $url"
+		uci -P /var/state -q set cwmp.acs.url=$url
 	elif [ "_$url" != "_" ];then
 		url=`uci -q get cwmp.acs.url`
 		echo "ACS URL from configuration: $url"
 	else
 		url=$default_acs
 		echo "Using default ACS URL: $url"
+		uci -P /var/state -q set cwmp.acs.url=$url
 	fi
 	
 	check_url_format $url
