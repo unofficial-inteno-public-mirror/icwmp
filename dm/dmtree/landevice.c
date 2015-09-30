@@ -2184,17 +2184,13 @@ int set_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, int
 
 int get_wlan_radio_enabled(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *radio;
-	int r;
+	char *tmp;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	*value = "";
-	DM_ASSERT(wlanargs->res, *value = "1");
-	json_select(wlanargs->res, "radio", 0, NULL, &radio, NULL);
-	r = atoi(radio);
-	if (r == 0)
+	dmuci_get_value_by_section_string(wlanargs->device_section, "disabled", &tmp);	
+	if (tmp[0] == '0' || tmp[0] == '\0')
 		*value = "1";
-	else if (r == 1)
+	else if (tmp[0] == '1')
 		*value = "0";
 	return 0;
 }
@@ -2211,10 +2207,10 @@ int set_wlan_radio_enabled(char *refparam, struct dmctx *ctx, int action, char *
 			return 0;
 		case VALUESET:
 			string_to_bool(value, &b);
-			if (!b)
-				DMCMD("/usr/sbin/wlctl", 4, "-i", wlanargs->wiface, "radio", "off"); //TODO wait ubus command;
+			if (b)
+				dmuci_set_value_by_section(wlanargs->device_section, "disabled", "0");
 			else
-				DMCMD("/usr/sbin/wlctl", 4, "-i", wlanargs->wiface, "radio", "on"); //TODO wait ubus command;			
+				dmuci_set_value_by_section(wlanargs->device_section, "disabled", "1");			
 			return 0;
 	}
 	return 0;
