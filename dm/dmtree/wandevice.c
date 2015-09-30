@@ -1363,20 +1363,22 @@ int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, in
 
 int get_wan_igmp_rule_idx(char *iface, struct uci_section **rule, struct uci_section **zone, char **enable)
 {
-	char *input, *proto, *target;
+	char *input, *proto, *target, *zname;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-	*enable = "0";
+	*enable = "1";
+	*rule = NULL;
 	
 	uci_foreach_option_cont("firewall", "zone", "network", iface, *zone) {
 		dmuci_get_value_by_section_string(*zone, "input", &input);
 		if (strcmp(input, "DROP") == 0)
 			*enable = "0";
-		uci_foreach_option_cont("firewall", "rule", "src", section_name(*zone), *rule) {
+		dmuci_get_value_by_section_string(*zone, "name", &zname);
+		uci_foreach_option_cont("firewall", "rule", "src", zname, *rule) {
 			dmuci_get_value_by_section_string(*rule, "proto", &proto);
 			if (strcmp(proto, "igmp")) {
 				dmuci_get_value_by_section_string(*rule, "enabled", enable);
-				if (*enable != '\0') {
+				if ((*enable)[0] != '\0') {
 					if ((*enable)[0] == '0')
 						break;
 				}
