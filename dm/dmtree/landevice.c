@@ -747,12 +747,11 @@ int get_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, char **value)
 			{
 				if (str = strstr(e->name, "15,")) {
 					*value = dmstrdup(str + sizeof("15,") - 1); //MEM WILL BE FREED IN DMMEMCLEAN
-					goto end;
+					return 0;
 				}
 			}
 		}
 	}
-end:
 	return 0;
 }
 
@@ -761,7 +760,7 @@ int set_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, int action, char 
 	char *result, *dn, *pch;
 	struct uci_list *val;
 	struct uci_section *s = NULL;
-	struct uci_element *e = NULL;
+	struct uci_element *e = NULL, *tmp;
 	char *option = "dhcp_option", buf[64];
 	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
 	char *lan_name = section_name(ipargs->ldipsection);
@@ -773,11 +772,10 @@ int set_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, int action, char 
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
 				dmuci_get_value_by_section_list(s, option, &val);
 				if (val) {
-					uci_foreach_element(val, e)
+					uci_foreach_element_safe(val, e, tmp)
 					{
-						if (strstr(e->name, "15,")) {
-							dmuci_del_list_value_by_section(s, "dhcp_option", e->name); //TODO test it
-							goto end;
+						if (strstr(tmp->name, "15,")) {
+							dmuci_del_list_value_by_section(s, "dhcp_option", tmp->name); //TODO test it							
 						}
 					}
 				}
@@ -1471,10 +1469,9 @@ int set_wlan_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUESET:
 			string_to_bool(value, &b);
 			if (b)
-				value = "0";
+				dmuci_set_value_by_section(wlanargs->lwlansection, "disabled", "0");
 			else
-				value = "1";
-			dmuci_set_value_by_section(wlanargs->lwlansection, "disabled", value);
+				dmuci_set_value_by_section(wlanargs->lwlansection, "disabled", "1");
 			return 0;
 	}
 	return 0;
@@ -2192,7 +2189,7 @@ int get_wlan_radio_enabled(char *refparam, struct dmctx *ctx, char **value)
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
 	*value = "";
-	DM_ASSERT(wlanargs->res, *value = "");
+	DM_ASSERT(wlanargs->res, *value = "1");
 	json_select(wlanargs->res, "radio", 0, NULL, &radio, NULL);
 	r = atoi(radio);
 	if (r == 0)
@@ -2215,10 +2212,9 @@ int set_wlan_radio_enabled(char *refparam, struct dmctx *ctx, int action, char *
 		case VALUESET:
 			string_to_bool(value, &b);
 			if (!b)
-				value = "off";
+				DMCMD("/usr/sbin/wlctl", 4, "-i", wlanargs->wiface, "radio", "off"); //TODO wait ubus command;
 			else
-				value = "on";
-			DMCMD("/usr/sbin/wlctl", 4, "-i", wlanargs->wiface, "radio", value); //TODO wait ubus command
+				DMCMD("/usr/sbin/wlctl", 4, "-i", wlanargs->wiface, "radio", "on"); //TODO wait ubus command;			
 			return 0;
 	}
 	return 0;
