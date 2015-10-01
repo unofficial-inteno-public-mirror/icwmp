@@ -287,9 +287,9 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
             return CWMP_MEM_ERR;
         }
         add_dm_parameter_tolist(&(event_container->head_dm_parameter),
-        		DMROOT".ManagementServer.URL", NULL, NULL);
+        		DMROOT"ManagementServer.URL", NULL, NULL);
         cwmp_save_event_container (cwmp,event_container);
-        save_acs_bkp_config (cwmp);
+        save_acs_bkp_config(cwmp);
         cwmp_scheduleInform_remove_all();
         cwmp_scheduledDownload_remove_all();
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
