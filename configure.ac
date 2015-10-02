@@ -1,4 +1,4 @@
-AC_INIT([cwmp], [0.1], [mohamed.kallel@pivasoftware.com])
+AC_INIT([icwmp], [0.1], [mohamed.kallel@pivasoftware.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([cwmp.c])
 

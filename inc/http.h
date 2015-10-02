@@ -23,9 +23,9 @@
 #endif
 
 #ifdef DUMMY_MODE
-static char *fc_cookies = "./ext/tmp/freecwmp_cookies";
+static char *fc_cookies = "./ext/tmp/icwmp_cookies";
 #else
-static char *fc_cookies = "/tmp/freecwmp_cookies";
+static char *fc_cookies = "/tmp/icwmp_cookies";
 #endif
 
 #define HTTP_TIMEOUT 30

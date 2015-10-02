@@ -71,7 +71,7 @@ static void external_read_pipe_input(int (*external_handler)(char *msg))
 			value = c;
         } else {
         	if (!value) continue;
-        	if (strcmp(value, "cwmp>")==0) {
+        	if (strcmp(value, "icwmp>")==0) {
         	    FREE(value);
         	    break;
         	}
@@ -139,15 +139,15 @@ void external_init()
     close(pfds_out[0]);
 
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-    	DD(ERROR, "freecwmp script intialization: signal ignoring error");
+    	DD(ERROR, "icwmp script intialization: signal ignoring error");
 
 	external_read_pipe_input(NULL);
 
-	DD(INFO, "freecwmp script is listening");
+	DD(INFO, "icwmp script is listening");
 	return;
 
 error:
-	CWMP_LOG(ERROR,"freecwmp script intialization failed");
+	CWMP_LOG(ERROR,"icwmp script intialization failed");
 	exit(EXIT_FAILURE);
 }
 

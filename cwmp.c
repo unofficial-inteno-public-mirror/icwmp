@@ -523,7 +523,7 @@ void *thread_http_cr_server_listen (void *v)
 
 void *thread_exit_program (void *v)
 {
-	CWMP_LOG(INFO,"EXIT CWMP");
+	CWMP_LOG(INFO,"EXIT ICWMP");
 	pthread_mutex_lock(&mutex_backup_session);
 	exit(EXIT_SUCCESS);
 }
@@ -551,7 +551,7 @@ int main(int argc, char **argv)
     {
         return error;
     }
-    CWMP_LOG(INFO,"STARTING CWMP");
+    CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
 
     if (error = cwmp_init_backup_session(cwmp, NULL, ALL))
@@ -613,6 +613,6 @@ int main(int argc, char **argv)
     pthread_join(download_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
 
-    CWMP_LOG(INFO,"EXIT CWMP");
+    CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }

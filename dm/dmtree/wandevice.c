@@ -1694,7 +1694,7 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 /*************************************************/
 int entry_method_root_WANDevice(struct dmctx *ctx)
 {
-	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &default_wan);
+	dmuci_get_option_value_string("icwmp", "cpe", "default_wan_interface", &default_wan);
 	IF_MATCH(ctx, DMROOT"WANDevice.") {
 		DMOBJECT(DMROOT"WANDevice.", ctx, "0", 0, NULL, NULL, NULL);
 		SUBENTRY(entry_wandevice_sub, ctx);

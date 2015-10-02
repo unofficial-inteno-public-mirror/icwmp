@@ -16,9 +16,9 @@
 #include <libubox/list.h>
 
 #ifdef DUMMY_MODE
-static char *fc_script = "./ext/openwrt/scripts/freecwmp.sh";
+static char *fc_script = "./ext/openwrt/scripts/icwmp.sh";
 #else
-static char *fc_script = "/usr/sbin/freecwmp";
+static char *fc_script = "/usr/sbin/icwmp";
 #endif
 
 void external_downloadFaultResp (char *fault_code);
