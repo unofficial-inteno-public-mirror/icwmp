@@ -22,4 +22,4 @@ if [ _$strength != "_64" -a _$strength != "_128" ] || [ _$passphrase = "_" ]; th
 	exit 0;
 fi
 
-/usr/sbin/cwmpd -w "$strength" "$passphrase"
+/usr/sbin/icwmpd -w "$strength" "$passphrase"

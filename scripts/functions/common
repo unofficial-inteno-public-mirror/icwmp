@@ -4,7 +4,7 @@
 #  Author Ahmed Zribi <ahmed.zribi@pivasoftware.com>
 #  Author Mohamed Kallel <mohamed.kallel@pivasoftware.com>
 
-freecwmp_fault_output() {
+icwmp_fault_output() {
 	
 	local MSG=""
 	local fault_code="$2"
@@ -22,13 +22,13 @@ freecwmp_fault_output() {
 }
 
 
-freecwmp_check_image()
+icwmp_check_image()
 {
 	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/firmware_upgrade_image
 	return $?
 }
 
-freecwmp_check_flash_size()
+icwmp_check_flash_size()
 {
 	local size=0
 	if [ -f /proc/mtd ];then
@@ -62,7 +62,7 @@ freecwmp_check_flash_size()
 	echo "$size"
 }
 
-freecwmp_apply_firmware()
+icwmp_apply_firmware()
 {
 	local fault_code="9000"
 	
@@ -70,13 +70,13 @@ freecwmp_apply_firmware()
 	killall dropbear uhttpd; sleep 1; /sbin/sysupgrade /tmp/firmware_upgrade_image_last_valid
 	if [ "$?" != "0" ];then
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		freecwmp_fault_output "" "$fault_code"
+		icwmp_fault_output "" "$fault_code"
 	else
-		freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 	fi
 }
 
-freecwmp_apply_web_content()
+icwmp_apply_web_content()
 {
 	local fault_code="9000"
 	
@@ -84,13 +84,13 @@ freecwmp_apply_web_content()
 	if [ "$?" != "0" ];then
 		rm /tmp/web_content.ipk 2> /dev/null
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		freecwmp_fault_output "" "$fault_code"
+		icwmp_fault_output "" "$fault_code"
    else
-		freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 	fi
 }
 
-freecwmp_apply_vendor_configuration()
+icwmp_apply_vendor_configuration()
 {
 	local fault_code="9000"
 	
@@ -99,16 +99,16 @@ freecwmp_apply_vendor_configuration()
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 		if [ "$?" != "0" ];then
 			let fault_code=$fault_code+$FAULT_CPE_INTERNAL_ERROR
-			freecwmp_fault_output "" "$fault_code"
+			icwmp_fault_output "" "$fault_code"
 		else
-			freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+			icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			sync
 			reboot
 		fi
 	else
 		rm /tmp/vendor_configuration_file.cfg 2> /dev/null
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
-		freecwmp_fault_output "" "$fault_code"
+		icwmp_fault_output "" "$fault_code"
 	fi
 }
 

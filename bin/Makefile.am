@@ -1,7 +1,7 @@
-bin_PROGRAMS = cwmpd
+bin_PROGRAMS = icwmpd
 CWMP_VERSION = 3.0
 
-cwmpd_SOURCES =				\
+icwmpd_SOURCES =				\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
@@ -41,7 +41,7 @@ cwmpd_SOURCES =				\
 	../dm/dmtree/x_inteno_se_power_mgmt.c		\
 	../dm/dmtree/x_inteno_se_wifi.c			
 
-cwmpd_CFLAGS =			\
+icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
 	$(LIBUCI_CFLAGS)	\
 	$(LIBUBOX_CFLAGS)	\
@@ -50,7 +50,7 @@ cwmpd_CFLAGS =			\
 	$(LIBCURL_CFLAGS)	\
 	$(LIBZSTREAM_CFLAGS)
 
-cwmpd_LDFLAGS =			\
+icwmpd_LDFLAGS =			\
 	$(AM_LDFLAGS)		\
 	$(LIBUCI_LDFLAGS)	\
 	$(LIBUBOX_LDFLAGS)	\
@@ -59,7 +59,7 @@ cwmpd_LDFLAGS =			\
 	$(LIBCURL_LDFLAGS)	\
 	$(LIBZSTREAM_LDFLAGS)
 
-cwmpd_LDADD =			\
+icwmpd_LDADD =			\
 	$(AM_LIBS)			\
 	$(LIBUCI_LIBS)		\
 	$(LIBUBOX_LIBS)		\
@@ -71,11 +71,11 @@ cwmpd_LDADD =			\
 	$(LIBJSON_LIBS)		\
 	$(LBLOBMSG_LIBS)
 
-cwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
-cwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+icwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 
-CWMP_BKP_FILE=/etc/cwmpd/.cwmpd_backup_session.xml
-cwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"
-cwmpd_CFLAGS+=-I../inc
-cwmpd_CFLAGS+=-I../dm/
-cwmpd_CFLAGS+=-I../dm/dmtree
+CWMP_BKP_FILE=/etc/icwmpd/.icwmpd_backup_session.xml
+icwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"
+icwmpd_CFLAGS+=-I../inc
+icwmpd_CFLAGS+=-I../dm/
+icwmpd_CFLAGS+=-I../dm/dmtree

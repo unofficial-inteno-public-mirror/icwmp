@@ -1,4 +1,4 @@
-config 'cwmp' 'acs'
+config 'icwmp' 'acs'
 	option 'url' ''
 	option 'userid' '$OUI-$SER'
 	option 'passwd' 'inteno'
@@ -9,7 +9,7 @@ config 'cwmp' 'acs'
 	option 'dhcp_discovery' 'enable'
 	option 'dhcp_url_path' 'provisioning.iup.urlcwmp'
 
-config 'cwmp' 'cpe'
+config 'icwmp' 'cpe'
 	option 'interface' 'eth0.1'
 	option 'default_wan_interface' 'wan'
 	option 'manufacturer' 'Inteno'
@@ -18,7 +18,7 @@ config 'cwmp' 'cpe'
 	# log_severity: INFO (Default)	
 	# log_severity possible configs: EMERG, ALERT, CRITIC ,ERROR, WARNING, NOTICE, INFO, DEBUG
 	option 'log_severity' 'INFO'
-	option 'log_file_name' '/var/log/cwmpd.log'
+	option 'log_file_name' '/var/log/icwmpd.log'
 	option 'log_max_size' '102400'
 	option 'userid' '$OUI-$SER'
 	option 'passwd' 'cpeinteno'

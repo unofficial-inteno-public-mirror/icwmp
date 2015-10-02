@@ -8,7 +8,7 @@
 #TODO help message
 
 NEW_LINE='\n'
-CWMP_PROMPT="cwmp>"
+CWMP_PROMPT="icwmp>"
 UCI_GET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q"
 UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
 TMP_SET_VALUE="/tmp/.tmp_set_value"
@@ -21,8 +21,8 @@ FAULT_CPE_INTERNAL_ERROR="2"
 FAULT_CPE_DOWNLOAD_FAILURE="10"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 
-for ffile in `ls /usr/share/freecwmp/functions/`; do
-. /usr/share/freecwmp/functions/$ffile
+for ffile in `ls /usr/share/icwmp/functions/`; do
+. /usr/share/icwmp/functions/$ffile
 done
 
 	
@@ -123,11 +123,11 @@ fi
 handle_action() {
 	local fault_code=$FAULT_CPE_NO_FAULT
 	if [ "$action" = "get_value" -o "$action" = "get_notification" ]; then
-		/usr/sbin/cwmpd -m 1 $action "$__arg1"
+		/usr/sbin/icwmpd -m 1 $action "$__arg1"
 	fi
 
 	if [ "$action" = "get_name" ]; then
-		/usr/sbin/cwmpd -m 1 get_name "$__arg1" "$__arg2"
+		/usr/sbin/icwmpd -m 1 get_name "$__arg1" "$__arg2"
 	fi
 
 	if [ "$action" = "set_value" ]; then
@@ -156,7 +156,7 @@ handle_action() {
 			json_get_var svv value
 			svargs="$svargs \"$svp\" \"$svv\""
 		done < $TMP_SET_VALUE
-		eval "/usr/sbin/cwmpd $svargs"
+		eval "/usr/sbin/icwmpd $svargs"
 		rm -f $TMP_SET_VALUE
 	fi
 
@@ -170,82 +170,82 @@ handle_action() {
 			json_get_var snv value
 			snargs="$snargs \"$snp\" \"$snv\""
 		done < $TMP_SET_NOTIFICATION
-		eval "/usr/sbin/cwmpd $snargs"
+		eval "/usr/sbin/icwmpd $snargs"
 		rm -f $TMP_SET_NOTIFICATION
 	fi
 
 
 	if [ "$action" = "add_object" -o "$action" = "delete_object" ]; then
-		/usr/sbin/cwmpd -m 1 get_value "$__arg2" "$__arg1"		
+		/usr/sbin/icwmpd -m 1 get_value "$__arg2" "$__arg1"		
 	fi
 
 	if [ "$action" = "inform" ]; then
-		/usr/sbin/cwmpd -m 1 "inform"
+		/usr/sbin/icwmpd -m 1 "inform"
 	fi
 
 	if [ "$action" = "download" ]; then
 		local fault_code="9000"
 		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
-			wget -O /tmp/freecwmp_download "$__arg1" 2> /dev/null
+			wget -O /tmp/icwmp_download "$__arg1" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-				freecwmp_fault_output "" "$fault_code"
+				icwmp_fault_output "" "$fault_code"
 				return 1
 			fi
 		else
 			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
-			wget -O /tmp/freecwmp_download "$url" 2> /dev/null
+			wget -O /tmp/icwmp_download "$url" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-				freecwmp_fault_output "" "$fault_code"
+				icwmp_fault_output "" "$fault_code"
 				return 1
 			fi
 		fi
 
-		local flashsize="`freecwmp_check_flash_size`"
-		local filesize=`ls -l /tmp/freecwmp_download | awk '{ print $5 }'`
+		local flashsize="`icwmp_check_flash_size`" #ALZ
+		local filesize=`ls -l /tmp/icwmp_download | awk '{ print $5 }'`
 		if [ $flashsize -gt 0 -a $flashsize -lt $__arg2 ]; then
 			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-			rm /tmp/freecwmp_download 2> /dev/null
-			freecwmp_fault_output "" "$fault_code"
+			rm /tmp/icwmp_download 2> /dev/null
+			icwmp_fault_output "" "$fault_code"
 		else
 			if [ "$__arg3" = "1" ];then
-				mv /tmp/freecwmp_download /tmp/firmware_upgrade_image 2> /dev/null
-				freecwmp_check_image
+				mv /tmp/icwmp_download /tmp/firmware_upgrade_image 2> /dev/null
+				icwmp_check_image
 				if [ "$?" = "0" ];then
 					if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
 						let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 						rm /tmp/firmware_upgrade_image 2> /dev/null
-						freecwmp_fault_output "" "$fault_code"
+						icwmp_fault_output "" "$fault_code"
 					else
 						rm /tmp/firmware_upgrade_image_last_valid 2> /dev/null
 						mv /tmp/firmware_upgrade_image /tmp/firmware_upgrade_image_last_valid 2> /dev/null
-						freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+						icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 					fi
 				else
 					let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 					rm /tmp/firmware_upgrade_image 2> /dev/null
-					freecwmp_fault_output "" "$fault_code"
+					icwmp_fault_output "" "$fault_code"
 				fi
 			elif [ "$__arg3" = "2" ];then
-				mv /tmp/freecwmp_download /tmp/web_content.ipk 2> /dev/null
-				freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+				mv /tmp/icwmp_download /tmp/web_content.ipk 2> /dev/null
+				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			elif [ "$__arg3" = "3" ];then
-				mv /tmp/freecwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
-				freecwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+				mv /tmp/icwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			else
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
-				freecwmp_fault_output "" "$fault_code"
-				rm /tmp/freecwmp_download 2> /dev/null
+				icwmp_fault_output "" "$fault_code"
+				rm /tmp/icwmp_download 2> /dev/null
 			fi
 		fi
 	fi
 
 	if [ "$action" = "apply_download" ]; then
 		case "$__arg1" in
-			1) freecwmp_apply_firmware ;;
-			2) freecwmp_apply_web_content ;;
-			3) freecwmp_apply_vendor_configuration ;;
+			1) icwmp_apply_firmware ;;
+			2) icwmp_apply_web_content ;;
+			3) icwmp_apply_vendor_configuration ;;
 		esac
 	fi
 
@@ -262,13 +262,13 @@ handle_action() {
 	fi
 
 	if [ "$action" = "allow_cr_ip" ]; then
-		local port=`$UCI_GET cwmp.cpe.port`
-		local if_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
+		local port=`$UCI_GET icwmp.cpe.port`
+		local if_wan=`$UCI_GET icwmp.cpe.default_wan_interface`
 		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
 		local zone_name=`$UCI_GET firewall.$zone.name`
 		[ "$zone_name" = "" ] && return
 		# update iptables rule
-		sed -i "s,^.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp
+		sed -i "s,^.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.icwmp
 		fw3 reload
 	fi
 	

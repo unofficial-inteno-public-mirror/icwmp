@@ -9,7 +9,7 @@ include /lib/network
 START=99
 STOP=10
 
-EXTRA_HELP="	start	[GetRPCMethods] Start cwmpd service and send GetRPCMethods"
+EXTRA_HELP="	start	[GetRPCMethods] Start icwmpd service and send GetRPCMethods"
 
 check_url_format() {
 	# SCHEMA_LIST: contain list of possible schemas that could be present in the acs url
@@ -27,20 +27,20 @@ check_url_format() {
 
 check_acs_url() {
 	default_acs="http://10.10.1.6:8000/openacs/acs"
-	acs_dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
-	url=`uci -q get cwmp.acs.url`
-	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
+	acs_dhcp_discovery=`uci -q get icwmp.acs.dhcp_discovery`
+	url=`uci -q get icwmp.acs.url`
+	dhcp_url_path=`uci -q get icwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
 		url=`uci -P /var/state -q get $dhcp_url_path`
 		echo "ACS URL from dhcp: $url"
-		uci -P /var/state -q set cwmp.acs.url=$url
+		uci -P /var/state -q set icwmp.acs.url=$url
 	elif [ "_$url" != "_" ];then
-		url=`uci -q get cwmp.acs.url`
+		url=`uci -q get icwmp.acs.url`
 		echo "ACS URL from configuration: $url"
 	else
 		url=$default_acs
 		echo "Using default ACS URL: $url"
-		uci -P /var/state -q set cwmp.acs.url=$url
+		uci -P /var/state -q set icwmp.acs.url=$url
 	fi
 	
 	check_url_format $url
@@ -52,9 +52,9 @@ check_acs_url() {
 
 check_dhcp() {
 	i=0
-	dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
-	url=`uci -q get cwmp.acs.url`
-	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
+	dhcp_discovery=`uci -q get icwmp.acs.dhcp_discovery`
+	url=`uci -q get icwmp.acs.url`
+	dhcp_url_path=`uci -q get icwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ]
 	then
 		while [ $i -le 10 ]
@@ -74,18 +74,18 @@ check_dhcp() {
 set_wan_interface() {
 	local l3_device=""
 	local default_wan_interface=""
-	config_load cwmp
+	config_load icwmp
 	config_get default_wan_interface  cpe default_wan_interface   
 	json_load "$(ifstatus $default_wan_interface)"
 	json_get_var l3_device l3_device
 	if [ "$l3_device" != "" ];then
-		uci_set cwmp cpe interface "$l3_device" 
+		uci_set icwmp cpe interface "$l3_device" 
 		uci_commit
 	fi 
 }
 
-start_msg="Start cwmpd ..."
-stop_msg="Stop cwmpd ..."
+start_msg="Start icwmpd ..."
+stop_msg="Stop icwmpd ..."
 
 cwmp_wait_voice() {
 	if [ -e /etc/rc.d/S*asterisk ]
@@ -99,10 +99,10 @@ cwmp_wait_voice() {
 			fi
 			let i++
 			[ "$i" = "60" ] && {
-				echo "cwmpd: warning: voice service did not start!"
+				echo "icwmpd: warning: voice service did not start!"
 				break
 			}
-			[ "$((i%10))" =  "0" ] && echo "cwmpd: waiting the start of voice service..."
+			[ "$((i%10))" =  "0" ] && echo "icwmpd: waiting the start of voice service..."
 		done
 	fi
 }
@@ -128,36 +128,36 @@ run() {
 	if [ "_$1" = "_GetRPCMethods" ];then
 		opt=$opt"-g "
 	fi
-	[ -f /etc/config/cwmp ] && /usr/sbin/cwmpd $opt &
-	while [ "`ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common`" = "" ]; do
+	[ -f /etc/config/icwmp ] && /usr/sbin/icwmpd $opt &
+	while [ "`ps | grep /usr/sbin/icwmpd | grep -v grep | grep -v rc.common`" = "" ]; do
 		sleep 1
 	done
 }
 
 boot() {
-	touch /etc/cwmpd/.cwmpd_boot
-	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	touch /etc/icwmpd/.icwmpd_boot
+	local scron=`crontab -l | grep "/usr/sbin/watchicwmpd"`
 	if [ "$scron" != "" ]; then
-		crontab -l | sed "/\/usr\/sbin\/watchcwmpd/d" | crontab -
+		crontab -l | sed "/\/usr\/sbin\/watchicwmpd/d" | crontab -
 	fi
 }
 
 start_cwmpd() {
-	run=$(ps | grep /usr/sbin/cwmpd | grep -v grep | grep -v rc.common)
+	run=$(ps | grep /usr/sbin/icwmpd | grep -v grep | grep -v rc.common)
 	if [ "$run" = "" ];then
 		printf "\033[A"
 		if [ "$1" = "GetRPCMethods" ];then
 			run "GetRPCMethods"
 		else
-			if [ ! -f /etc/cwmpd/.cwmpd_boot ]; then
+			if [ ! -f /etc/icwmpd/.icwmpd_boot ]; then
 				run
 			else
 				run "boot"
-				rm -f /etc/cwmpd/.cwmpd_boot 2>/dev/null
+				rm -f /etc/icwmpd/.icwmpd_boot 2>/dev/null
 			fi
 		fi
 	else
-		echo "cwmpd is currently running ..."
+		echo "icwmpd is currently running ..."
 	fi
 }
 
@@ -190,15 +190,15 @@ kill_process_childs() {
 
 pidof_cwmp() {
 	local pids=""
-	pids="`ps | grep /usr/sbin/cwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/icwmpd | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v \" Z \" | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	pids=${pids% }
 	pids=${pids# }
 	echo "$pids"
 }
 
-pidof_freecwmp() {
+pidof_icwmp() {
 	local pids=""
-	pids="`ps | grep /usr/sbin/freecwmp | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
+	pids="`ps | grep /usr/sbin/icwmp | sed 's/^ \+//g' | sed 's/ \+/:/g' | grep -v grep | cut -f1 -d: | tr '\n' ' '`"
 	pids=${pids% }
 	pids=${pids# }
 	echo "$pids"
@@ -207,7 +207,7 @@ pidof_freecwmp() {
 stop_cwmpd() {
 	echo $stop_msg;printf "\033[A"
 	local pid_list=""  pids="" str=""
-	pid_list=`pidof_cwmp`
+	pid_list=`pidof_icwmp`
 	if [ "_$pid_list" != "_" ]; then
 		kill_process_childs "$pid_list"
 		ubus call tr069 command '{"command": "exit"}' -t 3 >/dev/null
@@ -220,17 +220,17 @@ stop_cwmpd() {
 
 start() {
 	start_cwmpd "$1" 2> /dev/null
-	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	local scron=`crontab -l | grep "/usr/sbin/watchicwmpd"`
 	if [ "$scron" = "" ]; then
-		{ crontab -l; echo "*/5 * * * * /usr/sbin/watchcwmpd"; } | crontab -
+		{ crontab -l; echo "*/5 * * * * /usr/sbin/watchicwmpd"; } | crontab -
 	fi
 }
 
 stop() {
 	stop_cwmpd 2> /dev/null
-	local scron=`crontab -l | grep "/usr/sbin/watchcwmpd"`
+	local scron=`crontab -l | grep "/usr/sbin/watchicwmpd"`
 	if [ "$scron" != "" ]; then
-		crontab -l | sed "/\/usr\/sbin\/watchcwmpd/d" | crontab -
+		crontab -l | sed "/\/usr\/sbin\/watchicwmpd/d" | crontab -
 	fi
 }
 
