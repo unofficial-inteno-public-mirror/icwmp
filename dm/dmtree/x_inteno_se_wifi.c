@@ -56,7 +56,7 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	
 	switch (action) {
-		case VALUECHECK:			
+		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(wifiargs->sewifisection, "maxassoc", value);
@@ -65,6 +65,47 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
+int get_wifi_dfsenable(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *val;
+	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	char *wlan_name = section_name(wifiargs->sewifisection);
+	*value = "";
+	
+	dmuci_get_value_by_section_string(wifiargs->sewifisection, "band", &val);
+	if (val[0] == 'a') {
+		dmuci_get_value_by_section_string(wifiargs->sewifisection, "dfsc", value);
+		if ((*value)[0] == '\0')
+			*value = "0";
+	}
+	return 0;
+}
+
+int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *value)
+{	
+	bool b;
+	char *val;
+	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	char *wlan_name = section_name(wifiargs->sewifisection);
+	
+	switch (action) {
+		case VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+			return 0;
+		case VALUESET:
+			dmuci_get_value_by_section_string(wifiargs->sewifisection, "band", &val);
+			if (val[0] == 'a') {
+				string_to_bool(value, &b);
+				if (b)
+					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "1");
+				else
+					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "");
+			}
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_sewifi_radio(struct dmctx *ctx)
 {
@@ -99,6 +140,7 @@ inline int entry_sewifi_radio_instance(struct dmctx *ctx, char *wnum)
 		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
 		DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("DFSEnable", ctx, "1", get_wifi_dfsenable, set_wifi_dfsenable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
