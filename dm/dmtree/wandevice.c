@@ -1376,7 +1376,7 @@ int get_wan_igmp_rule_idx(char *iface, struct uci_section **rule, struct uci_sec
 		dmuci_get_value_by_section_string(*zone, "name", &zname);
 		uci_foreach_option_cont("firewall", "rule", "src", zname, *rule) {
 			dmuci_get_value_by_section_string(*rule, "proto", &proto);
-			if (strcmp(proto, "igmp")) {
+			if (strcmp(proto, "igmp") == 0) {
 				dmuci_get_value_by_section_string(*rule, "enabled", enable);
 				if ((*enable)[0] != '\0') {
 					if ((*enable)[0] == '0')

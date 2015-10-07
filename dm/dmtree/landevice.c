@@ -1953,7 +1953,7 @@ int set_wlan_basic_authentication_mode(char *refparam, struct dmctx *ctx, int ac
 					}
 				}
 				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "wep-open");
-			} else if (strcmp(value, "None")) {
+			} else if (strcmp(value, "None") == 0) {
 				reset_wlan(wlanargs->lwlansection);
 				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "none");
 			}
@@ -2417,7 +2417,7 @@ int get_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	dmuci_get_value_by_section_string(wlanargs->device_section, "channel", value);
-	if (strcmp(*value, "auto") || (*value)[0] == '\0')
+	if (strcmp(*value, "auto") == 0 || (*value)[0] == '\0')
 		*value = "Auto";
 	else
 		*value = "Manual";
@@ -2433,9 +2433,9 @@ int set_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, int action, c
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			if (strcmp(value, "Auto"))
+			if (strcmp(value, "Auto") == 0)
 				dmuci_set_value_by_section(wlanargs->device_section, "channel", "auto");
-			else if (strcmp(value, "Manual")) {
+			else if (strcmp(value, "Manual") == 0) {
 				if (wlanargs->res != NULL) {
 					json_select(wlanargs->res, "channel", 0, NULL, &channel, NULL);
 					if (channel[0] != '\0')
