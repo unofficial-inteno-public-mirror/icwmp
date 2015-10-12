@@ -2663,6 +2663,27 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 	return 0;
 }
 
+int get_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	*value = "0";
+	dmuci_get_value_by_section_string(wlanargs->device_section, "scantimer", value);
+	return 0;
+}
+
+int set_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(wlanargs->device_section, "scantimer", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_landevice_sub(struct dmctx *ctx)
 {
@@ -2922,6 +2943,7 @@ inline int entry_landevice_wlanconfiguration_instance(struct dmctx *ctx, char *i
 		DMPARAM("X_INTENO_SE_SupportedStandards", ctx, "0", get_x_inteno_se_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_OperatingChannelBandwidth", ctx, "1", get_x_inteno_se_operating_channel_bandwidth, set_x_inteno_se_operating_channel_bandwidth, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_MaxSSID", ctx, "1", get_x_inteno_se_maxssid, set_x_inteno_se_maxssid, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_ScanTimer", ctx, "1", get_x_inteno_se_scantimer, set_x_inteno_se_scantimer, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.WPS.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan); //Check if we can move it
 		DMPARAM("Enable", ctx, "1", get_wlan_wps_enable, set_wlan_wps_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.WEPKey.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan);
