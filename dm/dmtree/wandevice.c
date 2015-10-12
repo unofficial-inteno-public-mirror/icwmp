@@ -123,6 +123,52 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	return 0;
 }
 
+void remove_vid_from_ifname(char *vid, char *ifname, char *new_ifname)
+{
+	char *sv, *pch, *p = new_ifname, *spch;
+	new_ifname[0] = '\0';
+	bool append;
+
+	ifname = dmstrdup(ifname);
+	pch = strtok_r(ifname, " ", &spch);
+	while (pch != NULL) {
+		append = false;
+		char *sv = strchr(pch, '.');
+		if (sv) {
+			sv++;
+			if (strcmp(sv, vid) != 0) {
+				append = true;
+			}
+		}
+		else {
+			append = true;
+		}
+		if(append) {
+			if (p == new_ifname) {
+				dmstrappendstr(p, pch);
+			}
+			else {
+				dmstrappendchr(p, ' ');
+				dmstrappendstr(p, pch);
+			}
+		}
+		pch = strtok_r(NULL, " ", &spch);
+	}
+	dmstrappendend(p);
+	dmfree(ifname);
+}
+
+inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity) {
+	struct uci_section *ss = NULL, *vlan_interface_s;
+	char *add_value;
+
+	dmuci_add_section("layer2_interface_vlan", "vlan_interface", &vlan_interface_s, &add_value);
+	dmuci_set_value_by_section(vlan_interface_s, "baseifname", baseifname);
+	dmuci_set_value_by_section(vlan_interface_s, "ifname", ifname);
+	dmuci_set_value_by_section(vlan_interface_s, "vlan8021q", vid);
+	dmuci_set_value_by_section(vlan_interface_s, "vlan8021p", prioprity);
+	return 0;
+}
 
 int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
 {
@@ -1583,6 +1629,319 @@ int set_wan_device_password(char *refparam, struct dmctx *ctx, int action, char 
 	return 0;
 }
 
+int get_wan_ip_link_connection_name(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct wancprotoargs *args = (struct wancprotoargs *)ctx->args;
+	*value = dmstrdup(section_name(args->wancprotosection));
+	return 0;
+}
+
+int set_wan_ip_link_connection_connection_name(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct wancprotoargs *args;
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			args = (struct wancprotoargs *)ctx->args;
+			dmuci_rename_section_by_section(args->wancprotosection, value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_layer2_interface(char *wan_name, char **ifname)
+{
+	char *wtype, *wifname, *device, *dup, *pch, *spch;
+	int vid;
+	json_object *res;
+
+	*ifname = "";
+	dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+	if(wifname[0] == '\0')
+		return 0;
+
+	dmuci_get_option_value_string("network", wan_name, "type", &wtype);
+	if(wtype[0] == '\0' || strcmp(wtype, "anywan") == 0)
+	{
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", wan_name}}, 1, &res);
+		if (res) {
+			json_select(res, "device", -1, NULL, &device, NULL);
+			if(device[0] != '\0') {
+				if (atoi(device + 5) > 1) {
+					*ifname = device;
+					return 0;
+				}
+			}
+		}
+	}
+	dup = dmstrdup(wifname); // MEM will be freed in the DMMCLEAN
+	for (pch = strtok_r(dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
+		if (strstr(pch, "atm") ||
+			strstr(pch, "ptm") ||
+			strstr(pch, eth_wan)) {
+			if (atoi(pch + 5) > 1) {
+				*ifname = pch;
+				return 0;
+			}
+		}
+	}
+	return  0;
+}
+
+int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+	struct uci_section *ss = NULL;
+	char *ifname;
+
+	*value = "0";
+	get_layer2_interface(wan_name, &ifname);
+	if (ifname[0] == '\0') {
+		uci_foreach_sections("idmmap", wan_name, ss)
+		{
+			dmuci_get_value_by_section_string(ss, "vid", value);
+		}
+		return 0;
+	}
+	else
+		*value = ifname + 5;
+	return 0;
+}
+
+int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct uci_section *ss = NULL, *w_vlan, *s_last = NULL;
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *add_value, *ifname, *vid, *prio;
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+	bool found = false;
+	char *p, *q, *wifname, *baseifname="";
+	char r_new_wifname[128];
+	char a_new_wifname[128];
+	char v_ifname[16];
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			get_layer2_interface(wan_name, &ifname);
+			if (ifname[0] != '\0')
+			{
+				uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, ss) {
+					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
+					if (strcmp(vid, value) == 0)
+						return 0;
+					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+					if (wifname[0] == '\0')
+						return 0;
+					remove_vid_from_ifname(vid, wifname, r_new_wifname);
+					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
+					p = a_new_wifname;
+					q = v_ifname;
+					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
+					dmstrappendstr(q, baseifname);
+					dmstrappendchr(q, '.');
+					dmstrappendstr(q, value);
+					dmstrappendend(q);
+					dmstrappendstr(p, v_ifname);
+					dmstrappendchr(p, ' ');
+					dmstrappendstr(p, r_new_wifname);
+					dmstrappendend(p);
+					dmuci_set_value_by_section(ss, "ifname", v_ifname);
+					dmuci_set_value_by_section(ss, "vlan8021q", value);
+					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
+				}
+				return 0;
+			}
+			uci_foreach_sections("idmmap", wan_name, ss)
+			{
+				dmuci_set_value_by_section(ss, "vid", value);
+				dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
+				dmuci_get_value_by_section_string(ss, "priority", &prio);
+				if (strstr(baseifname, "atm0") ||  strstr(baseifname, "ptm0") || strstr(baseifname, eth_wan)) {
+					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+					p = a_new_wifname;
+					q = v_ifname;
+					dmstrappendstr(q, baseifname);
+					dmstrappendchr(q, '.');
+					dmstrappendstr	(q, value);
+					dmstrappendend(q);
+					dmstrappendstr(p, v_ifname);
+					dmstrappendchr(p, ' ');
+					dmstrappendstr(p, wifname);
+					dmstrappendend(p);
+					add_wvlan(baseifname, v_ifname, value, (prio) ? prio : "0");
+					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
+					s_last = ss;
+					goto remove_section;
+				}
+				return 0;
+			}
+			dmuci_add_section("idmmap", wan_name, &w_vlan, &add_value);
+			dmuci_set_value_by_section(w_vlan, "vid", value);
+			return 0;
+
+	remove_section:
+		dmuci_delete_by_section(s_last, NULL, NULL);
+		return 0;
+	}
+	return 0;
+}
+int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+	struct uci_section *ss = NULL;
+	char *ifname;
+	*value = "0";
+
+	get_layer2_interface(wan_name, &ifname);
+	if (ifname[0] == '\0') {
+		uci_foreach_sections("idmmap", wan_name, ss)
+		{
+			dmuci_get_value_by_section_string(ss, "priority", value);
+		}
+		return 0;
+	}
+	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, ss)
+	{
+		dmuci_get_value_by_section_string(ss, "vlan8021p", value);
+	}
+	return 0;
+}
+
+int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *ifname;
+	struct uci_section *ss = NULL;
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			get_layer2_interface(wan_name, &ifname);
+			if (ifname[0] == '\0') {
+				uci_foreach_sections("idmmap", wan_name, ss)
+				{
+					dmuci_set_value_by_section(ss, "priority", value);
+				}
+				return 0;
+			}
+			uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, ss)
+			{
+				dmuci_set_value_by_section(ss, "vlan8021p", value);
+			}
+			return 0;
+	}
+	return 0;
+}
+
+int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+	struct uci_section *ss = NULL;
+	char *ifname, *p;
+
+	*value = "";
+	get_layer2_interface(wan_name, &ifname);
+	if (ifname[0] == '\0') {
+		uci_foreach_sections("idmmap", wan_name, ss)
+		{
+			dmuci_get_value_by_section_string(ss, "baseifname", value);
+		}
+		return 0;
+	}
+	*value = dmstrdup(ifname); // MEM will be freed in the DMMCLEAN
+	p = strchr(*value,'.');
+	if (p)
+		*p = '\0';
+	return 0;
+}
+
+int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *ifname, *add_value;
+	struct uci_section *ss = NULL, *w_vlan, *s_last;
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	char *wan_name = section_name(wandcprotoargs->wancprotosection);
+	char *p, *q, *wifname, *baseifname = NULL, *vid = NULL, *prio = NULL;
+	char r_new_wifname[128];
+	char a_new_wifname[128];
+	char ifname_buf[16];
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			get_layer2_interface(wan_name, &ifname);
+			if (ifname[0] != '\0')
+			{
+				uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, ss) {
+					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
+					if (strcmp(baseifname, value) == 0)
+						return 0;
+					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+					if (wifname[0] == '\0')
+						return 0;
+					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
+					remove_vid_from_ifname(vid, wifname, r_new_wifname);
+					p = a_new_wifname;
+					q = ifname_buf;
+					dmstrappendstr(q, value);
+					dmstrappendchr(q, '.');
+					dmstrappendstr(q, vid);
+					dmstrappendend(q);
+					dmstrappendstr(p, ifname_buf);
+					if (r_new_wifname[0] != '\0')
+						dmstrappendchr(p, ' ');
+					dmstrappendstr(p, r_new_wifname);
+					dmstrappendend(p);
+					dmuci_set_value_by_section(ss, "baseifname", value);
+					dmuci_set_value_by_section(ss, "ifname", ifname_buf);
+					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
+				}
+				return 0;
+			}
+			uci_foreach_sections("idmmap", wan_name, ss)
+			{
+				dmuci_set_value_by_section(ss, "baseifname", value);
+				dmuci_get_value_by_section_string(ss, "vid", &vid);
+				dmuci_get_value_by_section_string(ss, "priority", &prio);
+				if (atoi(vid) > 1) {
+					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+					p = a_new_wifname;
+					q = ifname_buf;
+					dmstrappendstr(q, value);
+					dmstrappendchr(q, '.');
+					dmstrappendstr(q, vid);
+					dmstrappendend(q);
+					dmstrappendstr(p, ifname_buf);
+					dmstrappendchr(p, ' ');
+					dmstrappendstr(p, wifname);
+					dmstrappendend(p);
+					add_wvlan(value, ifname_buf, vid, (prio) ? prio : "0");
+					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
+					s_last = ss;
+					goto remove_section;
+				}
+				return 0;
+			}
+			dmuci_add_section("idmmap", wan_name, &w_vlan, &add_value);
+			dmuci_set_value_by_section(w_vlan, "baseifname", value);
+			return 0;
+
+	remove_section:
+		dmuci_delete_by_section(s_last, NULL, NULL);
+		return 0;
+	}
+	return 0;
+}
+
 /////////////SUB ENTRIES///////////////
 inline int entry_wandevice_sub(struct dmctx *ctx)
 {
@@ -1593,7 +1952,7 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 
 	dmuci_get_option_value_string("network", default_wan, "ifname", &default_wan_ifname);
 	dmuci_get_option_value_string("network", default_wan, "proto", &defwanproto);
-	dmuci_get_option_value_string("layer2_interface_ethernet", "ethernet_interface", "baseifname", &eth_wan);
+	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &eth_wan);
 	wan_devices[WAN_IDX_ETH].fdev = eth_wan;
 
 	if (strstr(defwanproto, "ppp"))
@@ -1659,7 +2018,7 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 	char *lan_name;
 
-	
+
 	uci_foreach_option_cont("network", "interface", "ifname", fwan, ss) {
 		dmuci_get_value_by_section_string(ss, "proto", &p);
 		lan_name = section_name(ss);
@@ -1782,6 +2141,11 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("X_BROADCOM_COM_IGMPEnabled", ctx, "1", get_wan_ip_link_connection_igmp_enabled, set_wan_ip_link_connection_igmp_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("DNSEnabled", ctx, "1", get_wan_ip_link_connection_dns_enabled, set_wan_ip_link_connection_dns_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("DNSOverrideAllowed", ctx, 0, get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Name", ctx, "1", get_wan_ip_link_connection_name, set_wan_ip_link_connection_connection_name, NULL, 0, 1, UNDEF, NULL);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.X_INTENO_COM_VLAN.", ctx, "1", 1, NULL, NULL, NULL, idev, iwan, iconp);
+			DMPARAM("VLANID", ctx, "1", get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("VLANPriority", ctx, "1", get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("Layer2Interface", ctx, "1", get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, 0, 1, UNDEF, NULL);
 			return 0;
 		}
 	}
