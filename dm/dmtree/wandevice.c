@@ -2158,6 +2158,11 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_mac, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Username", ctx, "1", get_wan_device_ppp_username, set_wan_device_username, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Password", ctx, "1", get_empty, set_wan_device_password, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Name", ctx, "1", get_wan_ip_link_connection_name, set_wan_ip_link_connection_connection_name, NULL, 0, 1, UNDEF, NULL);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.X_INTENO_COM_VLAN.", ctx, "1", 1, NULL, NULL, NULL, idev, iwan, iconp);
+			DMPARAM("VLANID", ctx, "1", get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("VLANPriority", ctx, "1", get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("Layer2Interface", ctx, "1", get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, 0, 1, UNDEF, NULL);
 			return 0;
 		}
 	}
