@@ -18,6 +18,7 @@
 #include "dmcommon.h"
 #include "voice_services.h"
 
+#define MAX_ALLOWED_SIP_CODECS 20
 struct codec_args cur_codec_args = {0};
 struct sip_args cur_sip_args = {0};
 struct brcm_args cur_brcm_args = {0};
@@ -27,6 +28,7 @@ inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoi
 inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *ivoice);
 inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, char *profile_num);
 inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num);
+inline int init_allowed_sip_codecs();
 
 enum enum_cap_sip_codecs {
 	SIP_CODEC_G723,
@@ -50,13 +52,8 @@ enum enum_cap_sip_codecs {
 	SIP_CODEC_TESTLAW
 };
 
-struct allow_sip_codec allowed_sip_codecs[] = {
-	{SIP_CODEC_ULAW, "1", "ulaw", "priority_ulaw", "ptime_ulaw"},
-	{SIP_CODEC_ALAW, "2", "alaw", "priority_alaw", "ptime_alaw"},
-	{SIP_CODEC_G729, "3", "g729", "priority_g729", "ptime_g729"},
-	{SIP_CODEC_G723, "4", "g723", "priority_g723", "ptime_g723"},
-	{SIP_CODEC_G726, "5", "g726", "priority_g726", "ptime_g726"}
-};
+int available_sip_codecs = 0;
+struct allow_sip_codec allowed_sip_codecs[MAX_ALLOWED_SIP_CODECS];
 
 struct cap_sip_codec capabilities_sip_codecs[] = {
 	{SIP_CODEC_G723, "g723", "G.723.1", "6451", "30-300", "30"},
@@ -145,6 +142,35 @@ void wait_voice_service_up(void)
 			return;
 	}
 }
+
+inline int init_allowed_sip_codecs()
+{
+	json_object *res = NULL;
+	char id[8], priority[24], ptime[24];
+	int i;
+	available_sip_codecs = 0;
+	dmubus_call("asterisk", "codecs", UBUS_ARGS{}, 0, &res);
+	if(res) {
+		json_object_object_foreach(res, key, val) {
+			for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
+				if(strcmp(capabilities_sip_codecs[i].c1, key) == 0) {
+					allowed_sip_codecs[available_sip_codecs].enumid = capabilities_sip_codecs[i].enumid;
+					break;
+				}
+			}
+			sprintf(id, "%d", available_sip_codecs + 1);
+			sprintf(priority, "priority_%s", key);
+			sprintf(ptime, "ptime_%s", key);
+			allowed_sip_codecs[available_sip_codecs].id = dmstrdup(id);
+			allowed_sip_codecs[available_sip_codecs].allowed_cdc = key;
+			allowed_sip_codecs[available_sip_codecs].priority_cdc = dmstrdup(priority);
+			allowed_sip_codecs[available_sip_codecs].ptime_cdc = dmstrdup(ptime);
+			available_sip_codecs++;
+		}
+	}	
+	return 0;
+}
+
 inline int init_sip_args(struct dmctx *ctx, struct uci_section *section, char *profile_num)
 {
 	struct sip_args *args = &cur_sip_args;
@@ -607,7 +633,7 @@ int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char 
 			return 0;
 		case VALUESET:
 			string_to_bool(value, &b);
-			if(b) {				
+			if(b) {
 				dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", "voice_client"}}, 1);
 				return 0;
 			}
@@ -634,7 +660,7 @@ int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, int 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
-		case VALUESET:			
+		case VALUESET:
 			return 0;
 	}
 	return 0;
@@ -707,7 +733,7 @@ int get_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, char **val
 {
 	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
 		
-	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", value);	
+	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", value);
 	return 0;
 }
 
@@ -1540,7 +1566,7 @@ void codec_priority_sort(struct uci_section *sip_section, char *new_codec)
 		dmuci_get_value_by_section_string(sip_section, codec_option_array[j], &ucodec);
 		if(ucodec[0] != '\0') {
 			found = false;
-			for (k = 0; k < ARRAY_SIZE(allowed_sip_codecs); k++) {
+			for (k = 0; k < available_sip_codecs; k++) {
 				if(strcmp(ucodec, allowed_sip_codecs[k].allowed_cdc) == 0) {
 					found = true;
 					break;
@@ -1559,7 +1585,7 @@ void codec_priority_sort(struct uci_section *sip_section, char *new_codec)
 	if (new_codec) {
 		sipcodec[size].id = "codec5";
 		found = false;
-		for (k = 0; k < ARRAY_SIZE(allowed_sip_codecs); k++) {
+		for (k = 0; k < available_sip_codecs; k++) {
 			if(strcmp(new_codec, allowed_sip_codecs[k].allowed_cdc) == 0) {
 				found = true;
 				break;
@@ -1585,7 +1611,7 @@ void codec_priority_update(struct uci_section *sip_section)
 	char *codec;
 	char pid[4] = "1";
 
-	for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
+	for (i = 0; i < available_sip_codecs; i++) {
 		dmuci_get_value_by_section_string(sip_section, allowed_sip_codecs[i].priority_cdc, &priority);
 		if( priority[0] != '\0')
 			continue;
@@ -1662,7 +1688,7 @@ int get_line_codec_list_enable(char *refparam, struct dmctx *ctx, char **value)
 	char *val;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	
-	for (i =0; i < 5; i++) {
+	for (i =0; i < ARRAY_SIZE(codec_option_array); i++) {
 		dmuci_get_value_by_section_string(line_codecargs->sip_section, codec_option_array[i], &val);
 		if (strcmp(val, line_codecargs->cdc) == 0) {
 			*value = "1";
@@ -1741,7 +1767,7 @@ int set_line_codec_list_priority(char *refparam, struct dmctx *ctx, int action, 
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(line_codecargs->sip_section, line_codecargs->priority_cdc, value);
-			for (i =0; i < 5; i++) {
+			for (i =0; i < ARRAY_SIZE(codec_option_array); i++) {
 				dmuci_get_value_by_section_string(line_codecargs->sip_section, codec_option_array[i], &val);
 				if (strcmp(val, line_codecargs->cdc) == 0) {
 					codec_priority_sort(line_codecargs->sip_section, NULL);
@@ -1769,7 +1795,8 @@ bool dm_service_enable_set(void)
 inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoice)
 {
 	int i = 0;
-	for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
+	init_allowed_sip_codecs();
+	for (i = 0; i < available_sip_codecs; i++) {
 		init_codec_args(ctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, allowed_sip_codecs[i].enumid);
 		SUBENTRY(entry_voice_service_capabilities_codecs_instance, ctx, ivoice, allowed_sip_codecs[i].id);
 	}
@@ -1815,7 +1842,7 @@ inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char 
 	struct brcm_args *brcmargs = (struct brcm_args *)(ctx->args);
 
 	codec_priority_update(brcmargs->sip_section);
-	for (i = 0; i < ARRAY_SIZE(allowed_sip_codecs); i++) {
+	for (i = 0; i < available_sip_codecs; i++) {
 		init_line_code_args(ctx, i, brcmargs->sip_section);
 		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, allowed_sip_codecs[i].id);
 	}
