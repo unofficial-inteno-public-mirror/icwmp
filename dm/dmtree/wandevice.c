@@ -82,6 +82,7 @@ struct wancdevargs
 	int index;
 	char *fwan;
 	char *iwan;
+	char *wan_ifname;
 };
 
 struct wancdevargs cur_wancdevargs = {0};
@@ -112,7 +113,7 @@ inline int init_wancprotoargs(struct dmctx *ctx, struct uci_section *s)
 	return 0;
 }
 
-inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index, char *fwan, char *iwan)
+inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index, char *fwan, char *iwan, char *wan_ifname)
 {
 	struct wancdevargs *args = &cur_wancdevargs;
 	ctx->args = (void *)args;
@@ -120,6 +121,7 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	args->index = index;
 	args->fwan = fwan;
 	args->iwan = iwan;
+	args->wan_ifname = wan_ifname;
 	return 0;
 }
 
@@ -1857,7 +1859,7 @@ int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 		return 0;
 	}
 	*value = dmstrdup(ifname); // MEM will be freed in the DMMCLEAN
-	p = strchr(*value,'.');
+	p = strchr(*value, '.');
 	if (p)
 		*p = '\0';
 	return 0;
@@ -1942,6 +1944,50 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 	return 0;
 }
 
+inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
+{
+	char *proto;
+
+	dmuci_get_option_value_string("network", section_name(cur_wancprotoargs.wancprotosection), "proto", &proto);
+	if (strcmp(proto, "dhcp") == 0 || strcmp(proto, "pppoe") == 0)
+	{
+		dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wancdevargs.wan_ifname}}, 1, &res);
+		DM_ASSERT(res, *value = "");
+		json_select(res, "statistics", 0, stat_mod, value, NULL);
+		return 0;
+	}
+	*value = "";
+	return 0;
+}
+
+int get_wan_link_connection_eth_bytes_received(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	ubus_get_wan_stats(res, value, "rx_bytes");
+	return 0;
+}
+
+int get_wan_link_connection_eth_bytes_sent(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	ubus_get_wan_stats(res, value, "tx_bytes");
+	return 0;
+}
+
+int get_wan_link_connection_eth_pack_received(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	ubus_get_wan_stats(res, value, "rx_packets");
+	return 0;
+}
+
+int get_wan_link_connection_eth_pack_sent(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	ubus_get_wan_stats(res, value, "tx_packets");
+	return 0;
+}
+
 /////////////SUB ENTRIES///////////////
 inline int entry_wandevice_sub(struct dmctx *ctx)
 {
@@ -1984,6 +2030,7 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *c
 {
 	struct uci_section *s = NULL;
 	char *fwan;
+	char *wan_ifname;
 	char *iwan = NULL;
 	char *pack, *stype;
 	bool ipn_perm = true;
@@ -1994,13 +2041,14 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *c
 	stype = wan_devices[i].stype;
 	uci_foreach_sections(pack, stype, s) {
 		dmuci_get_value_by_section_string(s, "baseifname", &fwan);
+		dmuci_get_value_by_section_string(s, "ifname", &wan_ifname);
 		if (strstr(default_wan_ifname, fwan)) {
 			notif_permission = false;
 			if (default_wan_proto == WAN_PROTO_IP) ipn_perm = false;
 			else if (default_wan_proto == WAN_PROTO_PPP) pppn_perm = false;
 		}
 		iwan = update_instance(s, iwan, "waninstance");
-		init_wancdevargs(ctx, s, i, fwan, iwan);
+		init_wancdevargs(ctx, s, i, fwan, iwan, wan_ifname);
 		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, i, iwan, fwan, cwritable, notif_permission, ipn_perm, pppn_perm);
 	}
 	return 0;
@@ -2146,6 +2194,11 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("VLANID", ctx, "1", get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("VLANPriority", ctx, "1", get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("Layer2Interface", ctx, "1", get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, 0, 1, UNDEF, NULL);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.Stats.", ctx, "1", 1, NULL, NULL, NULL, idev, iwan, iconp);
+			DMPARAM("EthernetBytesReceived", ctx, "0", get_wan_link_connection_eth_bytes_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetBytesSent", ctx, "0", get_wan_link_connection_eth_bytes_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetPacketsReceived", ctx, "0", get_wan_link_connection_eth_pack_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetPacketsSent", ctx, "0", get_wan_link_connection_eth_pack_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			return 0;
 		}
 	}
@@ -2163,6 +2216,11 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("VLANID", ctx, "1", get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("VLANPriority", ctx, "1", get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("Layer2Interface", ctx, "1", get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, 0, 1, UNDEF, NULL);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.Stats.", ctx, "1", 1, NULL, NULL, NULL, idev, iwan, iconp);
+			DMPARAM("EthernetBytesReceived", ctx, "0", get_wan_link_connection_eth_bytes_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetBytesSent", ctx, "0", get_wan_link_connection_eth_bytes_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetPacketsReceived", ctx, "0", get_wan_link_connection_eth_pack_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("EthernetPacketsSent", ctx, "0", get_wan_link_connection_eth_pack_sent,NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			return 0;
 		}
 	}
