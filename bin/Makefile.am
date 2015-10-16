@@ -5,6 +5,7 @@ icwmpd_SOURCES =				\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
+	../ipping.c				\
 	../digestauth.c			\
 	../event.c				\
 	../external.c			\
@@ -39,6 +40,7 @@ icwmpd_SOURCES =				\
 	../dm/dmtree/x_inteno_se_ipacccfg.c			\
 	../dm/dmtree/x_inteno_se_logincfg.c			\
 	../dm/dmtree/x_inteno_se_power_mgmt.c		\
+	../dm/dmtree/ippingdiagnostics.c		\
 	../dm/dmtree/x_inteno_se_wifi.c			
 
 icwmpd_CFLAGS =			\

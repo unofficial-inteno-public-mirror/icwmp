@@ -60,6 +60,7 @@ enum end_session {
 	END_SESSION_EXTERNAL_ACTION = 1<<1,
 	END_SESSION_RELOAD = 1<<2,
 	END_SESSION_FACTORY_RESET = 1<<3,
+	END_SESSION_IPPING_DIAGNOSTIC = 1<<4,
 };
 
 enum cwmp_start {

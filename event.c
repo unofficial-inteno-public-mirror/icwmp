@@ -204,6 +204,24 @@ void cwmp_add_notification(void)
 	}
 }
 
+void cwmp_root_cause_event_ipdiagnostic(void)
+{
+	struct cwmp   *cwmp = &cwmp_main;
+	struct event_container   *event_container;
+    
+	pthread_mutex_lock (&(cwmp->mutex_session_queue));        
+	event_container = cwmp_add_event_container (cwmp, EVENT_IDX_8DIAGNOSTICS_COMPLETE, "");
+    if (event_container == NULL)
+	{
+        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		return;
+	}    
+    cwmp_save_event_container(cwmp,event_container);
+	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+	pthread_cond_signal(&(cwmp->threshold_session_send));
+    return;		
+}
+
 int cwmp_root_cause_event_boot (struct cwmp *cwmp)
 {
     struct event_container   *event_container;
@@ -559,7 +577,7 @@ void connection_request_port_value_change(struct cwmp *cwmp, int port)
 
 int cwmp_root_cause_events (struct cwmp *cwmp)
 {
-    int                     error;
+    int error;
 
     if (error = cwmp_root_cause_event_bootstrap(cwmp))
 	{

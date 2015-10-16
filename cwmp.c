@@ -20,7 +20,8 @@
 #include "external.h"
 #include "dmentry.h"
 #include "ubus.h"
-
+#include "ipping.h"
+ 
 struct cwmp         	cwmp_main = {0};
 
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type)
@@ -473,6 +474,12 @@ int run_session_end_func (struct session *session)
 		exit(EXIT_SUCCESS);
 	}
 
+	if (session->end_session & END_SESSION_IPPING_DIAGNOSTIC)
+	{
+		CWMP_LOG (INFO,"Executing ippingdiagnostic: end session request");
+		cwmp_ip_ping_diagnostic();        		
+	}
+	
 	if (session->end_session & END_SESSION_REBOOT)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");
@@ -551,6 +558,7 @@ int main(int argc, char **argv)
     {
         return error;
     }
+    init_ipping_diagnostic();
     CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
 
@@ -612,7 +620,7 @@ int main(int argc, char **argv)
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
-
+    exit_ipping_diagnostic();
     CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }
