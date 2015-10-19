@@ -299,7 +299,7 @@ static char *get_parameter_notification (char *param)
 	struct uci_element *e;
 
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
-		dmuci_get_option_value_list("icwmp", "@notifications[0]", notifications[i].type, &list_notif);
+		dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 		if (list_notif) {
 			uci_foreach_element(list_notif, e) {
 				pch = e->name;
@@ -332,17 +332,17 @@ static int remove_parameter_notification(char *param)
 	char *pch;
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
 		if (param[strlen(param)-1] == '.') {
-			dmuci_get_option_value_list("icwmp", "@notifications[0]", notifications[i].type, &list_notif);
+			dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 			if (list_notif) {
 				uci_foreach_element_safe(list_notif, e, tmp) {
 					pch = tmp->name;
 					if (strstr(pch, param)) {
-						dmuci_del_list_value("icwmp", "@notifications[0]", notifications[i].type, pch);
+						dmuci_del_list_value("cwmp", "@notifications[0]", notifications[i].type, pch);
 					}
 				}
 			}
 		} else {
-			dmuci_del_list_value("icwmp", "@notifications[0]", notifications[i].type, param);
+			dmuci_del_list_value("cwmp", "@notifications[0]", notifications[i].type, param);
 		}
 	}
 	return 0;
@@ -353,9 +353,9 @@ static int set_parameter_notification(char *param, char *value)
 	char *tmp = NULL, *buf = NULL, *pch;
 	char *notification = NULL;
 	struct uci_section *s;
-	dmuci_get_section_type("icwmp", "@notifications[0]", &tmp);
+	dmuci_get_section_type("cwmp", "@notifications[0]", &tmp);
 	if (!tmp || tmp[0] == '\0') {
-		dmuci_add_section("icwmp", "notifications", &s, &buf);
+		dmuci_add_section("cwmp", "notifications", &s, &buf);
 	} else {
 		remove_parameter_notification(param);
 	}
@@ -365,21 +365,21 @@ static int set_parameter_notification(char *param, char *value)
 		return 0;
 	}
 	if (strcmp(value, "1") == 0) {
-		dmuci_add_list_value("icwmp", "@notifications[0]", "passive", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", param);
 	} else if (strcmp(value, "2") == 0) {
-		dmuci_add_list_value("icwmp", "@notifications[0]", "active", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active", param);
 	} else if (strcmp(value, "0") == 0) {
 		struct uci_list *list_notif;
 		struct uci_element *e;
 		int i, len;
 		for (i = (ARRAY_SIZE(notifications) - 1); i >= 1; i--) {
-			dmuci_get_option_value_list("icwmp", "@notifications[0]", notifications[i].type, &list_notif);
+			dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 			if (list_notif) {
 				uci_foreach_element(list_notif, e) {
 					pch = e->name;
 					len = strlen(pch);
 					if (pch[len-1] == '.' && strstr(param, pch)) {
-						dmuci_add_list_value("icwmp", "@notifications[0]", "disabled", param);
+						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", param);
 						return 0;
 					}
 				}

@@ -27,20 +27,20 @@ check_url_format() {
 
 check_acs_url() {
 	default_acs="http://10.10.1.6:8000/openacs/acs"
-	acs_dhcp_discovery=`uci -q get icwmp.acs.dhcp_discovery`
-	url=`uci -q get icwmp.acs.url`
-	dhcp_url_path=`uci -q get icwmp.acs.dhcp_url_path`
+	acs_dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
+	url=`uci -q get cwmp.acs.url`
+	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ];then
 		url=`uci -P /var/state -q get $dhcp_url_path`
 		echo "ACS URL from dhcp: $url"
-		uci -P /var/state -q set icwmp.acs.url=$url
+		uci -P /var/state -q set cwmp.acs.url=$url
 	elif [ "_$url" != "_" ];then
-		url=`uci -q get icwmp.acs.url`
+		url=`uci -q get cwmp.acs.url`
 		echo "ACS URL from configuration: $url"
 	else
 		url=$default_acs
 		echo "Using default ACS URL: $url"
-		uci -P /var/state -q set icwmp.acs.url=$url
+		uci -P /var/state -q set cwmp.acs.url=$url
 	fi
 	
 	check_url_format $url
@@ -52,9 +52,9 @@ check_acs_url() {
 
 check_dhcp() {
 	i=0
-	dhcp_discovery=`uci -q get icwmp.acs.dhcp_discovery`
-	url=`uci -q get icwmp.acs.url`
-	dhcp_url_path=`uci -q get icwmp.acs.dhcp_url_path`
+	dhcp_discovery=`uci -q get cwmp.acs.dhcp_discovery`
+	url=`uci -q get cwmp.acs.url`
+	dhcp_url_path=`uci -q get cwmp.acs.dhcp_url_path`
 	if [ \( "_$acs_dhcp_discovery" = "_enable" \) -o \( "_$url" = "_" \) ]
 	then
 		while [ $i -le 10 ]
@@ -74,12 +74,12 @@ check_dhcp() {
 set_wan_interface() {
 	local l3_device=""
 	local default_wan_interface=""
-	config_load icwmp
+	config_load cwmp
 	config_get default_wan_interface  cpe default_wan_interface   
 	json_load "$(ifstatus $default_wan_interface)"
 	json_get_var l3_device l3_device
 	if [ "$l3_device" != "" ];then
-		uci_set icwmp cpe interface "$l3_device" 
+		uci_set cwmp cpe interface "$l3_device" 
 		uci_commit
 	fi 
 }
@@ -128,7 +128,7 @@ run() {
 	if [ "_$1" = "_GetRPCMethods" ];then
 		opt=$opt"-g "
 	fi
-	[ -f /etc/config/icwmp ] && /usr/sbin/icwmpd $opt &
+	[ -f /etc/config/cwmp ] && /usr/sbin/icwmpd $opt &
 	while [ "`ps | grep /usr/sbin/icwmpd | grep -v grep | grep -v rc.common`" = "" ]; do
 		sleep 1
 	done

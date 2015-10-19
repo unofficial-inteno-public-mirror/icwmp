@@ -71,7 +71,7 @@ static void freecwmp_netlink_interface(struct nlmsghdr *nlh)
 
 		if (cwmp_main.conf.ip) FREE(cwmp_main.conf.ip);
 		cwmp_main.conf.ip = strdup(if_addr);
-		if (asprintf(&c,"icwmp.cpe.ip=%s",cwmp_main.conf.ip) != -1)
+		if (asprintf(&c,"cwmp.cpe.ip=%s",cwmp_main.conf.ip) != -1)
 		{
 			uci_set_state_value(c);
 			free(c);

@@ -1701,7 +1701,7 @@ int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, char **val
 	*value = "0";
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("idmmap", wan_name, ss)
+		uci_foreach_sections("dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "vid", value);
 		}
@@ -1757,7 +1757,7 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 				}
 				return 0;
 			}
-			uci_foreach_sections("idmmap", wan_name, ss)
+			uci_foreach_sections("dmmap", wan_name, ss)
 			{
 				dmuci_set_value_by_section(ss, "vid", value);
 				dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
@@ -1781,7 +1781,7 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 				}
 				return 0;
 			}
-			dmuci_add_section("idmmap", wan_name, &w_vlan, &add_value);
+			dmuci_add_section("dmmap", wan_name, &w_vlan, &add_value);
 			dmuci_set_value_by_section(w_vlan, "vid", value);
 			return 0;
 
@@ -1801,7 +1801,7 @@ int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, char
 
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("idmmap", wan_name, ss)
+		uci_foreach_sections("dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "priority", value);
 		}
@@ -1827,7 +1827,7 @@ int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, int 
 		case VALUESET:
 			get_layer2_interface(wan_name, &ifname);
 			if (ifname[0] == '\0') {
-				uci_foreach_sections("idmmap", wan_name, ss)
+				uci_foreach_sections("dmmap", wan_name, ss)
 				{
 					dmuci_set_value_by_section(ss, "priority", value);
 				}
@@ -1852,7 +1852,7 @@ int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 	*value = "";
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("idmmap", wan_name, ss)
+		uci_foreach_sections("dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "baseifname", value);
 		}
@@ -1909,7 +1909,7 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 				}
 				return 0;
 			}
-			uci_foreach_sections("idmmap", wan_name, ss)
+			uci_foreach_sections("dmmap", wan_name, ss)
 			{
 				dmuci_set_value_by_section(ss, "baseifname", value);
 				dmuci_get_value_by_section_string(ss, "vid", &vid);
@@ -1933,7 +1933,7 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 				}
 				return 0;
 			}
-			dmuci_add_section("idmmap", wan_name, &w_vlan, &add_value);
+			dmuci_add_section("dmmap", wan_name, &w_vlan, &add_value);
 			dmuci_set_value_by_section(w_vlan, "baseifname", value);
 			return 0;
 
@@ -2101,7 +2101,7 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 /*************************************************/
 int entry_method_root_WANDevice(struct dmctx *ctx)
 {
-	dmuci_get_option_value_string("icwmp", "cpe", "default_wan_interface", &default_wan);
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &default_wan);
 	IF_MATCH(ctx, DMROOT"WANDevice.") {
 		DMOBJECT(DMROOT"WANDevice.", ctx, "0", 0, NULL, NULL, NULL);
 		SUBENTRY(entry_wandevice_sub, ctx);

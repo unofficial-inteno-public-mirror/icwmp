@@ -20,7 +20,7 @@
 char *get_deviceid_manufacturer()
 {
 	char *v;
-	dmuci_get_option_value_string("icwmp","cpe","manufacturer", &v);
+	dmuci_get_option_value_string("cwmp","cpe","manufacturer", &v);
 	return v;
 }
 
@@ -173,7 +173,7 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "cpe", "specversion", value);
+	dmuci_get_option_value_string("cwmp", "cpe", "specversion", value);
 	if ((*value)[0] == '\0') {
 		*value = "1.0";
 	}		
@@ -182,7 +182,7 @@ int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_provisioningcode(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "cpe", "provisioning_code", value);
+	dmuci_get_option_value_string("cwmp", "cpe", "provisioning_code", value);
 	return 0;
 }
 
@@ -193,7 +193,7 @@ int set_device_provisioningcode(char *refparam, struct dmctx *ctx, int action, c
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "cpe", "provisioning_code", value);
+			dmuci_set_value("cwmp", "cpe", "provisioning_code", value);
 			return 0;
 	}
 	return 0;

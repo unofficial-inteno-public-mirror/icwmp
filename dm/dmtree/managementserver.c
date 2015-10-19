@@ -22,7 +22,7 @@
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_varstate_string("icwmp", "acs", "url", value);
+	dmuci_get_varstate_string("cwmp", "acs", "url", value);
 	return 0;	
 }
 
@@ -32,8 +32,8 @@ int set_management_server_url(char *refparam, struct dmctx *ctx, int action, cha
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "acs", "dhcp_discovery", "disable");
-			dmuci_set_value("icwmp", "acs", "url", value);
+			dmuci_set_value("cwmp", "acs", "dhcp_discovery", "disable");
+			dmuci_set_value("cwmp", "acs", "url", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -42,7 +42,7 @@ int set_management_server_url(char *refparam, struct dmctx *ctx, int action, cha
 
 int get_management_server_username(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "acs", "userid", value);
+	dmuci_get_option_value_string("cwmp", "acs", "userid", value);
 	return 0;	
 }
 
@@ -52,7 +52,7 @@ int set_management_server_username(char *refparam, struct dmctx *ctx, int action
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "acs", "userid", value);
+			dmuci_set_value("cwmp", "acs", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -65,7 +65,7 @@ int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, 
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "acs", "passwd", value);
+			dmuci_set_value("cwmp", "acs", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -74,7 +74,7 @@ int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, 
 
 int get_management_server_key(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "acs", "ParameterKey", value);
+	dmuci_get_option_value_string("cwmp", "acs", "ParameterKey", value);
 	return 0;	
 }
 
@@ -84,7 +84,7 @@ int set_management_server_key(char *refparam, struct dmctx *ctx, int action, cha
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "acs", "ParameterKey", value);
+			dmuci_set_value("cwmp", "acs", "ParameterKey", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -93,7 +93,7 @@ int set_management_server_key(char *refparam, struct dmctx *ctx, int action, cha
 
 int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "acs", "periodic_inform_enable", value);
+	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_enable", value);
 	return 0;	
 }
 
@@ -109,9 +109,9 @@ int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 		case VALUESET:
 			string_to_bool(value, &b);
 			if (b)
-				dmuci_set_value("icwmp", "acs", "periodic_inform_enable", "1");
+				dmuci_set_value("cwmp", "acs", "periodic_inform_enable", "1");
 			else
-				dmuci_set_value("icwmp", "acs", "periodic_inform_enable", "0");
+				dmuci_set_value("cwmp", "acs", "periodic_inform_enable", "0");
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -120,7 +120,7 @@ int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 
 int get_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "acs", "periodic_inform_interval", value);
+	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_interval", value);
 	return 0;
 }
 
@@ -130,7 +130,7 @@ int set_management_server_periodic_inform_interval(char *refparam, struct dmctx 
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "acs", "periodic_inform_interval", value);
+			dmuci_set_value("cwmp", "acs", "periodic_inform_interval", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -141,7 +141,7 @@ int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 {
 	time_t time_value;
 	
-	dmuci_get_option_value_string("icwmp", "acs", "periodic_inform_time", value);
+	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_time", value);
 	if ((*value)[0] != '0' && (*value)[0] != '\0') {
 		time_value = atoi(*value);
 		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
@@ -166,7 +166,7 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 				return 0;
 			}
 			sprintf(buf, "%d", mktime(&tm));
-			dmuci_set_value("icwmp", "acs", "periodic_inform_time", buf);
+			dmuci_set_value("cwmp", "acs", "periodic_inform_time", buf);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -178,9 +178,9 @@ int get_management_server_connection_request_url(char *refparam, struct dmctx *c
 	char *ip, *port, *iface;
 
 	*value = "";
-	dmuci_get_option_value_string("icwmp", "cpe", "default_wan_interface", &iface);
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
 	network_get_ipaddr(&ip, iface);	
-	dmuci_get_option_value_string("icwmp", "cpe", "port", &port);
+	dmuci_get_option_value_string("cwmp", "cpe", "port", &port);
 	if (ip[0] != '\0' && port[0] != '\0') {
 		char buf[64];
 		sprintf(buf,"http://%s:%s/", ip, port);
@@ -191,7 +191,7 @@ int get_management_server_connection_request_url(char *refparam, struct dmctx *c
 
 int get_management_server_connection_request_username(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("icwmp", "cpe", "userid", value);
+	dmuci_get_option_value_string("cwmp", "cpe", "userid", value);
 	return 0;
 }
 
@@ -201,7 +201,7 @@ int set_management_server_connection_request_username(char *refparam, struct dmc
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "cpe", "userid", value);
+			dmuci_set_value("cwmp", "cpe", "userid", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -214,7 +214,7 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value("icwmp", "cpe", "passwd", value);
+			dmuci_set_value("cwmp", "cpe", "passwd", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}

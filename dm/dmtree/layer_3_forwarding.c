@@ -146,7 +146,7 @@ int get_forwarding_last_inst()
 			break;
 		dsinst = tmp;
 	}
-	uci_foreach_sections("idmmap", "route_dynamic", s) {
+	uci_foreach_sections("dmmap", "route_dynamic", s) {
 		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -188,13 +188,13 @@ char *forwarding_update_instance_dynamic(struct proc_route *proute, char *last_i
 	char *instance, *name, *mask;
 	char buf[8] = {0};
 
-	uci_foreach_option_eq("idmmap", "route_dynamic", "target", proute->destination, s) {
+	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
 		dmuci_get_value_by_section_string(s, "netmask", &mask);
 		if (strcmp(proute->mask, mask) == 0)
 			break;
 	}
 	if (!s) {
-		dmuci_add_section("idmmap", "route_dynamic", &s, &name);
+		dmuci_add_section("dmmap", "route_dynamic", &s, &name);
 		dmuci_set_value_by_section(s, "target", proute->destination);
 		dmuci_set_value_by_section(s, "netmask", proute->mask);
 	}
@@ -529,7 +529,7 @@ int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *iface, *linker;
 
-	dmuci_get_option_value_string("icwmp", "cpe", "default_wan_interface", &iface);
+	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
 	if (iface[0] != '\0') {
 		dmastrcat(&linker, "linker_interface:", iface);
 		adm_entry_get_linker_param(DMROOT"WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
@@ -552,7 +552,7 @@ int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char
 			adm_entry_get_linker_value(value, &linker);
 			if (linker) {
 				iface = linker + sizeof("linker_interface:") - 1;
-				dmuci_set_value("icwmp", "cpe", "default_wan_interface", iface);
+				dmuci_set_value("cwmp", "cpe", "default_wan_interface", iface);
 				dmfree(linker);
 			}
 			return 0;
