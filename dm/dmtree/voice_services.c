@@ -1860,7 +1860,7 @@ int entry_method_root_Service(struct dmctx *ctx)
 		DMPARAM("MaxProfileCount", ctx, "0", get_max_profile_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("MaxLineCount", ctx, "0", get_max_line_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("MaxSessionsPerLine", ctx, "0", get_true_value, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("MaxSessionsCount", ctx, "0", get_max_session_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MaxSessionCount", ctx, "0", get_max_session_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("SignalingProtocols", ctx, "0", get_signal_protocols, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Regions", ctx, "0", get_regions, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("RTCP", ctx, "0", get_true_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -1874,7 +1874,7 @@ int entry_method_root_Service(struct dmctx *ctx)
 		DMPARAM("ToneDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("PatternBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("FileBasedToneGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("ToneFileFormats", ctx, "0", get_empty, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("ToneFileFormats", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("RingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("RingDescriptionsEditable", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("PatternBasedRingGeneration", ctx, "0", get_false_value, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -1932,10 +1932,10 @@ inline int entry_services_voice_service_voiceprofile_instance (struct dmctx *ctx
 		DMOBJECT(DMROOT"Services.VoiceService.%s.VoiceProfile.%s.SIP.", ctx, "0", 1, NULL, NULL, NULL, ivoice, profile_num);
 		DMPARAM("ProxyServer", ctx, "1" ,get_voice_profile_sip_proxyserver, set_voice_profile_sip_proxyserver, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ProxyServerPort", ctx, "1" ,get_empty, set_sip_proxy_server_port, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("ProxyServerTransport", ctx, "1" ,get_sip_proxy_server_transport, set_sip_proxy_server_transport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("ProxyServerTransport", ctx, "1" ,get_sip_proxy_server_transport, set_sip_proxy_server_transport, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("RegistrarServer", ctx, "1" ,get_voice_profile_sip_registerserver, set_voice_profile_sip_registerserver, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("RegistrarServerPort", ctx, "1" ,get_voice_profile_sip_registerserverport, set_voice_profile_sip_registerserverport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("RegistrarServerTransport", ctx, "1" ,get_sip_registrar_server_transport, set_sip_registrar_server_transport, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("RegistrarServerTransport", ctx, "1" ,get_sip_registrar_server_transport, set_sip_registrar_server_transport, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("UserAgentDomain", ctx, "1", get_sip_user_agent_domain, set_sip_user_agent_domain, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("UserAgentPort", ctx, "1", get_sip_user_agent_port, set_sip_user_agent_port, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("UserAgentTransport", ctx, "1", get_sip_user_agent_transport, set_sip_user_agent_transport, NULL, 0, 1, UNDEF, NULL);

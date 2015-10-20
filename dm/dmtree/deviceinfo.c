@@ -250,11 +250,11 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 		DMPARAM("Manufacturer", ctx, "0", get_device_manufacturer, NULL, NULL, 1, 1, UNDEF, NULL);
 		DMPARAM("ManufacturerOUI", ctx, "0", get_device_manufactureroui, NULL, NULL, 1, 1, UNDEF, NULL);
 		DMPARAM("ModelName", ctx, "0", get_device_routermodel, NULL, NULL, 1, 1, UNDEF, NULL);
-		DMPARAM("ProductClass", ctx, "0", get_device_productclass, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
+		DMPARAM("ProductClass", ctx, "0", get_device_productclass, NULL, NULL, 1, 1, UNDEF, NULL);
 		DMPARAM("SerialNumber", ctx, "0", get_device_serialnumber, NULL, NULL, 1, 1, UNDEF, NULL);
-		DMPARAM("HardwareVersion", ctx, "0", get_device_hardwareversion, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
-		DMPARAM("SoftwareVersion", ctx, "0", get_device_softwareversion, NULL, "xsd:boolean", 1, 0, 2, NULL);
-		DMPARAM("UpTime", ctx, "0", get_device_info_uptime, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("HardwareVersion", ctx, "0", get_device_hardwareversion, NULL, NULL, 1, 1, UNDEF, NULL);
+		DMPARAM("SoftwareVersion", ctx, "0", get_device_softwareversion, NULL, NULL, 1, 0, 2, NULL);
+		DMPARAM("UpTime", ctx, "0", get_device_info_uptime, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("DeviceLog", ctx, "0", get_device_devicelog, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("SpecVersion", ctx, "0", get_device_specversion, NULL, NULL, 1, 1, UNDEF, NULL);
 		DMPARAM("ProvisioningCode", ctx, "1", get_device_provisioningcode, set_device_provisioningcode, NULL, 1, 0, 2, NULL);
