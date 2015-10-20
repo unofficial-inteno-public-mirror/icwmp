@@ -125,41 +125,6 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	return 0;
 }
 
-void remove_vid_from_ifname(char *vid, char *ifname, char *new_ifname)
-{
-	char *sv, *pch, *p = new_ifname, *spch;
-	new_ifname[0] = '\0';
-	bool append;
-
-	ifname = dmstrdup(ifname);
-	pch = strtok_r(ifname, " ", &spch);
-	while (pch != NULL) {
-		append = false;
-		char *sv = strchr(pch, '.');
-		if (sv) {
-			sv++;
-			if (strcmp(sv, vid) != 0) {
-				append = true;
-			}
-		}
-		else {
-			append = true;
-		}
-		if(append) {
-			if (p == new_ifname) {
-				dmstrappendstr(p, pch);
-			}
-			else {
-				dmstrappendchr(p, ' ');
-				dmstrappendstr(p, pch);
-			}
-		}
-		pch = strtok_r(NULL, " ", &spch);
-	}
-	dmstrappendend(p);
-	dmfree(ifname);
-}
-
 inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity) {
 	struct uci_section *ss = NULL, *vlan_interface_s;
 	char *add_value;
@@ -1738,7 +1703,7 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
 					if (wifname[0] == '\0')
 						return 0;
-					remove_vid_from_ifname(vid, wifname, r_new_wifname);
+					remove_vid_interfaces_from_ifname(vid, wifname, r_new_wifname);
 					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
 					p = a_new_wifname;
 					q = v_ifname;
@@ -1891,7 +1856,7 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 					if (wifname[0] == '\0')
 						return 0;
 					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
-					remove_vid_from_ifname(vid, wifname, r_new_wifname);
+					remove_vid_interfaces_from_ifname(vid, wifname, r_new_wifname);
 					p = a_new_wifname;
 					q = ifname_buf;
 					dmstrappendstr(q, value);

@@ -78,41 +78,6 @@ inline void init_args_layer2_vlan(struct dmctx *ctx, struct uci_section *ss)
 	args->layer2sectionlev2 = ss;
 }
 
-void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname)
-{
-	char *sv, *pch, *p = new_ifname, *spch;
-	new_ifname[0] = '\0';
-	bool append;
-
-	ifname = dmstrdup(ifname);
-	pch = strtok_r(ifname, " ", &spch);
-	while (pch != NULL) {
-		append = false;
-		char *sv = strchr(pch, '.');
-		if (sv) {
-			sv++;
-			if (strcmp(sv, vid) != 0) {
-				append = true;
-			}
-		}
-		else {
-			append = true;
-		}
-		if(append) {
-			if (p == new_ifname) {
-				dmstrappendstr(p, pch);
-			}
-			else {
-				dmstrappendchr(p, ' ');
-				dmstrappendstr(p, pch);
-			}
-		}
-		pch = strtok_r(NULL, " ", &spch);
-	}
-	dmstrappendend(p);
-	dmfree(ifname);
-}
-
 void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname)
 {
 	char *pch, *spch, *p = new_ifname;

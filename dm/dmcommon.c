@@ -357,3 +357,38 @@ int network_get_ipaddr(char **value, char *iface)
 	json_select(res, "ipv4-address", 0, "address", value, NULL);
 	return 0;
 }
+
+void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname)
+{
+	char *sv, *pch, *p = new_ifname, *spch;
+	new_ifname[0] = '\0';
+	bool append;
+
+	ifname = dmstrdup(ifname);
+	pch = strtok_r(ifname, " ", &spch);
+	while (pch != NULL) {
+		append = false;
+		char *sv = strchr(pch, '.');
+		if (sv) {
+			sv++;
+			if (strcmp(sv, vid) != 0) {
+				append = true;
+			}
+		}
+		else {
+			append = true;
+		}
+		if(append) {
+			if (p == new_ifname) {
+				dmstrappendstr(p, pch);
+			}
+			else {
+				dmstrappendchr(p, ' ');
+				dmstrappendstr(p, pch);
+			}
+		}
+		pch = strtok_r(NULL, " ", &spch);
+	}
+	dmstrappendend(p);
+	dmfree(ifname);
+}
