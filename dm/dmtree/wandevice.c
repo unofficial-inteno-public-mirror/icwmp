@@ -1266,7 +1266,7 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 				}
 			} 
 			else if (strcmp(value, "IP_Routed") == 0) {
-				if (strcmp(type, "bridge") != 0 || strcmp(type, "alias") != 0)
+				if (strcmp(type, "bridge") != 0 && strcmp(type, "alias") != 0)
 					return 0;
 				else {
 					type = "";
