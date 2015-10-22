@@ -4,7 +4,7 @@
 # USAGE:
 # ./generate_xml.sh <scripts path> <product class> <device protocol> <model name> <software version>
 # If the input arguments are empty, then use the default values:
-SCRIPTS_PATH=${1:-"/home/anis/cwmp/iop-aa/package/freecwmp/src/scripts/functions/"}
+SCRIPTS_PATH=${1:-"/home/anis/iop-aa/package/icwmp/src/dm/dmtree/"}
 PRODUCT_CLASS=${2:-"DG301-W7P2U"}
 DEVICE_PROTOCOL=${3:-"DEVICE_PROTOCOL_DSLFTR069v1"}
 MODEL_NAME=${4:-"DG301-W7P2U"}
@@ -12,12 +12,13 @@ SOFTWARE_VERSION=${5:-"1.2.3.4B"}
 cnt_obj=0
 cnt_param=0
 
+ROOT_PATH="InternetGatewayDevice."
 # Funtcions
 # Check if object of parameters or get none in case of object contains an intance
 is_object() {
 	str=$1
 	function=`echo $str |cut -d, -f1`
-	if [ "$function" == "get_object_cache_generic" ]; then
+	if [ "$function" == "DMOBJECT" ]; then	
 		check=`echo $str |grep "\.[012345689]*\.,\$\|\.#\w*\.,\$"`
 		if [ "$check" == "" ]; then
 			echo "object"
@@ -165,9 +166,8 @@ SCRIPTS_LIST_FILE="$EXEC_PATH/script_list.txt"
 # Extract object and parameter list from scripts
 list=`ls $SCRIPTS_PATH |grep -v "common"`
 cd $SCRIPTS_PATH
-cat `echo $list` | grep "get_param_cache_generic \|get_object_cache_generic " |grep -v "^\\s*#" |awk -F '"' '{type=""; for (i = 3; i <= NF; i++) { if($i ~ /^xsd:/) { type = $i; break; } } print $1"  "$2"  "type; }' | awk '{print $1","$2","$3}' | sort -t, -k2 | sed -e "s|.\\$|.#|g" > $SCRIPTS_LIST_FILE
 
-cat `echo $list` | grep "freecwmp_cache_output" |grep -v "^\\s*#" | awk -F '"' '{type=""; for (i = 3; i <= NF; i++) { if($i ~ /^xsd:/) { type = $i; break; } } print $2"  "type; }' | awk '{print ($1 ~ /\.$/ ? "get_object_cache_generic" : "get_param_cache_generic"), $0}'| awk '{print $1","$2","$3}' | sort -t, -k2 | sed -e "s|.\\$|.#|g" >> $SCRIPTS_LIST_FILE
+cat `echo $list` | grep "DMOBJECT\|DMPARAM" |grep -v "^\\s*#" |sed 's/^[ \t]*//' |awk -F '[(,)]' '{type=""; { if($1=="DMOBJECT") { type = "object"; obj_name = $2; print $1 " " $2;} else {if($7 ~ /xsd:/) {print $1 " " obj_name$2 " " $7;} else {print $1 " " obj_name$2;}} } }' | awk '{print $1","$2","$3}' | sort -t, -k2 | sed -e "s|.\%|.#|g" | sed -e "s|\"||g" | sed -e "s|DMROOT|$ROOT_PATH|g" > $SCRIPTS_LIST_FILE
 
 
 cd $EXEC_PATH
