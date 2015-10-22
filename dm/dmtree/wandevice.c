@@ -153,6 +153,44 @@ int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
 	return (max + 1);
 }
 
+void set_bridge_layer2(struct dmctx *ctx, char *bridge)
+{
+	char *wifname, *dup, *pch, *spch;
+	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
+	struct uci_section *s;
+
+	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "ifname", &wifname);
+	dup = dmstrdup(wifname); // MEM will be freed in the DMMCLEAN
+	for (pch = strtok_r(dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch))
+	{
+		if (atoi(pch + 5) > 1) {
+			uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", pch, s)
+			{
+				dmuci_set_value_by_section(s, "bridge", bridge);
+			}
+		}
+		else if (strstr(pch, "atm")) {
+			uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", pch, s)
+			{
+				dmuci_set_value_by_section(s, "bridge", bridge);
+			}
+
+		}
+		else if (strstr(pch, "ptm")) {
+			uci_foreach_option_eq("layer2_interface_vdsl", "vdsl_interface", "ifname", pch, s)
+			{
+				dmuci_set_value_by_section(s, "bridge", bridge);
+			}
+		}
+		else if (strstr(pch, eth_wan)) {
+			uci_foreach_option_eq("layer2_interface_ethernet", "ethernet_interface", "ifname", pch, s)
+			{
+				dmuci_set_value_by_section(s, "bridge", bridge);
+			}
+		}
+	}
+}
+
 int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 {
 	char *ifname, *type, *device = NULL, *dup, *pch, *spch;
@@ -206,7 +244,32 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 	}
 	else if (strstr(device, fwan)) {
 		return 0;
-	}	
+	}
+	else if(strcmp(type, "bridge") == 0 && strcmp(device, "br-wan") == 0)
+	{
+		cn = 0;
+		dup = dmstrdup(ifname);
+		for (pch = strtok_r(dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
+			if (strstr(pch, "atm")) {
+				cn++;
+				break;
+			}
+			if (strstr(pch, "ptm")) {
+				cn++;
+				break;
+			}
+			if (strstr(pch, eth_wan)) {
+				cn++;
+				break;
+			}
+			pch = strtok_r(NULL, " ", &spch);
+		}
+		dmfree(dup);
+		if (cn && strstr(pch, fwan)) {
+			return 0;
+		}
+		return -1;
+	}
 	return -1;
 }
 int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev)
@@ -1263,12 +1326,15 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 					return 0;
 				else {
 					type = "bridge";
+					set_bridge_layer2(ctx, "1");
 				}
-			} 
+			}
 			else if (strcmp(value, "IP_Routed") == 0) {
 				if (strcmp(type, "bridge") != 0 && strcmp(type, "alias") != 0)
 					return 0;
 				else {
+					if (strcmp(type, "bridge") == 0)
+						set_bridge_layer2(ctx, "");
 					type = "";
 				}
 			}
