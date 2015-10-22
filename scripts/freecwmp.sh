@@ -303,8 +303,21 @@ handle_action() {
 						break
 					fi
 				done
-				if [ "$found" = "0" ]; then 
-					sleep 1
+				if [ "$found" = "0" ]; then
+					running=0	
+					if [ -d $tmp_cache ]; then
+						ls_cache=`ls $tmp_cache`
+						for pid in $ls_cache; do
+							ls_pid=" `ls $tmp_cache/$pid` "
+							ls_pid=${ls_pid//$'\n'/ }
+							if [ "${ls_pid/ $prefix /}" != "$ls_pid" -a -d "/proc/$pid" ]; then
+								running=1;
+								break
+							fi
+						done
+					elif [ ! -d $tmp_cache -o  running=0 ]; then
+						handle_get_cache $prefix
+					fi
 					break
 				fi
 			done
