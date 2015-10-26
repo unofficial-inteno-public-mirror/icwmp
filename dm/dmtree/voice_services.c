@@ -1296,22 +1296,35 @@ int set_line_directory_number(char *refparam, struct dmctx *ctx, int action, cha
 
 int get_voice_profile_line_status(char *refparam, struct dmctx *ctx,  char **value)
 {
-	char *tmp, *sip_name;
-	struct brcm_args *brcmargs = (struct brcm_args *)(ctx->args);
-
-	sip_name = section_name(brcmargs->sip_section);
-	dmuci_get_varstate_string("asterisk", "sip_name", "sip_registry_registered", &tmp);
-	if (strcasecmp(tmp, "yes") == 0) {
-		*value = "Up";
-	}
-	else {
-		dmuci_get_varstate_string("asterisk", "sip_name", "sip_registry_request_sent", &tmp);
-		if(strcasecmp(tmp, "yes") == 0)
-			*value = "Registering";
-		else
-			*value = "Disabled";
-	}
-	return 0;
+	char *status, *sip_name, *q;
+		json_object *res;
+		char buf[64];
+		struct brcm_args *brcmargs = (struct brcm_args *)(ctx->args);
+		*value = "Disabled";
+		sip_name = section_name(brcmargs->sip_section);
+		q = buf;
+		dmstrappendstr(q, "asterisk");
+		dmstrappendchr(q, '.');
+		dmstrappendstr(q, "sip");
+		dmstrappendchr(q, '.');
+		dmstrappendstr(q, section_name(brcmargs->sip_section) + 3);
+		dmstrappendend(q);
+		dmubus_call(buf, "status", UBUS_ARGS{}, 0, &res);
+		DM_ASSERT(res, *value = "Disabled");
+		if(res) {
+			json_select(res, "registered", -1, NULL, &status, NULL);
+			if (strcasecmp(status, "true") == 0) {
+				*value = "Up";
+			}
+			else {
+				json_select(res, "registry_request_sent", -1, NULL, &status, NULL);
+				if(strcasecmp(status, "true") == 0)
+					*value = "Registering";
+				else
+					*value = "Disabled";
+			}
+		}
+		return 0;
 }
 
 int get_voice_profile_line_callstate(char *refparam, struct dmctx *ctx, char **value)
