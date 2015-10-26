@@ -228,7 +228,13 @@ cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
     return 0;
 }
 
+enum enum_inform {
+	INFORM_GET_RPC_METHODS,
+	__INFORM_MAX
+};
+
 static const struct blobmsg_policy inform_policy[] = {
+	[INFORM_GET_RPC_METHODS] = { .name = "GetRPCMethods", .type = BLOBMSG_TYPE_BOOL },
 };
 
 static int
@@ -236,19 +242,53 @@ cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
              struct ubus_request_data *req, const char *method,
              struct blob_attr *msg)
 {
+    struct blob_attr *tb[__INFORM_MAX];
+    bool grm = false;
+    struct event_container  *event_container;
+    struct session          *session;
+
     blob_buf_init(&b, 0);
-    if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
-        blobmsg_add_u32(&b, "status", -1);
-        blobmsg_add_string(&b, "info", "Session already running");
-    }
-    else {
-        pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
-        cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
-        pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
-        pthread_cond_signal(&(cwmp_main.threshold_session_send));
-        blobmsg_add_u32(&b, "status", 1);
-        blobmsg_add_string(&b, "info", "Session started");
-    }
+
+	blobmsg_parse(inform_policy, ARRAYSIZEOF(inform_policy), tb,
+			  blob_data(msg), blob_len(msg));
+
+	if (tb[INFORM_GET_RPC_METHODS]) {
+		grm = blobmsg_data(tb[INFORM_GET_RPC_METHODS]);
+	}
+	if (grm) {
+		pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+		event_container = cwmp_add_event_container (&cwmp_main, EVENT_IDX_2PERIODIC, "");
+		if (event_container == NULL)
+		{
+			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+			return 0;
+		}
+		cwmp_save_event_container (&cwmp_main,event_container);
+		session = list_entry (cwmp_main.head_event_container, struct session,head_event_container);
+		if(cwmp_add_session_rpc_acs(session, RPC_ACS_GET_RPC_METHODS) == NULL)
+		{
+			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+			return 0;
+		}
+		pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+		pthread_cond_signal(&(cwmp_main.threshold_session_send));
+		blobmsg_add_u32(&b, "status", 1);
+		blobmsg_add_string(&b, "info", "Session with GetRPCMethods will start");
+	}
+	else {
+		if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
+			blobmsg_add_u32(&b, "status", -1);
+			blobmsg_add_string(&b, "info", "Session already running");
+		}
+		else {
+			pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+			cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
+			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+			pthread_cond_signal(&(cwmp_main.threshold_session_send));
+			blobmsg_add_u32(&b, "status", 1);
+			blobmsg_add_string(&b, "info", "Session started");
+		}
+	}
     ubus_send_reply(ctx, req, b.head);
     blob_buf_free(&b);
 
