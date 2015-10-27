@@ -2684,6 +2684,47 @@ int set_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, int action, cha
 	}
 	return 0;
 }
+
+int get_wmm_enabled(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	bool b;
+
+	dmuci_get_value_by_section_string(wlanargs->device_section, "wmm", value);
+	string_to_bool(*value, &b);
+		if (b)
+			*value = "Enabled";
+		else
+			*value = "Disabled";
+
+	return 0;
+}
+
+int set_wmm_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	bool b;
+
+	switch (action) {
+		case VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+		case VALUESET:
+			string_to_bool(value, &b);
+			if (b) {
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm", "1");
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm_noack", "1");
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm_apsd", "1");
+			}
+			else {
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm", "0");
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm_noack", "");
+				dmuci_set_value_by_section(wlanargs->device_section, "wmm_apsd", "");
+			}
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_landevice_sub(struct dmctx *ctx)
 {
@@ -2939,6 +2980,7 @@ inline int entry_landevice_wlanconfiguration_instance(struct dmctx *ctx, char *i
 		DMPARAM("TotalPacketsSent", ctx, "0", get_wlan_devstatus_statistics_tx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("TotalPacketsReceived", ctx, "0", get_wlan_devstatus_statistics_rx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("SSIDAdvertisementEnabled", ctx, "1", get_wlan_ssid_advertisement_enable, set_wlan_ssid_advertisement_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("WMMEnable", ctx, "1", get_wmm_enabled, set_wmm_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_ChannelMode", ctx, "1", get_x_inteno_se_channelmode, set_x_inteno_se_channelmode, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_SupportedStandards", ctx, "0", get_x_inteno_se_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_OperatingChannelBandwidth", ctx, "1", get_x_inteno_se_operating_channel_bandwidth, set_x_inteno_se_operating_channel_bandwidth, NULL, 0, 1, UNDEF, NULL);
