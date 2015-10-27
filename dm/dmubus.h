@@ -16,7 +16,7 @@
 
 #include <libubox/list.h>
 #include <libubox/blobmsg_json.h>
-#include <json/json.h>
+#include <json-c/json.h>
 
 #define UBUS_ARGS (struct ubus_arg[])
 #define SIMPLE_OUTPUT -1
