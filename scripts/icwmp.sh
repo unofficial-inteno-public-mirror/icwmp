@@ -211,7 +211,7 @@ handle_action() {
 		else
 			if [ "$__arg3" = "1" ];then
 				mv /tmp/icwmp_download /tmp/firmware_upgrade_image 2> /dev/null
-				icwmp_check_image
+				(icwmp_check_image)
 				if [ "$?" = "0" ];then
 					if [ $flashsize -gt 0 -a $filesize -gt $flashsize ];then
 						let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED

@@ -24,7 +24,7 @@ icwmp_fault_output() {
 
 icwmp_check_image()
 {
-	. /etc/functions.sh; include /lib/upgrade; platform_check_image /tmp/firmware_upgrade_image
+	. /lib/functions.sh; include /lib/upgrade; platform_check_image /tmp/firmware_upgrade_image
 	return $?
 }
 

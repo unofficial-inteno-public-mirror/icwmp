@@ -1838,9 +1838,9 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
     	}
     	free(fault_code);
     }
-    else {
+    /*else {
     	error = FAULT_CPE_INTERNAL_ERROR;
-    }
+    }*/
 
 	p = calloc (1,sizeof(struct transfer_complete));
 	if(p == NULL)
