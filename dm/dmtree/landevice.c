@@ -226,7 +226,6 @@ int get_lan_dns(char *refparam, struct dmctx *ctx, char **value)
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_parse_array(res, "dns-server", -1, NULL, value);
-	TRACE("returned value after parse is %s\n", *value);
 	if ((*value)[0] == '\0') {
 		dmuci_get_value_by_section_string(lanargs->ldlansection, "dns", value);
 		*value = dmstrdup(*value); // MEM WILL BE FREED IN DMMEMCLEAN
@@ -269,7 +268,6 @@ int get_lan_dhcp_server_configurable(char *refparam, struct dmctx *ctx, char **v
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 
 	uci_foreach_option_eq("dhcp", "dhcp", "interface", section_name(lanargs->ldlansection), s) {
-		TRACE("section found s name %s section type is %s \n\n", s->e.name, s->type);
 		*value = "1";
 		return 0;
 	}
@@ -359,7 +357,7 @@ enum enum_lanip_interval_address {
 };
 
 int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
-{//TODO , check with issue in the bug tracker of inteno #7467
+{
 	json_object *res;
 	char *ipaddr = "" , *mask = "", *start , *limit;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
@@ -370,7 +368,6 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 	*value = "";
 	
 	uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
-		TRACE("section start found \n");
 		dmuci_get_value_by_section_string(s, "start", &start);
 		if (option == LANIP_INTERVAL_END)
 			dmuci_get_value_by_section_string(s, "limit", &limit);
@@ -385,7 +382,6 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 		if (res)
 			json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 	}
-	TRACE("start vaut ipaddr %s \n", ipaddr);
 	if (ipaddr[0] == '\0') {
 		goto end;
 	}
@@ -400,7 +396,6 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 			mask = cidr2netmask(atoi(mask));
 		}
 	}
-	TRACE("start vaut mask %s \n", mask);
 	if (mask[0] == '\0') {
 		mask = "255.255.255.0";
 	}
@@ -418,19 +413,19 @@ end:
 }
 
 int get_lan_dhcp_interval_address_start(char *refparam, struct dmctx *ctx, char **value)
-{//TODO , check with issue in the bug tracker of inteno #7467
+{
 	int ret = get_lan_dhcp_interval_address(ctx, value, LANIP_INTERVAL_START);
 	return ret;
 }
 
 int get_lan_dhcp_interval_address_end(char *refparam, struct dmctx *ctx, char **value)
-{//TODO , check with issue in the bug tracker of inteno #7467
+{
 	int ret = get_lan_dhcp_interval_address(ctx, value, LANIP_INTERVAL_END);
 	return ret;
 }
 
 int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, char *value)
-{//TODO , check with issue in the bug tracker of inteno #7467
+{
 	json_object *res;
 	char *ipaddr = "", *mask = "", *start , *limit, buf[16];
 	struct uci_section *s = NULL;
@@ -489,7 +484,6 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 			return 0;
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
-				TRACE("section start found \n");
 				dmuci_get_value_by_section_string(s, "start", &start);
 				break;
 			}
@@ -622,7 +616,6 @@ int get_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 	}
 	if (s == NULL || (*value)[0] == '\0')
 		dmuci_get_value_by_section_string(lanargs->ldlansection, "netmask", value);
-	TRACE("next value is %s \n", *value);
 	if ((*value)[0] == '\0') {
 		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
 		DM_ASSERT(res, *value = "");
@@ -813,14 +806,16 @@ int filter_lan_device_interface(struct uci_section *s, void *v)
 {
 	char *ifname = NULL; 
 	char *phy_itf = NULL, *phy_itf_local;
-	char *pch, *spch, *ftype;
+	char *pch, *spch, *ftype, *islan;
 	
 	dmuci_get_value_by_section_string(s, "type", &ftype);
 	if (strcmp(ftype, "alias") != 0) {
+		dmuci_get_value_by_section_string(s, "is_lan", &islan);
+		if (islan[0] == '1')
+			return 0;
 		dmuci_get_value_by_section_string(s, "ifname", &ifname);
 		db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
 		phy_itf_local = dmstrdup(phy_itf);
-		TRACE("end db_get_value\n");
 		pch = strtok_r(phy_itf_local, " ", &spch);
 		while (pch != NULL) {
 			if (strstr(ifname, pch)) {
@@ -2293,7 +2288,6 @@ int get_wlan_total_associations(char *refparam, struct dmctx *ctx, char **value)
 	dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
-		TRACE("TotalAssociations json obj %s\n", key);
 		if (strstr(key, "sta-"))
 			i++;
 	}
@@ -2652,7 +2646,6 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strstr(encryption, "psk")) {
-		TRACE("pki vaut %d \n", wlanargs->pki);
 		sprintf(sta_pki, "sta-%d", wlanargs->pki);
 		dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 		DM_ASSERT(res, *value = "");
@@ -2731,10 +2724,7 @@ inline int entry_landevice_sub(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 	char *idev = NULL;
 
-	TRACE("uci_foreach_filter_func start \n");
 	uci_foreach_filter_func("network", "interface", NULL, &filter_lan_device_interface, s) {
-		TRACE("section type %s section name %s \n\n", s->e.name, s->type);
-		//DMOBJECT(DMROOT"LANDevice.%s.", ctx, "0", 1, NULL, NULL, NULL, DMINSTANCES(idev, idev2));
 		idev = update_instance(s, idev, "ldinstance");
 		init_ldargs_lan(ctx, s, idev);
 		SUBENTRY(entry_landevice_sub_instance, ctx, s, idev);
@@ -2771,8 +2761,7 @@ inline int entry_landevice_wlanconfiguration(struct dmctx *ctx, struct uci_secti
 	char *iwlan = NULL;
 	char *network , *wiface, buf[8];
 
-	iwlan = NULL;
-	get_last_instance("wireless", "wifi-iface", "lwlaninstance");
+	iwlan = get_last_instance_lev2("wireless", "wifi-iface", "lwlaninstance", "network", section_name(landevice_section));
 	uci_foreach_sections("wireless", "wifi-device", ss) {
 		int wlctl_num=0;		
 		uci_foreach_option_eq("wireless", "wifi-iface", "device", section_name(ss), sss) {
