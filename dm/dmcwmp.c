@@ -29,6 +29,7 @@
 #include "layer_3_forwarding.h"
 #include "layer_2_bridging.h"
 #include "ippingdiagnostics.h"
+#include "x_inteno_syslog.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -99,6 +100,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
+	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 };
 
 int dm_entry_set_prefix_methods_enable(void)
