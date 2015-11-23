@@ -100,28 +100,34 @@ cwmp_wait_net() {
 	done
 }
 
-boot() {
-	touch /etc/icwmpd/.icwmpd_boot
-}
-
 service_running() {
 	ubus -t 2 wait_for asterisk
 }
 
 start_service() {
-	echo $start_msg;printf "\033[A" ;sleep 1
-	set_wan_interface
-	check_dhcp
-	check_acs_url
-	cwmp_wait_net
-	procd_open_instance
-	procd_set_param command "$PROG"
-	if [ "$1" = "GetRPCMethods" ];then
-		procd_append_param command -g
-	elif [ -f /etc/icwmpd/.icwmpd_boot ]; then
-		procd_append_param command -b
-		rm -f /etc/icwmpd/.icwmpd_boot 2>/dev/null
+	if [ ! -f /tmp/.icwmpd_boot ]; then
+		touch /etc/icwmpd/.icwmpd_boot
+		touch /tmp/.icwmpd_boot
+	else
+		echo $start_msg;printf "\033[A" ;sleep 1
+		set_wan_interface
+		check_dhcp
+		check_acs_url
+		cwmp_wait_net
+		procd_open_instance
+		procd_set_param command "$PROG"
+		if [ "$1" = "GetRPCMethods" ];then
+			procd_append_param command -g
+		elif [ -f /etc/icwmpd/.icwmpd_boot ]; then
+			procd_append_param command -b
+			rm -f /etc/icwmpd/.icwmpd_boot 2>/dev/null
+		fi
+		procd_set_param respawn "3" "7" "0"
+		procd_close_instance
 	fi
-	procd_set_param respawn "3" "7" "0" 
-	procd_close_instance
 }
+
+service_triggers() {
+        procd_add_reload_trigger cwmp
+}
+
