@@ -361,8 +361,7 @@ char *load_child_value(mxml_node_t *tree, char *sub_name)
 	mxml_node_t	*b = tree;
 
 	if (b) {
-		b = mxmlWalkNext(b, tree, MXML_DESCEND);
-		mxmlFindElement(b, b, sub_name, NULL, NULL, MXML_DESCEND_FIRST);
+		b = mxmlFindElement(b, b, sub_name, NULL, NULL, MXML_DESCEND);
 		if (b) {
 			b = mxmlWalkNext(b, tree, MXML_DESCEND);
 			if (b && b->type == MXML_TEXT)
@@ -374,7 +373,6 @@ char *load_child_value(mxml_node_t *tree, char *sub_name)
 			}
 		}
 	}
-
 	return value;
 }
 
