@@ -1335,7 +1335,7 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 				else {
 					if (strcmp(type, "bridge") == 0)
 						set_bridge_layer2(ctx, "");
-					type = "";
+					type = "anywan";
 				}
 			}
 			else 
