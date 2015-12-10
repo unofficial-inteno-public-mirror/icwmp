@@ -100,7 +100,7 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 				if (b)
 					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "1");
 				else
-					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "");
+					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "0");
 			}
 			return 0;
 	}
