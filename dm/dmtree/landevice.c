@@ -811,7 +811,7 @@ int filter_lan_device_interface(struct uci_section *s, void *v)
 	dmuci_get_value_by_section_string(s, "type", &ftype);
 	if (strcmp(ftype, "alias") != 0) {
 		dmuci_get_value_by_section_string(s, "is_lan", &islan);
-		if (islan[0] == '1')
+		if (islan[0] == '1' && strcmp(section_name(s), "loopback") != 0 )
 			return 0;
 		dmuci_get_value_by_section_string(s, "ifname", &ifname);
 		db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
