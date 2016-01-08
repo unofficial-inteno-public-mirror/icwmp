@@ -511,6 +511,17 @@ int get_global_config(struct config *conf)
     {
         FREE(conf->acs_ssl_capath);
     }
+    if((error = uci_get_value(UCI_ACS_INSECURE_ENABLE,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {			
+            if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
+            {
+                conf->insecure_enable = true;
+            }			
+            value = NULL;
+        }
+    }
     if((error = uci_get_value(UCI_ACS_SSL_VERSION,&value)) == CWMP_OK)
     {
         if(value != NULL)

@@ -191,6 +191,10 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	
 	if (cwmp->conf.acs_ssl_capath)
 		curl_easy_setopt(curl, CURLOPT_CAPATH,  cwmp->conf.acs_ssl_capath);
+	if (cwmp->conf.insecure_enable) {
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);		
+	}
 		
 	*msg_in = (char *) calloc (1, sizeof(char));
 
