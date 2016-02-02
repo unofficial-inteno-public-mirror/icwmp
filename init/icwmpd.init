@@ -120,7 +120,6 @@ start_service() {
 			procd_append_param command -g
 		elif [ -f /etc/icwmpd/.icwmpd_boot ]; then
 			procd_append_param command -b
-			rm -f /etc/icwmpd/.icwmpd_boot 2>/dev/null
 		fi
 		procd_set_param respawn "3" "7" "0"
 		procd_close_instance

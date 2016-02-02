@@ -249,6 +249,9 @@ int event_remove_all_event_container(struct session *session, int rem_from)
     {
         event_container = list_entry(session->head_event_container.next, struct event_container, list);
         bkp_session_delete_event(event_container->id, rem_from?"send":"queue");
+        if (event_container->code == EVENT_IDX_1BOOT && rem_from == RPC_SEND) {
+        	remove("/etc/icwmpd/.icwmpd_boot");
+        }
         free (event_container->command_key);
         free_dm_parameter_all_fromlist(&(event_container->head_dm_parameter));
         list_del(&(event_container->list));
