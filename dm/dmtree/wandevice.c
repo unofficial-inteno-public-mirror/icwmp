@@ -2219,7 +2219,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 			DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled_wanproto, set_interface_firewall_enabled_wanproto, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("X_BROADCOM_COM_IGMPEnabled", ctx, "1", get_wan_ip_link_connection_igmp_enabled, set_wan_ip_link_connection_igmp_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("DNSEnabled", ctx, "1", get_wan_ip_link_connection_dns_enabled, set_wan_ip_link_connection_dns_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
-			DMPARAM("DNSOverrideAllowed", ctx, 0, get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("DNSOverrideAllowed", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Name", ctx, "1", get_wan_ip_link_connection_name, set_wan_ip_link_connection_connection_name, NULL, 0, 1, UNDEF, NULL);
 			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.X_INTENO_COM_VLAN.", ctx, "1", 1, NULL, NULL, NULL, idev, iwan, iconp);
 			DMPARAM("VLANID", ctx, "1", get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);

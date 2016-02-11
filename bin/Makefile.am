@@ -17,6 +17,7 @@ icwmpd_SOURCES =				\
 	../time.c				\
 	../ubus.c				\
 	../xml.c				\
+	../zlib.c				\
 	../dm/dmcwmp.c			\
 	../dm/dmentry.c			\
 	../dm/dmmem.c			\
@@ -72,7 +73,8 @@ icwmpd_LDADD =			\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)	\
 	$(LIBJSON_LIBS)		\
-	$(LBLOBMSG_LIBS)
+	$(LBLOBMSG_LIBS)	\
+	$(LIBZ_LIBS)
 
 icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 icwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"

@@ -32,6 +32,8 @@ AM_PROG_CC_C_O
 LIBPTHREAD_LIBS='-lpthread'
 AC_SUBST([LIBPTHREAD_LIBS])
 
+LIBZ_LIBS='-lz'
+AC_SUBST([LIBZ_LIBS])
 case "$CFLAGS" in
 	*_AADJ*) LIBJSON_LIBS='-ljson -ljson-c' ;;
 	*) LIBJSON_LIBS='-ljson' ;;

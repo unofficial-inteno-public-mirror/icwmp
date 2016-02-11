@@ -43,6 +43,7 @@
 #define UCI_ACS_SSL_CAPATH					"cwmp.acs.ssl_capath"
 #define UCI_ACS_INSECURE_ENABLE				"cwmp.acs.insecure_enable" 
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
+#define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
 #define UCI_LOG_SEVERITY_PATH				"cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH					"cwmp.cpe.userid"
 #define UCI_CPE_PASSWD_PATH					"cwmp.cpe.passwd"
@@ -106,6 +107,11 @@ enum event_idx_enum {
 	EVENT_IDX_M_Upload,
 	__EVENT_IDX_MAX
 };
+enum http_compression {
+    COMP_NONE,
+    COMP_GZIP,
+    COMP_DEFLATE
+};
 
 typedef struct event_container {
     struct list_head                    list;
@@ -137,6 +143,7 @@ typedef struct config {
     char                                *ubus_socket;
     int                                 connection_request_port;
     int                                 period;
+    int                                 compression;
     time_t                              time;
     bool                                periodic_enable;
     bool                                insecure_enable;
@@ -248,5 +255,6 @@ void connection_request_port_value_change(struct cwmp *cwmp, int port);
 void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type);
 void cwmp_set_end_session (unsigned int end_session_flag);
 void *thread_handle_notify(void *v);
+int zlib_compress (char *message, unsigned char **zmsg, int *zlen, int type);
 
 #endif /* _CWMP_H__ */

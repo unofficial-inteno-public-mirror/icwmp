@@ -89,9 +89,8 @@ int log_set_on_file(char *value)
 void puts_log(int severity, const char *fmt, ...)
 {
     va_list         args;
+    int             buflen = 1024;
     int             i;
-    char            buf[1024];
-    char            buf_file[1024];
     time_t          t;
     struct tm       *Tm;
     struct timeval  tv;
@@ -104,6 +103,12 @@ void puts_log(int severity, const char *fmt, ...)
     {
         return;
     }
+    if (severity == DEBUG)
+    {
+    	buflen = 512000;
+    }
+    char buf[buflen];
+    char buf_file[buflen];
 
     gettimeofday(&tv, 0);
     t   = time((time_t*)NULL);
@@ -116,15 +121,13 @@ void puts_log(int severity, const char *fmt, ...)
                     Tm->tm_min,
                     Tm->tm_sec,
                     SEVERITY_NAMES[severity]);
-
     if(strlen(log_file_name) == 0)
     {
         strcpy(log_file_name,DEFAULT_LOG_FILE_NAME);
     }
-
     if(enable_log_file)
     {
-        pthread_mutex_lock (&mutex_log);
+    	pthread_mutex_lock (&mutex_log);
         if (stat(log_file_name, &st) == 0)
         {
             size = st.st_size;
@@ -140,12 +143,11 @@ void puts_log(int severity, const char *fmt, ...)
             pLog = fopen(log_file_name,"a+");
         }
     }
-
     va_start(args, fmt);
     i += vsprintf(buf+i, fmt, args);
     if(enable_log_file)
     {
-        sprintf(buf_file,"%s\n",buf);
+    	sprintf(buf_file,"%s\n",buf);
         fputs (buf_file, pLog);
     }
     va_end(args);

@@ -168,16 +168,31 @@ void xml_exit(void)
 int xml_send_message(struct cwmp *cwmp, struct session *session, struct rpc *rpc)
 {
 	char *s, *c, *msg_out = NULL, *msg_in = NULL;
-	int f, r = 0;
+	int msg_out_len = 0, f, r = 0;
 	mxml_node_t	*b;
 
-	if (session->tree_out)
+	if (session->tree_out) {
+
+		unsigned char *zmsg_out;
 		msg_out = mxmlSaveAllocString(session->tree_out, whitespace_cb);
+		CWMP_LOG(DEBUG,"Message OUT \n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n%s\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",msg_out);
+		if (cwmp->conf.compression != COMP_NONE) {
+		    if (zlib_compress(msg_out, &zmsg_out, &msg_out_len, cwmp->conf.compression)) {
+		        return -1;
+		    }
+            FREE(msg_out);
+            msg_out = (char *) zmsg_out;
+		} else {
+		    msg_out_len = strlen(msg_out);
+		}
+	}
 	while (1) {
 		f = 0;
-		if (http_send_message(cwmp, msg_out, &msg_in))
+		if (http_send_message(cwmp, msg_out, msg_out_len,&msg_in)) {
 			goto error;
+		}
 		if (msg_in) {
+			CWMP_LOG(DEBUG,"Message IN \n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n%s\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<",msg_in);
 			if (s = strstr(msg_in, "<FaultCode>"))
 				sscanf(s, "<FaultCode>%d</FaultCode>",&f);
 			if (f) {

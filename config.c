@@ -495,6 +495,25 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+    if((error = uci_get_value(UCI_ACS_COMPRESSION ,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (0 == strcasecmp(value, "gzip")) {
+                conf->compression = COMP_GZIP;
+            } else if (0 == strcasecmp(value, "deflate")) {
+                conf->compression = COMP_DEFLATE;
+            } else {
+                conf->compression = COMP_NONE;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
     if((error = uci_get_value(UCI_ACS_SSL_CAPATH,&value)) == CWMP_OK)
     {
         if(value != NULL)

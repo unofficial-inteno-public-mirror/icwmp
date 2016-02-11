@@ -221,6 +221,34 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 	return 0;
 }
 
+int get_management_server_http_compression_supportted(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "GZIP,Deflate";
+	return 0;
+}
+
+int get_management_server_http_compression(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "acs", "compression", value);
+	return 0;
+}
+
+int set_management_server_http_compression(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			 if (0 == strcasecmp(value, "gzip") || 0 == strcasecmp(value, "deflate")) {
+				 return 0;
+			 }
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "acs", "compression", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
 int entry_method_root_ManagementServer(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"ManagementServer.") {
@@ -235,6 +263,8 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, NULL, 1, 0, 2, NULL);
 		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("HTTPCompressionSupported", ctx, "0", get_management_server_http_compression_supportted, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("HTTPCompression", ctx, "1", get_management_server_http_compression, set_management_server_http_compression, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

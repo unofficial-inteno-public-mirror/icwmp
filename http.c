@@ -22,7 +22,6 @@
 #include <fcntl.h>
 #include "cwmp.h"
 #include "log.h"
-
 #include <libubox/uloop.h>
 #include <libubox/usock.h>
 
@@ -74,16 +73,6 @@ http_client_init(struct cwmp *cwmp)
 	/* TODO debug ssl config from freecwmp*/
 
 #ifdef HTTP_CURL
-	http_c.header_list = NULL;
-	http_c.header_list = curl_slist_append(http_c.header_list, "User-Agent: cwmp");
-	if (!http_c.header_list) return -1;
-	http_c.header_list = curl_slist_append(http_c.header_list, "Content-Type: text/xml");
-	if (!http_c.header_list) return -1;
-# ifdef ACS_FUSION
-	char *expect_header = "Expect:";
-	http_c.header_list = curl_slist_append(http_c.header_list, expect_header);
-	if (!http_c.header_list) return -1;
-# endif /* ACS_FUSION */
 	curl = curl_easy_init();
 	if (!curl) return -1;
 
@@ -155,7 +144,7 @@ http_get_response(void *buffer, size_t size, size_t rxed, char **msg_in)
 #endif /* HTTP_CURL */
 
 int
-http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
+http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_in)
 {
 #ifdef HTTP_CURL
 	CURLcode res;
@@ -163,18 +152,38 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 	static char *ip_acs = NULL;
 	char *ip = NULL;
 	char errbuf[CURL_ERROR_SIZE];
+	http_c.header_list = NULL;
+	http_c.header_list = curl_slist_append(http_c.header_list, "User-Agent: inteno-cwmp");
+	if (!http_c.header_list) return -1;
+	http_c.header_list = curl_slist_append(http_c.header_list, "Content-Type: text/xml");
+	if (!http_c.header_list) return -1;
+# ifdef ACS_FUSION
+	char *expect_header = "Expect:";
+	http_c.header_list = curl_slist_append(http_c.header_list, expect_header);
+	if (!http_c.header_list) return -1;
+# endif /* ACS_FUSION */
 	curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
 	curl_easy_setopt(curl, CURLOPT_USERNAME, cwmp->conf.acs_userid);
 	curl_easy_setopt(curl, CURLOPT_PASSWORD, cwmp->conf.acs_passwd);
 	curl_easy_setopt(curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC|CURLAUTH_DIGEST);
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_c.header_list);
 	curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, HTTP_TIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
+	switch (cwmp->conf.compression) {
+	    case COMP_GZIP:
+	        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "gzip");
+	        http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: gzip");
+	    break;
+	    case COMP_DEFLATE:
+            curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
+            http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: deflate");
+        break;
+	}
+	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_c.header_list);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, msg_out);
 	if (msg_out)
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long) strlen(msg_out));
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)  msg_out_len);
 	else
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, 0);
 
@@ -225,18 +234,26 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
     }
 
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
-
 	if(http_code == 204)
 	{
 		CWMP_LOG (INFO,"Receive HTTP 204 No Content");
 	}
 
+    if(http_code == 415)
+    {
+ 		cwmp->conf.compression = COMP_NONE;
+		goto error;
+    }
 	if (http_code != 200 && http_code != 204)
 		goto error;
 
 	/* TODO add check for 301, 302 and 307 HTTP Redirect*/
 
 	curl_easy_reset(curl);
+	if (http_c.header_list) {
+		curl_slist_free_all(http_c.header_list);
+		http_c.header_list = NULL;
+	}
 
 	if (res) goto error;
 
@@ -281,6 +298,10 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 
 error:
 	FREE(*msg_in);
+	if (http_c.header_list) {
+		curl_slist_free_all(http_c.header_list);
+		http_c.header_list = NULL;
+	}
 	return -1;
 }
 
