@@ -34,6 +34,10 @@ AC_SUBST([LIBPTHREAD_LIBS])
 
 LIBZ_LIBS='-lz'
 AC_SUBST([LIBZ_LIBS])
+
+LIBM_LIBS='-lm'
+AC_SUBST([LIBM_LIBS])
+
 case "$CFLAGS" in
 	*_AADJ*) LIBJSON_LIBS='-ljson -ljson-c' ;;
 	*) LIBJSON_LIBS='-ljson' ;;

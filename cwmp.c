@@ -13,6 +13,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
 #include "cwmp.h"
 #include "backupSession.h"
 #include "xml.h"
@@ -75,20 +78,19 @@ int cwmp_session_rpc_destructor (struct rpc *rpc)
 
 int cwmp_get_retry_interval (struct cwmp *cwmp)
 {
-    switch (cwmp->retry_count_session)
-    {
-        case 0: return MAX_INT32;
-        case 1: return 6;
-        case 2: return 11;
-        case 3: return 21;
-        case 4: return 41;
-        case 5: return 81;
-        case 6: return 161;
-        case 7: return 321;
-        case 8: return 641;
-        case 9: return 1281;
-        default: return 2561;
-    }
+	int retry_count = 0;
+	double  min = 0;
+    double  max = 0;
+    int  m = cwmp->conf.retry_min_wait_interval;
+    int  k = cwmp->conf.retry_interval_multiplier;
+    int  exp = cwmp->retry_count_session;
+    if (exp == 0) return MAX_INT32;
+    if (exp > 10) exp = 10;
+    min = pow(((double)k/1000), (double)(exp-1)) * m;
+    max = pow(((double)k/1000), (double)exp) * m;
+    srand (time(NULL));
+    retry_count = rand() % ((int)max + 1 - (int)min) + (int)min;
+    return (retry_count);
 }
 
 static void cwmp_prepare_value_change (struct cwmp *cwmp, struct session *session)

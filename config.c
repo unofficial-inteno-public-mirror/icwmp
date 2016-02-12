@@ -514,6 +514,40 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+    if((error = uci_get_value(UCI_ACS_RETRY_MIN_WAIT_INTERVAL ,&value)) == CWMP_OK)
+    {
+        conf->retry_min_wait_interval = DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL;
+        if(value != NULL)
+        {
+            int a = atoi(value) ;
+            if ( a <= 65535 || a >=1) {
+                conf->retry_min_wait_interval = a;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
+    if((error = uci_get_value(UCI_ACS_RETRY_INTERVAL_MULTIPLIER ,&value)) == CWMP_OK)
+    {
+        conf->retry_interval_multiplier = DEFAULT_RETRY_INTERVAL_MULTIPLIER;
+        if(value != NULL)
+        {
+            int a = atoi(value) ;
+            if ( a <= 65535 || a >=1000) {
+                conf->retry_interval_multiplier = a;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
     if((error = uci_get_value(UCI_ACS_SSL_CAPATH,&value)) == CWMP_OK)
     {
         if(value != NULL)

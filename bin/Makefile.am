@@ -1,7 +1,7 @@
 bin_PROGRAMS = icwmpd
 CWMP_VERSION = 3.0
 
-icwmpd_SOURCES =				\
+icwmpd_SOURCES =			\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
@@ -30,7 +30,7 @@ icwmpd_SOURCES =				\
 	../dm/dmtree/landevice.c					\
 	../dm/dmtree/layer_2_bridging.c				\
 	../dm/dmtree/layer_3_forwarding.c			\
-	../dm/dmtree/managementserver.c				\	
+	../dm/dmtree/managementserver.c				\
 	../dm/dmtree/root.c							\
 	../dm/dmtree/times.c						\
 	../dm/dmtree/upnp.c							\
@@ -43,7 +43,7 @@ icwmpd_SOURCES =				\
 	../dm/dmtree/x_inteno_se_power_mgmt.c		\
 	../dm/dmtree/ippingdiagnostics.c			\
 	../dm/dmtree/x_inteno_syslog.c				\
-	../dm/dmtree/x_inteno_se_wifi.c			
+	../dm/dmtree/x_inteno_se_wifi.c
 
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
@@ -54,7 +54,7 @@ icwmpd_CFLAGS =			\
 	$(LIBCURL_CFLAGS)	\
 	$(LIBZSTREAM_CFLAGS)
 
-icwmpd_LDFLAGS =			\
+icwmpd_LDFLAGS =		\
 	$(AM_LDFLAGS)		\
 	$(LIBUCI_LDFLAGS)	\
 	$(LIBUBOX_LDFLAGS)	\
@@ -76,7 +76,8 @@ icwmpd_LDADD =			\
 	$(LSSL_LIBS)		\
 	$(LIBJSON_LIBS)		\
 	$(LBLOBMSG_LIBS)	\
-	$(LIBZ_LIBS)
+	$(LIBZ_LIBS)		\
+	$(LIBM_LIBS)
 
 icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 icwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"

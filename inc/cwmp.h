@@ -30,6 +30,8 @@
 #define CONNECTION_REQUEST_RESTRICT_REQUEST	50
 #define DEFAULT_CONNECTION_REQUEST_PORT		7547
 #define DEFAULT_LWN_PORT                    7547 
+#define DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL 5
+#define DEFAULT_RETRY_INTERVAL_MULTIPLIER	2000
 
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
@@ -45,6 +47,8 @@
 #define UCI_ACS_INSECURE_ENABLE				"cwmp.acs.insecure_enable" 
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
 #define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
+#define UCI_ACS_RETRY_MIN_WAIT_INTERVAL		"cwmp.acs.retry_min_wait_interval"
+#define UCI_ACS_RETRY_INTERVAL_MULTIPLIER	"cwmp.acs.retry_interval_multiplier"
 #define UCI_LOG_SEVERITY_PATH				"cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH					"cwmp.cpe.userid"
 #define UCI_CPE_PASSWD_PATH					"cwmp.cpe.passwd"
@@ -151,6 +155,8 @@ typedef struct config {
     time_t                              time;
     bool                                periodic_enable;
     bool                                insecure_enable;
+	int 								retry_min_wait_interval;
+    int 								retry_interval_multiplier;
 	bool                                lw_notification_enable;
     char                                *lw_notification_hostname;
     int                                 lw_notification_port;
