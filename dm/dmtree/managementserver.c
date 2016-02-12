@@ -237,7 +237,7 @@ int set_management_server_http_compression(char *refparam, struct dmctx *ctx, in
 {
 	switch (action) {
 		case VALUECHECK:
-			 if (0 == strcasecmp(value, "gzip") || 0 == strcasecmp(value, "deflate")) {
+			 if (0 == strcasecmp(value, "gzip") || 0 == strcasecmp(value, "deflate") || 0 == strncasecmp(value, "disable", 7)) {
 				 return 0;
 			 }
 			return FAULT_9007;

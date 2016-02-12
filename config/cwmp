@@ -8,6 +8,8 @@ config 'cwmp' 'acs'
 	option 'ParameterKey' ''
 	option 'dhcp_discovery' 'enable'
 	option 'dhcp_url_path' 'provisioning.iup.urlcwmp'
+	# compression possible configs: GZIP, Deflate, Disabled
+	option compression 'Disabled'
 
 config 'cwmp' 'cpe'
 	option 'interface' 'eth0.1'
