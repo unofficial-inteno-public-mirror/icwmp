@@ -524,6 +524,108 @@ create_value:
 	return 0;
 }
 
+static int xml_prepare_lwnotifications(mxml_node_t *parameter_list)
+{
+	mxml_node_t *b, *n;
+
+	struct list_head *p;
+	struct dm_parameter *lw_notification;
+	list_for_each(p, &list_lw_value_change) {
+		lw_notification = list_entry(p, struct dm_parameter, list);
+
+		n = mxmlNewElement(parameter_list, "Param");
+		if (!n) goto error;
+
+		b = mxmlNewElement(n, "Name");
+		if (!b) goto error;
+
+		b = mxmlNewText(b, 0, lw_notification->name);
+		if (!b) goto error;
+		printf("lw_notification->name %s \n",lw_notification->name);
+		
+		b = mxmlNewElement(n, "Value");
+		if (!b) goto error;
+		#ifdef ACS_MULTI
+				mxmlElementSetAttr(b, "xsi:type", lw_notification->type);
+		#endif
+		b = mxmlNewText(b, 0, lw_notification->data);
+		if (!b) goto error;
+		printf("lw_notification->data %s \n",lw_notification->data);
+	}
+	return 0;
+
+error:
+	return -1;
+}
+
+int xml_prepare_lwnotification_message(char **msg_out)
+{
+	mxml_node_t *tree, *b, *n, *parameter_list;
+	struct external_parameter *external_parameter;
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	conf = &(cwmp->conf);
+	char *c = NULL;
+	int counter = 0;
+
+	tree = mxmlLoadString(NULL, CWMP_LWNOTIFICATION_MESSAGE, MXML_NO_CALLBACK);
+	if (!tree) goto error;
+
+	b = mxmlFindElement(tree, tree, "TS", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	if (asprintf(&c, "%ld", time(NULL)) == -1)
+		goto error;
+	b = mxmlNewText(b, 0,c);
+	free(c);
+	if (!b) goto error;
+
+	b = mxmlFindElement(tree, tree, "UN", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	b = mxmlNewText(b, 0, conf->acs_userid);
+	if (!b) goto error;
+
+	b = mxmlFindElement(tree, tree, "CN", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	c = calculate_lwnotification_cnonce();
+	b = mxmlNewText(b, 0,c);
+	free(c);
+	if (!b) goto error;
+
+	b = mxmlFindElement(tree, tree, "OUI", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	b = mxmlNewText(b, 0, cwmp->deviceid.oui);
+	if (!b) goto error;
+
+	b = mxmlFindElement(tree, tree, "ProductClass", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	b = mxmlNewText(b, 0, cwmp->deviceid.productclass ? cwmp->deviceid.productclass : "");
+	if (!b) goto error;
+
+	b = mxmlFindElement(tree, tree, "SerialNumber", NULL, NULL, MXML_DESCEND);
+	if (!b) goto error;
+
+	b = mxmlNewText(b, 0, cwmp->deviceid.serialnumber ? cwmp->deviceid.serialnumber : "");
+	if (!b) goto error;
+
+	parameter_list = mxmlFindElement(tree, tree, "Notification", NULL, NULL, MXML_DESCEND);
+	if (!parameter_list) goto error;
+	if (xml_prepare_lwnotifications(parameter_list))
+		goto error;
+
+	*msg_out = mxmlSaveAllocString(tree, whitespace_cb);
+
+	mxmlDelete(tree);
+	return 0;
+
+error:
+	return -1;
+}
+
 int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *session, struct rpc *this)
 {
     struct dm_parameter *dm_parameter;

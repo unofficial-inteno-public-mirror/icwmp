@@ -221,6 +221,77 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 	return 0;
 }
 
+int get_lwn_protocol_supported(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "UDP";
+	return 0;
+}
+
+int get_lwn_protocol_used(char *refparam, struct dmctx *ctx, char **value)
+{
+	bool b;
+	char *tmp;
+	
+	dmuci_get_option_value_string("cwmp", "lwn", "enable", &tmp);
+	string_to_bool(tmp, &b);
+	if (b)
+		*value = "UDP";
+	else	
+		*value = "";
+	return 0;
+}
+
+int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if (strcmp(value,"UDP") ==0)
+				dmuci_set_value("cwmp", "lwn", "enable", "1");
+			else 
+				dmuci_set_value("cwmp", "lwn", "enable", "0");
+			return 0;
+	}
+	return 0;
+}
+
+int get_lwn_host(char *refparam, struct dmctx *ctx, char **value)
+{	
+	dmuci_get_option_value_string("cwmp", "lwn", "hostname", value);
+	return 0;
+}
+
+int set_lwn_host(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value("cwmp", "lwn", "hostname", value);		
+			return 0;
+	}
+	return 0;
+}
+
+int get_lwn_port(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "lwn", "port", value);
+	return 0;
+}
+
+int set_lwn_port(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value("cwmp", "lwn", "port", value);			
+			return 0;
+	}
+	return 0;
+}
+
 int get_management_server_http_compression_supportted(char *refparam, struct dmctx *ctx, char **value)
 {
 	*value = "GZIP,Deflate";
@@ -249,6 +320,7 @@ int set_management_server_http_compression(char *refparam, struct dmctx *ctx, in
 	return 0;
 }
 
+
 int entry_method_root_ManagementServer(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"ManagementServer.") {
@@ -265,6 +337,11 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("HTTPCompressionSupported", ctx, "0", get_management_server_http_compression_supportted, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("HTTPCompression", ctx, "1", get_management_server_http_compression, set_management_server_http_compression, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("LightweightNotificationProtocolsSupported", ctx, "0", get_lwn_protocol_supported, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("LightweightNotificationProtocolsUsed", ctx, "1", get_lwn_protocol_used, set_lwn_protocol_used, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UDPLightweightNotificationHost", ctx, "1", get_lwn_host, set_lwn_host, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UDPLightweightNotificationPort", ctx, "1", get_lwn_port, set_lwn_port, NULL, 0, 1, UNDEF, NULL);
+		
 		return 0;
 	}
 	return FAULT_9005;

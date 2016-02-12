@@ -166,6 +166,7 @@ int cwmp_rpc_acs_destroy_data_transfer_complete(struct session *session, struct 
 
 int xml_handle_message(struct session *session);
 int xml_prepare_msg_out(struct session *session);
+int xml_prepare_lwnotification_message(char **msg_out);
 int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int fault_code);
 int cwmp_get_fault_code (int fault_code);
 int cwmp_scheduleInform_remove_all();

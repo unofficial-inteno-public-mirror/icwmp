@@ -29,6 +29,7 @@
 #define CONNECTION_REQUEST_RESTRICT_PERIOD	5
 #define CONNECTION_REQUEST_RESTRICT_REQUEST	50
 #define DEFAULT_CONNECTION_REQUEST_PORT		7547
+#define DEFAULT_LWN_PORT                    7547 
 
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
@@ -55,6 +56,9 @@
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
 #define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+#define LW_NOTIFICATION_ENABLE              "cwmp.lwn.enable"
+#define LW_NOTIFICATION_HOSTNAME            "cwmp.lwn.hostname"
+#define LW_NOTIFICATION_PORT                "cwmp.lwn.port"
 
 
 enum end_session {
@@ -147,6 +151,9 @@ typedef struct config {
     time_t                              time;
     bool                                periodic_enable;
     bool                                insecure_enable;
+	bool                                lw_notification_enable;
+    char                                *lw_notification_hostname;
+    int                                 lw_notification_port;
 } config;
 
 typedef struct env {
@@ -235,6 +242,7 @@ typedef struct rpc {
 
 extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
+extern struct list_head list_lw_value_change;
 extern struct list_head list_value_change;
 extern pthread_mutex_t mutex_value_change;
 

@@ -72,6 +72,8 @@ icwmpd_LDADD =			\
 	$(LIBCURL_LIBS)		\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)	\
+	$(LCRYPTO_LIBS)		\
+	$(LSSL_LIBS)		\
 	$(LIBJSON_LIBS)		\
 	$(LBLOBMSG_LIBS)	\
 	$(LIBZ_LIBS)

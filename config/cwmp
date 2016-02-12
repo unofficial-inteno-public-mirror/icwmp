@@ -28,4 +28,8 @@ config 'cwmp' 'cpe'
 	option 'ubus_socket' '/var/run/ubus.sock'
 	option provisioning_code ''
 	option specversion '1.0'
+config 'cwmp' 'lwn'
+	option enable '1'
+	option hostname ''
+	option port ''
 

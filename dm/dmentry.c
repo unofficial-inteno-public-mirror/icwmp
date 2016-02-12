@@ -121,7 +121,11 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			if (setnotif && arg1 &&
 				(strcmp(arg1, "0") == 0 ||
 				strcmp(arg1, "1") == 0  ||
-				strcmp(arg1, "2") == 0)) {
+				strcmp(arg1, "2") == 0 ||
+				strcmp(arg1, "3") == 0 ||
+				strcmp(arg1, "4") == 0 ||
+				strcmp(arg1, "5") == 0 ||
+				strcmp(arg1, "6") == 0)) {
 				ctx->in_notification = arg1;
 				ctx->setaction = VALUECHECK;
 				fault = dm_entry_set_notification(ctx);
@@ -208,6 +212,7 @@ int dm_entry_load_enabled_notify()
 	dmctx.in_param = "";
 	dmctx.tree = true;
 
+	free_all_list_enabled_lwnotify();
 	free_all_list_enabled_notify();
 	dm_entry_enabled_notify(&dmctx);
 

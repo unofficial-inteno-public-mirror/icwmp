@@ -11,6 +11,12 @@
  */
 
 #include <pthread.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <openssl/hmac.h>
+#include <openssl/evp.h>
+#include <openssl/engine.h>
 #include "cwmp.h"
 #include "xml.h"
 #include "backupSession.h"
@@ -21,6 +27,7 @@
 #include "deviceinfo.h"
 
 LIST_HEAD(list_value_change);
+LIST_HEAD(list_lw_value_change);
 pthread_mutex_t mutex_value_change = PTHREAD_MUTEX_INITIALIZER;
 
 const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
@@ -155,16 +162,138 @@ inline void add_list_value_change(char *param_name, char *param_data, char *para
 	add_dm_parameter_tolist(&list_value_change, param_name, param_data, param_type);
 	pthread_mutex_unlock(&(mutex_value_change));
 }
+inline void add_lw_list_value_change(char *param_name, char *param_data, char *param_type)
+{
+	add_dm_parameter_tolist(&list_lw_value_change, param_name, param_data, param_type);
+	
+}
+
+void udplw_server_param(struct addrinfo **res)
+{
+	struct addrinfo hints = {0};
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	char *port;
+	conf = &(cwmp->conf);
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_DGRAM;
+	asprintf(&port, "%d", conf->lw_notification_port);
+	getaddrinfo(conf->lw_notification_hostname,port,&hints,res);
+	//FREE(port);
+}
+
+static void message_compute_signature(char *msg_out, char *signature)
+{
+	int i;
+	int result_len = 20;
+	unsigned char *result;
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	conf = &(cwmp->conf);
+	result = HMAC(EVP_sha1(), conf->acs_passwd, strlen(conf->acs_passwd),
+			msg_out, strlen(msg_out), NULL, NULL);
+	for (i = 0; i < result_len; i++) {
+		sprintf(&(signature[i * 2]), "%02X", result[i]);
+	}
+	signature[i * 2 ] = '\0';
+	FREE(result);
+}
+
+char *calculate_lwnotification_cnonce()
+{
+	int i;
+	char *cnonce = malloc( 33 * sizeof(char));
+	srand((unsigned int) time(NULL));
+	for (i = 0; i < 4; i++) {
+		sprintf(&(cnonce[i * 8]), "%08x", rand());
+	}
+	cnonce[i * 8 ] = '\0';
+	return cnonce;
+}
+
+static void send_udp_message(struct addrinfo *servaddr, char *msg)
+{
+	int fd;
+
+	fd = socket(servaddr->ai_family, SOCK_DGRAM, 0);
+	printf ("servaddr->ai_family %d \n", servaddr->ai_family);
+	printf ("fd: %d \n", fd);
+	
+	if ( fd >= 0) {
+		printf("msg %s \n", msg);
+		sendto(fd, msg, strlen(msg), 0, servaddr->ai_addr, servaddr->ai_addrlen);
+		close(fd);
+	}
+}
+
+void del_list_lw_notify(struct dm_parameter *dm_parameter)
+{
+	
+	list_del(&dm_parameter->list);
+	free(dm_parameter->name);
+	free(dm_parameter);
+}
+
+void free_all_list_lw_notify()
+{
+	struct dm_parameter *dm_parameter;
+	while (list_lw_value_change.next != &list_lw_value_change) {
+		dm_parameter = list_entry(list_lw_value_change.next, struct dm_parameter, list);
+		printf("before del_list_lw_notify \n");
+		del_list_lw_notify(dm_parameter);
+		printf("after del_list_lw_notify \n");
+	}
+}
+
+void cwmp_lwnotification()
+{
+	char *msg, *msg_out;
+	char signature[41];
+	struct addrinfo *servaddr;
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	conf = &(cwmp->conf);
+
+	printf("before udplw_server_param \n");
+	udplw_server_param(&servaddr);
+	printf("after udplw_server_param \n");
+	xml_prepare_lwnotification_message(&msg_out);
+	printf("after xml_prepare_lwnotification_message \n");
+	message_compute_signature(msg_out, signature);
+	printf("after message_compute_signature \n");
+	asprintf(&msg, "%s \n %s: %s \n %s: %s \n %s: %d\n %s: %s\n\n%s",
+			"POST /HTTPS/1.1",
+			"HOST",	conf->lw_notification_hostname,
+			"Content-Type", "test/xml; charset=utf-8",
+			"Content-Lenght", strlen(msg_out),
+			"Signature",signature,
+			msg_out);
+
+	send_udp_message(servaddr, msg);
+	printf("after send_udp_message \n");
+	free_all_list_lw_notify(); 
+	printf("free_all_list_enabled_lwnotify \n");
+
+	//freeaddrinfo(servaddr); //To check
+	printf("freeaddrinfo \n");
+	FREE(msg);
+	FREE(msg_out);
+}
 
 void cwmp_add_notification(void)
 {
+	int fault;
+	int i = 0;
 	struct event_container   *event_container;
 	struct cwmp   *cwmp = &cwmp_main;
 	struct dm_enabled_notify *p;
 	struct dm_parameter *dm_parameter;
 	struct dmctx dmctx = {0};
-	int fault;
+	struct config   *conf;
+	conf = &(cwmp->conf);	
 	bool isactive = false;
+	bool initiate = false;
+	bool lw_isactive = false;
 
 	pthread_mutex_lock(&(cwmp->mutex_session_send));
 	pthread_mutex_lock(&(cwmp->mutex_handle_notify));
@@ -174,19 +303,45 @@ void cwmp_add_notification(void)
 	dm_ctx_init(&dmctx);
 	list_for_each_entry(p, &list_enabled_notify, list) {
 		dm_ctx_init_sub(&dmctx);
+		initiate = true;
 		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
 		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
 			dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
 			if (strcmp(dm_parameter->data, p->value) != 0) {
 				dm_update_enabled_notify(p, dm_parameter->data);
+				if (p->notification[0] == '1' || p->notification[0] == '2' || p->notification[0] == '4' || p->notification[0] == '6' ) 
 				add_list_value_change(p->name, dm_parameter->data, dm_parameter->type);
 				if (p->notification[0] == '2')
 					isactive = true;
 			}
 		}
+		//dm_ctx_clean_sub(&dmctx);
+	}
+	//dm_ctx_clean(&dmctx);
+	//dm_ctx_init(&dmctx);
+	list_for_each_entry(p, &list_enabled_lw_notify, list) {
+		if (!initiate || i != 0)		
+			dm_ctx_init_sub(&dmctx);
+		i++;
+		if (!conf->lw_notification_enable)
+			break;		
+		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
+		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
+			dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
+			if (strcmp(dm_parameter->data, p->value) != 0) {
+				dm_update_enabled_notify(p, dm_parameter->data);
+				if (p->notification[0] >= '3' )
+					add_lw_list_value_change(p->name, dm_parameter->data, dm_parameter->type);
+				if (p->notification[0] == '5' || p->notification[0] == '6')
+					lw_isactive = true;
+			}
+		}
 		dm_ctx_clean_sub(&dmctx);
 	}
 	dm_ctx_clean(&dmctx);
+	if (lw_isactive) {
+		cwmp_lwnotification();
+	}
 	pthread_mutex_unlock(&(cwmp->mutex_session_send));
 	if (isactive)
 	{

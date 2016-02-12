@@ -74,11 +74,16 @@ static int get_linker_value_check_obj(DMOBJECT_API_ARGS);
 static int get_linker_value_check_param(DMPARAM_API_ARGS);
 
 LIST_HEAD(list_enabled_notify);
+LIST_HEAD(list_enabled_lw_notify);
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
 	[1] = {"1", "passive"},
-	[2] = {"2", "active"}
+	[2] = {"2", "active"},
+	[3] = {"3", "passive_lw"},
+	[4] = {"4", "passive_passive_lw"},
+	[5] = {"5", "active_lw"},
+	[6] = {"6", "passive_active_lw"}
 };
 
 struct prefix_method prefix_methods[] = {
@@ -258,6 +263,16 @@ void add_list_enabled_notify(char *param, char *notification, char *value)
 	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
 }
 
+void add_list_enabled_lwnotify(char *param, char *notification, char *value)
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+
+	dm_enabled_notify = calloc(1, sizeof(struct param_fault)); // Should be calloc and not dmcalloc
+	list_add_tail(&dm_enabled_notify->list, &list_enabled_lw_notify);
+	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
+	dm_enabled_notify->value = strdup(value); // Should be strdup and not dmstrdup
+	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
+}
 void del_list_enabled_notify(struct dm_enabled_notify *dm_enabled_notify)
 {
 	list_del(&dm_enabled_notify->list); // Should be free and not dmfree
@@ -272,6 +287,15 @@ void free_all_list_enabled_notify()
 	struct dm_enabled_notify *dm_enabled_notify;
 	while (list_enabled_notify.next != &list_enabled_notify) {
 		dm_enabled_notify = list_entry(list_enabled_notify.next, struct dm_enabled_notify, list);
+		del_list_enabled_notify(dm_enabled_notify);
+	}
+}
+
+void free_all_list_enabled_lwnotify()
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+	while (list_enabled_lw_notify.next != &list_enabled_lw_notify) {
+		dm_enabled_notify = list_entry(list_enabled_lw_notify.next, struct dm_enabled_notify, list);
 		del_list_enabled_notify(dm_enabled_notify);
 	}
 }
@@ -370,6 +394,15 @@ static int set_parameter_notification(char *param, char *value)
 		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", param);
 	} else if (strcmp(value, "2") == 0) {
 		dmuci_add_list_value("cwmp", "@notifications[0]", "active", param);
+	} else if (strcmp(value, "3") == 0) {
+		printf("notif value is 3 \n");
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_lw", param);
+	} else if (strcmp(value, "4") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_passive_lw", param);
+	} else if (strcmp(value, "5") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active_lw", param);
+	} else if (strcmp(value, "6") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_active_lw", param);
 	} else if (strcmp(value, "0") == 0) {
 		struct uci_list *list_notif;
 		struct uci_element *e;
@@ -1047,7 +1080,11 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
 	}
 
 	(get_cmd)(full_param, ctx, &value);
+	if (notification[0] == '1' || notification[0] == '2' || notification[0] == '4' || notification[0] == '6') 
 	add_list_enabled_notify(full_param, notification, value);
+	if (notification[0] >= '3') {
+		add_list_enabled_lwnotify(full_param, notification, value);
+	}
 	dmfree(full_param);
 	return 0;
 }

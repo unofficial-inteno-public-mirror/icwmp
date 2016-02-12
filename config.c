@@ -729,6 +729,58 @@ int get_global_config(struct config *conf)
     return CWMP_OK;
 }
 
+int get_lwn_config(struct config *conf)
+{
+    int error;
+    int a = 0;    
+    char *value = NULL;
+    if((error = uci_get_value(LW_NOTIFICATION_ENABLE,&value)) == CWMP_OK)
+    {
+	    if(value != NULL)
+        {
+            uppercase(value);
+            if ((strcmp(value,"TRUE")==0) || (strcmp(value,"1")==0))
+            {
+                conf->lw_notification_enable = true;
+            }
+            else
+            {
+                conf->lw_notification_enable = false;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    if((error = uci_get_value(LW_NOTIFICATION_HOSTNAME,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            conf->lw_notification_hostname = strdup(value);
+            free(value);
+            value = NULL;
+        }
+        else
+        {
+            conf->lw_notification_hostname = strdup(conf->acsurl);
+        }
+                
+    }
+    if((error = uci_get_value(LW_NOTIFICATION_PORT,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            a = atoi(value);
+            conf->lw_notification_port = a;
+            free(value);
+            value = NULL;
+        }
+        else
+        {
+            conf->lw_notification_port = DEFAULT_LWN_PORT;
+        }
+	}
+    return CWMP_OK;
+}
 int global_env_init (int argc, char** argv, struct env *env)
 {
     int i,error=0;
@@ -779,6 +831,7 @@ int global_conf_init (struct config *conf)
     {
         return error;
     }
+    get_lwn_config(conf);
     return CWMP_OK;
 }
 
