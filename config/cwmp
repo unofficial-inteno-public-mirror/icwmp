@@ -31,7 +31,9 @@ config 'cwmp' 'cpe'
 	option 'port' '7547'
 	option 'ubus_socket' '/var/run/ubus.sock'
 	option provisioning_code ''
-	option specversion '1.0'
+	option amd_version 2
+	# compression possible configs: InstanceNumber, InstanceAlias
+	option instance_mode InstanceAlias
 config 'cwmp' 'lwn'
 	option enable '1'
 	option hostname ''

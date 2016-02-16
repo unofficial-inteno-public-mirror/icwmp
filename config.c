@@ -813,6 +813,23 @@ int get_lwn_config(struct config *conf)
             conf->lw_notification_port = DEFAULT_LWN_PORT;
         }
 	}
+    if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
+    {
+        conf->amd_version = DEFAULT_AMD_VERSION;
+        if(value != NULL)
+        {
+            int a = atoi(value) ;
+            if ( a >= 1 ) {
+                conf->amd_version = a;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
     return CWMP_OK;
 }
 int global_env_init (int argc, char** argv, struct env *env)

@@ -32,6 +32,7 @@
 #define DEFAULT_LWN_PORT                    7547 
 #define DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL 5
 #define DEFAULT_RETRY_INTERVAL_MULTIPLIER	2000
+#define DEFAULT_AMD_VERSION                 2
 
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
@@ -59,6 +60,7 @@
 #define UCI_CPE_LOG_MAX_SIZE				"cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
+#define UCI_CPE_AMD_VERSION					"cwmp.cpe.amd_version"
 #define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
 #define LW_NOTIFICATION_ENABLE              "cwmp.lwn.enable"
 #define LW_NOTIFICATION_HOSTNAME            "cwmp.lwn.hostname"
@@ -160,6 +162,7 @@ typedef struct config {
 	bool                                lw_notification_enable;
     char                                *lw_notification_hostname;
     int                                 lw_notification_port;
+    unsigned int 						amd_version;
 } config;
 
 typedef struct env {
