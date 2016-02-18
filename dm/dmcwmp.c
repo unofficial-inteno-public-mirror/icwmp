@@ -254,7 +254,7 @@ void add_list_enabled_notify(char *param, char *notification, char *value)
 	dm_enabled_notify = calloc(1, sizeof(struct param_fault)); // Should be calloc and not dmcalloc
 	list_add_tail(&dm_enabled_notify->list, &list_enabled_notify);
 	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
-	dm_enabled_notify->value = strdup(value); // Should be strdup and not dmstrdup
+	dm_enabled_notify->value = value ? strdup(value) : strdup(""); // Should be strdup and not dmstrdup
 	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
 }
 
