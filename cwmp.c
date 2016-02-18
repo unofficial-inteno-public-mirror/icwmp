@@ -282,6 +282,7 @@ success:
 retry:
 	CWMP_LOG (INFO,"Failed");
 	session->error = CWMP_RETRY_SESSION;
+	event_remove_noretry_event_container(session);
 
 end:
 	MXML_DELETE(session->tree_in);

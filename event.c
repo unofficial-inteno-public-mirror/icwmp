@@ -261,6 +261,25 @@ int event_remove_all_event_container(struct session *session, int rem_from)
     return CWMP_OK;
 }
 
+int event_remove_noretry_event_container(struct session *session)
+{
+	struct event_container              *event_container;
+	struct dm_parameter                 *dm_parameter;
+
+	struct list_head *ilist, *q;
+	list_for_each_safe(ilist,q,&(session->head_event_container))
+	{
+		event_container = list_entry(ilist, struct event_container, list);
+		if (EVENT_CONST[event_container->code].RETRY == 0) {
+			free (event_container->command_key);
+			free_dm_parameter_all_fromlist(&(event_container->head_dm_parameter));
+			list_del(&(event_container->list));
+			free (event_container);
+		}        
+	}
+	return CWMP_OK;
+}
+
 int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
 {
     char                    *acsurl = NULL;
