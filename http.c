@@ -214,7 +214,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in)
 		FREE(*msg_in);
 
     curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
-    if (ip) {
+    if (ip && ip[0] != '\0') {
         if (!ip_acs || strcmp(ip_acs, ip) != 0) {
             FREE(ip_acs);
             ip_acs = strdup(ip);
