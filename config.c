@@ -759,10 +759,72 @@ int get_global_config(struct config *conf)
 	{
 		return error;
 	}
-
+    if((error = get_amd_version_config())!= CWMP_OK)
+    {
+    	return error;
+    }
+    if((error = get_instance_mode_config())!= CWMP_OK)
+     {
+       	return error;
+     }
     return CWMP_OK;
 }
 
+int get_amd_version_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.amd_version = DEFAULT_AMD_VERSION;
+		 printf("DEFAULT conf->amd_version = %d \n", cwmp->conf.amd_version );
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 printf("conf : value = %s \n", value );
+			 printf("conf : a = %d \n", a );
+			 if ( a >= 1 ) {
+				 cwmp->conf.amd_version = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_instance_mode_config()
+{
+	 int error;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_INSTANCE_MODE ,&value)) == CWMP_OK)
+	    {
+		 cwmp->conf.instance_mode = DEFAULT_INSTANCE_MODE;
+	        if(value != NULL)
+	        {
+	            if ( 0 == strcmp(value, "InstanceNumber") ) {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_NUMBER;
+	            } else {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_ALIAS;
+	            }
+	            free(value);
+	            value = NULL;
+	        }
+	        printf("config : conf->instance_mode  = %d \n", cwmp->conf.instance_mode  );
+	    }
+	    else
+	    {
+	        return error;
+	    }
+	 return CWMP_OK;
+}
 int get_lwn_config(struct config *conf)
 {
     int error;
@@ -813,23 +875,6 @@ int get_lwn_config(struct config *conf)
             conf->lw_notification_port = DEFAULT_LWN_PORT;
         }
 	}
-    if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
-    {
-        conf->amd_version = DEFAULT_AMD_VERSION;
-        if(value != NULL)
-        {
-            int a = atoi(value) ;
-            if ( a >= 1 ) {
-                conf->amd_version = a;
-            }
-            free(value);
-            value = NULL;
-        }
-    }
-    else
-    {
-        return error;
-    }
     return CWMP_OK;
 }
 int global_env_init (int argc, char** argv, struct env *env)

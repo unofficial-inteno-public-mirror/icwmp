@@ -343,6 +343,7 @@ int set_management_server_retry_min_wait_interval(char *refparam, struct dmctx *
 	}
 	return 0;
 }
+
 int get_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "retry_interval_multiplier", value);
@@ -361,6 +362,40 @@ int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx
 			return FAULT_9007;
 		case VALUESET:
 			dmuci_set_value("cwmp", "acs", "retry_interval_multiplier", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_alias_based_addressing(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "cpe", "amd_version", value);
+	if((*value)[0] == '\0'|| atoi(value) <= 4) {
+		*value = "false";
+	}
+	else {
+		*value = "true";
+	}
+	return 0;
+}
+
+int get_instance_mode(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "cpe", "instance_mode", value);
+	return 0;
+}
+
+int set_instance_mode(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			if (0 == strcmp(value, "InstanceNumber") || 0 == strcmp(value, "InstanceAlias") ) {
+				return 0;
+			}
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "cpe", "instance_mode", value);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
@@ -389,6 +424,9 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 		DMPARAM("UDPLightweightNotificationPort", ctx, "1", get_lwn_port, set_lwn_port, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("CWMPRetryMinimumWaitInterval", ctx, "1", get_management_server_retry_min_wait_interval, set_management_server_retry_min_wait_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("CWMPRetryIntervalMultiplier", ctx, "1", get_management_server_retry_interval_multiplier, set_management_server_retry_interval_multiplier, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("AliasBasedAddressing", ctx, "0", get_alias_based_addressing, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
+		DMPARAM("InstanceMode", ctx, "1", get_instance_mode, set_instance_mode, NULL, 0, 1, UNDEF, NULL);
+
 		return 0;
 	}
 	return FAULT_9005;

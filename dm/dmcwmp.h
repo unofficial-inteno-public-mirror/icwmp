@@ -137,6 +137,10 @@ struct dmctx
 	char *addobj_instance;
 	char *linker;
 	char *linker_param;
+	unsigned int alias_register;
+	unsigned int nbrof_instance;
+	unsigned int amd_version;
+	unsigned int instance_mode;
 	char current_obj[512];
 };
 
@@ -193,10 +197,22 @@ enum fault_code {
 	__FAULT_MAX
 };
 
+enum {
+	INSTANCE_UPDATE_NUMBER,
+	INSTANCE_UPDATE_ALIAS
+};
+
+enum instance_mode {
+	INSTANCE_MODE_NUMBER,
+	INSTANCE_MODE_ALIAS
+};
+
 extern struct list_head list_enabled_notify;
 extern struct list_head list_enabled_lw_notify;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
+char *update_instance_alias(int action, void *argv[]);
+char *update_instance_without_section(int action, void *argv[]);
 int get_empty(char *refparam, struct dmctx *args, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type);
 void del_list_parameter(struct dm_parameter *dm_parameter);
@@ -225,6 +241,7 @@ void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
 char *get_last_instance(char *package, char *section, char *opt_inst);
 char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
+char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char * (*up_instance)(int action, void *argv[]), int argc, ...);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

@@ -15,6 +15,7 @@
 #include "dmubus.h"
 #include "dmuci.h"
 #include "dmentry.h"
+#include "cwmp.h"
 
 LIST_HEAD(head_package_change);
 
@@ -26,6 +27,7 @@ int dm_global_init(void)
 
 static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 {
+	struct cwmp   *cwmp = &cwmp_main;
 	if (custom == CTX_INIT_ALL) {
 		memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
 		INIT_LIST_HEAD(&dmubus_ctx.obj_head);
@@ -35,6 +37,10 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 	INIT_LIST_HEAD(&ctx->list_parameter);
 	INIT_LIST_HEAD(&ctx->set_list_tmp);
 	INIT_LIST_HEAD(&ctx->list_fault_param);
+	ctx->amd_version = cwmp->conf.amd_version;
+	ctx->instance_mode = cwmp->conf.instance_mode;
+	printf("ctx->amd_version = %d \n", ctx->amd_version);
+	printf("ctx->instance_mode = %d \n", ctx->instance_mode);
 	return 0;
 }
 
@@ -57,6 +63,8 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 
 int dm_ctx_init(struct dmctx *ctx)
 {
+	get_amd_version_config();
+	get_instance_mode_config();
 	dm_ctx_init_custom(ctx, CTX_INIT_ALL);
 	return 0;
 }
@@ -79,6 +87,26 @@ int dm_ctx_clean_sub(struct dmctx *ctx)
 	return 0;
 }
 
+void dmentry_instance_lookup_inparam(struct dmctx *ctx)
+{
+	char *pch, *spch, *in_param;
+	in_param = dmstrdup(ctx->in_param);
+	pch = strtok_r(in_param, ".", &spch);
+	int i = 0;
+	for (pch = strtok_r(in_param, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+		printf("alz: pch = %s \n", pch);
+		if (pch[0]== '[') {
+			ctx->alias_register |= (1 << i);
+			i++;
+		}
+		else if (isdigit(pch[0])) {
+			i++;
+		}
+	}
+	dmfree(in_param);
+	ctx->nbrof_instance = i;
+	printf("ctx->nbrof_instance  = %d \n", ctx->nbrof_instance );
+}
 
 int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1, char *arg2)
 {
@@ -87,7 +115,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	
 	if (!inparam) inparam = "";
 	ctx->in_param = inparam;
-
+	dmentry_instance_lookup_inparam(ctx);
 	if (ctx->in_param[0] == '\0' || strcmp(ctx->in_param, DMROOT) == 0) {
 		ctx->tree = true;
 	} else {

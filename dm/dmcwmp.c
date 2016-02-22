@@ -30,6 +30,7 @@
 #include "layer_2_bridging.h"
 #include "ippingdiagnostics.h"
 #include "x_inteno_syslog.h"
+#include "dmentry.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -119,6 +120,36 @@ int dm_entry_set_prefix_methods_enable(void)
 	return 0;
 }
 
+char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char * (*up_instance)(int action, void *argv[]), int argc, ...)
+{
+	va_list arg;
+	char *instance, *inst_mode;
+	char *alias;
+	int i = 0;
+	int pos = instance_ranck - 1;
+	unsigned int alias_resister = 0, max, action;
+	void *argv[argc];
+
+	va_start(arg,argc);
+	for (i=0; i<argc; i++)
+	{
+		argv[i] = va_arg(arg, void*);
+	}
+	va_end(arg);
+	printf("ctx->amd_version = %d \n", ctx->amd_version);
+	if (ctx->amd_version >= 4) {
+		if(pos < ctx->nbrof_instance) {
+			action = (ctx->alias_register & (1 << pos)) ? INSTANCE_UPDATE_ALIAS : INSTANCE_UPDATE_NUMBER;
+		} else {
+			action = (ctx->instance_mode == INSTANCE_MODE_ALIAS) ? INSTANCE_UPDATE_ALIAS : INSTANCE_UPDATE_NUMBER;
+		}
+	} else {
+		action = INSTANCE_UPDATE_NUMBER;
+	}
+	instance = up_instance(action, argv);
+	return instance;
+
+}
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 {
 	char *instance;
@@ -135,6 +166,63 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 	return instance;
 }
 
+char *update_instance_alias(int action, void *argv[])
+{
+	char *instance;
+	char *alias;
+	char buf[12] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *last_inst = (char *) argv[1];
+	char *inst_opt = (char *) argv[2];
+	char *alias_opt = (char *) argv[3];
+
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			dmuci_get_value_by_section_string(s, inst_opt, &instance);
+			if (instance[0] == '\0') {
+				if (last_inst == NULL)
+					sprintf(buf, "%d", 1);
+				else
+					sprintf(buf, "%d", atoi(last_inst)+1);
+				instance = dmuci_set_value_by_section(s, inst_opt, buf);
+			}
+			sprintf(buf, "cpe-%s", instance);
+			alias = dmuci_set_value_by_section(s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	} else {
+		dmuci_get_value_by_section_string(s, inst_opt, &instance);
+		if (instance[0] == '\0') {
+			if (last_inst == NULL)
+				sprintf(buf, "%d", 1);
+			else
+				sprintf(buf, "%d", atoi(last_inst)+1);
+			instance = dmuci_set_value_by_section(s, inst_opt, buf);
+		}
+	}
+	return instance;
+}
+
+char *update_instance_without_section(int action, void *argv[])
+{
+	char *instance;
+	char *alias;
+	char buf[12] = {0};
+
+	int instnbr = (int) argv[0];
+
+	if (action == INSTANCE_MODE_ALIAS) {
+		sprintf(buf, "[cpe-%d]", instnbr);
+		instance = dmstrdup(buf);
+	} else {
+		sprintf(buf, "%d", instnbr);
+		instance = dmstrdup(buf);
+	}
+	return instance;
+}
 char *get_last_instance(char *package, char *section, char *opt_inst)
 {
 	struct uci_section *s;
