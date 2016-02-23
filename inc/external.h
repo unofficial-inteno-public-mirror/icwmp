@@ -23,8 +23,11 @@ static char *fc_script = "/usr/sbin/icwmp";
 
 void external_downloadFaultResp (char *fault_code);
 void external_fetch_downloadFaultResp (char **fault_code);
+void external_uploadFaultResp (char *fault_code);
+void external_fetch_uploadFaultResp (char **fault_code);
 int external_simple(char *command, char *arg);
 int external_download(char *url, char *size, char *type, char *user, char *pass);
+int external_upload(char *url, char *type, char *user, char *pass);
 int external_apply(char *action, char *arg);
 int external_handle_action(int (*external_handler)(char *msg));
 void external_add_list_paramameter(char *param_name, char *param_data, char *param_type, char *fault_code);

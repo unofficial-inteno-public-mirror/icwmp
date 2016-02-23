@@ -53,6 +53,8 @@ void bkp_session_insert_schedule_inform(time_t schedule_time,char *command_key);
 void bkp_session_delete_schedule_inform(time_t schedule_time,char *command_key);
 void bkp_session_insert_download(struct download *pdownload);
 void bkp_session_delete_download(struct download *pdownload);
+void bkp_session_insert_upload(struct upload *pupload);
+void bkp_session_delete_upload(struct upload *pupload);
 void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_complete);
 void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_complete);
 

@@ -553,6 +553,7 @@ int main(int argc, char **argv)
     pthread_t                       handle_notify_thread;
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
+    pthread_t                       upload_thread;
     pthread_t                       ubus_thread;
     pthread_t                       http_cr_server_thread;
     struct sigaction                act = {0};
@@ -614,6 +615,11 @@ int main(int argc, char **argv)
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
 
+    error = pthread_create(&upload_thread, NULL, &thread_cwmp_rpc_cpe_upload, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the download thread!");
+    }
     cwmp_schedule_session(cwmp);
 #if 1
     pthread_join(ubus_thread, NULL);
@@ -622,6 +628,7 @@ int main(int argc, char **argv)
     pthread_join(handle_notify_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
+    pthread_join(upload_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
     exit_ipping_diagnostic();
     CWMP_LOG(INFO,"EXIT ICWMP");

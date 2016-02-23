@@ -26,8 +26,11 @@
 #include "deviceinfo.h"
 
 LIST_HEAD(list_download);
+LIST_HEAD(list_upload);
 static pthread_mutex_t		mutex_download = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t		threshold_download;
+static pthread_mutex_t		mutex_upload = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t		threshold_upload;
 int							count_download_queue = 0;
 int							count_schedule_inform_queue = 0;
 
@@ -85,6 +88,7 @@ const struct rpc_cpe_method rpc_cpe_methods[] = {
 	[RPC_CPE_DELETE_OBJECT] 				= {"DeleteObject", cwmp_handle_rpc_cpe_delete_object},
 	[RPC_CPE_REBOOT] 						= {"Reboot", cwmp_handle_rpc_cpe_reboot},
 	[RPC_CPE_DOWNLOAD] 						= {"Download", cwmp_handle_rpc_cpe_download},
+	[RPC_CPE_UPLOAD] 						= {"Upload", cwmp_handle_rpc_cpe_upload},
 	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset", cwmp_handle_rpc_cpe_factory_reset},
 	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform", cwmp_handle_rpc_cpe_schedule_inform},
 	[RPC_CPE_FAULT] 						= {"Fault", cwmp_handle_rpc_cpe_fault}
@@ -1979,6 +1983,62 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
     return error;
 }
 
+int cwmp_launch_upload(struct upload *pupload, struct transfer_complete **ptransfer_complete)
+{
+    int							i, error = FAULT_CPE_NO_FAULT;
+    char						*upload_startTime;
+    struct transfer_complete	*p;
+    char						*fault_code;
+    
+    upload_startTime = mix_get_time();
+
+    bkp_session_delete_upload(pupload);
+    bkp_session_save();
+
+    external_upload(pupload->url, pupload->file_type,
+    		pupload->username, pupload->password);
+    external_handle_action(cwmp_handle_uploadFault);
+    external_fetch_uploadFaultResp(&fault_code);
+
+    if(fault_code != NULL)
+    {
+    	if(fault_code[0]=='9')
+    	{
+			for(i=1;i<__FAULT_CPE_MAX;i++)
+			{
+				if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+				{
+					error = i;
+					break;
+				}
+			}
+    	}
+    	free(fault_code);
+    }
+    /*else {
+    	error = FAULT_CPE_INTERNAL_ERROR;
+    }*/
+
+	p = calloc (1,sizeof(struct transfer_complete));
+	if(p == NULL)
+	{
+		error = FAULT_CPE_INTERNAL_ERROR;
+		return error;
+	}
+
+	p->command_key			= strdup(pupload->command_key);
+	p->start_time 			= strdup(upload_startTime);
+	p->complete_time		= strdup(mix_get_time());
+	if(error != FAULT_CPE_NO_FAULT)
+	{
+		p->fault_code 		= error;
+	}
+
+	*ptransfer_complete = p;
+
+    return error;
+}
+
 void *thread_cwmp_rpc_cpe_download (void *v)
 {
     struct cwmp                     			*cwmp = (struct cwmp *)v;
@@ -2014,6 +2074,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
                     ptransfer_complete->complete_time	= strdup(ptransfer_complete->start_time);
                     ptransfer_complete->fault_code		= error;
 
+                    ptransfer_complete->type = TYPE_DOWNLOAD;
                     bkp_session_insert_transfer_complete(ptransfer_complete);
                     cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
                 }
@@ -2097,6 +2158,121 @@ void *thread_cwmp_rpc_cpe_download (void *v)
     return NULL;
 }
 
+void *thread_cwmp_rpc_cpe_upload (void *v)
+{
+    struct cwmp                     			*cwmp = (struct cwmp *)v;
+    struct upload          					*pupload;
+    struct timespec                 			upload_timeout = {0, 0};
+    time_t                          			current_time, stime;
+    int											i,error = FAULT_CPE_NO_FAULT;
+    struct transfer_complete					*ptransfer_complete;
+    long int									time_of_grace = 3600,timeout;
+    char										*fault_code;
+
+    for(;;)
+    {
+        if (list_upload.next!=&(list_upload)) {
+            pupload = list_entry(list_upload.next,struct upload, list);
+            stime = pupload->scheduled_time;
+            current_time    = time(NULL);
+            if(pupload->scheduled_time != 0)
+                timeout = current_time - pupload->scheduled_time;
+            else
+                timeout = 0;
+            if((timeout >= 0)&&(timeout > time_of_grace))
+            {
+                pthread_mutex_lock (&mutex_upload);
+                bkp_session_delete_upload(pupload);
+                ptransfer_complete = calloc (1,sizeof(struct transfer_complete));
+                if(ptransfer_complete != NULL)
+                {
+                    error = FAULT_CPE_DOWNLOAD_FAILURE;
+
+                    ptransfer_complete->command_key		= strdup(pupload->command_key);
+                    ptransfer_complete->start_time 		= strdup(mix_get_time());
+                    ptransfer_complete->complete_time	= strdup(ptransfer_complete->start_time);
+                    ptransfer_complete->fault_code		= error;
+                    ptransfer_complete->type			= TYPE_UPLOAD;
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                }
+                list_del (&(pupload->list));
+                if(pupload->scheduled_time != 0)
+                    count_download_queue--;
+                cwmp_free_upload_request(pupload);
+                pthread_mutex_unlock (&mutex_download);
+                continue;
+            }
+            if((timeout >= 0)&&(timeout <= time_of_grace))
+            {
+                pthread_mutex_lock (&(cwmp->mutex_session_send));
+                external_init();
+                CWMP_LOG(INFO,"Launch upload file %s",pupload->url);
+                error = cwmp_launch_upload(pupload,&ptransfer_complete);
+                if(error != FAULT_CPE_NO_FAULT)
+                {
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    bkp_session_save();
+                    cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                    bkp_session_delete_transfer_complete(ptransfer_complete);
+                }
+                else
+                {
+                    bkp_session_insert_transfer_complete(ptransfer_complete);
+                    bkp_session_save();
+                    //external_apply("download", pdownload->file_type); !!!
+                    external_handle_action(cwmp_handle_uploadFault); //IBH TO ADD
+                    external_fetch_uploadFaultResp(&fault_code); //IBH TO ADD
+                    if(fault_code != NULL)
+                    {
+                        if(fault_code[0]=='9')
+                        {
+                            for(i=1;i<__FAULT_CPE_MAX;i++)
+                            {
+                                if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
+                                {
+                                    error = i;
+                                    break;
+                                }
+                            }
+                        }
+                        free(fault_code);
+                        if((error == FAULT_CPE_NO_FAULT) &&
+                            (pupload->file_type[0] == '1' || pupload->file_type[0] == '3')) //IBH TO ADD
+                        {
+                            exit(EXIT_SUCCESS);
+                        }
+                        bkp_session_delete_transfer_complete(ptransfer_complete);
+                        ptransfer_complete->fault_code = error;
+                        bkp_session_insert_transfer_complete(ptransfer_complete);
+                        bkp_session_save();
+                        cwmp_root_cause_TransferComplete (cwmp,ptransfer_complete);
+                    }
+                }
+                external_exit();
+                pthread_mutex_unlock (&(cwmp->mutex_session_send));
+                pthread_cond_signal (&(cwmp->threshold_session_send));
+                pthread_mutex_lock (&mutex_upload);
+                list_del (&(pupload->list));
+                if(pupload->scheduled_time != 0)
+                    count_download_queue--;
+                cwmp_free_upload_request(pupload);
+                pthread_mutex_unlock (&mutex_upload);
+                continue;
+            }
+        pthread_mutex_lock (&mutex_upload);
+        upload_timeout.tv_sec = stime;
+        pthread_cond_timedwait(&threshold_upload, &mutex_upload, &upload_timeout);
+        pthread_mutex_unlock (&mutex_upload);
+        } else {
+            pthread_mutex_lock (&mutex_upload);
+            pthread_cond_wait(&threshold_upload, &mutex_upload);
+            pthread_mutex_unlock (&mutex_upload);
+        }
+    }
+    return NULL;
+}
+
 int cwmp_free_download_request(struct download *download)
 {
 	if(download != NULL)
@@ -2122,6 +2298,35 @@ int cwmp_free_download_request(struct download *download)
 			free(download->password);
 		}
 		free(download);
+	}
+	return CWMP_OK;
+}
+
+int cwmp_free_upload_request(struct upload *upload)
+{
+	if(upload != NULL)
+	{
+		if(upload->command_key != NULL)
+		{
+			free(upload->command_key);
+		}
+		if(upload->file_type != NULL)
+		{
+			free(upload->file_type);
+		}
+		if(upload->url != NULL)
+		{
+			free(upload->url);
+		}
+		if(upload->username != NULL)
+		{
+			free(upload->username);
+		}
+		if(upload->password != NULL)
+		{
+			free(upload->password);
+		}
+		free(upload);
 	}
 	return CWMP_OK;
 }
@@ -2339,6 +2544,193 @@ error:
 	return -1;
 }
 
+
+
+int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
+{
+	mxml_node_t 				*n, *t, *b = session->body_in;
+	pthread_t           		upload_thread;
+	char 						*c, *tmp, *file_type = NULL;
+	int							error = FAULT_CPE_NO_FAULT;
+	struct upload 			*upload,*iupload;
+	struct transfer_complete 	*ptransfer_complete;
+	struct list_head    		*ilist;
+	time_t             			scheduled_time;
+	time_t 						upload_delay;
+	bool                		cond_signal = false;
+
+	if (asprintf(&c, "%s:%s", ns.cwmp, "Upload") == -1)
+	{
+		error = FAULT_CPE_INTERNAL_ERROR;
+		goto fault;
+	}
+
+	n = mxmlFindElement(session->tree_in, session->tree_in, c, NULL, NULL, MXML_DESCEND);
+	FREE(c);
+
+	if (!n) return -1;
+	b = n;
+
+	upload = calloc (1,sizeof(struct upload));
+	if (upload == NULL)
+	{
+		error = FAULT_CPE_INTERNAL_ERROR;
+		goto fault;
+	}
+
+	while (b != NULL) {
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "CommandKey")) {
+			upload->command_key = strdup(b->value.text.string);
+		}
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "FileType")) {
+			if(upload->file_type == NULL)
+			{
+				upload->file_type = strdup(b->value.text.string);
+				file_type = strdup(b->value.text.string);
+			}
+			else
+			{
+				tmp = file_type;
+				if (asprintf(&file_type,"%s %s",tmp, b->value.text.string) == -1)
+				{
+					error = FAULT_CPE_INTERNAL_ERROR;
+					goto fault;
+				}
+				FREE(tmp);
+			}
+		}
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "URL")) {
+			upload->url = strdup(b->value.text.string);
+		}
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "Username")) {
+			upload->username = strdup(b->value.text.string);
+		}
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "Password")) {
+			upload->password = strdup(b->value.text.string);
+		}
+		if (b && b->type == MXML_TEXT &&
+			b->value.text.string &&
+			b->parent->type == MXML_ELEMENT &&
+			!strcmp(b->parent->value.element.name, "DelaySeconds")) {
+			upload_delay = atol(b->value.text.string);
+		}
+		b = mxmlWalkNext(b, n, MXML_DESCEND);
+	}
+
+	if(strcmp(file_type,"3 Vendor Configuration File") &&
+		strcmp(file_type,"4 Vendor Log File"))
+	{
+		error = FAULT_CPE_REQUEST_DENIED;
+	}
+	else if(count_download_queue>=MAX_DOWNLOAD_QUEUE)
+	{
+		error = FAULT_CPE_RESOURCES_EXCEEDED;
+	}
+	else if((upload->url == NULL || ((upload->url != NULL) && (strcmp(upload->url,"")==0))))
+	{
+		error = FAULT_CPE_REQUEST_DENIED;
+	}
+	else if(strstr(upload->url,"@") != NULL)
+	{
+		error = FAULT_CPE_INVALID_ARGUMENTS;
+	}
+	else if(strncmp(upload->url,DOWNLOAD_PROTOCOL_HTTP,strlen(DOWNLOAD_PROTOCOL_HTTP))!=0 &&
+			strncmp(upload->url,DOWNLOAD_PROTOCOL_FTP,strlen(DOWNLOAD_PROTOCOL_FTP))!=0)
+	{
+		error = FAULT_CPE_FILE_TRANSFER_UNSUPPORTED_PROTOCOL;
+	}
+
+	FREE(file_type);
+	if(error != FAULT_CPE_NO_FAULT)
+		goto fault;
+
+	t = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body", NULL, NULL, MXML_DESCEND);
+	if (!t) goto fault;
+
+	t = mxmlNewElement(t, "cwmp:UploadResponse");
+	if (!t) goto fault;
+
+	b = mxmlNewElement(t, "Status");
+	if (!b) goto fault;
+
+	b = mxmlNewText(b, 0, "1");
+	if (!b) goto fault;
+
+	b = b->parent->parent;
+	b = mxmlNewElement(t, "StartTime");
+	if (!b) goto fault;
+
+	b = mxmlNewText(b, 0, "0001-01-01T00:00:00+00:00");
+	if (!b) goto fault;
+
+	b = b->parent->parent;
+	b = mxmlNewElement(t, "CompleteTime");
+	if (!b) goto fault;
+
+	b = mxmlNewText(b, 0, "0001-01-01T00:00:00+00:00");
+	if (!b) goto fault;
+
+	if(error == FAULT_CPE_NO_FAULT)
+	{
+		pthread_mutex_lock (&mutex_upload);
+		if(upload_delay != 0)
+			scheduled_time = time(NULL) + upload_delay;
+
+		list_for_each(ilist,&(list_upload))
+		{
+			iupload = list_entry(ilist,struct upload, list);
+			if (iupload->scheduled_time >= scheduled_time)
+			{
+				break;
+			}
+		}
+		list_add (&(upload->list), ilist->prev);
+		if(upload_delay != 0)
+		{
+			count_download_queue++;
+			upload->scheduled_time	= scheduled_time;
+		}
+		bkp_session_insert_upload(upload);
+		bkp_session_save();
+		if(upload_delay != 0)
+		{
+			CWMP_LOG(INFO,"Upload will start in %us",upload_delay);
+		}
+		else
+		{
+			CWMP_LOG(INFO,"Upload will start at the end of session");
+		}
+
+		pthread_mutex_unlock (&mutex_upload);
+		pthread_cond_signal(&threshold_upload);
+	}
+
+	return 0;
+
+fault:
+    cwmp_free_upload_request(upload);
+	if (cwmp_create_fault_message(session, rpc, error))
+		goto error;
+	return 0;
+
+error:
+	return -1;
+}
 /*
  * [FAULT]: Fault
  */

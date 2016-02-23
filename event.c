@@ -506,7 +506,16 @@ int cwmp_root_cause_TransferComplete (struct cwmp *cwmp, struct transfer_complet
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
         return CWMP_MEM_ERR;
     }
+    switch (p->type) {
+        case TYPE_DOWNLOAD:
     event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Download, p->command_key?p->command_key:"");
+		if (event_container == NULL)
+		{
+			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+			return CWMP_MEM_ERR;
+		}		
+	case TYPE_UPLOAD:
+		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Upload, p->command_key?p->command_key:"");
     if (event_container == NULL)
     {
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));

@@ -14,6 +14,7 @@
 #define _JSHN_H__
 
 int cwmp_handle_downloadFault(char *msg);
+int cwmp_handle_uploadFault(char *msg);
 int cwmp_handle_getParamValues(char *msg);
 int cwmp_handle_setParamValues(char *msg);
 int cwmp_handle_getParamNames(char *msg);

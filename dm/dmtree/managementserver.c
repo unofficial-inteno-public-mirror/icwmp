@@ -247,10 +247,14 @@ int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, int action, char *v
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			if (strcmp(value,"UDP") ==0)
+			if (strcmp(value,"UDP") ==0) {
 				dmuci_set_value("cwmp", "lwn", "enable", "1");
-			else 
+				cwmp_set_end_session(END_SESSION_RELOAD);
+			} 
+			else {
 				dmuci_set_value("cwmp", "lwn", "enable", "0");
+				cwmp_set_end_session(END_SESSION_RELOAD);
+			}
 			return 0;
 	}
 	return 0;
@@ -268,7 +272,8 @@ int set_lwn_host(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value("cwmp", "lwn", "hostname", value);		
+			dmuci_set_value("cwmp", "lwn", "hostname", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
 	return 0;
@@ -286,7 +291,8 @@ int set_lwn_port(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value("cwmp", "lwn", "port", value);			
+			dmuci_set_value("cwmp", "lwn", "port", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;
 	}
 	return 0;

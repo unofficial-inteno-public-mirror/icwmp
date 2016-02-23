@@ -272,6 +272,39 @@ void bkp_session_insert_download(struct download *pdownload)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
+void bkp_session_insert_upload(struct upload *pupload)
+{
+	struct search_keywords	keys[6];
+	char 					schedule_time[128];
+	mxml_node_t 			*b;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	sprintf(schedule_time,"%ld",pupload->scheduled_time);
+	keys[0].name = "url";
+	keys[0].value = pupload->url;
+	keys[1].name = "command_key";
+	keys[1].value = pupload->command_key;
+	keys[2].name = "file_type";
+	keys[2].value = pupload->file_type;
+	keys[3].name = "username";
+	keys[3].value = pupload->username;
+	keys[4].name = "password";
+	keys[4].value = pupload->password;
+	keys[5].name = "time";
+	keys[5].value = schedule_time;
+	b = bkp_session_node_found(bkp_tree, "upload", keys, 6);
+	if(!b)
+	{
+		b = bkp_session_insert(bkp_tree,"upload",NULL);
+		bkp_session_insert(b,"url",pupload->url);
+		bkp_session_insert(b,"command_key",pupload->command_key);
+		bkp_session_insert(b,"file_type",pupload->file_type);
+		bkp_session_insert(b,"username",pupload->username);
+		bkp_session_insert(b,"password",pupload->password);
+		bkp_session_insert(b,"time",schedule_time);
+	}
+	pthread_mutex_unlock (&mutex_backup_session);
+}
 void bkp_session_delete_download(struct download *pdownload)
 {
 	struct search_keywords keys[7];
@@ -302,9 +335,34 @@ void bkp_session_delete_download(struct download *pdownload)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
+void bkp_session_delete_upload(struct upload *pupload)
+{
+	struct search_keywords keys[6];
+	char schedule_time[128];
+	mxml_node_t *b;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	sprintf(schedule_time,"%ld",pupload->scheduled_time);
+	keys[0].name = "url";
+	keys[0].value = pupload->url;
+	keys[1].name = "command_key";
+	keys[1].value = pupload->command_key;
+	keys[2].name = "file_type";
+	keys[2].value = pupload->file_type;
+	keys[3].name = "username";
+	keys[3].value = pupload->username;
+	keys[4].name = "password";
+	keys[4].value = pupload->password;
+	keys[5].name = "time";
+	keys[5].value = schedule_time;
+	b = bkp_session_node_found(bkp_tree, "upload", keys, 6);
+	if(b)
+		mxmlDelete(b);
+	pthread_mutex_unlock (&mutex_backup_session);
+}
 void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_complete)
 {
-	struct search_keywords	keys[4];
+	struct search_keywords	keys[5];
 	char					fault_code[16];
 	mxml_node_t 			*b;
 
@@ -318,7 +376,9 @@ void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_co
 	keys[2].value = ptransfer_complete->complete_time;
 	keys[3].name = "fault_code";
 	keys[3].value = fault_code;
-	b = bkp_session_node_found(bkp_tree, "transfer_complete", keys, 4);
+	keys[4].name = "type";
+	keys[4].value = ptransfer_complete->type;
+	b = bkp_session_node_found(bkp_tree, "transfer_complete", keys, 5);
 	if(!b)
 	{
 		b = bkp_session_insert(bkp_tree,"transfer_complete",NULL);
@@ -327,13 +387,14 @@ void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_co
 		bkp_session_insert(b,"complete_time",ptransfer_complete->complete_time);
 		bkp_session_insert(b,"old_software_version",ptransfer_complete->old_software_version);
 		bkp_session_insert(b,"fault_code",fault_code);
+		bkp_session_insert(b,"fault_code",ptransfer_complete->type);
 	}
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
 void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_complete)
 {
-	struct search_keywords	keys[4];
+	struct search_keywords	keys[5];
 	char					fault_code[16];
 	mxml_node_t 			*b;
 
@@ -347,7 +408,9 @@ void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_co
 	keys[2].value = ptransfer_complete->complete_time;
 	keys[3].name = "fault_code";
 	keys[3].value = fault_code;
-	b = bkp_session_node_found(bkp_tree, "transfer_complete", keys, 4);
+	keys[4].name = "type";
+	keys[4].value = ptransfer_complete->type;
+	b = bkp_session_node_found(bkp_tree, "transfer_complete", keys, 5);
 	if(b)
 		mxmlDelete(b);
 	pthread_mutex_unlock (&mutex_backup_session);
@@ -612,6 +675,100 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 		count_download_queue++;
 }
 
+void load_upload(mxml_node_t *tree,struct cwmp *cwmp)
+{
+	mxml_node_t			*b = tree, *c;
+	struct upload		*upload_request = NULL;
+    struct list_head	*ilist = NULL;
+    struct upload		*iupload_request = NULL;
+
+	upload_request = calloc(1,sizeof(struct upload));
+
+	b = mxmlWalkNext(b, tree, MXML_DESCEND);
+
+	while (b) {
+		if (b && b->type == MXML_ELEMENT) {
+			if (strcmp(b->value.element.name, "url") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->url = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "command_key") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->command_key = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "file_type") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->file_type = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "username") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->username = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "password") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->password = strdup(c->value.text.string);
+					}
+				}
+			}			
+			else if (strcmp(b->value.element.name, "time") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						upload_request->scheduled_time = atol(c->value.text.string);
+					}
+				}
+			}
+		}
+		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
+	}
+	list_for_each(ilist,&(list_download))
+	{
+		iupload_request = list_entry(ilist,struct upload,list);
+		if (iupload_request->scheduled_time > upload_request->scheduled_time)
+		{
+			break;
+		}
+	}
+	list_add (&(upload_request->list), ilist->prev);
+	if(upload_request->scheduled_time != 0)
+		count_download_queue++;
+}
 void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 {
 	mxml_node_t						*b = tree, *c;
@@ -782,6 +939,10 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "download") == 0)
 			{
 				load_download(b,cwmp);
+			}
+			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "upload") == 0)
+			{
+				load_upload(b,cwmp);
 			}
 			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "transfer_complete") == 0)
 			{

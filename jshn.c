@@ -85,3 +85,34 @@ error:
 	jshn_message_delete();
 	return -1;
 }
+
+enum upload_fault {
+	UPLOAD_FAULT,
+	__UPLOAD_MAX
+};
+
+char *upload_fault_policy[] = {
+	[UPLOAD_FAULT] = "fault_code"
+};
+int
+cwmp_handle_uploadFault(char *msg)
+{
+	int tmp;
+	char *tb[__UPLOAD_MAX] = {0};
+
+	jshn_message_parse(upload_fault_policy, ARRAYSIZEOF(upload_fault_policy), tb, msg);
+
+	if (!tb[UPLOAD_FAULT])
+		goto error;
+
+	DD(INFO,"triggered handle upload fault %s", tb[UPLOAD_FAULT]);
+
+	external_uploadFaultResp (tb[UPLOAD_FAULT]);
+
+	jshn_message_delete();
+	return 0;
+
+error:
+	jshn_message_delete();
+	return -1;
+}

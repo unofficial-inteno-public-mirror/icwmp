@@ -43,6 +43,7 @@ enum rpc_cpe_methods_idx {
 	RPC_CPE_DELETE_OBJECT,
 	RPC_CPE_REBOOT,
 	RPC_CPE_DOWNLOAD,
+	RPC_CPE_UPLOAD,
 	RPC_CPE_FACTORY_RESET,
 	RPC_CPE_SCHEDULE_INFORM,
 	RPC_CPE_FAULT,
@@ -55,6 +56,12 @@ enum rpc_acs_methods_idx {
 	RPC_ACS_GET_RPC_METHODS,
 	RPC_ACS_TRANSFER_COMPLETE,
 	__RPC_ACS_MAX
+};
+
+enum load_type {
+	TYPE_DOWNLOAD = 1,
+	TYPE_SCHEDULE_DOWNLOAD,
+	TYPE_UPLOAD
 };
 
 enum fault_cpe_idx {
@@ -124,18 +131,30 @@ typedef struct download {
 	char 								*password;
 } download;
 
+typedef struct upload {
+    struct list_head                    list;
+    time_t                              scheduled_time;
+	char 								*command_key;
+	char 								*file_type;
+	char 								*url;
+	char 								*username;
+	char 								*password;
+} upload;
+
 typedef struct transfer_complete {
 	int									fault_code;
 	char 								*command_key;
 	char 								*start_time;
 	char 								*complete_time;
 	char 								*old_software_version;
+	int								type;
 } transfer_complete;
 
 #define MXML_DELETE(X)  do {if (X) { mxmlDelete(X); X = NULL; } } while(0)
 
 extern struct list_head		list_schedule_inform;
 extern struct list_head		list_download;
+extern struct list_head		list_upload;
 extern int					count_download_queue;
 extern const struct rpc_cpe_method rpc_cpe_methods[__RPC_CPE_MAX];
 extern const struct rpc_acs_method rpc_acs_methods[__RPC_ACS_MAX];
@@ -153,6 +172,7 @@ int cwmp_handle_rpc_cpe_add_object(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_delete_object(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc);
+int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_fault(struct session *session, struct rpc *rpc);
@@ -174,6 +194,7 @@ int cwmp_scheduledDownload_remove_all();
 struct transfer_complete *cwmp_set_data_rpc_acs_transferComplete();
 void *thread_cwmp_rpc_cpe_scheduleInform (void *v);
 void *thread_cwmp_rpc_cpe_download (void *v);
+void *thread_cwmp_rpc_cpe_upload (void *v);
 
 
 const char *whitespace_cb(mxml_node_t *node, int where);

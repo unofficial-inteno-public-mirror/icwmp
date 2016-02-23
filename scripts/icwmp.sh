@@ -19,6 +19,7 @@ TMP_SET_NOTIFICATION="/tmp/.tmp_set_notification"
 FAULT_CPE_NO_FAULT="0"
 FAULT_CPE_INTERNAL_ERROR="2"
 FAULT_CPE_DOWNLOAD_FAILURE="10"
+FAULT_CPE_UPLOAD_FAILURE="11"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 
 for ffile in `ls /usr/share/icwmp/functions/`; do
@@ -66,6 +67,13 @@ case "$1" in
 		__arg4="$5"
 		__arg5="$6"
 		action="download"
+		;;
+	upload)
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
+		__arg4="$5"
+		action="upload"
 		;;
 	factory_reset)
 		action="factory_reset"
@@ -240,7 +248,24 @@ handle_action() {
 			fi
 		fi
 	fi
-
+	if [ "$action" = "upload" ]; then
+		local fault_code="9000"
+		if [ "$__arg3" = "" -o "$__arg4" = "" ];then
+			curl -T /etc/config/cwmp "$__arg1" 2> /dev/null #TO ADD IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		else
+			curl -T /etc/config/cwmp -u $__arg3:$__arg4 "$__arg1" 2> /dev/null #TO ADD IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		fi		
+	fi
 	if [ "$action" = "apply_download" ]; then
 		case "$__arg1" in
 			1) icwmp_apply_firmware ;;
@@ -321,6 +346,13 @@ handle_action() {
 					json_get_var __arg4 user
 					json_get_var __arg5 pass
 					action="download"
+					;;
+				upload)
+					json_get_var __arg1 url
+					json_get_var __arg2 type
+					json_get_var __arg3 user
+					json_get_var __arg4 pass
+					action="upload"
 					;;
 				factory_reset)
 					action="factory_reset"
