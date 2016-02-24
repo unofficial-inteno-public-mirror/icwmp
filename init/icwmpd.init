@@ -145,6 +145,15 @@ cwmp_wait_net() {
 	done
 }
 
+cwmp_wait_dnsmasq() {
+	local tm=1
+	while [ "$(pidof dnsmasq)" == "" ]; do
+		sleep $tm
+		[ $tm -ge 10 ] && break
+		tm=$((tm+1))
+	done
+}
+
 service_running() {
 	ubus -t 2 wait_for asterisk
 }
@@ -159,6 +168,7 @@ start_service() {
 		check_dhcp
 		check_acs_url
 		cwmp_wait_net
+		cwmp_wait_dnsmasq
 		procd_open_instance
 		procd_set_param command "$PROG"
 		if [ "$1" = "GetRPCMethods" ];then
