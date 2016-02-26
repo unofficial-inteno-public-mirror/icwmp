@@ -767,6 +767,10 @@ int get_global_config(struct config *conf)
      {
        	return error;
      }
+	if((error = get_session_timeout_config())!= CWMP_OK)
+    {
+    	return error;
+    }
     return CWMP_OK;
 }
 
@@ -787,6 +791,32 @@ int get_amd_version_config()
 			 printf("conf : a = %d \n", a );
 			 if ( a >= 1 ) {
 				 cwmp->conf.amd_version = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_session_timeout_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_SESSION_TIMEOUT ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.session_timeout = DEFAULT_SESSION_TIMEOUT;
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 if ( a >= 1 ) {
+				 cwmp->conf.session_timeout = a;
 			 }
 			 free(value);
 			 value = NULL;

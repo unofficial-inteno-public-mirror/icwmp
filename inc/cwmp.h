@@ -34,7 +34,7 @@
 #define DEFAULT_RETRY_INTERVAL_MULTIPLIER	2000
 #define DEFAULT_AMD_VERSION                 2
 #define DEFAULT_INSTANCE_MODE               0
-
+#define DEFAULT_SESSION_TIMEOUT				60
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
 #define UCI_DHCP_ACS_URL_PATH				"cwmp.acs.dhcp_url_path"
@@ -63,6 +63,7 @@
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
 #define UCI_CPE_AMD_VERSION					"cwmp.cpe.amd_version"
 #define UCI_CPE_INSTANCE_MODE				"cwmp.cpe.instance_mode"
+#define UCI_CPE_SESSION_TIMEOUT				"cwmp.cpe.session_timeout"
 #define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
 #define LW_NOTIFICATION_ENABLE              "cwmp.lwn.enable"
 #define LW_NOTIFICATION_HOSTNAME            "cwmp.lwn.hostname"
@@ -166,6 +167,7 @@ typedef struct config {
     int                                 lw_notification_port;
     unsigned int 						amd_version;
     unsigned int 						instance_mode;
+	unsigned int 						session_timeout;
 } config;
 
 typedef struct env {

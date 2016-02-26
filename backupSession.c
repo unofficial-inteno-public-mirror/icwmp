@@ -387,7 +387,7 @@ void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_co
 		bkp_session_insert(b,"complete_time",ptransfer_complete->complete_time);
 		bkp_session_insert(b,"old_software_version",ptransfer_complete->old_software_version);
 		bkp_session_insert(b,"fault_code",fault_code);
-		bkp_session_insert(b,"fault_code",ptransfer_complete->type);
+		bkp_session_insert(b,"type",ptransfer_complete->type);
 	}
 	pthread_mutex_unlock (&mutex_backup_session);
 }

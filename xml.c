@@ -630,6 +630,22 @@ error:
 	return -1;
 }
 
+char* xml_get_cwmp_version (int version) 
+{
+	int k;	
+	char tmp[10]  = "";
+	static char versions[60] = "";  
+    
+        for (k=0; k < version; k++) {
+            if (k == 0)
+                sprintf(tmp, "1.%d", k);   
+            else 
+                sprintf(tmp, ", 1.%d", k);
+            strcat(versions, tmp);
+        }
+	return versions;
+}
+
 int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *session, struct rpc *this)
 {
     struct dm_parameter *dm_parameter;
@@ -657,6 +673,22 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 #endif
 	if (!tree) goto error;
 
+	if ( cwmp->conf.amd_version >= 4 ) {
+		b = mxmlFindElement(tree, tree, "soap_env:Header", NULL, NULL, MXML_DESCEND);
+		if (!b) goto error;
+		node = mxmlNewElement(b, "cwmp:SessionTimeout");
+		if (!node) goto error;
+		mxmlElementSetAttr(node, "soap_env:mustUnderstand", "0");
+		node = mxmlNewInteger(node, cwmp->conf.session_timeout);
+		if (!node) goto error;
+	}
+	if ( cwmp->conf.amd_version >= 5 ) {
+		node = mxmlNewElement(b, "cwmp:SupportedCWMPVersions");
+		if (!node) goto error;
+		mxmlElementSetAttr(node, "soap_env:mustUnderstand", "0");
+		node = mxmlNewText(node, 0,  xml_get_cwmp_version(cwmp->conf.amd_version)); 
+		if (!node) goto error;
+	} 
 	b = mxmlFindElement(tree, tree, "RetryCount", NULL, NULL, MXML_DESCEND);
 	if (!b) goto error;
 

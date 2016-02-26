@@ -34,6 +34,7 @@ config 'cwmp' 'cpe'
 	option amd_version '2'
 	# compression possible configs: InstanceNumber, InstanceAlias
 	option instance_mode 'InstanceAlias'
+	option session_timeout '60'
 config 'cwmp' 'lwn'
 	option enable '1'
 	option hostname ''
