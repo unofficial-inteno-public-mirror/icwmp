@@ -94,15 +94,15 @@ inline void init_laninterface_lan(struct dmctx *ctx)
 /////////////SUB ENTRIES///////////////
 inline int entry_laninterface_lan(struct dmctx *ctx)
 {
-	int ei=1, i=0;
+	char ei[12];
+	int i=0;
 	struct linterfargs *args = &cur_linterfargs;
 	ctx->args = (void *)args;
 	laninterface_lookup(args->eths, &(args->eths_size));
 	while (args->eths[i]) {
 		init_lan_interface_args(args->eths[i]);
+		sprintf(ei,"%d",++i);
 		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
-		i++;
-		ei++;
 	}
 	return 0;
 }
@@ -110,10 +110,11 @@ inline int entry_laninterface_lan(struct dmctx *ctx)
 inline int entry_laninterface_wlan(struct dmctx *ctx)
 {
 	struct uci_section *s = NULL;
-	int wi=1;
+	char wi[12];
+	int i=0;
 	uci_foreach_sections("wireless", "wifi-iface", s) {
+		sprintf(wi,"%d",++i);
 		SUBENTRY(entry_laninterface_wlan_instance, ctx, wi);
-		wi++;
 	}
 	return 0;
 }
@@ -134,15 +135,15 @@ int entry_method_root_InternetGatewayDevice_LANInterfaces(struct dmctx *ctx)
 	return FAULT_9005;
 }
 
-inline int entry_laninterface_lan_instance(struct dmctx *ctx, int li)
+inline int entry_laninterface_lan_instance(struct dmctx *ctx, char *li)
 {
-	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%d.", ctx, "0", 1, NULL, NULL, NULL, li);
+	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%s.", ctx, "0", 1, NULL, NULL, NULL, li);
 	DMPARAM("X_INTENO_COM_EthName", ctx, "0", get_eth_name, NULL, NULL, 0, 1, UNDEF, NULL);
 	return 0;
 }
 
-inline int entry_laninterface_wlan_instance(struct dmctx *ctx, int wli)
+inline int entry_laninterface_wlan_instance(struct dmctx *ctx, char  *wli)
 {
-	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%d.", ctx, "0", 1, NULL, NULL, NULL, wli);
+	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%s.", ctx, "0", 1, NULL, NULL, NULL, wli);
 	return 0;
 }

@@ -392,3 +392,55 @@ void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname
 	dmstrappendend(p);
 	dmfree(ifname);
 }
+
+void update_section_option_list(char *config, char *section, char *option, char *option_2,char *val, char *val_2, char *name)
+{
+	char *add_value;
+	int i = 0;
+	char *baseifname;
+	struct uci_section *prev_s= NULL, *s;
+	char *instance = NULL, *last_instance  = NULL, *value;
+	bool add_sec = true;
+	
+	if (name[0] == '\0') {
+		add_sec = false;
+	}
+	uci_foreach_option_eq(config, section, option_2, val_2, s) {
+		dmuci_get_value_by_section_string(s, option, &baseifname);
+		if (!strstr(name, baseifname))
+		{
+			//delete section if baseifname  does not belong to name
+			if (prev_s) {
+				dmuci_delete_by_section(prev_s, NULL, NULL);
+			}
+			prev_s = s;
+		} else if (strstr(name, baseifname) && (strcmp(baseifname,val) ==0)) {
+			//dont add baseifname if exist 
+			add_sec = false;
+		}
+	}
+	if (prev_s) {
+		dmuci_delete_by_section(prev_s, NULL, NULL);
+	}
+	if(add_sec) {
+		dmuci_add_section(config, section, &s, &add_value);
+		dmuci_set_value_by_section(s, option, val);
+		dmuci_set_value_by_section(s, option_2, val_2);
+	}
+}
+
+void update_section_list(char *config, char *section, char *option, int number, char *wlan)
+{
+	char *add_value;
+	struct uci_section *s = NULL;
+	int i = 0;
+
+	uci_foreach_option_eq(config, section, option, wlan, s) {
+		return;
+	}
+	while (i<number) {
+		dmuci_add_section(config, section, &s, &add_value);
+		dmuci_set_value_by_section(s, option, wlan);
+		i++;
+	}
+}

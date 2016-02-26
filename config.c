@@ -761,15 +761,15 @@ int get_global_config(struct config *conf)
 	}
     if((error = get_amd_version_config())!= CWMP_OK)
     {
-    	return error;
+        return error;
     }
     if((error = get_instance_mode_config())!= CWMP_OK)
-     {
-       	return error;
-     }
+    {
+        return error;
+    }
 	if((error = get_session_timeout_config())!= CWMP_OK)
     {
-    	return error;
+        return error;
     }
     return CWMP_OK;
 }
@@ -783,12 +783,9 @@ int get_amd_version_config()
 	 if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
 	 {
 		 cwmp->conf.amd_version = DEFAULT_AMD_VERSION;
-		 printf("DEFAULT conf->amd_version = %d \n", cwmp->conf.amd_version );
 		 if(value != NULL)
 		 {
 			 a = atoi(value) ;
-			 printf("conf : value = %s \n", value );
-			 printf("conf : a = %d \n", a );
 			 if ( a >= 1 ) {
 				 cwmp->conf.amd_version = a;
 			 }
@@ -847,7 +844,6 @@ int get_instance_mode_config()
 	            free(value);
 	            value = NULL;
 	        }
-	        printf("config : conf->instance_mode  = %d \n", cwmp->conf.instance_mode  );
 	    }
 	    else
 	    {

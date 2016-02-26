@@ -39,8 +39,6 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 	INIT_LIST_HEAD(&ctx->list_fault_param);
 	ctx->amd_version = cwmp->conf.amd_version;
 	ctx->instance_mode = cwmp->conf.instance_mode;
-	printf("ctx->amd_version = %d \n", ctx->amd_version);
-	printf("ctx->instance_mode = %d \n", ctx->instance_mode);
 	return 0;
 }
 
@@ -91,10 +89,8 @@ void dmentry_instance_lookup_inparam(struct dmctx *ctx)
 {
 	char *pch, *spch, *in_param;
 	in_param = dmstrdup(ctx->in_param);
-	pch = strtok_r(in_param, ".", &spch);
 	int i = 0;
 	for (pch = strtok_r(in_param, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
-		printf("alz: pch = %s \n", pch);
 		if (pch[0]== '[') {
 			ctx->alias_register |= (1 << i);
 			i++;
@@ -105,7 +101,6 @@ void dmentry_instance_lookup_inparam(struct dmctx *ctx)
 	}
 	dmfree(in_param);
 	ctx->nbrof_instance = i;
-	printf("ctx->nbrof_instance  = %d \n", ctx->nbrof_instance );
 }
 
 int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1, char *arg2)
