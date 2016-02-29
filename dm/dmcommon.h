@@ -69,6 +69,6 @@ int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_st
 int network_get_ipaddr(char **value, char *iface);
 void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname);
 void update_section_option_list(char *config, char *section, char *option, char *option_2,char *val, char *val_2, char *name);
-void update_section_list(char *config, char *section, char *option, int number, char *wlan);
+void update_section_list(char *config, char *section, char *option, int number, char *filter);
 
 #endif

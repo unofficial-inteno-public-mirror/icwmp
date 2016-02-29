@@ -429,18 +429,25 @@ void update_section_option_list(char *config, char *section, char *option, char 
 	}
 }
 
-void update_section_list(char *config, char *section, char *option, int number, char *wlan)
+
+void update_section_list(char *config, char *section, char *option, int number, char *filter)
 {
 	char *add_value;
 	struct uci_section *s = NULL;
 	int i = 0;
 
-	uci_foreach_option_eq(config, section, option, wlan, s) {
-		return;
+	if(option) {
+		uci_foreach_option_eq(config, section, option, filter, s) {
+					return;
+		}
+	} else {
+		uci_foreach_sections(config, section, s) {
+			return;
+		}
 	}
 	while (i<number) {
 		dmuci_add_section(config, section, &s, &add_value);
-		dmuci_set_value_by_section(s, option, wlan);
+		if(option)dmuci_set_value_by_section(s, option, filter);
 		i++;
 	}
 }

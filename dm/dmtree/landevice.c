@@ -2828,7 +2828,6 @@ inline int entry_landevice_wlanconfiguration_presharedkey(struct dmctx *ctx, cha
 	update_section_list("dmmap","wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection));
 	uci_foreach_option_eq("dmmap", "wlan-psk", "wlan", section_name(wlanargs->lwlansection), s) {
 		wlanargs->pki++;
-		printf("CHEK PKI = %d \n", wlanargs->pki);
 		ipk =  handle_update_instance(3, ctx, &ipk_last, update_instance_alias, 3, s, "pskinstance", "pskalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_presharedkey_instance, ctx, idev, iwlan, ipk); //"$wunit" "$wlctl_num" "$uci_num" are not needed
 	}

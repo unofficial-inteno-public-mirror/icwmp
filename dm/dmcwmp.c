@@ -155,16 +155,13 @@ char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 {
 	char *instance;
-	char buf[8] = {0};
+	void *argv[3];
 
-	dmuci_get_value_by_section_string(s, inst_opt, &instance);
-	if (instance[0] == '\0') {
-		if (last_inst == NULL)
-			sprintf(buf, "%d", 1);
-		else
-			sprintf(buf, "%d", atoi(last_inst)+1);
-		instance = dmuci_set_value_by_section(s, inst_opt, buf);
-	}
+	argv[0]= s;
+	argv[1]= inst_opt;
+	argv[2]= "";
+
+	instance = update_instance_alias(0, &last_inst, argv);
 	return instance;
 }
 
