@@ -94,14 +94,17 @@ inline void init_laninterface_lan(struct dmctx *ctx)
 /////////////SUB ENTRIES///////////////
 inline int entry_laninterface_lan(struct dmctx *ctx)
 {
-	char ei[12];
-	int i=0;
+	char *ei, *ei_last = NULL;
+	int i = 0;
 	struct linterfargs *args = &cur_linterfargs;
 	ctx->args = (void *)args;
+	struct uci_section *s = NULL;
+
 	laninterface_lookup(args->eths, &(args->eths_size));
-	while (args->eths[i]) {
-		init_lan_interface_args(args->eths[i]);
-		sprintf(ei,"%d",++i);
+	update_section_list("dmmap","lan_port", NULL, args->eths_size, NULL);
+	uci_foreach_sections("dmmap", "lan_port", s) {
+		init_lan_interface_args(args->eths[i++]);
+		ei =  handle_update_instance(1, ctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
 		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
 	}
 	return 0;
@@ -110,10 +113,9 @@ inline int entry_laninterface_lan(struct dmctx *ctx)
 inline int entry_laninterface_wlan(struct dmctx *ctx)
 {
 	struct uci_section *s = NULL;
-	char wi[12];
-	int i=0;
+	char *wi, *wi_last = NULL;
 	uci_foreach_sections("wireless", "wifi-iface", s) {
-		sprintf(wi,"%d",++i);
+		wi =  handle_update_instance(1, ctx, &wi_last, update_instance_alias, 3, s, "lanintwlaninstance", "lanintwlanalias");
 		SUBENTRY(entry_laninterface_wlan_instance, ctx, wi);
 	}
 	return 0;
