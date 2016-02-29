@@ -159,10 +159,15 @@ int get_forwarding_last_inst()
 	return max;
 }
 
-char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *inst_opt, bool *find_max)
+char *forwarding_update_instance_alias(int action, char **last_inst, void *argv[])
 {
-	char *instance;
+	char *instance, *alias;
 	char buf[8] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+	bool *find_max = (bool *) argv[3];
 
 	dmuci_get_value_by_section_string(s, inst_opt, &instance);
 	if (instance[0] == '\0') {
@@ -175,31 +180,38 @@ char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *i
 			sprintf(buf, "%d", 1);
 		}
 		else {
-			sprintf(buf, "%d", atoi(last_inst)+1);
+			sprintf(buf, "%d", atoi(*last_inst)+1);
 		}
 		instance = dmuci_set_value_by_section(s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = dmuci_set_value_by_section(s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
 	}
 	return instance;
 }
 
-char *forwarding_update_instance_dynamic(struct proc_route *proute, char *last_inst, char *inst_opt, bool *find_max)
+struct uci_section *update_route_dynamic_section(struct proc_route *proute)
 {
-	struct uci_section *s;
-	char *instance, *name, *mask;
-	char buf[8] = {0};
-
+	struct uci_section *s = NULL;
+	char *name, *mask;
 	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
-		dmuci_get_value_by_section_string(s, "netmask", &mask);
-		if (strcmp(proute->mask, mask) == 0)
-			break;
-	}
-	if (!s) {
-		dmuci_add_section("dmmap", "route_dynamic", &s, &name);
-		dmuci_set_value_by_section(s, "target", proute->destination);
-		dmuci_set_value_by_section(s, "netmask", proute->mask);
-	}
-	instance = forwarding_update_instance(s, last_inst, inst_opt, find_max);
-	return instance;
+			dmuci_get_value_by_section_string(s, "netmask", &mask);
+			if (strcmp(proute->mask, mask) == 0)
+				return s;
+		}
+		if (!s) {
+			dmuci_add_section("dmmap", "route_dynamic", &s, &name);
+			dmuci_set_value_by_section(s, "target", proute->destination);
+			dmuci_set_value_by_section(s, "netmask", proute->mask);
+		}
+		return s;
 }
 
 int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value)
@@ -596,21 +608,21 @@ int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 /////////////SUB ENTRIES///////////////
 inline int entry_layer3_forwarding(struct dmctx *ctx)
 {
-	char *iroute = NULL;
+	char *iroute = NULL, *iroute_last = NULL;
 	char *permission = "1";
-	struct uci_section *s = NULL;
+	struct uci_section *s = NULL, *ss = NULL;
 	FILE* fp = NULL;
 	char line[MAX_PROC_ROUTE];
 	struct proc_route proute;
 	bool find_max = true;
 	uci_foreach_sections("network", "route", s) {
 		init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);
-		iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
+		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
 		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
 		init_args_rentry(ctx, s, "1", NULL, ROUTE_DISABLED);
-		iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
+		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
 		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
 	}
 	fp = fopen(ROUTE_FILE, "r");
@@ -625,7 +637,8 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 			if (is_proute_static(&proute))
 				continue;
 			init_args_rentry(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
-			iroute = forwarding_update_instance_dynamic(&proute, iroute, "routeinstance", &find_max);
+			ss = update_route_dynamic_section(&proute);
+			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
 			SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, "0");
 		}
 		fclose(fp) ;
