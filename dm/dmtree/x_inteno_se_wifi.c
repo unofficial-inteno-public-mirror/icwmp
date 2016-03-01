@@ -109,13 +109,13 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 /////////////SUB ENTRIES///////////////
 inline int entry_sewifi_radio(struct dmctx *ctx)
 {
-	char *wnum;
+	char *wnum, *wnum_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_sections("wireless", "wifi-device", s) {
 		init_se_wifi(ctx, s);
 		wnum = section_name(s);
 		wnum += 2;
-		dmasprintf(&wnum, "%d", atoi(wnum) + 1);
+		wnum = handle_update_instance(3, ctx, &wnum_last, update_instance_without_section, 1,  atoi(wnum) + 1);
 		SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
 		dmfree(wnum);
 	}
