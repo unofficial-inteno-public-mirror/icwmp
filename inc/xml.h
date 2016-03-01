@@ -46,6 +46,7 @@ enum rpc_cpe_methods_idx {
 	RPC_CPE_UPLOAD,
 	RPC_CPE_FACTORY_RESET,
 	RPC_CPE_SCHEDULE_INFORM,
+	RPC_CPE_CANCEL_TRANSFER,
 	RPC_CPE_FAULT,
 	__RPC_CPE_MAX
 };
@@ -142,7 +143,7 @@ typedef struct upload {
 } upload;
 
 typedef struct transfer_complete {
-	int									fault_code;
+	int								fault_code;
 	char 								*command_key;
 	char 								*start_time;
 	char 								*complete_time;
@@ -174,6 +175,8 @@ int cwmp_handle_rpc_cpe_reboot(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc);
+int cancel_transfer(char * key);
+int cwmp_handle_rpc_cpe_cancel_transfer(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_fault(struct session *session, struct rpc *rpc);
 
@@ -191,6 +194,7 @@ int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int 
 int cwmp_get_fault_code (int fault_code);
 int cwmp_scheduleInform_remove_all();
 int cwmp_scheduledDownload_remove_all();
+int cwmp_scheduledUpload_remove_all();
 struct transfer_complete *cwmp_set_data_rpc_acs_transferComplete();
 void *thread_cwmp_rpc_cpe_scheduleInform (void *v);
 void *thread_cwmp_rpc_cpe_download (void *v);

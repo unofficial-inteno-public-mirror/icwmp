@@ -757,7 +757,7 @@ void load_upload(mxml_node_t *tree,struct cwmp *cwmp)
 		}
 		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
 	}
-	list_for_each(ilist,&(list_download))
+	list_for_each(ilist,&(list_upload))
 	{
 		iupload_request = list_entry(ilist,struct upload,list);
 		if (iupload_request->scheduled_time > upload_request->scheduled_time)

@@ -90,6 +90,7 @@ const struct rpc_cpe_method rpc_cpe_methods[] = {
 	[RPC_CPE_DOWNLOAD] 						= {"Download", cwmp_handle_rpc_cpe_download},
 	[RPC_CPE_UPLOAD] 						= {"Upload", cwmp_handle_rpc_cpe_upload},
 	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset", cwmp_handle_rpc_cpe_factory_reset},
+	[RPC_CPE_CANCEL_TRANSFER] 				= {"CancelTransfer", cwmp_handle_rpc_cpe_cancel_transfer},	
 	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform", cwmp_handle_rpc_cpe_schedule_inform},
 	[RPC_CPE_FAULT] 						= {"Fault", cwmp_handle_rpc_cpe_fault}
 };
@@ -1709,6 +1710,87 @@ error:
 }
 
 /*
+ * [RPC CPE]: CancelTransfer
+ */
+
+int cwmp_handle_rpc_cpe_cancel_transfer(struct session *session, struct rpc *rpc)
+{
+	mxml_node_t *b;
+	char *command_key = NULL;
+
+	b = session->body_in;
+	while (b) {
+		if (b && b->type == MXML_TEXT &&
+		b->value.text.string &&
+		b->parent->type == MXML_ELEMENT &&
+		!strcmp(b->parent->value.element.name, "CommandKey")) {
+			command_key = b->value.text.string;
+		}
+		b = mxmlWalkNext(b, session->body_in, MXML_DESCEND);
+	}
+	if(command_key) {
+		cancel_transfer(command_key);	
+	}
+	b = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Body", NULL, NULL, MXML_DESCEND);
+	if (!b) goto fault;
+
+	b = mxmlNewElement(b, "cwmp:CancelTransferResponse");
+	if (!b) goto fault;
+	return 0;
+fault:
+	if (cwmp_create_fault_message(session, rpc, FAULT_CPE_INTERNAL_ERROR))
+		goto error;
+	return 0;
+
+error:
+	return -1;
+}
+
+int cancel_transfer(char * key) {
+	struct upload			*pupload;
+	struct download			*pdownload;   
+	struct list_head		*ilist, *q;
+	
+	if(list_download.next!=&(list_download)) {
+		list_for_each_safe(ilist,q,&(list_download))
+		{
+			pdownload = list_entry(ilist, struct download, list);
+			if(strcmp(pdownload->command_key, key) == 0 )
+			{
+				pthread_mutex_lock (&mutex_download);
+				bkp_session_delete_download(pdownload);
+				bkp_session_save();
+				list_del (&(pdownload->list));
+				if(pdownload->scheduled_time != 0)
+				    count_download_queue--;
+				cwmp_free_download_request(pdownload);
+				pthread_mutex_unlock (&mutex_download);
+			}       
+	    }
+	}
+	if(list_upload.next!=&(list_upload)) {
+		list_for_each_safe(ilist,q,&(list_upload))
+		{
+			pupload = list_entry(ilist, struct upload, list);
+			if(strcmp(pupload->command_key, key) == 0 )
+			{
+				pthread_mutex_lock (&mutex_upload);
+				bkp_session_delete_upload(pupload);
+				bkp_session_save(); //is it needed
+				list_del (&(pupload->list));
+				if(pupload->scheduled_time != 0)
+				    count_download_queue--;
+				cwmp_free_upload_request(pupload);
+				pthread_mutex_unlock (&mutex_upload);
+			}       
+	    }
+	}
+	// Cancel schedule download
+	return CWMP_OK;
+}
+
+
+/*
  * [RPC CPE]: Reboot
  */
 
@@ -2382,6 +2464,24 @@ int cwmp_scheduledDownload_remove_all()
 	return CWMP_OK;
 }
 
+int cwmp_scheduledUpload_remove_all()
+{
+	struct upload	*upload;
+
+	pthread_mutex_lock (&mutex_upload);
+	while (list_upload.next!=&(list_upload))
+	{
+		upload = list_entry(list_upload.next,struct upload, list);
+		list_del (&(upload->list));
+		bkp_session_delete_upload(upload);
+		if(upload->scheduled_time != 0)
+			count_download_queue--;
+		cwmp_free_upload_request(upload);
+	}
+	pthread_mutex_unlock (&mutex_upload);
+
+	return CWMP_OK;
+}
 
 int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 {

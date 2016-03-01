@@ -467,6 +467,7 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
         cwmp_save_event_container (cwmp,event_container);
         cwmp_scheduleInform_remove_all();
         cwmp_scheduledDownload_remove_all();
+        cwmp_scheduledUpload_remove_all();
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
     } else {
         FREE(acsurl);
@@ -487,6 +488,7 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
         save_acs_bkp_config(cwmp);
         cwmp_scheduleInform_remove_all();
         cwmp_scheduledDownload_remove_all();
+        cwmp_scheduledUpload_remove_all();
         pthread_mutex_unlock (&(cwmp->mutex_session_queue));
     }
 
@@ -497,39 +499,47 @@ int cwmp_root_cause_TransferComplete (struct cwmp *cwmp, struct transfer_complet
 {
     struct event_container                      *event_container;
     struct session                              *session;
-    struct rpc									*rpc_acs;
-
-    pthread_mutex_lock (&(cwmp->mutex_session_queue));
-    event_container = cwmp_add_event_container (cwmp, EVENT_IDX_7TRANSFER_COMPLETE, "");
-    if (event_container == NULL)
-    {
-        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-        return CWMP_MEM_ERR;
-    }
-    switch (p->type) {
-        case TYPE_DOWNLOAD:
-    event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Download, p->command_key?p->command_key:"");
-		if (event_container == NULL)
-		{
-			pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-			return CWMP_MEM_ERR;
-		}		
-	case TYPE_UPLOAD:
-		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Upload, p->command_key?p->command_key:"");
-    if (event_container == NULL)
-    {
-        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-        return CWMP_MEM_ERR;
-    }
-    session = list_entry (cwmp->head_event_container, struct session,head_event_container);
-    if((rpc_acs = cwmp_add_session_rpc_acs(session, RPC_ACS_TRANSFER_COMPLETE)) == NULL)
-    {
-        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-        return CWMP_MEM_ERR;
-    }
-    rpc_acs->extra_data = (void *)p;
-    pthread_mutex_unlock (&(cwmp->mutex_session_queue));
-    return CWMP_OK;
+	struct rpc									*rpc_acs;
+	
+	pthread_mutex_lock (&(cwmp->mutex_session_queue));
+	event_container = cwmp_add_event_container (cwmp, EVENT_IDX_7TRANSFER_COMPLETE, "");
+	if (event_container == NULL)
+	{
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		return CWMP_MEM_ERR;
+	}
+	switch (p->type) {
+		case TYPE_DOWNLOAD:
+			event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Download, p->command_key?p->command_key:"");
+			if (event_container == NULL)
+			{
+				pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+				return CWMP_MEM_ERR;
+		}
+		case TYPE_UPLOAD:
+			event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Upload, p->command_key?p->command_key:"");
+			if (event_container == NULL)
+			{
+				pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+				return CWMP_MEM_ERR;
+			}
+		case TYPE_SCHEDULE_DOWNLOAD:
+			event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Download, p->command_key?p->command_key:"");
+			if (event_container == NULL)
+			{
+				pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+				return CWMP_MEM_ERR;
+			}
+	}
+	session = list_entry (cwmp->head_event_container, struct session,head_event_container);
+	if((rpc_acs = cwmp_add_session_rpc_acs(session, RPC_ACS_TRANSFER_COMPLETE)) == NULL)
+	{
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		return CWMP_MEM_ERR;
+	}
+	rpc_acs->extra_data = (void *)p;
+	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+	return CWMP_OK;
 }
 
 int cwmp_root_cause_getRPCMethod (struct cwmp *cwmp)
