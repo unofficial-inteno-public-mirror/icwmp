@@ -23,8 +23,8 @@
 #define WAN_INST_ATM 2
 #define WAN_INST_PTM 3
 
-inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritable, bool notif_permission);
-inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm);
+inline int entry_wandevice_sub_instance(struct dmctx *ctx, char *dev, int i, char *cwritable, bool notif_permission);
+inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, char *idev, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm);
 inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, char *idev, char *iwan, char *iconp, int proto, bool notif_permission, bool forced_inform_eip, int forced_notify);
 
 enum WAN_TYPE_CONNECTION {
@@ -2022,10 +2022,12 @@ int get_wan_link_connection_eth_pack_sent(char *refparam, struct dmctx *ctx, cha
 /////////////SUB ENTRIES///////////////
 inline int entry_wandevice_sub(struct dmctx *ctx)
 {
-	int i;
+	int i = 0;
 	bool notif_permission;
 	char *cwritable;
 	char *defwanproto;
+	struct uci_section *s = NULL;
+	char *dev, *dev_last= NULL;
 
 	dmuci_get_option_value_string("network", default_wan, "ifname", &default_wan_ifname);
 	dmuci_get_option_value_string("network", default_wan, "proto", &defwanproto);
@@ -2038,8 +2040,8 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 		default_wan_proto = WAN_PROTO_IP;
 	else
 		default_wan_proto = WAN_PROTO_NIL;
-
-	for (i=0; i < WAN_DEVICE; i++) {
+	update_section_list("dmmap","wan_dev", NULL, 3, NULL);
+	uci_foreach_sections("dmmap", "wan_dev", s) {
 		init_wanargs(ctx, i+1, wan_devices[i].fdev);
 
 		if (strstr(default_wan_ifname, wan_devices[i].fdev))
@@ -2051,18 +2053,18 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 			cwritable = "0";
 		else
 			cwritable = "1";
-
-		SUBENTRY(entry_wandevice_sub_instance, ctx, i, cwritable, notif_permission);
+		dev = handle_update_instance(1, ctx, &dev_last, update_instance_alias, 3, s, "wan_dev_instance", "wan_dev_alias");
+		SUBENTRY(entry_wandevice_sub_instance, ctx, dev, i++, cwritable, notif_permission);
 	}
 	return 0;
 }
 
-inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *cwritable)
+inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, char *dev, int i, char *cwritable)
 {
 	struct uci_section *s = NULL;
 	char *fwan;
 	char *wan_ifname;
-	char *iwan = NULL;
+	char *iwan = NULL, *iwan_last = NULL;
 	char *pack, *stype;
 	bool ipn_perm = true;
 	bool pppn_perm = true;
@@ -2078,9 +2080,9 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *c
 			if (default_wan_proto == WAN_PROTO_IP) ipn_perm = false;
 			else if (default_wan_proto == WAN_PROTO_PPP) pppn_perm = false;
 		}
-		iwan = update_instance(s, iwan, "waninstance");
-		init_wancdevargs(ctx, s, i, fwan, iwan, wan_ifname);
-		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, i, iwan, fwan, cwritable, notif_permission, ipn_perm, pppn_perm);
+		iwan = handle_update_instance(2, ctx, &iwan_last, update_instance_alias, 3, s, "waninstance", "wanalias");
+		init_wancdevargs(ctx, s, i, fwan, iwan_last, wan_ifname);
+		SUBENTRY(entry_wandevice_wanconnectiondevice_instance, ctx, dev, i, iwan, fwan, cwritable, notif_permission, ipn_perm, pppn_perm);
 	}
 	return 0;
 }
@@ -2088,8 +2090,8 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, int i, char *c
 inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, char *iwan, char *fwan)
 {
 	struct uci_section *ss = NULL;
-	char *pack, *stype, *p;
-	char *iconp = NULL, *iconp_ip = NULL, *iconp_ppp = NULL, *iconp_nil = NULL;
+	char *pack, *stype, *p, *iconp_ip_last = NULL, *iconp_ppp_last = NULL;
+	char *iconp = NULL, *iconp_nil = NULL;
 	int proto;
 	bool notif_permission = true;
 	bool forced_inform_eip = false;
@@ -2116,12 +2118,10 @@ inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, 
 			continue;
 		init_wancprotoargs(ctx, ss);
 		if (proto == WAN_PROTO_IP) {
-			iconp_ip = update_instance(ss, iconp_ip, "conipinstance");
-			iconp = iconp_ip;
+			iconp = handle_update_instance(3, ctx, &iconp_ip_last, update_instance_alias, 3, ss, "conipinstance", "conipalias");
 		}
 		else if (proto == WAN_PROTO_PPP) {
-			iconp_ppp = update_instance(ss, iconp_ppp, "conpppinstance");
-			iconp = iconp_ppp;
+			iconp = handle_update_instance(3, ctx, &iconp_ppp_last, update_instance_alias, 3, ss, "conpppinstance", "conpppalias");
 		}
 		SUBENTRY(entry_wandevice_wanprotocolconnection_instance, ctx, idev, iwan, iconp, proto,
 				notif_permission, forced_inform_eip, forced_notify);
@@ -2141,9 +2141,8 @@ int entry_method_root_WANDevice(struct dmctx *ctx)
 	return FAULT_9005;
 }
 
-inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritable, bool notif_permission)
+inline int entry_wandevice_sub_instance(struct dmctx *ctx, char *dev, int i, char *cwritable, bool notif_permission)
 {
-	char *dev = wan_devices[i].instance;
 	IF_MATCH(ctx, DMROOT"WANDevice.", dev) {
 		DMOBJECT(DMROOT"WANDevice.%s.", ctx, "0", notif_permission, NULL, NULL, NULL, dev);
 		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.", ctx, cwritable, notif_permission, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice_all, NULL, dev);
@@ -2173,15 +2172,14 @@ inline int entry_wandevice_sub_instance(struct dmctx *ctx, int i, char *cwritabl
 			DMPARAM("PacketsSent", ctx, "0", get_wan_eth_intf_stats_tx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("PacketsReceived", ctx, "0", get_wan_eth_intf_stats_rx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		}
-		SUBENTRY(entry_wandevice_wanconnectiondevice, ctx, i, cwritable);
+		SUBENTRY(entry_wandevice_wanconnectiondevice, ctx, dev, i, cwritable);
 		return 0;
 	}
 	return FAULT_9005;
 }
 
-inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm)
+inline int entry_wandevice_wanconnectiondevice_instance(struct dmctx *ctx, char *idev, int i, char *iwan, char *fwan, char *cwritable, bool notif_permission, bool ipn_perm, bool pppn_perm)
 {
-	char *idev = wan_devices[i].instance;
 	IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.", idev, iwan) {
 		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.", ctx, cwritable, notif_permission, NULL, delete_wan_wanconnectiondevice, NULL, idev, iwan);
 		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.", ctx, "1", ipn_perm, add_wan_wanipconnection, delete_wan_wanipconnectiondevice_all, NULL, idev, iwan);
