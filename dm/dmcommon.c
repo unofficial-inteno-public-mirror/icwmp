@@ -378,7 +378,7 @@ void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname
 		else {
 			append = true;
 		}
-		if(append) {
+		if (append) {
 			if (p == new_ifname) {
 				dmstrappendstr(p, pch);
 			}
@@ -409,7 +409,7 @@ void update_section_option_list(char *config, char *section, char *option, char 
 		dmuci_get_value_by_section_string(s, option, &baseifname);
 		if (!strstr(name, baseifname))
 		{
-			//delete section if baseifname  does not belong to name
+			//delete section if baseifname  does not belong to ifname
 			if (prev_s) {
 				dmuci_delete_by_section(prev_s, NULL, NULL);
 			}
@@ -422,7 +422,7 @@ void update_section_option_list(char *config, char *section, char *option, char 
 	if (prev_s) {
 		dmuci_delete_by_section(prev_s, NULL, NULL);
 	}
-	if(add_sec) {
+	if (add_sec) {
 		dmuci_add_section(config, section, &s, &add_value);
 		dmuci_set_value_by_section(s, option, val);
 		dmuci_set_value_by_section(s, option_2, val_2);
@@ -436,18 +436,18 @@ void update_section_list(char *config, char *section, char *option, int number, 
 	struct uci_section *s = NULL;
 	int i = 0;
 
-	if(option) {
+	if (option) {
 		uci_foreach_option_eq(config, section, option, filter, s) {
-					return;
+			return;
 		}
 	} else {
 		uci_foreach_sections(config, section, s) {
 			return;
 		}
 	}
-	while (i<number) {
+	while (i < number) {
 		dmuci_add_section(config, section, &s, &add_value);
-		if(option)dmuci_set_value_by_section(s, option, filter);
+		if (option)dmuci_set_value_by_section(s, option, filter);
 		i++;
 	}
 }

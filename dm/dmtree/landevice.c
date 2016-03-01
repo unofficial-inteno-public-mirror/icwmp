@@ -2742,7 +2742,6 @@ inline int entry_landevice_sub(struct dmctx *ctx)
 {
 	struct uci_section *s = NULL;
 	char *idev = NULL, *idev_last = NULL;
-	int action;
 
 	uci_foreach_filter_func("network", "interface", NULL, &filter_lan_device_interface, s) {
 		idev = handle_update_instance(1, ctx, &idev_last, update_instance_alias, 3, s, "ldinstance", "ldalias");

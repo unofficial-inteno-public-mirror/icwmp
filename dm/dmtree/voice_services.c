@@ -352,6 +352,51 @@ char *update_vp_line_instance(struct uci_section *brcm_s, char *sipx)
 	instance = dmuci_set_value_by_section(brcm_s, "lineinstance", buf);
 	return instance;
 }
+
+char *update_vp_line_instance_alias(int action, char **last_inst, void *argv[])
+{
+	struct uci_section *s = NULL;
+	int last_instance = 0, i_instance;
+	char *instance, *alias, buf[12];
+
+	struct uci_section *brcm_s = (struct uci_section *) argv[0];
+	char *sipx = (char *) argv[1];
+
+	dmuci_get_value_by_section_string(brcm_s, "lineinstance", &instance);
+	if (instance[0] != '\0') {
+		if (action == INSTANCE_MODE_ALIAS) {
+			dmuci_get_value_by_section_string(brcm_s, "linealias", &alias);
+			if (alias[0] == '\0') {
+				sprintf(buf, "cpe-%s", instance);
+				alias = dmuci_set_value_by_section(brcm_s, "linealias", buf);
+			}
+			sprintf(buf, "[%s]", alias);
+			instance = dmstrdup(buf);
+		}
+		return instance;
+	}
+	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", sipx, s) {
+		dmuci_get_value_by_section_string(s, "lineinstance", &instance);
+		if (instance[0] != '\0') {
+			i_instance = atoi(instance);
+			if ( i_instance > last_instance)
+				last_instance = i_instance;
+		}
+	}
+	sprintf(buf, "%d", last_instance + 1);
+	instance = dmuci_set_value_by_section(brcm_s, "lineinstance", buf);
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, "linealias", &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = dmuci_set_value_by_section(s, "linealias", buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	}
+	return instance;
+}
 /*******/
 
 int add_line(struct uci_section *s, char *s_name)
@@ -1801,17 +1846,52 @@ bool dm_service_enable_set(void)
 		return false;
 	}
 }
+void codec_update_id()
+{
+	int i = 0;
+	for (i = 0; i < available_sip_codecs; i++) {
+		update_section_list("dmmap","codec_id", "id", 1, allowed_sip_codecs[i].id);
+	}
+}
 ///////////////////////////////////////
 
 /////////////SUB ENTRIES///////////////
+int entry_method_root_Service(struct dmctx *ctx)
+{
+	IF_MATCH(ctx, DMROOT"Services.") {
+		DMOBJECT(DMROOT"Services.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.", ctx, "0", 1, NULL, NULL, NULL, NULL);
+		SUBENTRY(entry_method_Service, ctx);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_method_Service(struct dmctx *ctx)
+{
+	struct uci_section *s = NULL;
+	char *vs = NULL, *vs_last = NULL;
+
+	update_section_list("dmmap","voice_service", NULL, 1, NULL);
+	uci_foreach_sections("dmmap", "voice_service", s) {
+		vs = handle_update_instance(1, ctx, &vs_last, update_instance_alias, 3, s, "vsinstance", "vsalias");
+		SUBENTRY(entry_method_root_Service_sub, ctx, vs);
+	}
+	return 0;
+}
 
 inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoice)
 {
 	int i = 0;
+	char *id, *id_last = NULL;
+	struct uci_section *code_sec;
+
 	init_allowed_sip_codecs();
-	for (i = 0; i < available_sip_codecs; i++) {
+	codec_update_id();
+	uci_foreach_sections("dmmap", "codec_id", code_sec) {
 		init_codec_args(ctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, allowed_sip_codecs[i].enumid);
-		SUBENTRY(entry_voice_service_capabilities_codecs_instance, ctx, ivoice, allowed_sip_codecs[i].id);
+		id = handle_update_instance(2, ctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
+		SUBENTRY(entry_voice_service_capabilities_codecs_instance, ctx, ivoice, id);
 	}
 	return 0;
 }
@@ -1819,12 +1899,12 @@ inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoi
 inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *ivoice)
 {
 	struct uci_section *sip_section;
-	char *profile_num = NULL;
+	char *profile_num = NULL, *profile_num_last = NULL;
 
 	wait_voice_service_up();
 	uci_foreach_sections("voice_client", "sip_service_provider", sip_section) {
-		profile_num = update_instance(sip_section, profile_num, "profileinstance");
-		init_sip_args(ctx, sip_section, profile_num);
+		profile_num = handle_update_instance(2, ctx, &profile_num_last, update_instance_alias, 3, sip_section, "profileinstance", "profilealias");
+		init_sip_args(ctx, sip_section, profile_num_last);
 		SUBENTRY(entry_services_voice_service_voiceprofile_instance, ctx, ivoice, profile_num);
 	}
 	return 0;
@@ -1833,7 +1913,7 @@ inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *iv
 inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, char *profile_num)
 {
 	int maxLine, line_id = 0;
-	char *line_num = NULL;
+	char *line_num = NULL, *last_inst = NULL;
 	struct uci_section *b_section = NULL;
 	json_object *res, *jobj;
 	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
@@ -1842,7 +1922,7 @@ inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, ch
 		line_id = atoi(section_name(b_section) + sizeof("brcm") - 1);
 		if ( line_id >= maxLine )
 			continue;
-		line_num = update_vp_line_instance(b_section, section_name(sipargs->sip_section));
+		line_num = handle_update_instance(3, ctx, &last_inst, update_vp_line_instance_alias, 2, b_section, section_name(sipargs->sip_section));
 		init_brcm_args(ctx, b_section, sipargs->sip_section, profile_num);
 		SUBENTRY(entry_services_voice_service_line_instance, ctx, ivoice, profile_num, line_num);
 	}
@@ -1852,22 +1932,23 @@ inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, ch
 inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num)
 {
 	int i = 0;
+	char *id = NULL , *id_last = NULL;
 	struct brcm_args *brcmargs = (struct brcm_args *)(ctx->args);
+	struct uci_section *code_sec = NULL;
 
+	codec_update_id();
 	codec_priority_update(brcmargs->sip_section);
-	for (i = 0; i < available_sip_codecs; i++) {
+	uci_foreach_sections("dmmap", "codec_id", code_sec) {
 		init_line_code_args(ctx, i, brcmargs->sip_section);
-		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, allowed_sip_codecs[i].id);
+		id = handle_update_instance(4, ctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
+		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, id);
 	}
 	return 0;
 }
 //////////////////////////////////////
-int entry_method_root_Service(struct dmctx *ctx)
+int entry_method_root_Service_sub(struct dmctx *ctx, char *ivoice)
 {
-	char *ivoice = "1";
-	IF_MATCH(ctx, DMROOT"Services.") {
-		DMOBJECT(DMROOT"Services.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Services.VoiceService.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
+	IF_MATCH(ctx, DMROOT"Services.VoiceService.%s.", ivoice) {
 		DMOBJECT(DMROOT"Services.VoiceService.%s.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
 		DMOBJECT(DMROOT"Services.VoiceService.%s.Capabilities.", ctx, "0", 1, NULL, NULL, NULL, ivoice);
 		DMPARAM("MaxProfileCount", ctx, "0", get_max_profile_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
