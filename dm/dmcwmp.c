@@ -169,7 +169,7 @@ char *update_instance_alias(int action, char **last_inst , void *argv[])
 {
 	char *instance;
 	char *alias;
-	char buf[12] = {0};
+	char buf[64] = {0};
 
 	struct uci_section *s = (struct uci_section *) argv[0];
 	char *inst_opt = (char *) argv[1];
@@ -200,7 +200,7 @@ char *update_instance_without_section(int action, char **last_inst, void *argv[]
 {
 	char *instance;
 	char *alias;
-	char buf[12] = {0};
+	char buf[64] = {0};
 
 	int instnbr = (int) argv[0];
 
