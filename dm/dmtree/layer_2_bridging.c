@@ -1069,7 +1069,77 @@ int delete_layer2bridging_bridge_vlan_all(struct dmctx *ctx)
 	return 0;
 }
 
+////////////////////////SET AND GET ALIAS/////////////////////////////////
+int get_avai_int_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_args.layer2section, "avbralias", value);
+	return 0;
+}
 
+int set_avai_int_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_args.layer2section, "avbralias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_marking_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_args.layer2section, "marking_alias", value);
+	return 0;
+}
+
+int set_marking_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_args.layer2section, "marking_alias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_bridge_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_args.layer2section, "bridge_alias", value);
+	return 0;
+}
+
+int set_bridge_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_args.layer2section, "bridge_alias", value);
+			return 0;
+	}
+	return 0;
+}
+int get_brvlan_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_args.layer2section, "vlan_alias", value);
+	return 0;
+}
+
+int set_brvlan_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_args.layer2section, "vlan_alias", value);
+			return 0;
+	}
+	return 0;
+}
 
 /*************************************************************
  * SUB ENTRIES
@@ -1178,6 +1248,7 @@ inline int entry_layer2_availableinterface_instance(struct dmctx *ctx, char *int
 {
 	IF_MATCH(ctx, DMROOT"Layer2Bridging.AvailableInterface.%s.", int_instance) {
 		DMOBJECT(DMROOT"Layer2Bridging.AvailableInterface.%s.", ctx, "0", 0, NULL, NULL, NULL, int_instance);
+		DMPARAM("Alias", ctx, "1", get_avai_int_alias, set_avai_int_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("AvailableInterfaceKey", ctx, "0", get_available_interface_key, NULL, "xsd:unsignedInt", 0, 0, 0, NULL);
 		DMPARAM("InterfaceReference", ctx, "0", get_interface_reference, NULL, NULL, 0, 0, 0, NULL);
 		DMPARAM("InterfaceType", ctx, "0", get_interfaces_type, NULL, NULL, 0, 0, 0, NULL);
@@ -1190,6 +1261,7 @@ inline int entry_layer2_marking_instance(struct dmctx *ctx, char *marking_br_ins
 {
 	IF_MATCH(ctx, DMROOT"Layer2Bridging.Marking.%s.", marking_br_instance) {
 		DMOBJECT(DMROOT"Layer2Bridging.Marking.%s.", ctx, "1", 1, NULL, delete_layer2bridging_marking, NULL, marking_br_instance);
+		DMPARAM("Alias", ctx, "1", get_marking_alias, set_marking_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("MarkingBridgeReference", ctx, "1", get_marking_bridge_reference, set_marking_bridge_key, "xsd:int", 0, 1, UNDEF, NULL);
 		DMPARAM("MarkingInterface", ctx, "1", get_marking_interface_key, set_marking_interface_key, NULL, 0, 1, UNDEF, NULL);
 		return 0;
@@ -1201,6 +1273,7 @@ inline int entry_layer2_bridge_instance(struct dmctx *ctx, char *bridge_instance
 {
 	IF_MATCH(ctx, DMROOT"Layer2Bridging.Bridge.%s.", bridge_instance) {
 		DMOBJECT(DMROOT"Layer2Bridging.Bridge.%s.", ctx, "1", 1, NULL, delete_layer2bridging_bridge, NULL, bridge_instance);
+		DMPARAM("Alias", ctx, "1", get_bridge_alias, set_bridge_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("BridgeEnable", ctx, "1", get_bridge_status, set_bridge_status, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("BridgeKey", ctx, "0", get_bridge_key, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("BridgeName", ctx, "1", get_bridge_name, set_bridge_name, NULL, 0, 1, UNDEF, NULL);
@@ -1217,6 +1290,7 @@ inline int entry_layer2_bridge_vlan_instance(struct dmctx *ctx,char *bridge_inst
 {
 	IF_MATCH(ctx, DMROOT"Layer2Bridging.Bridge.%s.VLAN.%s.", bridge_instance, vlan_instance) {
 		DMOBJECT(DMROOT"Layer2Bridging.Bridge.%s.VLAN.%s.", ctx, "1", 1, NULL, delete_layer2bridging_bridge_vlan, NULL, bridge_instance, vlan_instance);
+		DMPARAM("Alias", ctx, "1", get_brvlan_alias, set_brvlan_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("VLANEnable", ctx, "1", get_bridge_vlan_enable, set_bridge_vlan_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("VLANName", ctx, "1", get_bridge_vlan_name, set_bridge_vlan_name, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("VLANID", ctx, "1", get_bridge_vlan_vid, set_bridge_vlan_vid, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
