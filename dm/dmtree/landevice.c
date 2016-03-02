@@ -42,6 +42,10 @@ struct ldipargs cur_ipargs = {0};
 struct lddhcpargs cur_dhcpargs = {0};
 struct ldwlanargs cur_wlanargs = {0};
 struct ldethargs cur_ethargs = {0};
+struct wlan_psk cur_pskargs = {0};
+struct wlan_wep cur_wepargs = {0};
+struct wl_clientargs cur_wl_clientargs = {0};
+struct clientargs cur_clientargs = {0};
 
 inline int init_ldargs_lan(struct dmctx *ctx, struct uci_section *s, char *iwan)
 {
@@ -83,16 +87,14 @@ inline int init_ldargs_wlan(struct dmctx *ctx, struct uci_section *wifisection, 
 	return 0;
 }
 
-inline int init_ldargs_eth_cfg(struct dmctx *ctx, char *eth)
+inline int init_ldargs_eth_cfg(struct dmctx *ctx, char *eth, struct uci_section *eth_section)
 {
 	struct ldethargs *args = &cur_ethargs;
 	ctx->args = (void *)args;
 	args->eth = eth;
+	args->lan_ethsection = eth_section;
 	return 0;
 }
-
-
-struct clientargs cur_clientargs = {0};
 
 inline int init_client_args(struct dmctx *ctx, json_object *clients, char *lan_name)
 {
@@ -102,9 +104,6 @@ inline int init_client_args(struct dmctx *ctx, json_object *clients, char *lan_n
 	args->lan_name = lan_name;
 	return 0;
 }
-
-
-struct wl_clientargs cur_wl_clientargs = {0};
 
 inline int init_wl_client_args(struct dmctx *ctx, char *value, char *wiface)
 {
@@ -116,6 +115,21 @@ inline int init_wl_client_args(struct dmctx *ctx, char *value, char *wiface)
 	return 0;
 }
 
+inline int init_wlan_psk_args(struct dmctx *ctx, struct uci_section *s)
+{
+	struct wlan_psk *args = &cur_pskargs;
+	ctx->args = (void *)args;
+	args->wlanpsk = s;
+	return 0;
+}
+
+inline int init_wlan_wep_args(struct dmctx *ctx, struct uci_section *s)
+{
+	struct wlan_wep *args = &cur_wepargs;
+	ctx->args = (void *)args;
+	args->wlanwep = s;
+	return 0;
+}
 /*******************ADD-DEL OBJECT*********************/
 int add_landevice_dhcpstaticaddress(struct dmctx *ctx, char **instancepara)
 {
@@ -2736,7 +2750,132 @@ void lan_eth_update_section_option_list (char *name, char *sec_name, char *wan_e
 	}
 	dmfree(ifname);
 }
+/////////////////////////SET AND GET ALIAS/////////////////////////////////
+int get_lan_dev_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_lanargs.ldlansection, "ldalias", value);
+	return 0;
+}
 
+int set_lan_dev_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_lanargs.ldlansection, "ldalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_lan_ip_int_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_ipargs.ldipsection, "lipalias", value);
+	return 0;
+}
+
+int set_lan_ip_int_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_ipargs.ldipsection, "lipalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcpargs.lddhcpsection, "ldhcpalias", value);
+	return 0;
+}
+
+int set_dhcp_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_dhcpargs.lddhcpsection, "ldhcpalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_wlan_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_wlanargs.lwlansection, "lwlanalias", value);
+	return 0;
+}
+
+int set_wlan_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_wlanargs.lwlansection, "lwlanalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_wlan_psk_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_pskargs.wlanpsk, "pskalias", value);
+	return 0;
+}
+
+int set_wlan_psk_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_pskargs.wlanpsk, "pskalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_wlan_wep_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_wepargs.wlanwep, "wepalias", value);
+	return 0;
+}
+
+int set_wlan_wep_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_wepargs.wlanwep, "wepalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_lan_eth_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_ethargs.lan_ethsection, "ethalias", value);
+	return 0;
+}
+
+int set_lan_eth_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_ethargs.lan_ethsection, "ethalias", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_landevice_sub(struct dmctx *ctx)
 {
@@ -2810,6 +2949,7 @@ inline int entry_landevice_wlanconfiguration_wepkey(struct dmctx *ctx, char *ide
 
 	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection));
 	uci_foreach_option_eq("dmmap", "wlan-wepkey", "wlan", section_name(wlanargs->lwlansection), s) {
+		init_wlan_wep_args(ctx, s);
 		iwep =  handle_update_instance(3, ctx, &iwep_last, update_instance_alias, 3, s, "wepinstance", "wepalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_wepkey_instance, ctx, idev, iwlan, iwep);
 	}
@@ -2827,6 +2967,8 @@ inline int entry_landevice_wlanconfiguration_presharedkey(struct dmctx *ctx, cha
 	update_section_list("dmmap","wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection));
 	uci_foreach_option_eq("dmmap", "wlan-psk", "wlan", section_name(wlanargs->lwlansection), s) {
 		wlanargs->pki++;
+		//init_wlan_psk_args(ctx, s);
+		cur_pskargs.wlanpsk = s;
 		ipk =  handle_update_instance(3, ctx, &ipk_last, update_instance_alias, 3, s, "pskinstance", "pskalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_presharedkey_instance, ctx, idev, iwlan, ipk); //"$wunit" "$wlctl_num" "$uci_num" are not needed
 	}
@@ -2866,7 +3008,7 @@ inline int entry_landevice_lanethernetinterfaceconfig(struct dmctx *ctx, struct 
 	lan_eth_update_section_option_list(ifname, section_name(landevice_section), wan_eth);
 	uci_foreach_option_eq("dmmap", "lan_eth", "network", section_name(landevice_section), s) {
 		dmuci_get_value_by_section_string(s, "ifname", &baseifname);
-		init_ldargs_eth_cfg(ctx, baseifname);
+		init_ldargs_eth_cfg(ctx, baseifname, s);
 		ieth =  handle_update_instance(2, ctx, &ieth_last, update_instance_alias, 3, s, "ethinstance", "ethalias");
 		SUBENTRY(entry_landevice_lanethernetinterfaceconfig_instance, ctx, idev, ieth);
 	}
@@ -2911,6 +3053,7 @@ inline int entry_landevice_sub_instance(struct dmctx *ctx, struct uci_section *l
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.", idev) {
 		DMOBJECT(DMROOT"LANDevice.%s.", ctx, "0", 0, NULL, NULL, NULL, idev);
+		DMPARAM("Alias", ctx, "1", get_lan_dev_alias, set_lan_dev_alias, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.", ctx, "0", 1, NULL, NULL, NULL, idev);
 		DMPARAM("DNSServers", ctx, "1", get_lan_dns, set_lan_dns, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DHCPServerConfigurable", ctx, "1", get_lan_dhcp_server_configurable, set_lan_dhcp_server_configurable, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -2946,6 +3089,7 @@ inline int entry_landevice_ipinterface_instance (struct dmctx *ctx, char *idev, 
 		strcat(linker, section_name(ipargs->ldipsection));
 
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", ctx, "0", 1, NULL, NULL, linker, idev, ilan);
+		DMPARAM("Alias", ctx, "1", get_lan_ip_int_alias, set_lan_ip_int_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_interface_enable_ipinterface, set_interface_enable_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_interface_firewall_enabled_ipinterface, set_interface_firewall_enabled_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPInterfaceIPAddress", ctx, "1", get_interface_ipaddress, set_interface_ipaddress, NULL, 0, 1, UNDEF, NULL);
@@ -2960,6 +3104,7 @@ inline int entry_landevice_dhcpstaticaddress_instance(struct dmctx *ctx, char *i
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPStaticAddress.%s.", idev, idhcp) {
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPStaticAddress.%s.", ctx, "1", 1, NULL, delete_landevice_dhcpstaticaddress, NULL, idev, idhcp);
+		DMPARAM("Alias", ctx, "1", get_dhcp_alias, set_dhcp_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_dhcpstaticaddress_enable, set_dhcpstaticaddress_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Chaddr", ctx, "1", get_dhcpstaticaddress_chaddr, set_dhcpstaticaddress_chaddr, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Yiaddr", ctx, "1", get_dhcpstaticaddress_yiaddr, set_dhcpstaticaddress_yiaddr, NULL, 0, 1, UNDEF, NULL);
@@ -2972,6 +3117,7 @@ inline int entry_landevice_wlanconfiguration_instance(struct dmctx *ctx, char *i
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.WLANConfiguration.%s.", idev, iwlan) {
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.", ctx, "1", 0, NULL, delete_landevice_wlanconfiguration, NULL, idev, iwlan);
+		DMPARAM("Alias", ctx, "1", get_wlan_alias, set_wlan_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_wlan_enable, set_wlan_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_wlan_status, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("BSSID", ctx, "0", get_wlan_bssid, NULL, NULL, 0, 1, UNDEF, NULL);
@@ -3024,6 +3170,7 @@ inline int entry_landevice_wlanconfiguration_presharedkey_instance(struct dmctx 
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.WLANConfiguration.%s.PreSharedKey.%s.", idev, iwlan, ipk) {
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.PreSharedKey.%s.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan, ipk);
+		DMPARAM("Alias", ctx, "1", get_wlan_psk_alias, set_wlan_psk_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("PreSharedKey", ctx, "1", get_empty, set_wlan_pre_shared_key, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("KeyPassphrase", ctx, "1", get_empty, set_wlan_key_passphrase, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("AssociatedDeviceMACAddress", ctx, "0", get_wlan_psk_assoc_MACAddress, NULL, NULL, 0, 1, UNDEF, NULL);
@@ -3048,6 +3195,7 @@ inline int entry_landevice_lanethernetinterfaceconfig_instance(struct dmctx *ctx
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.LANEthernetInterfaceConfig.%s.", idev, ieth) {
 		DMOBJECT(DMROOT"LANDevice.%s.LANEthernetInterfaceConfig.%s.", ctx, "0", 1, NULL, NULL, NULL, idev, ieth);
+		DMPARAM("Alias", ctx, "1", get_lan_eth_alias, set_lan_eth_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_lan_eth_iface_cfg_enable, set_lan_eth_iface_cfg_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_lan_eth_iface_cfg_status, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("MaxBitRate", ctx, "1", get_lan_eth_iface_cfg_maxbitrate, set_lan_eth_iface_cfg_maxbitrate, NULL, 0, 1, UNDEF, NULL);
@@ -3082,6 +3230,7 @@ inline int entry_landevice_wlanconfiguration_wepkey_instance(struct dmctx *ctx, 
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.WLANConfiguration.%s.WEPKey.%s.", idev, iwlan, iwep) {
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.WEPKey.%s.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan, iwep);
+		DMPARAM("Alias", ctx, "1", get_wlan_wep_alias, set_wlan_wep_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("WEPKey", ctx, "1", get_empty, set_wlan_wep_key1, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
