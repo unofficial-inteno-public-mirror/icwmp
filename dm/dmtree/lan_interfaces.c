@@ -16,21 +16,22 @@
 #include "dmcommon.h"
 #include "lan_interfaces.h"
 
-struct linterfargs
-{
-	char *linterf;
-	char *eths[16];
-	int eths_size;
-};
-
 struct linterfargs cur_linterfargs = {0};
+struct wifaceargs cur_wifaceargs = {0};
 static inline void laninterface_lookup(char *eths[], int *size);
 inline int entry_laninterface_lan(struct dmctx *ctx);
 inline int entry_laninterface_wlan(struct dmctx *ctx);
-
-static inline int init_lan_interface_args(char *lif)
+//////////////////////INIT ARGS////////////////////////////////
+static inline int init_lan_interface_args(char *lif, struct uci_section *port_sec)
 {
 	cur_linterfargs.linterf = lif;
+	cur_linterfargs.port_sec = port_sec;
+	return 0;
+}
+
+static inline int init_wifi_iface_args(struct uci_section *s)
+{
+	cur_wifaceargs.wiface_sec = s;
 	return 0;
 }
 
@@ -91,6 +92,43 @@ inline void init_laninterface_lan(struct dmctx *ctx)
 	ctx->args = (void *)args;
 	laninterface_lookup(args->eths, &(args->eths_size));
 }
+
+////////////////////////SET AND GET ALIAS/////////////////////////////////
+int get_lan_eth_int_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_linterfargs.port_sec, "lanportalias", value);
+	return 0;
+}
+
+int set_lan_eth_int_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_linterfargs.port_sec, "lanportalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_wlan_conf_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_wifaceargs.wiface_sec, "wifacealias", value);
+	return 0;
+}
+
+int set_wlan_conf_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_wifaceargs.wiface_sec, "wifacealias", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_laninterface_lan(struct dmctx *ctx)
 {
@@ -103,7 +141,7 @@ inline int entry_laninterface_lan(struct dmctx *ctx)
 	laninterface_lookup(args->eths, &(args->eths_size));
 	update_section_list("dmmap","lan_port", NULL, args->eths_size, NULL);
 	uci_foreach_sections("dmmap", "lan_port", s) {
-		init_lan_interface_args(args->eths[i++]);
+		init_lan_interface_args(args->eths[i++], s);
 		ei =  handle_update_instance(1, ctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
 		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
 	}
@@ -115,7 +153,8 @@ inline int entry_laninterface_wlan(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 	char *wi, *wi_last = NULL;
 	uci_foreach_sections("wireless", "wifi-iface", s) {
-		wi =  handle_update_instance(1, ctx, &wi_last, update_instance_alias, 3, s, "lanintwlaninstance", "lanintwlanalias");
+		init_wifi_iface_args(s);
+		wi =  handle_update_instance(1, ctx, &wi_last, update_instance_alias, 3, s, "wifaceinstance", "wifacealias");
 		SUBENTRY(entry_laninterface_wlan_instance, ctx, wi);
 	}
 	return 0;
@@ -140,6 +179,7 @@ int entry_method_root_InternetGatewayDevice_LANInterfaces(struct dmctx *ctx)
 inline int entry_laninterface_lan_instance(struct dmctx *ctx, char *li)
 {
 	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%s.", ctx, "0", 1, NULL, NULL, NULL, li);
+	DMPARAM("Alias", ctx, "1", get_lan_eth_int_alias, set_lan_eth_int_alias, NULL, 0, 1, UNDEF, NULL);
 	DMPARAM("X_INTENO_COM_EthName", ctx, "0", get_eth_name, NULL, NULL, 0, 1, UNDEF, NULL);
 	return 0;
 }
@@ -147,5 +187,6 @@ inline int entry_laninterface_lan_instance(struct dmctx *ctx, char *li)
 inline int entry_laninterface_wlan_instance(struct dmctx *ctx, char  *wli)
 {
 	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%s.", ctx, "0", 1, NULL, NULL, NULL, wli);
+	DMPARAM("Alias", ctx, "1", get_wlan_conf_alias, set_wlan_conf_alias, NULL, 0, 1, UNDEF, NULL);
 	return 0;
 }
