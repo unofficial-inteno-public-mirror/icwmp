@@ -83,7 +83,7 @@ inline int init_wanargs(struct dmctx *ctx, int wan_instance, char *fdev, struct 
 	return 0;
 }
 
-inline int init_wancprotoargs(struct dmctx *ctx, struct uci_section *s, int proto)
+inline int init_wancprotoargs(struct dmctx *ctx, struct uci_section *s)
 {
 	struct wancprotoargs *args = &cur_wancprotoargs;
 	ctx->args = (void *)args;
