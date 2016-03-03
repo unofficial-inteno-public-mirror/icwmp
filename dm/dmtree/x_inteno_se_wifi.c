@@ -106,18 +106,34 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 	}
 	return 0;
 }
+
+////////////////////////SET AND GET ALIAS/////////////////////////////////
+int get_radio_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_wifiargs.sewifisection, "radioalias", value);
+	return 0;
+}
+
+int set_radio_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_wifiargs.sewifisection, "radioalias", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_sewifi_radio(struct dmctx *ctx)
 {
-	char *wnum, *wnum_last = NULL;
+	char *wnum = NULL, *wnum_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_sections("wireless", "wifi-device", s) {
 		init_se_wifi(ctx, s);
-		wnum = section_name(s);
-		wnum += 2;
-		wnum = handle_update_instance(3, ctx, &wnum_last, update_instance_without_section, 1,  atoi(wnum) + 1);
+		wnum =  handle_update_instance(1, ctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
 		SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
-		dmfree(wnum);
 	}
 	return 0;
 }
@@ -138,6 +154,7 @@ inline int entry_sewifi_radio_instance(struct dmctx *ctx, char *wnum)
 {
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_Wifi.Radio.%s.", wnum) {
 		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
+		DMPARAM("Alias", ctx, "1", get_radio_alias, set_radio_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DFSEnable", ctx, "1", get_wifi_dfsenable, set_wifi_dfsenable, "xsd:boolean", 0, 1, UNDEF, NULL);
