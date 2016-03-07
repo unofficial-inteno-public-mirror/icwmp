@@ -50,10 +50,20 @@ static CURL *curl;
 int
 http_client_init(struct cwmp *cwmp)
 {
+	char *dhcp_dis;
+	char *acs_var_stat;
+	uci_get_value(UCI_DHCP_DISCOVERY_PATH, &dhcp_dis);
 #ifdef HTTP_CURL
-	if (asprintf(&http_c.url, "%s",
+	if (dhcp_dis && cwmp->retry_count_session > 0 && strcmp(dhcp_dis, "enable") == 0) {
+		uci_get_value(UCI_DHCP_ACS_URL, &acs_var_stat);
+		if (asprintf(&http_c.url, "%s",
+				acs_var_stat) == -1)
+				return -1;
+	} else {
+		if (asprintf(&http_c.url, "%s",
 		     cwmp->conf.acsurl) == -1)
 		return -1;
+	}
 #endif
 
 #ifdef HTTP_ZSTREAM

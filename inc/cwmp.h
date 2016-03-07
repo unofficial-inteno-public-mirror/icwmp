@@ -68,6 +68,7 @@
 #define LW_NOTIFICATION_ENABLE              "cwmp.lwn.enable"
 #define LW_NOTIFICATION_HOSTNAME            "cwmp.lwn.hostname"
 #define LW_NOTIFICATION_PORT                "cwmp.lwn.port"
+#define UCI_DHCP_ACS_URL					"provisioning.iup.urlcwmp"
 
 
 enum end_session {
