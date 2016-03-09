@@ -20,7 +20,12 @@
 #include "dmuci.h"
 #include "dmmem.h"
 
+#ifdef DATAMODEL_TR098
 #define DMROOT "InternetGatewayDevice."
+#endif
+#ifdef DATAMODEL_TR181
+#define DMROOT "Device."
+#endif
 #ifdef UNDEF
 #undef UNDEF
 #endif

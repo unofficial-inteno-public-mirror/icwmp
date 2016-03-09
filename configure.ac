@@ -2,6 +2,8 @@ AC_INIT([icwmp], [0.1], [mohamed.kallel@pivasoftware.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([cwmp.c])
 
+AM_INIT_AUTOMAKE([subdir-objects])
+
 # additional options
 
 AC_ARG_ENABLE(acs, [AS_HELP_STRING([--enable-acs],
@@ -13,6 +15,14 @@ AS_IF([test "x$enable_acs" = "xfusion"], [AC_DEFINE(ACS_FUSION)])
 AS_IF([test "x$enable_acs" = "xmulti"], [AC_DEFINE(ACS_MULTI)])
 AS_IF([test "x$enable_acs" = "xyes"], [AC_DEFINE(ACS_MULTI)])
 AS_IF([test "x$enable_acs" = "xno"], [AC_DEFINE(ACS_MULTI)])
+
+AC_ARG_ENABLE(datamodel, [AS_HELP_STRING([--enable-datamodel],
+	[specify which Data Model will be used; (default --enable-datamodel=tr098]))],,)
+
+#AS_IF([test "x$enable_datamodel" = "xtr098"], [AC_DEFINE(DATAMODEL_TR098)])
+#AS_IF([test "x$enable_datamodel" = "xtr181"], [AC_DEFINE(DATAMODEL_TR181)])
+AM_CONDITIONAL([DATAMODEL_TR098], [test "x$enable_datamodel" = "xtr098" ])
+AM_CONDITIONAL([DATAMODEL_TR181], [test "x$enable_datamodel" = "xtr181" ])
 
 AC_ARG_ENABLE(http, [AS_HELP_STRING([--enable-http],
 	[specify which HTTP library is going to be used; one can choose from zstream and curl (default --enable-http=curl]))],,)
@@ -92,6 +102,13 @@ AC_SUBST([LCRYPTO_LIBS])
 LSSL_LIBS='-lssl'
 AC_SUBST([LSSL_LIBS])
 
+AM_COND_IF([DATAMODEL_TR098], [
+ AC_DEFINE(DATAMODEL_TR098)
+])
+
+AM_COND_IF([DATAMODEL_TR181], [
+ AC_DEFINE(DATAMODEL_TR181)
+])
 AM_COND_IF([HTTP_CURL], [
  AC_DEFINE(HTTP_CURL)
  PKG_CHECK_MODULES(LIBCURL, [libcurl])
