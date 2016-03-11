@@ -146,11 +146,10 @@ cwmp_wait_net() {
 }
 
 cwmp_wait_dnsmasq() {
-	local tm=1
-	while [ "$(pidof dnsmasq)" == "" ]; do
-		sleep $tm
-		[ $tm -ge 10 ] && break
-		tm=$((tm+1))
+	local resolvfile="$(uci -q get dhcp.@dnsmasq[0].resolvfile)"
+	[ -n "$resolvfile" ] || return
+	while [ ! -f $resolvfile ]; do
+		sleep 1
 	done
 }
 
