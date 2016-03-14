@@ -243,6 +243,54 @@ int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
+int get_catv_optical_input_level(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *str;
+	*value = "";
+	dmubus_call("catv", "vpd", UBUS_ARGS{}, 0, &res);
+	if (!res)
+		return 0;
+	json_select(res, "VPD", -1, NULL, value, NULL);
+	return 0;
+}
+
+int get_catv_rf_output_level(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *str;
+	*value = "";
+	dmubus_call("catv", "rf", UBUS_ARGS{}, 0, &res);
+	if (!res)
+		return 0;
+	json_select(res, "RF", -1, NULL, value, NULL);
+	return 0;
+}
+
+int get_catv_temperature(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *str;
+	*value = "";
+	dmubus_call("catv", "temp", UBUS_ARGS{}, 0, &res);
+	if (!res)
+		return 0;
+	json_select(res, "Temperature", -1, NULL, value, NULL);
+	return 0;
+}
+
+int get_catv_voltage(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *str;
+	*value = "";
+	dmubus_call("catv", "vcc", UBUS_ARGS{}, 0, &res);
+	if (!res)
+		return 0;
+	json_select(res, "VCC", -1, NULL, value, NULL);
+	return 0;
+}
+
 int entry_method_root_DeviceInfo(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"DeviceInfo.") {
@@ -260,6 +308,12 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 		DMPARAM("ProvisioningCode", ctx, "1", get_device_provisioningcode, set_device_provisioningcode, NULL, 1, 0, 2, NULL);
 		DMPARAM("X_INTENO_SE_BaseMacAddr", ctx, "0", get_base_mac_addr, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_CATVEnabled", ctx, "1", get_catv_enabled, set_device_catvenabled, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"DeviceInfo.X_INTENO_SE_CATV.", ctx, "0", 0, NULL, NULL, NULL);
+		DMPARAM("Enabled", ctx, "1", get_catv_enabled, set_device_catvenabled, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("OpticalInputLevel", ctx, "0", get_catv_optical_input_level, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("RFOutputLevel", ctx, "0", get_catv_rf_output_level, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Temperature", ctx, "0", get_catv_temperature, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Voltage", ctx, "0", get_catv_voltage, NULL, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
