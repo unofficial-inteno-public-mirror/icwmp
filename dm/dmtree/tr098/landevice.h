@@ -68,6 +68,7 @@ struct wlan_psk
 struct wlan_wep
 {
 	struct uci_section *wlanwep;
+	unsigned int key_index;
 };
 
 int entry_method_root_LANDevice(struct dmctx *ctx);

@@ -2557,22 +2557,9 @@ int set_wlan_wep_key(char *refparam, struct dmctx *ctx, int action, char *value,
 
 int set_wlan_wep_key1(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	return set_wlan_wep_key(refparam, ctx, action, value, "key1");
-}
-
-int set_wlan_wep_key2(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	return set_wlan_wep_key(refparam, ctx, action, value, "key2");
-}
-
-int set_wlan_wep_key3(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	return set_wlan_wep_key(refparam, ctx, action, value, "key3");
-}
-
-int set_wlan_wep_key4(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	return set_wlan_wep_key(refparam, ctx, action, value, "key4");
+	char buf[8];
+	sprintf(buf, "key%d", cur_wepargs.key_index);
+	return set_wlan_wep_key(refparam, ctx, action, value, buf);
 }
 /****************************************************************************************/
 
@@ -2949,7 +2936,9 @@ inline int entry_landevice_wlanconfiguration_wepkey(struct dmctx *ctx, char *ide
 
 	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection));
 	uci_foreach_option_eq("dmmap", "wlan-wepkey", "wlan", section_name(wlanargs->lwlansection), s) {
-		init_wlan_wep_args(ctx, s);
+		//init_wlan_wep_args(ctx, s);
+		cur_wepargs.wlanwep = s;
+		cur_wepargs.key_index = ++i;
 		iwep =  handle_update_instance(3, ctx, &iwep_last, update_instance_alias, 3, s, "wepinstance", "wepalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_wepkey_instance, ctx, idev, iwlan, iwep);
 	}
