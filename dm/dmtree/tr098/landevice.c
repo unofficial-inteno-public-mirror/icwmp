@@ -1628,33 +1628,6 @@ int get_wlan_beacon_type(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int reset_wlan(struct uci_section *s)
-{
-	dmuci_delete_by_section(s, "gtk_rekey", NULL);
-	dmuci_delete_by_section(s, "wps_pbc", NULL);
-	dmuci_delete_by_section(s, "key", NULL);
-	dmuci_delete_by_section(s, "key1", NULL);
-	dmuci_delete_by_section(s, "key2", NULL);
-	dmuci_delete_by_section(s, "key3", NULL);
-	dmuci_delete_by_section(s, "key4", NULL);
-	dmuci_delete_by_section(s, "radius_server", NULL);
-	dmuci_delete_by_section(s, "radius_port", NULL);
-	dmuci_delete_by_section(s, "radius_secret", NULL);
-	return 0;
-}
-
-char *get_nvram_wpakey() {
-	FILE* fp = NULL;
-	char wpakey[64];
-	fp = fopen(NVRAM_FILE, "r");
-	if (fp != NULL) {
-		fgets(wpakey, 64, fp);
-		fclose(fp);
-		return dmstrdup(wpakey);
-	}
-	return NULL;
-}
-
 int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *) ctx->args;

@@ -97,10 +97,10 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"LANDevice.", 1, NULL, 0, &entry_method_root_LANDevice },
 	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
 	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
-	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
 	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
 	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
 #endif
+	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
 	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
 	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },

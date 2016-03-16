@@ -6,11 +6,14 @@
 struct wifi_radio_args
 {
 	struct uci_section *wifi_radio_sec;
-	struct uci_section *wifi_ssid_sec;
-	json_object *res;
-	char *wiface;
 };
 
+struct wifi_ssid_args
+{
+	struct uci_section *wifi_ssid_sec;
+	char *wiface;
+	char *linker;
+};
 int entry_method_root_Wifi(struct dmctx *ctx);
 
 #endif

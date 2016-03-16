@@ -451,3 +451,30 @@ void update_section_list(char *config, char *section, char *option, int number, 
 		i++;
 	}
 }
+
+char *get_nvram_wpakey() {
+	FILE* fp = NULL;
+	char wpakey[64];
+	fp = fopen(NVRAM_FILE, "r");
+	if (fp != NULL) {
+		fgets(wpakey, 64, fp);
+		fclose(fp);
+		return dmstrdup(wpakey);
+	}
+	return NULL;
+}
+
+int reset_wlan(struct uci_section *s)
+{
+	dmuci_delete_by_section(s, "gtk_rekey", NULL);
+	dmuci_delete_by_section(s, "wps_pbc", NULL);
+	dmuci_delete_by_section(s, "key", NULL);
+	dmuci_delete_by_section(s, "key1", NULL);
+	dmuci_delete_by_section(s, "key2", NULL);
+	dmuci_delete_by_section(s, "key3", NULL);
+	dmuci_delete_by_section(s, "key4", NULL);
+	dmuci_delete_by_section(s, "radius_server", NULL);
+	dmuci_delete_by_section(s, "radius_port", NULL);
+	dmuci_delete_by_section(s, "radius_secret", NULL);
+	return 0;
+}
