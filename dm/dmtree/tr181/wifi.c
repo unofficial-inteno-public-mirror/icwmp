@@ -933,7 +933,49 @@ int get_ap_ssid_ref(char *refparam, struct dmctx *ctx, char **value)
 	}
 	return 0;
 }
+////////////////ADD DEL OBJ//////////////////////////
+int add_wifi_ssid(struct dmctx *ctx, char **new_instance)
+{
+	char *value;
+	char ssid[16] = {0};
+	char *instance;
+	struct uci_section *s = NULL;
 
+	instance = get_last_instance("wireless", "wifi-iface", "lwlaninstance");
+	sprintf(ssid, "Inteno_%d", instance ? (atoi(instance)+1) : 1);
+	dmuci_add_section("wireless", "wifi-iface", &s, &value);
+	dmuci_set_value_by_section(s, "device", "wl0");
+	dmuci_set_value_by_section(s, "encryption", "none");
+	dmuci_set_value_by_section(s, "macfilter", "0");
+	dmuci_set_value_by_section(s, "mode", "ap");
+	dmuci_set_value_by_section(s, "ssid", ssid);
+	*new_instance = update_instance(s, instance, "lwlaninstance");
+	return 0;
+}
+
+int delete_wifi_ssid_all(struct dmctx *ctx)
+{
+	int found = 0;
+	char *lan_name;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
+
+	uci_foreach_sections("wireless", "wifi-iface", s) {
+		if (found != 0)
+				dmuci_delete_by_section(ss, NULL, NULL);
+		ss = s;
+		found++;
+	}
+	if (ss != NULL)
+		dmuci_delete_by_section(ss, NULL, NULL);
+	return 0;
+}
+
+int delete_wifi_ssid(struct dmctx *ctx)
+{
+	dmuci_delete_by_section(cur_wifi_ssid_args.wifi_ssid_sec, NULL, NULL);
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_wifi_radio(struct dmctx *ctx)
 {
@@ -973,7 +1015,7 @@ int entry_method_root_Wifi(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"WiFi.") {
 		DMOBJECT(DMROOT"WiFi.", ctx, "0", 1, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"WiFi.Radio.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"WiFi.SSID.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"WiFi.SSID.", ctx, "1", 1, add_wifi_ssid, delete_wifi_ssid_all, NULL);
 		DMOBJECT(DMROOT"WiFi.AccessPoint.", ctx, "0", 1, NULL, NULL, NULL);
 		SUBENTRY(entry_wifi_radio, ctx);
 		SUBENTRY(entry_wifi_ssid, ctx);
@@ -1017,7 +1059,7 @@ inline int entry_wifi_ssid_instance(struct dmctx *ctx, char *wnum)
 	IF_MATCH(ctx, DMROOT"WiFi.SSID.%s.", wnum) {
 		char linker[32];
 		strcat(linker, section_name(cur_wifi_ssid_args.wifi_ssid_sec));
-		DMOBJECT(DMROOT"WiFi.SSID.%s.", ctx, "0", 1, NULL, NULL, linker, wnum);
+		DMOBJECT(DMROOT"WiFi.SSID.%s.", ctx, "1", 1, NULL, delete_wifi_ssid, linker, wnum);
 		DMPARAM("Alias", ctx, "1", get_ssid_alias, set_ssid_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_wifi_enable, set_wifi_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_wifi_status, NULL, NULL, 0, 1, UNDEF, NULL);
