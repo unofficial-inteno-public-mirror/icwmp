@@ -19,8 +19,6 @@ AS_IF([test "x$enable_acs" = "xno"], [AC_DEFINE(ACS_MULTI)])
 AC_ARG_ENABLE(datamodel, [AS_HELP_STRING([--enable-datamodel],
 	[specify which Data Model will be used; (default --enable-datamodel=tr098]))],,)
 
-#AS_IF([test "x$enable_datamodel" = "xtr098"], [AC_DEFINE(DATAMODEL_TR098)])
-#AS_IF([test "x$enable_datamodel" = "xtr181"], [AC_DEFINE(DATAMODEL_TR181)])
 AM_CONDITIONAL([DATAMODEL_TR098], [test "x$enable_datamodel" = "xtr098" ])
 AM_CONDITIONAL([DATAMODEL_TR181], [test "x$enable_datamodel" = "xtr181" ])
 
