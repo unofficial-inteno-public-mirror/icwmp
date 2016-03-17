@@ -17,7 +17,6 @@
 #include "dmcwmp.h"
 #include "dmcommon.h"
 #include "wifi.h"
-#include "x_inteno_se_wifi.h"
 
 struct wifi_radio_args cur_wifi_radio_args = {0};
 struct wifi_ssid_args cur_wifi_ssid_args = {0};
@@ -294,21 +293,42 @@ int get_radio_operating_standard(char *refparam, struct dmctx *ctx, char **value
 		*value = "g";
 	else if (strcmp(*value, "11n") == 0 || strcmp(*value, "auto") == 0)
 		*value = "n";
+	else if (strcmp(*value, "11ac") == 0)
+		*value = "ac";
 	return 0;
 }
 
 int set_radio_operating_standard(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	dmuci_get_value_by_section_string(cur_wifi_radio_args.wifi_radio_sec, "hwmode", value);
-	if (strcmp(*value, "11b") == 0)
-		*value = "b";
-	else if (strcmp(*value, "11bg") == 0)
-		*value = "b,g";
-	else if (strcmp(*value, "11g") == 0 || strcmp(*value, "11gst") == 0 || strcmp(*value, "11lrs") == 0)
-		*value = "g";
-	else if (strcmp(*value, "11n") == 0 || strcmp(*value, "auto") == 0)
-		*value = "n";
-	return 0;
+	char *freq, *wlan_name;
+	json_object *res;
+	switch (action) {
+			case VALUECHECK:
+				return 0;
+			case VALUESET:
+				wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
+				dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+				json_select(res, "frequency", 0, NULL, &freq, NULL);
+				if (strcmp(freq, "5") == 0) {
+					 if (strcmp(value, "n") == 0)
+						value = "11n"; 
+					 else if (strcmp(value, "ac") == 0)
+						value = "11ac";
+					dmuci_set_value_by_section(cur_wifi_radio_args.wifi_radio_sec, "hwmode", value);
+				} else {
+					if (strcmp(value, "b") == 0)
+						value = "11b";
+					else if (strcmp(value, "b,g") == 0 || strcmp(value, "g,b") == 0)
+						value = "11bg";
+					else if (strcmp(value, "g") == 0)
+						value = "11g";
+					 else if (strcmp(value, "n") == 0)
+						value = "11n";
+					dmuci_set_value_by_section(cur_wifi_radio_args.wifi_radio_sec, "hwmode", value);
+				}
+				return 0;
+		}
+		return 0;
 }
 
 int get_radio_channel(char *refparam, struct dmctx *ctx, char **value)
@@ -1040,7 +1060,7 @@ inline int entry_wifi_radio_instance(struct dmctx *ctx, char *wnum)
 		DMPARAM("X_INTENO_SE_MaxAssociations", ctx, "1", get_radio_maxassoc, set_radio_maxassoc, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_DFSEnable", ctx, "1", get_radio_dfsenable, set_radio_dfsenable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("SupportedStandards", ctx, "0", get_radio_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("OperatingStandards", ctx, "0", get_radio_operating_standard, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("OperatingStandards", ctx, "1", get_radio_operating_standard, set_radio_operating_standard, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ChannelsInUse", ctx, "0", get_radio_channel, NULL, NULL, 0, 1, UNDEF, NULL); /// TO CHECK
 		DMPARAM("Channel", ctx, "1", get_radio_channel, set_radio_channel, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("AutoChannelEnable", ctx, "1", get_radio_auto_channel_enable, set_radio_auto_channel_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
