@@ -33,6 +33,7 @@
 #include "dmentry.h"
 #include "dmcommon.h"
 #include "wifi.h"
+#include "ethernet.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -113,6 +114,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 #ifdef DATAMODEL_TR181
 	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
+	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },
 #endif
 };
 

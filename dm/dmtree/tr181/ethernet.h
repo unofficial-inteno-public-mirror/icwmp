@@ -8,20 +8,16 @@
  *		Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
  *
  */
-#ifndef __WIFI_H
-#define __WIFI_H
+#ifndef __ETHERNET_H
+#define __ETHERNET_H
 
-struct wifi_radio_args
+struct eth_port_args
 {
-	struct uci_section *wifi_radio_sec;
+	struct uci_section *eth_port_sec;
+	char *ifname;
 };
 
-struct wifi_ssid_args
-{
-	struct uci_section *wifi_ssid_sec;
-	char *wiface;
-	char *linker;
-};
-int entry_method_root_Wifi(struct dmctx *ctx);
+
+int entry_method_root_Ethernet(struct dmctx *ctx);
 
 #endif

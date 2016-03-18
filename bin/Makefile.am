@@ -43,14 +43,15 @@ icwmpd_SOURCES =			\
 if DATAMODEL_TR098
 icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/lan_interfaces.c				\
-	../dm/dmtree/tr098/landevice.c				\
+	../dm/dmtree/tr098/landevice.c					\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
-	../dm/dmtree/tr098/wandevice.c				\
+	../dm/dmtree/tr098/wandevice.c					\
 	../dm/dmtree/tr098/x_inteno_se_wifi.c
 endif
 if DATAMODEL_TR181
 icwmpd_SOURCES +=									\
-	../dm/dmtree/tr181/wifi.c
+	../dm/dmtree/tr181/wifi.c						\
+	../dm/dmtree/tr181/ethernet.c
 endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
