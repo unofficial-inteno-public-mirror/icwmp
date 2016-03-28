@@ -95,9 +95,17 @@ enum {
 	FAULT_CPE_TYPE_SERVER
 };
 
+enum {
+	AMD_1 = 1,
+	AMD_2,
+	AMD_3,
+	AMD_4,
+	AMD_5,
+};
 struct rpc_cpe_method {
 	const char *name;
 	int (*handler)(struct session *session, struct rpc *rpc);
+	int amd;
 };
 
 struct rpc_acs_method {

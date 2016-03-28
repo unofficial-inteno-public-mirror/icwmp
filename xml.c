@@ -52,6 +52,8 @@ const static char *cwmp_urls[] = {
 		"urn:dslforum-org:cwmp-1-0",
 		"urn:dslforum-org:cwmp-1-1",
 		"urn:dslforum-org:cwmp-1-2",
+		"urn:dslforum-org:cwmp-1-3",
+		"urn:dslforum-org:cwmp-1-4",
 		NULL };
 
 struct FAULT_CPE FAULT_CPE_ARRAY [] = {
@@ -78,21 +80,21 @@ struct FAULT_CPE FAULT_CPE_ARRAY [] = {
 };
 
 const struct rpc_cpe_method rpc_cpe_methods[] = {
-	[RPC_CPE_GET_RPC_METHODS] 				= {"GetRPCMethods", cwmp_handle_rpc_cpe_get_rpc_methods},
-	[RPC_CPE_SET_PARAMETER_VALUES] 			= {"SetParameterValues", cwmp_handle_rpc_cpe_set_parameter_values},
-	[RPC_CPE_GET_PARAMETER_VALUES] 			= {"GetParameterValues", cwmp_handle_rpc_cpe_get_parameter_values},
-	[RPC_CPE_GET_PARAMETER_NAMES] 			= {"GetParameterNames", cwmp_handle_rpc_cpe_get_parameter_names},
-	[RPC_CPE_SET_PARAMETER_ATTRIBUTES] 		= {"SetParameterAttributes", cwmp_handle_rpc_cpe_set_parameter_attributes},
-	[RPC_CPE_GET_PARAMETER_ATTRIBUTES] 		= {"GetParameterAttributes", cwmp_handle_rpc_cpe_get_parameter_attributes},
-	[RPC_CPE_ADD_OBJECT] 					= {"AddObject", cwmp_handle_rpc_cpe_add_object},
-	[RPC_CPE_DELETE_OBJECT] 				= {"DeleteObject", cwmp_handle_rpc_cpe_delete_object},
-	[RPC_CPE_REBOOT] 						= {"Reboot", cwmp_handle_rpc_cpe_reboot},
-	[RPC_CPE_DOWNLOAD] 						= {"Download", cwmp_handle_rpc_cpe_download},
-	[RPC_CPE_UPLOAD] 						= {"Upload", cwmp_handle_rpc_cpe_upload},
-	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset", cwmp_handle_rpc_cpe_factory_reset},
-	[RPC_CPE_CANCEL_TRANSFER] 				= {"CancelTransfer", cwmp_handle_rpc_cpe_cancel_transfer},	
-	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform", cwmp_handle_rpc_cpe_schedule_inform},
-	[RPC_CPE_FAULT] 						= {"Fault", cwmp_handle_rpc_cpe_fault}
+	[RPC_CPE_GET_RPC_METHODS] 				= {"GetRPCMethods", cwmp_handle_rpc_cpe_get_rpc_methods, AMD_1},
+	[RPC_CPE_SET_PARAMETER_VALUES] 			= {"SetParameterValues", cwmp_handle_rpc_cpe_set_parameter_values, AMD_1},
+	[RPC_CPE_GET_PARAMETER_VALUES] 			= {"GetParameterValues", cwmp_handle_rpc_cpe_get_parameter_values, AMD_1},
+	[RPC_CPE_GET_PARAMETER_NAMES] 			= {"GetParameterNames", cwmp_handle_rpc_cpe_get_parameter_names, AMD_1},
+	[RPC_CPE_SET_PARAMETER_ATTRIBUTES] 		= {"SetParameterAttributes", cwmp_handle_rpc_cpe_set_parameter_attributes, AMD_1},
+	[RPC_CPE_GET_PARAMETER_ATTRIBUTES] 		= {"GetParameterAttributes", cwmp_handle_rpc_cpe_get_parameter_attributes, AMD_1},
+	[RPC_CPE_ADD_OBJECT] 					= {"AddObject", cwmp_handle_rpc_cpe_add_object, AMD_1},
+	[RPC_CPE_DELETE_OBJECT] 				= {"DeleteObject", cwmp_handle_rpc_cpe_delete_object, AMD_1},
+	[RPC_CPE_REBOOT] 						= {"Reboot", cwmp_handle_rpc_cpe_reboot, AMD_1},
+	[RPC_CPE_DOWNLOAD] 						= {"Download", cwmp_handle_rpc_cpe_download, AMD_1},
+	[RPC_CPE_UPLOAD] 						= {"Upload", cwmp_handle_rpc_cpe_upload, AMD_1},
+	[RPC_CPE_FACTORY_RESET] 				= {"FactoryReset", cwmp_handle_rpc_cpe_factory_reset, AMD_1},
+	[RPC_CPE_CANCEL_TRANSFER] 				= {"CancelTransfer", cwmp_handle_rpc_cpe_cancel_transfer, AMD_3},	
+	[RPC_CPE_SCHEDULE_INFORM] 				= {"ScheduleInform", cwmp_handle_rpc_cpe_schedule_inform, AMD_1},
+	[RPC_CPE_FAULT] 						= {"Fault", cwmp_handle_rpc_cpe_fault, AMD_1}
 };
 
 const struct rpc_acs_method rpc_acs_methods[] = {
@@ -263,6 +265,10 @@ error:
 
 int xml_prepare_msg_out(struct session *session)
 {
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	conf = &(cwmp->conf);
+	mxml_node_t *n;
 #ifdef DUMMY_MODE
 	FILE *fp;
 	fp = fopen("./ext/soap_msg_templates/cwmp_response_message.xml", "r");
@@ -270,6 +276,9 @@ int xml_prepare_msg_out(struct session *session)
 	fclose(fp);
 #else
 	session->tree_out = mxmlLoadString(NULL, CWMP_RESPONSE_MESSAGE, MXML_NO_CALLBACK);
+	n = mxmlFindElement(session->tree_out, session->tree_out, "soap_env:Envelope", NULL, NULL, MXML_DESCEND);
+	if(!n) { printf("NO ELEMENT NAMED ENVELOPE \n"); return -1;}
+	mxmlElementSetAttr(n, "xmlns:cwmp", cwmp_urls[(conf->amd_version)-1]);
 #endif
 	if (!session->tree_out) return -1;
 
@@ -334,6 +343,9 @@ int xml_handle_message(struct session *session)
 	char		*c;
 	int 		i;
 	mxml_node_t	*b;
+	struct cwmp   *cwmp = &cwmp_main;
+	struct config   *conf;
+	conf = &(cwmp->conf);
 
 	/* get method */
 
@@ -386,7 +398,7 @@ int xml_handle_message(struct session *session)
 	CWMP_LOG (INFO,"SOAP RPC message: %s", c);
 	rpc_cpe = NULL;
 	for (i = 1; i < __RPC_CPE_MAX; i++) {
-		if (i!= RPC_CPE_FAULT && strcmp(c, rpc_cpe_methods[i].name) == 0) {
+		if (i!= RPC_CPE_FAULT && strcmp(c, rpc_cpe_methods[i].name) == 0 && rpc_cpe_methods[i].amd <= conf->amd_version) {
 			CWMP_LOG (INFO,"%s RPC is supported",c);
 			rpc_cpe = cwmp_add_session_rpc_cpe(session, i);
 			if (rpc_cpe == NULL) goto error;
@@ -635,8 +647,9 @@ char* xml_get_cwmp_version (int version)
 {
 	int k;	
 	char tmp[10]  = "";
-	static char versions[60] = "";  
-    
+	static char versions[60] = "";
+	versions[0] = '\0';
+
         for (k=0; k < version; k++) {
             if (k == 0)
                 sprintf(tmp, "1.%d", k);   
@@ -673,8 +686,11 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 	tree = mxmlLoadString(NULL, CWMP_INFORM_MESSAGE, MXML_NO_CALLBACK);
 #endif
 	if (!tree) goto error;
-
-	if ( cwmp->conf.amd_version >= 4 ) {
+	b = mxmlFindElement(tree, tree, "soap_env:Envelope", NULL, NULL, MXML_DESCEND);
+	if(!b) { printf("NO ELEMENT NAMED ENVELOPE \n"); goto error;}
+	printf("cwmp->conf.supported_amd_version %d cwmp_urls[cwmp->conf.supported_amd_version] %s \n", cwmp->conf.supported_amd_version, cwmp_urls[cwmp->conf.supported_amd_version]);
+	mxmlElementSetAttr(b, "xmlns:cwmp", cwmp_urls[(cwmp->conf.supported_amd_version)-1]);
+	if ( cwmp->conf.supported_amd_version >= 4 ) {
 		b = mxmlFindElement(tree, tree, "soap_env:Header", NULL, NULL, MXML_DESCEND);
 		if (!b) goto error;
 		node = mxmlNewElement(b, "cwmp:SessionTimeout");
@@ -683,11 +699,11 @@ int cwmp_rpc_acs_prepare_message_inform (struct cwmp *cwmp, struct session *sess
 		node = mxmlNewInteger(node, cwmp->conf.session_timeout);
 		if (!node) goto error;
 	}
-	if ( cwmp->conf.amd_version >= 5 ) {
+	if ( cwmp->conf.supported_amd_version >= 5 ) {
 		node = mxmlNewElement(b, "cwmp:SupportedCWMPVersions");
 		if (!node) goto error;
 		mxmlElementSetAttr(node, "soap_env:mustUnderstand", "0");
-		node = mxmlNewText(node, 0,  xml_get_cwmp_version(cwmp->conf.amd_version)); 
+		node = mxmlNewText(node, 0,  xml_get_cwmp_version(cwmp->conf.supported_amd_version)); 
 		if (!node) goto error;
 	} 
 	b = mxmlFindElement(tree, tree, "RetryCount", NULL, NULL, MXML_DESCEND);
@@ -768,6 +784,9 @@ error:
 int cwmp_rpc_acs_parse_response_inform (struct cwmp *cwmp, struct session *session, struct rpc *this)
 {
 	mxml_node_t *tree, *b;
+	int i = -1;	
+	char *c;
+	const char *cwmp_urn;
 
 	tree = session->tree_in;
 	if (!tree) goto error;
@@ -776,6 +795,64 @@ int cwmp_rpc_acs_parse_response_inform (struct cwmp *cwmp, struct session *sessi
 	b = mxmlWalkNext(b, tree, MXML_DESCEND_FIRST);
 	if (!b || b->type != MXML_TEXT || !b->value.text.string)
 		goto error;
+	if(cwmp->conf.supported_amd_version == 1) {
+		cwmp->conf.amd_version = 1;
+		return 0;
+	}
+	b = mxmlFindElement(tree, tree, "UseCWMPVersion", NULL, NULL, MXML_DESCEND);
+	if (b && cwmp->conf.supported_amd_version >= 5) { //IF supported version !=5 acs response dosen't contain UseCWMPVersion
+		b = mxmlWalkNext(b, tree, MXML_DESCEND_FIRST);
+		if (!b || b->type != MXML_TEXT || !b->value.text.string)
+			goto error;
+		c = (char *)(b->value.text.string);
+		if (c && *(c + 1) == '.') {
+			printf("c vaut %s \n", c);
+			c+=2;
+			cwmp->conf.amd_version = atoi(c) + 1;
+			printf("cwmp->conf.amd_version %d \n", cwmp->conf.amd_version);
+			return 0;
+		}
+		goto error;
+	}
+	for (i = 0; cwmp_urls[i] != NULL; i++) {
+		cwmp_urn = cwmp_urls[i];
+		c = (char *) mxmlElementGetAttrName(tree, cwmp_urn);
+		if (c && *(c + 5) == ':') {
+			printf("cwmp_urls[%d] %s", i, cwmp_urls[i]);
+			break;
+		}
+	}
+	if (i == 0) {
+		printf("set cwmp ns to 1-0\n");
+		cwmp->conf.amd_version = i+1;
+	}
+	else if ( i >= 1 && i <= 3) {
+		printf("set cwmp ns to min \n");
+		switch (cwmp->conf.supported_amd_version)
+        {
+            case 1:
+				cwmp->conf.amd_version = 1; //Already done
+				break;
+			case 2:
+			case 3:
+			case 4:
+				//MIN ACS CPE
+				if (cwmp->conf.supported_amd_version <= i+1)
+					cwmp->conf.amd_version = cwmp->conf.supported_amd_version;
+				else
+					cwmp->conf.amd_version = i+1;
+				break;
+				//(cwmp->supported_conf.amd_version < i+1) ?"cwmp->conf.amd_version":"i+1";
+			case 5:
+				cwmp->conf.amd_version = i+1;
+				break;			
+		}
+		printf("cwmp->conf.amd_version %d \n", cwmp->conf.amd_version);
+			
+	}
+	else if ( i >= 4 ) {
+		cwmp->conf.amd_version = cwmp->conf.supported_amd_version;
+	}
 	return 0;
 
 error:
@@ -798,6 +875,9 @@ int cwmp_rpc_acs_prepare_get_rpc_methods(struct cwmp *cwmp, struct session *sess
 
 	tree = mxmlLoadString(NULL, CWMP_RESPONSE_MESSAGE, MXML_NO_CALLBACK);
 
+	n = mxmlFindElement(tree, tree, "soap_env:Envelope", NULL, NULL, MXML_DESCEND);
+	if(!n) { printf("NO ELEMENT NAMED ENVELOPE \n"); return -1;}
+	mxmlElementSetAttr(n, "xmlns:cwmp", cwmp_urls[(cwmp->conf.amd_version)-1]);
 	n = mxmlFindElement(tree, tree, "soap_env:Body",
 					NULL, NULL, MXML_DESCEND);
 	if (!n) return -1;
@@ -838,6 +918,9 @@ int cwmp_rpc_acs_prepare_transfer_complete(struct cwmp *cwmp, struct session *se
 
 	p = (struct transfer_complete *)rpc->extra_data;
 	tree = mxmlLoadString(NULL, CWMP_RESPONSE_MESSAGE, MXML_NO_CALLBACK);
+	n = mxmlFindElement(tree, tree, "soap_env:Envelope", NULL, NULL, MXML_DESCEND);
+	if(!n) { printf("NO ELEMENT NAMED ENVELOPE \n"); goto error;}
+	mxmlElementSetAttr(n, "xmlns:cwmp", cwmp_urls[(cwmp->conf.amd_version)-1]);
 
 	n = mxmlFindElement(tree, tree, "soap_env:Body",
 					NULL, NULL, MXML_DESCEND);

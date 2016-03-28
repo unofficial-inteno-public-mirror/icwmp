@@ -763,6 +763,7 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+	conf->supported_amd_version = conf->amd_version;
     if((error = get_instance_mode_config())!= CWMP_OK)
     {
         return error;

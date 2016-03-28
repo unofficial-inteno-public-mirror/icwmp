@@ -31,8 +31,7 @@
 	"xmlns:soap_env=\"http://schemas.xmlsoap.org/soap/envelope/\" "						\
 	"xmlns:soap_enc=\"http://schemas.xmlsoap.org/soap/encoding/\" "						\
 	"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "							\
-	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "						\
-	"xmlns:cwmp=\"urn:dslforum-org:cwmp-1-2\">"								\
+	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" >"						\
         "<soap_env:Header>"											\
 		"<cwmp:ID soap_env:mustUnderstand=\"1\"/>"							\
 	"</soap_env:Header>"											\
@@ -60,8 +59,7 @@
 	"xmlns:soap_env=\"http://schemas.xmlsoap.org/soap/envelope/\" "	\
 	"xmlns:soap_enc=\"http://schemas.xmlsoap.org/soap/encoding/\" "	\
 	"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "		\
-	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "	\
-	"xmlns:cwmp=\"urn:dslforum-org:cwmp-1-2\">"			\
+	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"	\
 	"<soap_env:Header>"						\
 		"<cwmp:ID soap_env:mustUnderstand=\"1\"/>"		\
 	"</soap_env:Header>"						\

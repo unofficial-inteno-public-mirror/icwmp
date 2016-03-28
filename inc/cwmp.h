@@ -167,6 +167,7 @@ typedef struct config {
     char                                *lw_notification_hostname;
     int                                 lw_notification_port;
     unsigned int 						amd_version;
+	unsigned int 						supported_amd_version;
     unsigned int 						instance_mode;
 	unsigned int 						session_timeout;
 } config;
