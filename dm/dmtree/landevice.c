@@ -674,7 +674,7 @@ int set_lan_dhcp_iprouters(char *refparam, struct dmctx *ctx, int action, char *
 int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 {
 	int len, mtime = 0;
-	char *ltime = "", *pch, *spch, *ltime_ini;
+	char *ltime = "", *pch, *spch, *ltime_ini, *tmp, *tmp_ini;
 	struct uci_section *s = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
@@ -689,15 +689,52 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 	}
 	ltime = dmstrdup(ltime);
 	ltime_ini = dmstrdup(ltime);
+	tmp = ltime;
+	tmp_ini = ltime_ini;
 	pch = strtok_r(ltime, "h", &spch);
-	if (strcmp(pch, ltime_ini) != 0)
+	if (strcmp(pch, ltime_ini) != 0) {
 		mtime = 3600 * atoi(pch);
-	pch = strtok_r(ltime, "m", &spch);
-	if (strcmp(pch, ltime_ini) != 0)
-		mtime += 60 * atoi(pch);
-	dmfree(ltime);
-	dmfree(ltime_ini);
-
+		if(spch[0] != '\0') {
+			ltime += strlen(pch)+1;
+			ltime_ini += strlen(pch)+1;
+			pch = strtok_r(ltime, "m", &spch);
+			if (strcmp(pch, ltime_ini) != 0) {
+				mtime += 60 * atoi(pch);
+				if(spch[0] !='\0') {
+					ltime += strlen(pch)+1;
+					ltime_ini += strlen(pch)+1;
+					pch = strtok_r(ltime, "s", &spch);
+					if (strcmp(pch, ltime_ini) != 0) {
+						mtime += atoi(pch);
+					}
+				}
+			} else {
+				pch = strtok_r(ltime, "s", &spch);
+				if (strcmp(pch, ltime_ini) != 0)
+				mtime +=  atoi(pch);
+			}
+		}
+	}
+	else {
+		pch = strtok_r(ltime, "m", &spch);
+		if (strcmp(pch, ltime_ini) != 0) {
+			mtime += 60 * atoi(pch);
+			if(spch[0] !='\0') {
+				ltime += strlen(pch)+1;
+				ltime_ini += strlen(pch)+1;
+				pch = strtok_r(ltime, "s", &spch);
+				if (strcmp(pch, ltime_ini) != 0) {
+					mtime += atoi(pch);
+				}
+			}
+		} else {
+			pch = strtok_r(ltime, "s", &spch);
+			if (strcmp(pch, ltime_ini) != 0)
+				mtime +=  atoi(pch);
+		}
+	}
+	dmfree(tmp);
+	dmfree(tmp_ini);
 	dmasprintf(value, "%d", mtime); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
