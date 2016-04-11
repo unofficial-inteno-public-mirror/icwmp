@@ -19,12 +19,7 @@
 #define DELIMITOR ","
 #define TAILLE 10
 #define MAX_PROC_ARP 256
-#define ARP_FILE "/proc/net/arp"
-
-#define MAX_DHCP_LEASES 256
 #define DHCP_LEASE_FILE "/var/dhcp.leases"
-
-char *DHCPSTATICADDRESS_DISABLED_CHADDR="00:00:00:00:00:01";
 
 inline int entry_landevice_sub_instance(struct dmctx *ctx, struct uci_section *landevice_section, char *idev);
 inline int entry_landevice_ipinterface_instance (struct dmctx *ctx, char *idev, char *ilan);
@@ -854,50 +849,6 @@ int get_lan_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
 }
 /***************************************************************************/
 
-int filter_lan_device_interface(struct uci_section *s, void *v)
-{
-	char *ifname = NULL; 
-	char *phy_itf = NULL, *phy_itf_local;
-	char *pch, *spch, *ftype, *islan;
-	
-	dmuci_get_value_by_section_string(s, "type", &ftype);
-	if (strcmp(ftype, "alias") != 0) {
-		dmuci_get_value_by_section_string(s, "is_lan", &islan);
-		if (islan[0] == '1' && strcmp(section_name(s), "loopback") != 0 )
-			return 0;
-		dmuci_get_value_by_section_string(s, "ifname", &ifname);
-		db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
-		phy_itf_local = dmstrdup(phy_itf);
-		pch = strtok_r(phy_itf_local, " ", &spch);
-		while (pch != NULL) {
-			if (strstr(ifname, pch)) {
-				dmfree(phy_itf_local);
-				return 0;
-			}
-			pch = strtok_r(NULL, " ", &spch);
-		}
-		dmfree(phy_itf_local);
-	}
-	return -1;
-}
-
-int filter_lan_ip_interface(struct uci_section *ss, void *v)
-{
-	struct uci_section *lds = (struct uci_section *)v;
-	char *value, *type;
-	dmuci_get_value_by_section_string(ss, "type", &type);
-	if (ss == lds) {
-		return 0;
-	}
-	else if (strcmp(type, "alias") == 0) {
-		dmuci_get_value_by_section_string(ss, "ifname", &value);
-		if(strncmp(value, "br-", 3) == 0)
-			value += 3;
-		if (strcmp(value, section_name(lds)) == 0) 
-			return 0;
-	}
-	return -1;
-}
 
 /************************************************************************** 
 **** function related to landevice_lanhostconfigmanagement_ipinterface ****
@@ -2945,7 +2896,7 @@ inline int entry_landevice_wlanconfiguration_wepkey(struct dmctx *ctx, char *ide
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	struct uci_section *s = NULL;
 
-	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection));
+	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
 	uci_foreach_option_eq("dmmap", "wlan-wepkey", "wlan", section_name(wlanargs->lwlansection), s) {
 		//init_wlan_wep_args(ctx, s);
 		cur_wepargs.wlanwep = s;
@@ -2964,7 +2915,7 @@ inline int entry_landevice_wlanconfiguration_presharedkey(struct dmctx *ctx, cha
 
 	wlanargs->pki = 0;
 	//update section list of wlan-psk before update instance
-	update_section_list("dmmap","wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection));
+	update_section_list("dmmap","wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
 	uci_foreach_option_eq("dmmap", "wlan-psk", "wlan", section_name(wlanargs->lwlansection), s) {
 		wlanargs->pki++;
 		//init_wlan_psk_args(ctx, s);

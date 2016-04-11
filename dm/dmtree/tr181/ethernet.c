@@ -32,7 +32,7 @@ inline int init_eth_port(struct dmctx *ctx, struct uci_section *s, char *ifname)
 ///////////////////SET & GET ALIAS////////////////////////////////////
 int get_eth_port_alias(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_value_by_section_string(cur_eth_port_args.eth_port_sec, "ethportalias", value);
+	dmuci_get_value_by_section_string(cur_eth_port_args.eth_port_sec, "eth_port_alias", value);
 	return 0;
 }
 
@@ -42,7 +42,7 @@ int set_eth_port_alias(char *refparam, struct dmctx *ctx, int action, char *valu
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_eth_port_args.eth_port_sec, "ethportalias", value);
+			dmuci_set_value_by_section(cur_eth_port_args.eth_port_sec, "eth_port_alias", value);
 			return 0;
 	}
 	return 0;
@@ -225,7 +225,6 @@ int set_eth_port_duplexmode(char *refparam, struct dmctx *ctx, int action, char 
 int get_eth_port_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_eth_port_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -236,7 +235,6 @@ int get_eth_port_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 int get_eth_port_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_eth_port_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -247,7 +245,6 @@ int get_eth_port_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 int get_eth_port_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_eth_port_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -258,7 +255,6 @@ int get_eth_port_stats_tx_packets(char *refparam, struct dmctx *ctx, char **valu
 int get_eth_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_eth_port_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -271,6 +267,8 @@ int entry_method_root_Ethernet(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"Ethernet.") {
 		DMOBJECT(DMROOT"Ethernet.", ctx, "0", 0, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"Ethernet.Interface.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"Ethernet.VLANTermination.", ctx, "0", 1, NULL, NULL, NULL);
 		SUBENTRY(entry_method_eth_interface, ctx);
 		SUBENTRY(entry_method_eth_vlan, ctx);
 		return 0;
@@ -286,7 +284,7 @@ inline int entry_method_eth_interface(struct dmctx *ctx)
 	uci_foreach_sections("ports", "ethport", ss) {
 		dmuci_get_value_by_section_string(ss, "ifname", &ifname);
 		init_eth_port(ctx, ss, ifname);
-		int_num =  handle_update_instance(1, ctx, &int_num_last, update_instance_alias, 3, ss, "ethportinstance", "ethportalias");
+		int_num =  handle_update_instance(1, ctx, &int_num_last, update_instance_alias, 3, ss, "eth_port_instance", "eth_port_alias");
 		SUBENTRY(entry_eth_interface_instance, ctx, int_num);
 	}
 	return 0;
@@ -300,7 +298,7 @@ inline int entry_method_eth_vlan(struct dmctx *ctx)
 inline int entry_eth_interface_instance(struct dmctx *ctx, char *int_num)
 {
 	IF_MATCH(ctx, DMROOT"Ethernet.Interface.%s.", int_num) {
-		DMOBJECT(DMROOT"Ethernet.Interface.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num);
+		DMOBJECT(DMROOT"Ethernet.Interface.%s.", ctx, "0", 1, NULL, NULL, cur_eth_port_args.ifname, int_num);
 		DMPARAM("Alias", ctx, "1", get_eth_port_alias, set_eth_port_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_eth_port_enable, set_eth_port_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_eth_port_status, NULL, NULL, 0, 1, UNDEF, NULL);

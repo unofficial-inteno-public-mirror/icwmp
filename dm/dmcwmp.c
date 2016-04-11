@@ -34,6 +34,12 @@
 #include "dmcommon.h"
 #include "wifi.h"
 #include "ethernet.h"
+#include "wan.h"
+#include "bridging.h"
+#include "hosts.h"
+#include "dhcp.h"
+#include "ip.h"
+#include "ppp.h"
 
 static char *get_parameter_notification (char *param);
 static int remove_parameter_notification(char *param);
@@ -115,6 +121,14 @@ struct prefix_method prefix_methods[] = {
 #ifdef DATAMODEL_TR181
 	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
 	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },
+	{ DMROOT"DSL.", 1, NULL, 0, &entry_method_root_wan_dsl },
+	{ DMROOT"ATM.", 1, NULL, 0, &entry_method_root_wan_atm },
+	{ DMROOT"PTM.", 1, NULL, 0, &entry_method_root_wan_ptm },
+	{ DMROOT"Bridging.", 1, NULL, 0, &entry_method_root_bridging },
+	{ DMROOT"Hosts.", 1, NULL, 0, &entry_method_root_hosts },
+	{ DMROOT"DHCPv4.", 1, NULL, 0, &entry_method_root_dhcp },
+	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
+	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
 #endif
 };
 

@@ -78,29 +78,6 @@ inline void init_args_layer2_vlan(struct dmctx *ctx, struct uci_section *ss)
 	args->layer2sectionlev2 = ss;
 }
 
-void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname)
-{
-	char *pch, *spch, *p = new_ifname;
-	new_ifname[0] = '\0';
-
-	ifname = dmstrdup(ifname);
-	pch = strtok_r(ifname, " ", &spch);
-	while (pch != NULL) {
-		if (strcmp(pch, iface) != 0) {
-			if (p == new_ifname) {
-				dmstrappendstr(p, pch);
-			}
-			else {
-				dmstrappendchr(p, ' ');
-				dmstrappendstr(p, pch);
-			}
-		}
-		pch = strtok_r(NULL, " ", &spch);
-	}
-	dmstrappendend(p);
-	dmfree(ifname);
-}
-
 char *layer2_get_last_section_instance(char *package, char *section, char *opt_inst)
 {
 	struct uci_section *s, *last = NULL;
@@ -115,23 +92,6 @@ char *layer2_get_last_section_instance(char *package, char *section, char *opt_i
 		inst = update_instance(last, inst, opt_inst);
 	}
 	return inst;
-}
-
-void update_remove_vlan_from_bridge_interface(char *bridge_key, struct uci_section *vb)
-{
-	char *ifname,*vid;
-	char new_ifname[128];
-	struct uci_section *s;
-
-	uci_foreach_option_eq("network", "interface", "bridge_instance", bridge_key, s)
-	{
-		break;
-	}
-	if (!s) return;
-	dmuci_get_value_by_section_string(vb, "vid", &vid);
-	dmuci_get_value_by_section_string(s, "ifname", &ifname);
-	remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
-	dmuci_set_value_by_section(s, "ifname", new_ifname);
 }
 
 int update_bridge_vlan_config(char *vid, char *bridge_key)
@@ -153,7 +113,6 @@ int update_bridge_vlan_config(char *vid, char *bridge_key)
 	dmuci_set_value_by_section(ss, "vid", vid);
 	dmfree(name);
 	return 0;
-
 }
 
 int update_bridge_all_vlan_config_bybridge(struct dmctx *ctx)
@@ -163,8 +122,7 @@ int update_bridge_all_vlan_config_bybridge(struct dmctx *ctx)
 
 	dmuci_get_value_by_section_string(cur_args.layer2section, "ifname", &ifname);
 	ifname = dmstrdup(ifname);
-	pch = strtok_r(ifname, " ", &spch);
-	while (pch != NULL) {
+	for (pch = strtok_r(ifname, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
 		if (strncmp(pch, wan_baseifname, 4) == 0
 			|| strncmp(pch, "ptm", 3) == 0
 			|| strncmp(pch, "atm", 3) == 0) {
@@ -174,7 +132,6 @@ int update_bridge_all_vlan_config_bybridge(struct dmctx *ctx)
 				break;
 			}
 		}
-		pch = strtok_r(NULL, " ", &spch);
 	}
 	dmfree(ifname);
 	return 0;

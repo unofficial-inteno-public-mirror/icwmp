@@ -115,22 +115,6 @@ inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity)
 	return 0;
 }
 
-int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
-{
-	char *si, *value;
-	int idx = 0, max = -1;
-	struct uci_section *s = NULL;
-
-	uci_foreach_sections(pack, section_type, s) {
-		dmuci_get_value_by_section_string(s, option, &value);
-		si = value + shift;
-		idx = atoi(si);
-		if (idx > max)
-			max = idx;
-	}
-	return (max + 1);
-}
-
 void set_bridge_layer2(struct dmctx *ctx, char *bridge)
 {
 	char *wifname, *dup, *pch, *spch;
@@ -2091,7 +2075,7 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 		default_wan_proto = WAN_PROTO_IP;
 	else
 		default_wan_proto = WAN_PROTO_NIL;
-	update_section_list("dmmap","wan_dev", NULL, 3, NULL);
+	update_section_list("dmmap","wan_dev", NULL, 3, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "wan_dev", s) {
 		init_wanargs(ctx, i+1, wan_devices[i].fdev, s);
 

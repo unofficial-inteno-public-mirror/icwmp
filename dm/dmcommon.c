@@ -415,7 +415,7 @@ void update_section_option_list(char *config, char *section, char *option, char 
 			}
 			prev_s = s;
 		} else if (strstr(name, baseifname) && (strcmp(baseifname,val) ==0)) {
-			//dont add baseifname if exist 
+			//do not add baseifname if exist
 			add_sec = false;
 		}
 	}
@@ -430,7 +430,7 @@ void update_section_option_list(char *config, char *section, char *option, char 
 }
 
 
-void update_section_list(char *config, char *section, char *option, int number, char *filter)
+void update_section_list(char *config, char *section, char *option, int number, char *filter, char *option1, char *val1,  char *option2, char *val2)
 {
 	char *add_value;
 	struct uci_section *s = NULL;
@@ -448,6 +448,8 @@ void update_section_list(char *config, char *section, char *option, int number, 
 	while (i < number) {
 		dmuci_add_section(config, section, &s, &add_value);
 		if (option)dmuci_set_value_by_section(s, option, filter);
+		if (option1)dmuci_set_value_by_section(s, option1, val1);
+		if (option2)dmuci_set_value_by_section(s, option2, val2);
 		i++;
 	}
 }
@@ -476,5 +478,229 @@ int reset_wlan(struct uci_section *s)
 	dmuci_delete_by_section(s, "radius_server", NULL);
 	dmuci_delete_by_section(s, "radius_port", NULL);
 	dmuci_delete_by_section(s, "radius_secret", NULL);
+	return 0;
+}
+
+int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift)
+{
+	char *si, *value;
+	int idx = 0, max = -1;
+	struct uci_section *s = NULL;
+
+	uci_foreach_sections(pack, section_type, s) {
+		dmuci_get_value_by_section_string(s, option, &value);
+		si = value + shift;
+		idx = atoi(si);
+		if (idx > max)
+			max = idx;
+	}
+	return (max + 1);
+}
+
+int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev)
+{
+	char *ifname, new_ifname[64], *p, *pch, *spch;
+	new_ifname[0] = '\0';
+	p = new_ifname;
+	dmuci_get_value_by_section_string(interface_setion, "ifname", &ifname);
+	ifname = dmstrdup(ifname);
+	for (pch = strtok_r(ifname, " ", &spch); pch; pch = strtok_r(NULL, " ", &spch)) {
+		if (!strstr(pch, dev)) {
+			if (new_ifname[0] != '\0') {
+				dmstrappendchr(p, ' ');
+			}
+			dmstrappendstr(p, pch);
+		}
+	}
+	dmstrappendend(p);
+	dmfree(ifname);
+	if (new_ifname[0] == '\0') {
+		dmuci_delete_by_section(interface_setion, NULL, NULL);
+	}
+	else {
+		dmuci_set_value_by_section(interface_setion, "ifname", new_ifname);
+	}
+	return 0;
+}
+
+int filter_lan_device_interface(struct uci_section *s, void *v)
+{
+	char *ifname = NULL;
+	char *phy_itf = NULL, *phy_itf_local;
+	char *pch, *spch, *ftype, *islan;
+
+	dmuci_get_value_by_section_string(s, "type", &ftype);
+	if (strcmp(ftype, "alias") != 0) {
+		dmuci_get_value_by_section_string(s, "is_lan", &islan);
+		if (islan[0] == '1' && strcmp(section_name(s), "loopback") != 0 )
+			return 0;
+		dmuci_get_value_by_section_string(s, "ifname", &ifname);
+		db_get_value_string("hw", "board", "ethernetLanPorts", &phy_itf);
+		phy_itf_local = dmstrdup(phy_itf);
+		for (pch = strtok_r(phy_itf_local, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
+			if (strstr(ifname, pch)) {
+				dmfree(phy_itf_local);
+				return 0;
+			}
+		}
+		dmfree(phy_itf_local);
+	}
+	return -1;
+}
+
+void update_add_vlan_interfaces(char *bridge_key, char *vid, char *wan_eth)
+{
+	char *baseifname, *add_value;
+	char baseifname_dup[16];
+	char *p;
+	bool found;
+	struct uci_section *s, *vlan_interface_s, *vi_sec;
+
+	uci_foreach_option_eq("dmmap", "marking-bridge", "bridgekey", bridge_key, s) {
+		dmuci_get_value_by_section_string(s, "baseifname", &baseifname);
+		p = baseifname_dup;
+		dmstrappendstr(p, baseifname);
+		dmstrappendchr(p, '.');
+		dmstrappendstr(p, vid);
+		dmstrappendend(p);
+		found = false;
+		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", baseifname_dup, vi_sec) {
+			found = true;
+			break;
+		}
+		if(found)
+			continue;
+
+		if(strncmp(baseifname, wan_eth, 4) == 0 ||
+			strncmp(baseifname, "ptm", 3) == 0 ||
+			strncmp(baseifname, "atm", 3) == 0) {
+			dmuci_add_section("layer2_interface_vlan", "vlan_interface", &vlan_interface_s, &add_value);
+			dmuci_set_value_by_section(vlan_interface_s, "baseifname", baseifname);
+			dmuci_set_value_by_section(vlan_interface_s, "bridge", bridge_key);
+			dmuci_set_value_by_section(vlan_interface_s, "ifname", baseifname_dup);
+			dmuci_set_value_by_section(vlan_interface_s, "name", baseifname_dup);
+			dmuci_set_value_by_section(vlan_interface_s, "vlan8021q", vid);
+		}
+	}
+}
+
+void update_add_vlan_to_bridge_interface(char *bridge_key, struct uci_section *dmmap_s, char *wan_eth)
+{
+	char *vid, *ifname, *baseifname;
+	struct uci_section *interface_s, *marking_bridge_s;
+	char baseifname_dup[16];
+	char *p;
+	char ifname_dup[128];
+	char *ptr;
+
+	dmuci_get_value_by_section_string(dmmap_s, "vid", &vid);
+	if(vid[0] == '\0')
+		return ;
+
+	uci_foreach_option_eq("network", "interface", "bridge_instance", bridge_key, interface_s)
+	{
+		dmuci_get_value_by_section_string(interface_s, "ifname", &ifname);
+		ifname_dup[0] = '\0';
+		ptr = ifname_dup;
+		dmstrappendstr(ptr, ifname);
+		dmstrappendend(ptr);
+		uci_foreach_option_eq("dmmap", "marking-bridge", "bridgekey", bridge_key, marking_bridge_s)
+		{
+			dmuci_get_value_by_section_string(marking_bridge_s, "baseifname", &baseifname);
+			if (strncmp(baseifname, wan_eth, 4) == 0
+				|| strncmp(baseifname, "ptm", 3) == 0
+				|| strncmp(baseifname, "atm", 3) == 0) {
+				p = baseifname_dup;
+				dmstrappendstr(p, baseifname);
+				dmstrappendchr(p, '.');
+				dmstrappendstr(p, vid);
+				dmstrappendend(p);
+				if (is_strword_in_optionvalue(ifname_dup, baseifname_dup)) continue;
+				if (ifname_dup[0] != '\0')
+					dmstrappendchr(ptr, ' ');
+				dmstrappendstr(ptr, baseifname_dup);
+				dmstrappendend(ptr);
+			}
+		}
+		dmuci_set_value_by_section(interface_s, "ifname", ifname_dup);
+	}
+}
+
+void update_remove_vlan_from_bridge_interface(char *bridge_key, struct uci_section *vb)
+{
+	char *ifname,*vid;
+	char new_ifname[128];
+	struct uci_section *s;
+
+	uci_foreach_option_eq("network", "interface", "bridge_instance", bridge_key, s)
+	{
+		break;
+	}
+	if (!s) return;
+	dmuci_get_value_by_section_string(vb, "vid", &vid);
+	dmuci_get_value_by_section_string(s, "ifname", &ifname);
+	remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
+	dmuci_set_value_by_section(s, "ifname", new_ifname);
+}
+
+int filter_lan_ip_interface(struct uci_section *ss, void *v)
+{
+	struct uci_section *lds = (struct uci_section *)v;
+	char *value, *type;
+	dmuci_get_value_by_section_string(ss, "type", &type);
+	if (ss == lds) {
+		return 0;
+	}
+	else if (strcmp(type, "alias") == 0) {
+		dmuci_get_value_by_section_string(ss, "ifname", &value);
+		if(strncmp(value, "br-", 3) == 0)
+			value += 3;
+		if (strcmp(value, section_name(lds)) == 0)
+			return 0;
+	}
+	return -1;
+}
+
+void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname)
+{
+	char *pch, *spch, *p = new_ifname;
+	new_ifname[0] = '\0';
+
+	ifname = dmstrdup(ifname);
+	pch = strtok_r(ifname, " ", &spch);
+	while (pch != NULL) {
+		if (strcmp(pch, iface) != 0) {
+			if (p == new_ifname) {
+				dmstrappendstr(p, pch);
+			}
+			else {
+				dmstrappendchr(p, ' ');
+				dmstrappendstr(p, pch);
+			}
+		}
+		pch = strtok_r(NULL, " ", &spch);
+	}
+	dmstrappendend(p);
+	dmfree(ifname);
+}
+
+int max_array(int a[], int size)
+{
+	int i, max = 0;
+	for (i = 0; i< size; i++)
+	{
+		if(a[i] > max )
+		max = a[i];
+	}
+	printf("max = %d \n", max);
+	return max;
+}
+
+int check_ifname_is_vlan(char *ifname)
+{
+	char *pch;
+	pch = strrchr(ifname, '.');
+	if (atoi(pch+1) >= 2)
+		return 1;
 	return 0;
 }

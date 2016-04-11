@@ -1835,7 +1835,7 @@ void codec_update_id()
 {
 	int i = 0;
 	for (i = 0; i < available_sip_codecs; i++) {
-		update_section_list("dmmap","codec_id", "id", 1, allowed_sip_codecs[i].id);
+		update_section_list("dmmap","codec_id", "id", 1, allowed_sip_codecs[i].id, NULL, NULL, NULL, NULL);
 	}
 }
 ////////////////////////SET AND GET ALIAS/////////////////////////////////
@@ -1947,7 +1947,7 @@ inline int entry_method_Service(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 	char *vs = NULL, *vs_last = NULL;
 
-	update_section_list("dmmap","voice_service", NULL, 1, NULL);
+	update_section_list("dmmap","voice_service", NULL, 1, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "voice_service", s) {
 		init_service_args(ctx, s);
 		vs = handle_update_instance(1, ctx, &vs_last, update_instance_alias, 3, s, "vsinstance", "vsalias");

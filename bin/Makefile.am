@@ -51,7 +51,8 @@ endif
 if DATAMODEL_TR181
 icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/wifi.c						\
-	../dm/dmtree/tr181/ethernet.c
+	../dm/dmtree/tr181/ethernet.c					\
+	../dm/dmtree/tr181/wan.c						
 endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\

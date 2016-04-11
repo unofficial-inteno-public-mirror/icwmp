@@ -19,7 +19,7 @@ struct wifi_radio_args
 struct wifi_ssid_args
 {
 	struct uci_section *wifi_ssid_sec;
-	char *wiface;
+	char *ifname;
 	char *linker;
 };
 int entry_method_root_Wifi(struct dmctx *ctx);

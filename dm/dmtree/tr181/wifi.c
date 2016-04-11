@@ -35,7 +35,7 @@ inline int init_wifi_ssid(struct dmctx *ctx, struct uci_section *s, char *wiface
 {
 	struct wifi_ssid_args *args = &cur_wifi_ssid_args;
 	args->wifi_ssid_sec = s;
-	args->wiface = wiface;
+	args->ifname = wiface;
 	args->linker = linker;
 	return 0;
 }
@@ -435,7 +435,7 @@ int get_radio_statistics_rx_packets(char *refparam, struct dmctx *ctx, char **va
 int get_ssid_statistics_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", -1, "tx_bytes", value, NULL);
 	return 0;
@@ -444,7 +444,7 @@ int get_ssid_statistics_tx_bytes(char *refparam, struct dmctx *ctx, char **value
 int get_ssid_statistics_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_bytes", value, NULL);
 	return 0;
@@ -453,7 +453,7 @@ int get_ssid_statistics_rx_bytes(char *refparam, struct dmctx *ctx, char **value
 int get_ssid_statistics_tx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_packets", value, NULL);
 	return 0;
@@ -462,7 +462,7 @@ int get_ssid_statistics_tx_packets(char *refparam, struct dmctx *ctx, char **val
 int get_ssid_statistics_rx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);
 	return 0;
@@ -544,7 +544,7 @@ int get_access_point_total_associations(char *refparam, struct dmctx *ctx, char 
 	int i = 0;
 	json_object *res;
 	char *wunit, buf[8];
-	dmubus_call("router", "sta", UBUS_ARGS{{"vif", cur_wifi_ssid_args.wiface}}, 1, &res);
+	dmubus_call("router", "sta", UBUS_ARGS{{"vif", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
 		if (strstr(key, "sta-"))
@@ -945,12 +945,10 @@ int set_ssid_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 
 int get_ap_ssid_ref(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *linker = section_name(cur_wifi_ssid_args.wifi_ssid_sec);
-	if (cur_wifi_ssid_args.linker[0] != '\0') {
-		adm_entry_get_linker_param(DMROOT"WiFi.SSID.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
-		if (*value == NULL)
-			*value = "";
-	}
+
+	adm_entry_get_linker_param(DMROOT"WiFi.SSID.", cur_wifi_ssid_args.ifname, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	if (*value == NULL)
+		*value = "";
 	return 0;
 }
 ////////////////ADD DEL OBJ//////////////////////////
@@ -1013,14 +1011,14 @@ inline int entry_wifi_radio(struct dmctx *ctx)
 
 inline int entry_wifi_ssid(struct dmctx *ctx)
 {
-	char *wnum = NULL, *ssid_last = NULL, *wiface, *acpt_last = NULL, *linker;
+	char *wnum = NULL, *ssid_last = NULL, *ifname, *acpt_last = NULL, *linker;
 	struct uci_section *ss = NULL;
 	json_object *res;
 
 	uci_foreach_sections("wireless", "wifi-iface", ss) {
-		dmuci_get_value_by_section_string(ss, "ifname", &wiface);
+		dmuci_get_value_by_section_string(ss, "ifname", &ifname);
 		dmuci_get_value_by_section_string(ss, "device", &linker);
-		init_wifi_ssid(ctx, ss, wiface, linker);
+		init_wifi_ssid(ctx, ss, ifname, linker);
 		wnum =  handle_update_instance(1, ctx, &ssid_last, update_instance_alias, 3, ss, "ssidinstance", "ssidalias");
 		SUBENTRY(entry_wifi_ssid_instance, ctx, wnum);
 		wnum =  handle_update_instance(1, ctx, &acpt_last, update_instance_alias, 3, ss, "accesspointinstance", "accesspointalias");
@@ -1077,9 +1075,7 @@ inline int entry_wifi_radio_instance(struct dmctx *ctx, char *wnum)
 inline int entry_wifi_ssid_instance(struct dmctx *ctx, char *wnum)
 {
 	IF_MATCH(ctx, DMROOT"WiFi.SSID.%s.", wnum) {
-		char linker[32];
-		strcat(linker, section_name(cur_wifi_ssid_args.wifi_ssid_sec));
-		DMOBJECT(DMROOT"WiFi.SSID.%s.", ctx, "1", 1, NULL, delete_wifi_ssid, linker, wnum);
+		DMOBJECT(DMROOT"WiFi.SSID.%s.", ctx, "1", 1, NULL, delete_wifi_ssid, cur_wifi_ssid_args.ifname, wnum);
 		DMPARAM("Alias", ctx, "1", get_ssid_alias, set_ssid_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_wifi_enable, set_wifi_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_wifi_status, NULL, NULL, 0, 1, UNDEF, NULL);
