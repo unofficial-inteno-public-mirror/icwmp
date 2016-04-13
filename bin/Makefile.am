@@ -56,7 +56,8 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/bridging.c					\
 	../dm/dmtree/tr181/hosts.c						\
 	../dm/dmtree/tr181/dhcp.c						\
-	../dm/dmtree/tr181/ip.c
+	../dm/dmtree/tr181/ip.c							\
+	../dm/dmtree/tr181/ppp.c
 endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
