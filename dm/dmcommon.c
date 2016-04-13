@@ -548,84 +548,6 @@ int filter_lan_device_interface(struct uci_section *s, void *v)
 	return -1;
 }
 
-void update_add_vlan_interfaces(char *bridge_key, char *vid, char *wan_eth)
-{
-	char *baseifname, *add_value;
-	char baseifname_dup[16];
-	char *p;
-	bool found;
-	struct uci_section *s, *vlan_interface_s, *vi_sec;
-
-	uci_foreach_option_eq("dmmap", "marking-bridge", "bridgekey", bridge_key, s) {
-		dmuci_get_value_by_section_string(s, "baseifname", &baseifname);
-		p = baseifname_dup;
-		dmstrappendstr(p, baseifname);
-		dmstrappendchr(p, '.');
-		dmstrappendstr(p, vid);
-		dmstrappendend(p);
-		found = false;
-		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", baseifname_dup, vi_sec) {
-			found = true;
-			break;
-		}
-		if(found)
-			continue;
-
-		if(strncmp(baseifname, wan_eth, 4) == 0 ||
-			strncmp(baseifname, "ptm", 3) == 0 ||
-			strncmp(baseifname, "atm", 3) == 0) {
-			dmuci_add_section("layer2_interface_vlan", "vlan_interface", &vlan_interface_s, &add_value);
-			dmuci_set_value_by_section(vlan_interface_s, "baseifname", baseifname);
-			dmuci_set_value_by_section(vlan_interface_s, "bridge", bridge_key);
-			dmuci_set_value_by_section(vlan_interface_s, "ifname", baseifname_dup);
-			dmuci_set_value_by_section(vlan_interface_s, "name", baseifname_dup);
-			dmuci_set_value_by_section(vlan_interface_s, "vlan8021q", vid);
-		}
-	}
-}
-
-void update_add_vlan_to_bridge_interface(char *bridge_key, struct uci_section *dmmap_s, char *wan_eth)
-{
-	char *vid, *ifname, *baseifname;
-	struct uci_section *interface_s, *marking_bridge_s;
-	char baseifname_dup[16];
-	char *p;
-	char ifname_dup[128];
-	char *ptr;
-
-	dmuci_get_value_by_section_string(dmmap_s, "vid", &vid);
-	if(vid[0] == '\0')
-		return ;
-
-	uci_foreach_option_eq("network", "interface", "bridge_instance", bridge_key, interface_s)
-	{
-		dmuci_get_value_by_section_string(interface_s, "ifname", &ifname);
-		ifname_dup[0] = '\0';
-		ptr = ifname_dup;
-		dmstrappendstr(ptr, ifname);
-		dmstrappendend(ptr);
-		uci_foreach_option_eq("dmmap", "marking-bridge", "bridgekey", bridge_key, marking_bridge_s)
-		{
-			dmuci_get_value_by_section_string(marking_bridge_s, "baseifname", &baseifname);
-			if (strncmp(baseifname, wan_eth, 4) == 0
-				|| strncmp(baseifname, "ptm", 3) == 0
-				|| strncmp(baseifname, "atm", 3) == 0) {
-				p = baseifname_dup;
-				dmstrappendstr(p, baseifname);
-				dmstrappendchr(p, '.');
-				dmstrappendstr(p, vid);
-				dmstrappendend(p);
-				if (is_strword_in_optionvalue(ifname_dup, baseifname_dup)) continue;
-				if (ifname_dup[0] != '\0')
-					dmstrappendchr(ptr, ' ');
-				dmstrappendstr(ptr, baseifname_dup);
-				dmstrappendend(ptr);
-			}
-		}
-		dmuci_set_value_by_section(interface_s, "ifname", ifname_dup);
-	}
-}
-
 void update_remove_vlan_from_bridge_interface(char *bridge_key, struct uci_section *vb)
 {
 	char *ifname,*vid;
@@ -692,15 +614,14 @@ int max_array(int a[], int size)
 		if(a[i] > max )
 		max = a[i];
 	}
-	printf("max = %d \n", max);
 	return max;
 }
 
 int check_ifname_is_vlan(char *ifname)
 {
-	char *pch;
+	char *pch = NULL;
 	pch = strrchr(ifname, '.');
-	if (atoi(pch+1) >= 2)
+	if (pch && atoi(pch+1) >= 2)
 		return 1;
 	return 0;
 }

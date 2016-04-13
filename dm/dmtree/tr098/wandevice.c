@@ -234,31 +234,7 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 	}
 	return -1;
 }
-int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev)
-{
-	char *ifname, new_ifname[64], *p, *pch, *spch;
-	new_ifname[0] = '\0';
-	p = new_ifname;
-	dmuci_get_value_by_section_string(interface_setion, "ifname", &ifname);
-	ifname = dmstrdup(ifname);
-	for (pch = strtok_r(ifname, " ", &spch); pch; pch = strtok_r(NULL, " ", &spch)) {
-		if (!strstr(pch, dev)) {
-			if (new_ifname[0] != '\0') {
-				dmstrappendchr(p, ' ');
-			}
-			dmstrappendstr(p, pch);
-		}
-	}
-	dmstrappendend(p);
-	dmfree(ifname);
-	if (new_ifname[0] == '\0') {
-		dmuci_delete_by_section(interface_setion, NULL, NULL);
-	}
-	else {
-		dmuci_set_value_by_section(interface_setion, "ifname", new_ifname);
-	}
-	return 0;
-}
+
 /****** ADD-DEL OBJECT *******************/
 char *get_last_instance_proto(char *package, char *section, char *opt_inst, char *opt_check, char *value_check, char *opt_check1, int value_check1)
 {

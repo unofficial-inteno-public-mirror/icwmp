@@ -19,6 +19,7 @@
 #include "ethernet.h"
 
 struct eth_port_args cur_eth_port_args = {0};
+char *wan_ifname = NULL;
 
 inline int init_eth_port(struct dmctx *ctx, struct uci_section *s, char *ifname)
 {
@@ -281,8 +282,12 @@ inline int entry_method_eth_interface(struct dmctx *ctx)
 	char *int_num = NULL, *int_num_last = NULL, *ifname;
 	struct uci_section *ss = NULL;
 
+	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &wan_ifname);
 	uci_foreach_sections("ports", "ethport", ss) {
 		dmuci_get_value_by_section_string(ss, "ifname", &ifname);
+		if (strcmp(ifname, wan_ifname) == 0) {
+			dmasprintf(&ifname, "%s.1", ifname);
+		}
 		init_eth_port(ctx, ss, ifname);
 		int_num =  handle_update_instance(1, ctx, &int_num_last, update_instance_alias, 3, ss, "eth_port_instance", "eth_port_alias");
 		SUBENTRY(entry_eth_interface_instance, ctx, int_num);

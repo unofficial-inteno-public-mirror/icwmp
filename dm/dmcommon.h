@@ -78,8 +78,6 @@ int reset_wlan(struct uci_section *s);
 int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift);
 int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev);
 int filter_lan_device_interface(struct uci_section *s, void *v);
-void update_add_vlan_interfaces(char *bridge_key, char *vid, char *wan_eth);
-void update_add_vlan_to_bridge_interface(char *bridge_key, struct uci_section *dmmap_s, char *wan_eth);
 void update_remove_vlan_from_bridge_interface(char *bridge_key, struct uci_section *vb);
 int filter_lan_ip_interface(struct uci_section *ss, void *v);
 void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname);

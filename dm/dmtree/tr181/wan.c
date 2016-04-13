@@ -450,7 +450,7 @@ int set_atm_link_type(char *refparam, struct dmctx *ctx, int action, char *value
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_get_value_by_section_string(cur_atm_args.atm_sec, "link_type", value);
+			dmuci_set_value_by_section(cur_atm_args.atm_sec, "link_type", value);
 			return 0;
 	}
 	return 0;
@@ -880,7 +880,7 @@ inline int entry_atm_link_instance(struct dmctx *ctx, char *idev)
 			//DMPARAM("Status", ctx, "0", get_wan_device_wan_dsl_interface_config_status, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("LowerLayers", ctx, "0", get_atm_lower_layer, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("LinkType", ctx, "1", get_atm_link_type, set_atm_link_type, NULL, 0, 1, UNDEF, NULL);
-			DMPARAM("DestinationAddress", ctx, "1", get_atm_destination_address, set_atm_destination_address, NULL, NULL, NULL, NULL, NULL);
+			DMPARAM("DestinationAddress", ctx, "1", get_atm_destination_address, set_atm_destination_address, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Encapsulation", ctx, "1", get_atm_encapsulation, set_atm_encapsulation, NULL, 0, 1, UNDEF, NULL);
 			DMOBJECT(DMROOT"ATM.Link.%s.Stats.", ctx, "1", 1, NULL, NULL, NULL, idev);
 			DMPARAM("BytesSent", ctx, "0", get_atm_stats_bytes_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
