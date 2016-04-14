@@ -19,6 +19,7 @@
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "managementserver.h"
+#include "xml.h"
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 {
@@ -377,7 +378,7 @@ int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx
 int get_alias_based_addressing(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "amd_version", value);
-	if((*value)[0] == '\0'|| atoi(value) <= 4) {
+	if((*value)[0] == '\0'|| atoi(*value) <= AMD_4) {
 		*value = "false";
 	}
 	else {

@@ -11,6 +11,7 @@
 #include "cwmp.h"
 #include "dmuci.h"
 #include "dmcwmp.h"
+#include "xml.h"
 #include "root.h"
 #include "times.h"
 #include "upnp.h"
@@ -161,7 +162,7 @@ char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_
 		argv[i] = va_arg(arg, void*);
 	}
 	va_end(arg);
-	if (ctx->amd_version >= 4) {
+	if (ctx->amd_version >= AMD_4) {
 		if(pos < ctx->nbrof_instance) {
 			action = (ctx->alias_register & (1 << pos)) ? INSTANCE_UPDATE_ALIAS : INSTANCE_UPDATE_NUMBER;
 		} else {

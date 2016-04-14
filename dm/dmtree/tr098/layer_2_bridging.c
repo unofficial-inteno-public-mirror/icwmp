@@ -1157,7 +1157,7 @@ inline int entry_layer2_bridge(struct dmctx *ctx)
 
 inline int entry_layer2_marking(struct dmctx *ctx)
 {
-	char *marking_instance = NULL, marking_instance_last = NULL;
+	char *marking_instance = NULL, *marking_instance_last = NULL;
 	struct uci_section *marking_s = NULL;
 
 	uci_foreach_sections("dmmap", "marking-bridge", marking_s) {

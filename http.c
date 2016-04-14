@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include "cwmp.h"
 #include "log.h"
+#include "xml.h"
 #include <libubox/uloop.h>
 #include <libubox/usock.h>
 
@@ -61,7 +62,7 @@ http_client_init(struct cwmp *cwmp)
 				return -1;
 	} else {
 		if (asprintf(&http_c.url, "%s",
-		     cwmp->conf.acsurl) == -1)
+			cwmp->conf.acsurl) == -1)
 		return -1;
 	}
 #endif
@@ -74,7 +75,7 @@ http_client_init(struct cwmp *cwmp)
 			 cwmp->conf.acsurl,
 			 cwmp->conf.acs_userid,
 			 cwmp->conf.acs_passwd,
-		     add+3) == -1)
+			 add+3) == -1)
 		return -1;
 #endif
 
@@ -181,14 +182,16 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
 	switch (cwmp->conf.compression) {
-	    case COMP_GZIP:
-	        curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "gzip");
-	        http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: gzip");
-	    break;
-	    case COMP_DEFLATE:
-            curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
-            http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: deflate");
-        break;
+		case COMP_NONE:
+			break;
+		case COMP_GZIP:
+			curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "gzip");
+			http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: gzip");
+			break;
+		case COMP_DEFLATE:
+			curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "deflate");
+			http_c.header_list = curl_slist_append(http_c.header_list, "Content-Encoding: deflate");
+			break;
 	}
 	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, http_c.header_list);
 	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, msg_out);
@@ -232,28 +235,28 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 	if (!strlen(*msg_in))
 		FREE(*msg_in);
 
-    curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
-    if (ip && ip[0] != '\0') {
-        if (!ip_acs || strcmp(ip_acs, ip) != 0) {
-            FREE(ip_acs);
-            ip_acs = strdup(ip);
-            external_init();
-            external_simple("allow_cr_ip", ip_acs);
-            external_exit();
-        }
-    }
+	curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+	if (ip && ip[0] != '\0') {
+		if (!ip_acs || strcmp(ip_acs, ip) != 0) {
+			FREE(ip_acs);
+			ip_acs = strdup(ip);
+			external_init();
+			external_simple("allow_cr_ip", ip_acs);
+			external_exit();
+		}
+	}
 
-    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 	if(http_code == 204)
 	{
 		CWMP_LOG (INFO,"Receive HTTP 204 No Content");
 	}
 
-    if(http_code == 415)
-    {
- 		cwmp->conf.compression = COMP_NONE;
+	if(http_code == 415)
+	{
+		cwmp->conf.compression = COMP_NONE;
 		goto error;
-    }
+	}
 	if (http_code != 200 && http_code != 204)
 		goto error;
 

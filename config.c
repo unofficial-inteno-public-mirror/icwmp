@@ -495,9 +495,14 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
+    if((error = get_amd_version_config())!= CWMP_OK)
+    {
+        return error;
+    }
     if((error = uci_get_value(UCI_ACS_COMPRESSION ,&value)) == CWMP_OK)
     {
-        if(value != NULL)
+        conf->compression = COMP_NONE;
+        if(conf->amd_version >= AMD_5 && value != NULL)
         {
             if (0 == strcasecmp(value, "gzip")) {
                 conf->compression = COMP_GZIP;
@@ -517,7 +522,7 @@ int get_global_config(struct config *conf)
     if((error = uci_get_value(UCI_ACS_RETRY_MIN_WAIT_INTERVAL ,&value)) == CWMP_OK)
     {
         conf->retry_min_wait_interval = DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL;
-        if(value != NULL)
+        if(conf->amd_version >= AMD_3 && value != NULL)
         {
             int a = atoi(value) ;
             if ( a <= 65535 || a >=1) {
@@ -534,7 +539,7 @@ int get_global_config(struct config *conf)
     if((error = uci_get_value(UCI_ACS_RETRY_INTERVAL_MULTIPLIER ,&value)) == CWMP_OK)
     {
         conf->retry_interval_multiplier = DEFAULT_RETRY_INTERVAL_MULTIPLIER;
-        if(value != NULL)
+        if(conf->amd_version >= AMD_3 && value != NULL)
         {
             int a = atoi(value) ;
             if ( a <= 65535 || a >=1000) {
@@ -759,11 +764,6 @@ int get_global_config(struct config *conf)
 	{
 		return error;
 	}
-    if((error = get_amd_version_config())!= CWMP_OK)
-    {
-        return error;
-    }
-	conf->supported_amd_version = conf->amd_version;
     if((error = get_instance_mode_config())!= CWMP_OK)
     {
         return error;
@@ -793,6 +793,7 @@ int get_amd_version_config()
 			 free(value);
 			 value = NULL;
 		 }
+		 cwmp->conf.supported_amd_version = cwmp->conf.amd_version;
 	 }
 	 else
 	 {
