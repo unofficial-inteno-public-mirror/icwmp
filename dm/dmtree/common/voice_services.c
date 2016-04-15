@@ -254,6 +254,7 @@ int delete_associated_line_instances(char *sip_id)
 	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", sip_id, s) {
 		dmuci_set_value_by_section(s, "sip_account", "-");
 		dmuci_set_value_by_section(s, "lineinstance", "");
+		dmuci_set_value_by_section(s, "linealias", "");
 	}
 	return 0;
 }
@@ -348,34 +349,24 @@ char *update_vp_line_instance_alias(int action, char **last_inst, void *argv[])
 	char *sipx = (char *) argv[1];
 
 	dmuci_get_value_by_section_string(brcm_s, "lineinstance", &instance);
-	if (instance[0] != '\0') {
-		if (action == INSTANCE_MODE_ALIAS) {
-			dmuci_get_value_by_section_string(brcm_s, "linealias", &alias);
-			if (alias[0] == '\0') {
-				sprintf(buf, "cpe-%s", instance);
-				alias = dmuci_set_value_by_section(brcm_s, "linealias", buf);
+	if (instance[0] == '\0') {
+		uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", sipx, s) {
+			dmuci_get_value_by_section_string(s, "lineinstance", &instance);
+			if (instance[0] != '\0') {
+				i_instance = atoi(instance);
+				if ( i_instance > last_instance)
+					last_instance = i_instance;
 			}
-			sprintf(buf, "[%s]", alias);
-			instance = dmstrdup(buf);
 		}
-		return instance;
+		sprintf(buf, "%d", last_instance + 1);
+		instance = dmuci_set_value_by_section(brcm_s, "lineinstance", buf);
 	}
-	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", sipx, s) {
-		dmuci_get_value_by_section_string(s, "lineinstance", &instance);
-		if (instance[0] != '\0') {
-			i_instance = atoi(instance);
-			if ( i_instance > last_instance)
-				last_instance = i_instance;
-		}
-	}
-	sprintf(buf, "%d", last_instance + 1);
-	instance = dmuci_set_value_by_section(brcm_s, "lineinstance", buf);
 	*last_inst = instance;
 	if (action == INSTANCE_MODE_ALIAS) {
-		dmuci_get_value_by_section_string(s, "linealias", &alias);
+		dmuci_get_value_by_section_string(brcm_s, "linealias", &alias);
 		if (alias[0] == '\0') {
 			sprintf(buf, "cpe-%s", instance);
-			alias = dmuci_set_value_by_section(s, "linealias", buf);
+			alias = dmuci_set_value_by_section(brcm_s, "linealias", buf);
 		}
 		sprintf(buf, "[%s]", alias);
 		instance = dmstrdup(buf);
@@ -425,6 +416,7 @@ int delete_line(struct uci_section *line_section, struct uci_section *sip_sectio
 	line_id = section_name + sizeof("brcm") - 1;
 	dmuci_set_value_by_section(line_section, "sip_account", "-");
 	dmuci_set_value_by_section(line_section, "lineinstance", "");
+	dmuci_set_value_by_section(line_section, "linealias", "");
 	dmuci_get_value_by_section_string(sip_section, "call_lines", &value);
 	call_lines = dmstrdup(value);
 	pch = strtok_r(call_lines, " ", &spch);
@@ -1456,6 +1448,7 @@ int set_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, int action, c
 			dmuci_get_value_by_section_string(brcmargs->brcm_section, "sip_account", &sipaccount);
 			dmuci_get_value_by_section_string(brcmargs->brcm_section, "lineinstance", &lineinstance);
 			dmuci_set_value_by_section(brcmargs->brcm_section, "lineinstance", "");
+			dmuci_set_value_by_section(brcmargs->brcm_section, "linealias", "");
 			dmuci_set_value_by_section(brcmargs->brcm_section, "sip_account", "-");
 			dmuci_set_value("voice_client", bname, "sip_account", sipaccount);
 			dmuci_set_value("voice_client", bname, "lineinstance", lineinstance);
