@@ -487,7 +487,11 @@ int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param
 	char *dup = dmstrdup(param);
 	p = buf;
 	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
-		if (pch[0]== '[' || isdigit(pch[0])) {
+		if (isdigit(pch[0])) {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, pch);
+			i++;
+		} else if (pch[0]== '[') {
 			dmstrappendchr(p, '.');
 			dmstrappendstr(p, ctx->inst_buf[i]);
 			i++;
@@ -502,6 +506,8 @@ int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param
 			}
 		}
 	}
+	if (param[strlen(param)-1] == '.')
+		dmstrappendchr(p, '.');
 	dmstrappendend(p);
 	*new_param = dmstrdup(buf);
 	dmfree(dup);
