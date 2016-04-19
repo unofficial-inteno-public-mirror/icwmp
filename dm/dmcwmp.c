@@ -42,9 +42,9 @@
 #include "ip.h"
 #include "ppp.h"
 
-static char *get_parameter_notification (char *param);
+static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
-static int set_parameter_notification(char *param, char *value);
+static int set_parameter_notification(struct dmctx *ctx, char *param, char *value);
 static int check_param_prefix (struct dmctx *ctx);
 static int check_obj_is_nl1(char *refparam, char *inparam, int ndot);
 static int get_value_obj(DMOBJECT_API_ARGS);
@@ -172,8 +172,10 @@ char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_
 		action = INSTANCE_UPDATE_NUMBER;
 	}
 	instance = up_instance(action, last_inst, argv);
-	return instance;
+	if(*last_inst)
+		ctx->inst_buf[pos] = dmstrdup(*last_inst);
 
+	return instance;
 }
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 {
@@ -416,26 +418,27 @@ void dm_update_enabled_notify_byname(char *name, char *new_value)
 	}
 }
 
-static char *get_parameter_notification (char *param)
+static char *get_parameter_notification (struct dmctx *ctx, char *param)
 {
 	int i, maxlen = 0, len;
 	struct uci_list *list_notif;
-	char *pch;
+	char *pch, *new_param;
 	char *notification = "0";
 	struct uci_element *e;
 
+	update_param_instance_alias(ctx, param, &new_param);
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
 		dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 		if (list_notif) {
 			uci_foreach_element(list_notif, e) {
 				pch = e->name;
-				if (strcmp(pch, param) == 0) {
+				if (strcmp(pch, new_param) == 0) {
 					notification = notifications[i].value;
 					return notification;
 				}
 				len = strlen(pch);
 				if (pch[len-1] == '.') {
-					if (strstr(param, pch)) {
+					if (strstr(new_param, pch)) {
 						if (len > maxlen )
 						{
 							notification = notifications[i].value;
@@ -446,6 +449,7 @@ static char *get_parameter_notification (char *param)
 			}
 		}
 	}
+	dmfree(new_param);
 	return notification;
 }
 
@@ -474,35 +478,65 @@ static int remove_parameter_notification(char *param)
 	return 0;
 }
 
-static int set_parameter_notification(char *param, char *value)
+int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param)
 {
-	char *tmp = NULL, *buf = NULL, *pch;
+	char *pch, *spch, *p;
+	char buf[512];
+	int i = 0, j = 0;
+
+	char *dup = dmstrdup(param);
+	p = buf;
+	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+		if (pch[0]== '[' || isdigit(pch[0])) {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, ctx->inst_buf[i]);
+			i++;
+		} else {
+			if(j > 0) {
+				dmstrappendchr(p, '.');
+				dmstrappendstr(p, pch);
+			}
+			if(j == 0) {
+				dmstrappendstr(p, pch);
+				j++;
+			}
+		}
+	}
+	dmstrappendend(p);
+	*new_param = dmstrdup(buf);
+	dmfree(dup);
+	return 0;
+}
+
+static int set_parameter_notification(struct dmctx *ctx, char *param, char *value)
+{
+	char *tmp = NULL, *buf = NULL, *pch, *new_param;
 	char *notification = NULL;
 	struct uci_section *s;
 	dmuci_get_section_type("cwmp", "@notifications[0]", &tmp);
+	update_param_instance_alias(ctx, param, &new_param);
 	if (!tmp || tmp[0] == '\0') {
 		dmuci_add_section("cwmp", "notifications", &s, &buf);
 	} else {
-		remove_parameter_notification(param);
+		remove_parameter_notification(new_param);
 	}
 
-	notification = get_parameter_notification(param);
+	notification = get_parameter_notification(ctx, new_param);
 	if (strcmp(notification, value) == 0)  {
-		return 0;
+		goto end;
 	}
 	if (strcmp(value, "1") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", new_param);
 	} else if (strcmp(value, "2") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "active", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active", new_param);
 	} else if (strcmp(value, "3") == 0) {
-		printf("notif value is 3 \n");
-		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_lw", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_lw", new_param);
 	} else if (strcmp(value, "4") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_passive_lw", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_passive_lw", new_param);
 	} else if (strcmp(value, "5") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "active_lw", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active_lw", new_param);
 	} else if (strcmp(value, "6") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_active_lw", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_active_lw", new_param);
 	} else if (strcmp(value, "0") == 0) {
 		struct uci_list *list_notif;
 		struct uci_element *e;
@@ -513,9 +547,9 @@ static int set_parameter_notification(char *param, char *value)
 				uci_foreach_element(list_notif, e) {
 					pch = e->name;
 					len = strlen(pch);
-					if (pch[len-1] == '.' && strstr(param, pch)) {
-						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", param);
-						return 0;
+					if (pch[len-1] == '.' && strstr(new_param, pch)) {
+						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", new_param);
+						goto end;
 					}
 				}
 			}
@@ -524,7 +558,8 @@ static int set_parameter_notification(char *param, char *value)
 	} else {
 		return -1;
 	}
-
+end:
+	dmfree(new_param);
 	return 0;
 }
 
@@ -850,7 +885,7 @@ static int get_notification_param(DMPARAM_API_ARGS)
 	char *notification;
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}
@@ -868,7 +903,7 @@ static int get_notification_inparam_isparam_check_param(DMPARAM_API_ARGS)
 		return FAULT_9005;
 	}
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}
@@ -884,7 +919,7 @@ static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS)
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (strstr(full_param, ctx->in_param)) {		
 		if (forced_notify == UNDEF) {
-			notification = get_parameter_notification(full_param);
+			notification = get_parameter_notification(ctx, full_param);
 		} else {
 			notification = notifications[forced_notify].value;
 		}
@@ -965,7 +1000,7 @@ static int add_object_obj(DMOBJECT_API_ARGS)
 	ctx->addobj_instance = instance;
 	char *objinst;
 	dmasprintf(&objinst, "%s%s.", ctx->current_obj, instance);
-	set_parameter_notification(objinst, "0");
+	set_parameter_notification(ctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
 }
@@ -1087,7 +1122,7 @@ int dm_entry_set_notification(struct dmctx *ctx)
 	} else {
 		ctx->method_obj=&set_notification_check_obj;
 		ctx->method_param=&set_notification_check_param; 
-	}	
+	}
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (!prefix_methods[i].enable) continue;
 		int ret = prefix_methods[i].method(ctx);
@@ -1111,7 +1146,7 @@ static int set_notification_check_obj(DMOBJECT_API_ARGS)
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
 	}
 	else if (ctx->setaction == VALUESET) {
-		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		set_parameter_notification(ctx, ctx->in_param, ctx->in_notification);
 		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 	return 0;
@@ -1134,7 +1169,7 @@ static int set_notification_check_param(DMPARAM_API_ARGS)
 		}
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
 	} else if (ctx->setaction == VALUESET) {
-		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		set_parameter_notification(ctx, ctx->in_param, ctx->in_notification);
 		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 
@@ -1170,7 +1205,7 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
 
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}

@@ -147,6 +147,7 @@ struct dmctx
 	unsigned int amd_version;
 	unsigned int instance_mode;
 	char current_obj[512];
+	char *inst_buf[16];
 };
 
 struct prefix_method {

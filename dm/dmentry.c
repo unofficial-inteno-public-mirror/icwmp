@@ -94,8 +94,7 @@ void dmentry_instance_lookup_inparam(struct dmctx *ctx)
 		if (pch[0]== '[') {
 			ctx->alias_register |= (1 << i);
 			i++;
-		}
-		else if (isdigit(pch[0])) {
+		} else if (isdigit(pch[0])) {
 			i++;
 		}
 	}
