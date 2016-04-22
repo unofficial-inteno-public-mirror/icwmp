@@ -1275,6 +1275,7 @@ int dm_entry_get_linker_value(struct dmctx *ctx)
 	int i;
 	ctx->method_obj = &get_linker_value_check_obj;
 	ctx->method_param = &get_linker_value_check_param;
+	dmentry_instance_lookup_inparam(ctx);
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (!prefix_methods[i].enable) continue;
 		int ret = prefix_methods[i].method(ctx);
