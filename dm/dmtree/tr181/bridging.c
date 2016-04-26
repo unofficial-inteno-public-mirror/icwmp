@@ -782,7 +782,6 @@ int get_port_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 	if (*value == NULL)
 		*value = "";
 	return 0;
-
 }
 
 int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *value)
@@ -845,7 +844,7 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 				if(cur_bridging_port_args.ifname[0] == '\0')
 					dmuci_delete_by_section(cur_bridging_port_args.bridge_port_sec, NULL, NULL);// delete dmmap section after remove br_port_instance to adequate config
 			}
-	return 0;
+		return 0;
 	}
 }
 
@@ -959,7 +958,6 @@ inline int entry_bridging_sub(struct dmctx *ctx)
 		SUBENTRY(entry_bridge_instance, ctx, br_inst, br_inst_last);
 		SUBENTRY(entry_bridge_vlan_instance_sub, ctx, br_inst, br_inst_last);
 		SUBENTRY(entry_bridge_port_sub, ctx, ifname, br_inst, br_inst_last);
-
 	}
 	return 0;
 }

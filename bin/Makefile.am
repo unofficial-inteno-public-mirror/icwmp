@@ -57,7 +57,8 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/hosts.c						\
 	../dm/dmtree/tr181/dhcp.c						\
 	../dm/dmtree/tr181/ip.c							\
-	../dm/dmtree/tr181/ppp.c
+	../dm/dmtree/tr181/ppp.c						\
+	../dm/dmtree/tr181/dns.c
 endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\

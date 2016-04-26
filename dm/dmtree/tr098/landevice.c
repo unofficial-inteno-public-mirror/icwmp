@@ -2930,7 +2930,7 @@ inline int entry_landevice_wlanconfiguration_associateddevice(struct dmctx *ctx,
 {
 	int id = 0;
 	json_object *res, *wl_client_obj;
-	char *idx, *idx_last  = NULL;
+	char *idx, *idx_last = NULL;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 
 	dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);

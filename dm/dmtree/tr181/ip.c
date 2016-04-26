@@ -190,7 +190,7 @@ inline int entry_ip_interface(struct dmctx *ctx)
 
 	uci_foreach_sections("network", "interface", net_sec) {
 		dmuci_get_value_by_section_string(net_sec, "type", &type);
-		if (!strcmp(type,"alias"))
+		if (!strcmp(type, "alias"))
 			continue;
 		init_ip_args(ctx, net_sec);
 		ip_int = handle_update_instance(1, ctx, &ip_int_last, update_instance_alias, 3, net_sec, "ip_int_instance", "ip_int_alias");
@@ -225,7 +225,9 @@ inline int entry_ipv4_address(struct dmctx *ctx, struct uci_section *net_sec, ch
 inline int entry_ip_interface_instance(struct dmctx *ctx, char *int_num)
 {
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.", int_num) {
-		DMOBJECT(DMROOT"IP.Interface.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num);
+		char linker[32];
+		strcat(linker, section_name(cur_ip_args.ip_sec));
+		DMOBJECT(DMROOT"IP.Interface.%s.", ctx, "0", 1, NULL, NULL, linker, int_num);
 		DMPARAM("Alias", ctx, "1", get_ip_int_alias, set_ip_int_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_ip_interface_enable, set_ip_interface_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "0", get_ip_interface_name, NULL, NULL, 0, 1, UNDEF, NULL);

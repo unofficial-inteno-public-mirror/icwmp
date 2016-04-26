@@ -41,6 +41,7 @@
 #include "dhcp.h"
 #include "ip.h"
 #include "ppp.h"
+#include "dns.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -130,6 +131,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"DHCPv4.", 1, NULL, 0, &entry_method_root_dhcp },
 	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
 	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
+	{ DMROOT"DNS.", 1, NULL, 0, &entry_method_root_dns },
 #endif
 };
 
