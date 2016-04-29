@@ -463,11 +463,10 @@ int set_br_vlan_enable(char *refparam, struct dmctx *ctx, int action, char *valu
 				dmstrappendstr(p, vlan_ifname);
 				dmstrappendend(p);
 				dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
-				sprintf(pr_linker,"%s.%s", section_name(cur_bridging_vlan_args.bridge_vlan_sec), vlan_ifname);
+				sprintf(pr_linker,"%s_%s", section_name(cur_bridging_vlan_args.bridge_vlan_sec), vlan_ifname);
 				dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", pr_linker);
 			} else {
 				//delete vlan ifname from br ifname list
-				dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021q", &vid);
 				remove_interface_from_ifname(vlan_ifname, br_ifname, new_ifname);
 				//remove_vid_interfaces_from_ifname(vid, br_ifname, new_ifname);
 				dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
@@ -505,12 +504,40 @@ int get_br_vlan_vid(char *refparam,struct dmctx *ctx, char **value)
 
 int set_br_vlan_vid(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *ifname, *p, *vifname, *linker, *n_ifname;
+	char buf[256];
+	char tmp[8];
+
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021q", value);
-			return 0;
+			dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "ifname", &vifname);
+			if (vifname[0] != '\0') {
+				strncpy(tmp, vifname, 5);
+				tmp[5] = '\0';
+				strcat(tmp, value);// concat new vid
+				dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "ifname", tmp);
+				//update br ifname
+				dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
+				remove_interface_from_ifname(vifname, ifname, buf);
+				p = buf;
+				if (buf[0] != '\0') {
+					dmstrappendstr(p, buf);
+					dmstrappendchr(p, ' ');
+				}
+				dmstrappendstr(p, tmp);
+				dmstrappendend(p);
+				dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", buf);
+				dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", &linker);
+				strcpy(buf,linker);
+				p = strchr(buf, '_') + 1;
+				dmstrappendstr(p, tmp);
+				dmstrappendend(p);
+				dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", buf);
+				return 0;
+			}
 	}
 	return 0;
 }
@@ -724,7 +751,7 @@ int delete_br_port(struct dmctx *ctx)
 		dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "penable", "0");
 		return 0;
 	}
-	dmasprintf(&linker, "%s.%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
+	dmasprintf(&linker, "%s_%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
 	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", linker, vlan_s) {
 		dmuci_set_value_by_section(vlan_s, "br_port_linker", "");
 	}
@@ -754,7 +781,7 @@ int delete_br_port_all(struct dmctx *ctx)
 /*************************************************************/
 int get_port_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *linker= "";
+	char *linker = "";
 	char *mg_port;
 	char buf[16];
 
@@ -810,7 +837,7 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 					delete_br_port(ctx);
 				}
 				// check if the current port is already linked with VLAN
-				sprintf(pr_linker,"%s.%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
+				sprintf(pr_linker,"%s_%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
 				uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", pr_linker, s) {
 					dmuci_get_value_by_section_string(s, "vlan8021q", &vid);
 					break;
@@ -829,7 +856,7 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 					dmstrappendstr(p, tmp);
 					dmstrappendend(p);
 					uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", pr_linker, s) {
-						sprintf(pr_linker,"%s.%s", section_name(s), linker);
+						sprintf(pr_linker,"%s_%s", section_name(s), linker);
 						dmuci_set_value_by_section(s, "br_port_linker", pr_linker);
 						dmuci_set_value_by_section(s, "ifname", linker);
 						dmuci_set_value_by_section(s, "penable", "1");
@@ -887,7 +914,7 @@ int set_vlan_port_port_ref(char *refparam, struct dmctx *ctx, int action, char *
 			}
 			dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", linker);
 			dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021q", &vid);
-			pch = strchr(linker, '.') + 1;
+			pch = strchr(linker, '_') + 1;
 			if (pch[0] == '\0') {
 				dmfree(linker);
 				return 0;
@@ -1072,7 +1099,7 @@ inline int entry_bridge_port_instance(struct dmctx *ctx, char *br, char *port)
 {
 	IF_MATCH(ctx, DMROOT"Bridging.Bridge.%s.Port.%s.", br, port) {
 		char linker[32];
-		sprintf(linker,"%s.%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
+		sprintf(linker,"%s_%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
 		DMOBJECT(DMROOT"Bridging.Bridge.%s.Port.%s.", ctx, "1", NULL, NULL, delete_br_port, linker, br, port);
 		DMPARAM("Alias", ctx, "1", get_br_port_alias, set_br_port_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "0", get_br_port_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
