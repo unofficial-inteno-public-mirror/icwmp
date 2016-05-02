@@ -272,6 +272,178 @@ void bkp_session_insert_download(struct download *pdownload)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
+void bkp_session_insert_schedule_download(struct schedule_download *pschedule_download)
+{
+	//printf("bkp_session_insert_schedule_download \n");
+	struct search_keywords	keys[16];
+	char 					delay[4][128];
+	int 					i;
+	char 					file_size[128];
+	char 					maxretrie[2][128];
+	mxml_node_t 			*b;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	sprintf(file_size,"%d",pschedule_download->file_size);
+	for (i = 0; i<2; i++)
+	{
+		sprintf(delay[2*i],"%ld",pschedule_download->timewindowstruct[i].windowstart);
+		sprintf(delay[2*i+1],"%ld",pschedule_download->timewindowstruct[i].windowend);
+		sprintf(maxretrie[i],"%d",pschedule_download->timewindowstruct[i].maxretries);
+	}
+	keys[0].name = "url";
+	keys[0].value = pschedule_download->url;
+	keys[1].name = "command_key";
+	keys[1].value = pschedule_download->command_key;
+	keys[2].name = "file_type";
+	keys[2].value = pschedule_download->file_type;
+	keys[3].name = "username";
+	keys[3].value = pschedule_download->username;
+	keys[4].name = "password";
+	keys[4].value = pschedule_download->password;
+	keys[5].name = "file_size";
+	keys[5].value = file_size;
+	keys[6].name = "windowstart1";
+	keys[6].value = delay[0];
+	keys[7].name = "windowend1";
+	keys[7].value = delay[1];
+	keys[8].name = "windowmode1";
+	keys[8].value = pschedule_download->timewindowstruct[0].windowmode;
+	keys[9].name = "usermessage1";
+	keys[9].value = pschedule_download->timewindowstruct[0].usermessage;
+	keys[10].name = "maxretrie1";
+	keys[10].value = maxretrie[0];
+	keys[11].name = "windowstart2";
+	keys[11].value = delay[2];
+	keys[12].name = "windowend2";
+	keys[12].value = delay[3];
+	keys[13].name = "windowmode2";
+	keys[13].value = pschedule_download->timewindowstruct[1].windowmode;
+	keys[14].name = "usermessage2";
+	keys[14].value = pschedule_download->timewindowstruct[1].usermessage;
+	keys[15].name = "maxretrie2";
+	keys[15].value = maxretrie[1];
+	b = bkp_session_node_found(bkp_tree, "schedule_download", keys, 16);
+	if(!b)
+	{
+		b = bkp_session_insert(bkp_tree,"schedule_download",NULL);
+		bkp_session_insert(b,"url",pschedule_download->url);
+		bkp_session_insert(b,"command_key",pschedule_download->command_key);
+		bkp_session_insert(b,"file_type",pschedule_download->file_type);
+		bkp_session_insert(b,"username",pschedule_download->username);
+		bkp_session_insert(b,"password",pschedule_download->password);
+		bkp_session_insert(b,"file_size",file_size);
+		bkp_session_insert(b,"windowstart1",delay[0]);
+		bkp_session_insert(b,"windowend1",delay[1]);
+		bkp_session_insert(b,"windowmode1",pschedule_download->timewindowstruct[0].windowmode);
+		bkp_session_insert(b,"usermessage1",pschedule_download->timewindowstruct[0].usermessage);
+		bkp_session_insert(b,"maxretrie1",maxretrie[0]);
+		bkp_session_insert(b,"windowstart2",delay[2]);
+		bkp_session_insert(b,"windowend2",delay[3]);
+		bkp_session_insert(b,"windowmode2",pschedule_download->timewindowstruct[1].windowmode);
+		bkp_session_insert(b,"usermessage2",pschedule_download->timewindowstruct[1].usermessage);
+		bkp_session_insert(b,"maxretrie2",maxretrie[1]);
+	}
+	pthread_mutex_unlock (&mutex_backup_session);
+}
+
+void bkp_session_insert_apply_schedule_download(struct apply_schedule_download *papply_schedule_download)
+{
+	printf("bkp_session_insert_apply_schedule_download \n");
+	struct search_keywords	keys[9];
+	char 					delay[4][128];
+	int 					i;
+	char 					file_size[128];
+	char 					maxretrie[2][128];
+	mxml_node_t 			*b;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	
+	for (i = 0; i<2; i++)
+	{
+		sprintf(delay[2*i],"%ld",papply_schedule_download->timeintervals[i].windowstart);
+		sprintf(delay[2*i+1],"%ld",papply_schedule_download->timeintervals[i].windowend);
+		sprintf(maxretrie[i],"%d",papply_schedule_download->timeintervals[i].maxretries);
+	}
+	keys[0].name = "command_key";
+	keys[0].value = papply_schedule_download->command_key;
+	keys[1].name = "file_type";
+	keys[1].value = papply_schedule_download->file_type;
+	keys[2].name = "start_time";
+	keys[2].value = papply_schedule_download->start_time;
+	keys[3].name = "windowstart1";
+	keys[3].value = delay[0];
+	keys[4].name = "windowend1";
+	keys[4].value = delay[1];
+	keys[5].name = "maxretrie1";
+	keys[5].value = maxretrie[0];
+	keys[6].name = "windowstart2";
+	keys[6].value = delay[2];
+	keys[7].name = "windowend2";
+	keys[7].value = delay[3];
+	keys[8].name = "maxretrie2";
+	keys[8].value = maxretrie[1];
+	b = bkp_session_node_found(bkp_tree, "apply_schedule_download", keys, 9);
+	if(!b)
+	{
+		CWMP_LOG(INFO,"New schedule download key %s file",papply_schedule_download->command_key);
+		b = bkp_session_insert(bkp_tree,"apply_schedule_download",NULL);
+		bkp_session_insert(b,"start_time",papply_schedule_download->start_time);
+		bkp_session_insert(b,"command_key",papply_schedule_download->command_key);
+		bkp_session_insert(b,"file_type",papply_schedule_download->file_type);
+		bkp_session_insert(b,"windowstart1",delay[0]);
+		bkp_session_insert(b,"windowend1",delay[1]);
+		bkp_session_insert(b,"maxretrie1",maxretrie[0]);
+		
+		bkp_session_insert(b,"windowstart2",delay[2]);
+		bkp_session_insert(b,"windowend2",delay[3]);
+		bkp_session_insert(b,"maxretrie2",maxretrie[1]);
+	}
+	pthread_mutex_unlock (&mutex_backup_session);
+}
+
+void bkp_session_delete_apply_schedule_download(struct apply_schedule_download *papply_schedule_download) //TODO
+{
+	struct search_keywords	keys[9];
+	char 					delay[4][128];
+	char schedule_time[128];
+	char file_size[128];
+	char 					maxretrie[2][128];
+	int i;
+	mxml_node_t *b;
+	
+	pthread_mutex_lock (&mutex_backup_session);
+	for (i = 0; i<2; i++)
+	{
+		sprintf(delay[2*i],"%ld",papply_schedule_download->timeintervals[i].windowstart);
+		sprintf(delay[2*i+1],"%ld",papply_schedule_download->timeintervals[i].windowend);
+		sprintf(maxretrie[i],"%ld",papply_schedule_download->timeintervals[i].maxretries);
+	}
+	
+	keys[0].name = "start_time";
+	keys[0].value = papply_schedule_download->start_time;
+	keys[1].name = "command_key";
+	keys[1].value = papply_schedule_download->command_key;
+	keys[2].name = "file_type";
+	keys[2].value = papply_schedule_download->file_type;
+	keys[3].name = "windowstart1";
+	keys[3].value = delay[0];
+	keys[4].name = "windowend1";
+	keys[4].value = delay[1];
+	keys[5].name = "maxretrie1";
+	keys[5].value = maxretrie[0];
+	keys[6].name = "windowstart2";
+	keys[6].value = delay[2];
+	keys[7].name = "windowend2";
+	keys[7].value = delay[3];
+	keys[8].name = "maxretrie2";
+	keys[8].value = maxretrie[1];
+	b = bkp_session_node_found(bkp_tree, "apply_schedule_download", keys, 9);
+	
+	if(b)
+		mxmlDelete(b);
+	pthread_mutex_unlock (&mutex_backup_session);
+}
+
 void bkp_session_insert_upload(struct upload *pupload)
 {
 	struct search_keywords	keys[6];
@@ -335,6 +507,62 @@ void bkp_session_delete_download(struct download *pdownload)
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
+void bkp_session_delete_schedule_download(struct schedule_download *pschedule_download) //TODO
+{
+	struct search_keywords	keys[16];
+	char 					delay[4][128];
+	char schedule_time[128];
+	char file_size[128];
+	char 					maxretrie[2][128];
+	int i;
+	mxml_node_t *b;
+
+	pthread_mutex_lock (&mutex_backup_session);
+	sprintf(file_size,"%d",pschedule_download->file_size);
+	for (i = 0; i<2; i++)
+	{
+		sprintf(delay[2*i],"%ld",pschedule_download->timewindowstruct[i].windowstart);
+		sprintf(delay[2*i+1],"%ld",pschedule_download->timewindowstruct[i].windowend);
+		sprintf(maxretrie[i],"%ld",pschedule_download->timewindowstruct[i].maxretries);
+	}
+	keys[0].name = "url";
+	keys[0].value = pschedule_download->url;
+	keys[1].name = "command_key";
+	keys[1].value = pschedule_download->command_key;
+	keys[2].name = "file_type";
+	keys[2].value = pschedule_download->file_type;
+	keys[3].name = "username";
+	keys[3].value = pschedule_download->username;
+	keys[4].name = "password";
+	keys[4].value = pschedule_download->password;
+	keys[5].name = "file_size";
+	keys[5].value = file_size;
+	keys[6].name = "windowstart1";
+	keys[6].value = delay[0];
+	keys[7].name = "windowend1";
+	keys[7].value = delay[1];
+	keys[8].name = "windowmode1";
+	keys[8].value = pschedule_download->timewindowstruct[0].windowmode;
+	keys[9].name = "usermessage1";
+	keys[9].value = pschedule_download->timewindowstruct[0].usermessage;
+	keys[10].name = "maxretrie1";
+	keys[10].value = maxretrie[0];
+	keys[11].name = "windowstart2";
+	keys[11].value = delay[2];
+	keys[12].name = "windowend2";
+	keys[12].value = delay[3];
+	keys[13].name = "windowmode2";
+	keys[13].value = pschedule_download->timewindowstruct[1].windowmode;
+	keys[14].name = "usermessage2";
+	keys[14].value = pschedule_download->timewindowstruct[1].usermessage;
+	keys[15].name = "maxretrie2";
+	keys[15].value = maxretrie[1];
+	b = bkp_session_node_found(bkp_tree, "schedule_download", keys, 16);
+	
+	if(b) 
+		mxmlDelete(b);
+	pthread_mutex_unlock (&mutex_backup_session);
+}
 void bkp_session_delete_upload(struct upload *pupload)
 {
 	struct search_keywords keys[6];
@@ -396,10 +624,12 @@ void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_co
 {
 	struct search_keywords	keys[5];
 	char					fault_code[16];
+	char					type[16];
 	mxml_node_t 			*b;
 
 	pthread_mutex_lock (&mutex_backup_session);
 	sprintf(fault_code,"%d",ptransfer_complete->fault_code);
+	sprintf(type,"%d",ptransfer_complete->type);
 	keys[0].name = "command_key";
 	keys[0].value = ptransfer_complete->command_key;
 	keys[1].name = "start_time";
@@ -409,7 +639,7 @@ void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_co
 	keys[3].name = "fault_code";
 	keys[3].value = fault_code;
 	keys[4].name = "type";
-	keys[4].value = ptransfer_complete->type;
+	keys[4].value = type;
 	b = bkp_session_node_found(bkp_tree, "transfer_complete", keys, 5);
 	if(b)
 		mxmlDelete(b);
@@ -675,6 +905,338 @@ void load_download(mxml_node_t *tree,struct cwmp *cwmp)
 		count_download_queue++;
 }
 
+void load_schedule_download(mxml_node_t *tree,struct cwmp *cwmp)
+{
+	mxml_node_t			*b = tree, *c;
+	struct schedule_download		*download_request = NULL;
+    struct list_head	*ilist = NULL;
+    struct schedule_download		*idownload_request = NULL;
+
+	download_request = calloc(1,sizeof(struct schedule_download));
+
+	b = mxmlWalkNext(b, tree, MXML_DESCEND);
+
+	while (b) {
+		if (b && b->type == MXML_ELEMENT) {
+			if (strcmp(b->value.element.name, "url") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->url = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "command_key") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->command_key = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "file_type") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->file_type = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "username") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->username = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "password") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->password = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "file_size") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->file_size = atoi(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowstart1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[0].windowstart = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowend1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[0].windowend = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowmode1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[0].windowmode = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "usermessage1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[0].usermessage = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "maxretrie1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[0].maxretries = atoi(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowstart2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[1].windowstart = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowend2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[1].windowend = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowmode2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[1].windowmode = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "usermessage2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[1].usermessage = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "maxretrie2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timewindowstruct[1].maxretries = atoi(c->value.text.string);
+					}
+				}
+			}
+		}
+		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
+	}
+	list_for_each(ilist,&(list_schedule_download))
+	{
+		idownload_request = list_entry(ilist,struct schedule_download,list);
+		if (idownload_request->timewindowstruct[0].windowstart > download_request->timewindowstruct[0].windowstart)
+		{
+			break;
+		}
+	}
+	list_add (&(download_request->list), ilist->prev);
+	if(download_request->timewindowstruct[0].windowstart != 0)
+		count_download_queue++;
+}
+
+
+void load_apply_schedule_download(mxml_node_t *tree,struct cwmp *cwmp)
+{
+	mxml_node_t			*b = tree, *c;
+	struct apply_schedule_download		*download_request = NULL;
+    struct list_head	*ilist = NULL;
+    struct apply_schedule_download		*idownload_request = NULL;
+
+	download_request = calloc(1,sizeof(struct apply_schedule_download));
+
+	b = mxmlWalkNext(b, tree, MXML_DESCEND);
+
+	while (b) {
+		if (b && b->type == MXML_ELEMENT) {
+			if (strcmp(b->value.element.name, "command_key") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->command_key = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "file_type") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->file_type = strdup(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "start_time") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->start_time = strdup(c->value.text.string);
+					}
+				}
+			}			
+			else if (strcmp(b->value.element.name, "windowstart1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[0].windowstart = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowend1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[0].windowend = atol(c->value.text.string);
+					}
+				}
+			}			
+			else if (strcmp(b->value.element.name, "maxretrie1") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[0].maxretries = atoi(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowstart2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[1].windowstart = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "windowend2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[1].windowend = atol(c->value.text.string);
+					}
+				}
+			}
+			else if (strcmp(b->value.element.name, "maxretrie2") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						download_request->timeintervals[1].maxretries = atoi(c->value.text.string);
+					}
+				}
+			}
+			/*
+			windowstart1",delay[0]);
+			bkp_session_insert(b,"windowend1",delay[1]);
+			bkp_session_insert(b,"windowmode1",pschedule_download->timewindowstruct[0].windowmode);
+			bkp_session_insert(b,"usermessage1",pschedule_download->timewindowstruct[0].usermessage);
+			bkp_session_insert(b,"maxretrie1*/
+
+		}
+		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
+	}
+	list_add_tail (&(download_request->list), &(list_apply_schedule_download));
+	if(download_request->timeintervals[0].windowstart != 0)
+		count_download_queue++;
+}
 void load_upload(mxml_node_t *tree,struct cwmp *cwmp)
 {
 	mxml_node_t			*b = tree, *c;
@@ -835,6 +1397,17 @@ void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 					}
 				}
 			}
+			else if (strcmp(b->value.element.name,"type") == 0)
+			{
+				c = mxmlWalkNext(b, b, MXML_DESCEND);
+				if (c && c->type == MXML_TEXT)
+				{
+					if(c->value.text.string != NULL)
+					{
+						ptransfer_complete->type = atoi(c->value.text.string);
+					}
+				}
+			}
 		}
 		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
 	}
@@ -951,6 +1524,14 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "schedule_inform") == 0)
 			{
 				load_schedule_inform(b,cwmp);
+			}			
+			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "schedule_download") == 0)
+			{
+				load_schedule_download(b,cwmp);
+			}
+			else if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "apply_schedule_download") == 0)
+			{
+				load_apply_schedule_download(b,cwmp);
 			}
 		}
 		b = mxmlWalkNext(b, bkp_tree, MXML_NO_DESCEND);

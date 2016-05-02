@@ -239,7 +239,13 @@ handle_action() {
 				mv /tmp/icwmp_download /tmp/web_content.ipk 2> /dev/null
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			elif [ "$__arg3" = "3" ];then
+				if [ "$__arg6" != "0" ]; then
+					local tmp="/etc/vendor_configuration_file_${__arg6}.cfg"
+					echo $tmp >> /etc/config/ibh
+					mv /tmp/icwmp_download "$tmp" 2> /dev/null									else
+					echo "arg6 is empty #$__arg6#" >> /etc/config/ibh
 				mv /tmp/icwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+				fi
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			else
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
@@ -269,8 +275,20 @@ handle_action() {
 	if [ "$action" = "apply_download" ]; then
 		case "$__arg1" in
 			1) icwmp_apply_firmware ;;
-			2) icwmp_apply_web_content ;;
-			3) icwmp_apply_vendor_configuration ;;
+			2)
+				if [ "$__arg2" != "0" ]; then 
+					icwmp_apply_web_content $__arg2
+				else
+					icwmp_apply_web_content
+				fi
+			;;
+			3) 
+				if [ "$__arg2" != "0" ]; then 
+					icwmp_apply_vendor_configuration $__arg2
+				else
+					icwmp_apply_vendor_configuration
+				fi
+			;;
 		esac
 	fi
 
@@ -345,6 +363,7 @@ handle_action() {
 					json_get_var __arg3 type
 					json_get_var __arg4 user
 					json_get_var __arg5 pass
+					json_get_var __arg6 id
 					action="download"
 					;;
 				upload)
@@ -368,6 +387,7 @@ handle_action() {
 						action="apply_value"
 					elif [ "$action" = "download" ]; then
 						json_get_var __arg1 arg
+						json_get_var __arg2 id
 						action="apply_download"
 					else
 						json_get_var __arg1 arg

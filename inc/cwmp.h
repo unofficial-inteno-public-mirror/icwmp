@@ -118,6 +118,7 @@ enum event_idx_enum {
 	EVENT_IDX_M_Reboot,
 	EVENT_IDX_M_ScheduleInform,
 	EVENT_IDX_M_Download,
+	EVENT_IDX_M_Schedule_Download,
 	EVENT_IDX_M_Upload,
 	__EVENT_IDX_MAX
 };

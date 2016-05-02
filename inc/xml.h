@@ -46,6 +46,7 @@ enum rpc_cpe_methods_idx {
 	RPC_CPE_UPLOAD,
 	RPC_CPE_FACTORY_RESET,
 	RPC_CPE_SCHEDULE_INFORM,
+	RPC_CPE_SCHEDULE_DOWNLOAD,
 	RPC_CPE_CANCEL_TRANSFER,
 	RPC_CPE_FAULT,
 	__RPC_CPE_MAX
@@ -60,7 +61,7 @@ enum rpc_acs_methods_idx {
 };
 
 enum load_type {
-	TYPE_DOWNLOAD = 1,
+	TYPE_DOWNLOAD = 0,
 	TYPE_SCHEDULE_DOWNLOAD,
 	TYPE_UPLOAD
 };
@@ -87,6 +88,7 @@ enum fault_cpe_idx {
 	FAULT_CPE_DOWNLOAD_FAIL_COMPLETE_DOWNLOAD,
 	FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED,
 	FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION,
+	FAULT_CPE_DOWNLOAD_FAIL_WITHIN_TIME_WINDOW,
 	__FAULT_CPE_MAX
 };
 
@@ -140,6 +142,39 @@ typedef struct download {
 	char 								*password;
 } download;
 
+typedef struct timewindow {
+	time_t 								windowstart;
+	time_t 								windowend;
+	char 								*windowmode;
+	char 								*usermessage;
+	int 								maxretries;
+}timewindow;
+
+typedef struct timeinterval {
+	time_t 								windowstart;
+	time_t 								windowend;
+	int 								maxretries;
+}timeinterval;
+
+typedef struct schedule_download {
+	struct list_head                    list;
+	//time_t                              scheduled_time;
+	int									file_size;
+	char 								*command_key;
+	char 								*file_type;
+	char 								*url;
+	char 								*username;
+	char 								*password;
+	struct timewindow 					timewindowstruct[2];
+} schedule_download;
+
+typedef struct apply_schedule_download {
+	struct list_head                    list;
+	char 								*start_time;
+	char 								*command_key;
+	char 								*file_type;
+	struct timeinterval 				timeintervals[2];
+} apply_schedule_download;
 typedef struct upload {
     struct list_head                    list;
     time_t                              scheduled_time;
@@ -151,12 +186,12 @@ typedef struct upload {
 } upload;
 
 typedef struct transfer_complete {
-	int								fault_code;
+	int									fault_code;
 	char 								*command_key;
 	char 								*start_time;
 	char 								*complete_time;
 	char 								*old_software_version;
-	int								type;
+	int									type;
 } transfer_complete;
 
 #define MXML_DELETE(X)  do {if (X) { mxmlDelete(X); X = NULL; } } while(0)
@@ -164,6 +199,8 @@ typedef struct transfer_complete {
 extern struct list_head		list_schedule_inform;
 extern struct list_head		list_download;
 extern struct list_head		list_upload;
+extern struct list_head		list_schedule_download;
+extern struct list_head		list_apply_schedule_download;
 extern int					count_download_queue;
 extern const struct rpc_cpe_method rpc_cpe_methods[__RPC_CPE_MAX];
 extern const struct rpc_acs_method rpc_acs_methods[__RPC_ACS_MAX];
@@ -186,6 +223,7 @@ int cwmp_handle_rpc_cpe_factory_reset(struct session *session, struct rpc *rpc);
 int cancel_transfer(char * key);
 int cwmp_handle_rpc_cpe_cancel_transfer(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc);
+int cwmp_handle_rpc_cpe_schedule_download(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_fault(struct session *session, struct rpc *rpc);
 
 int cwmp_rpc_acs_prepare_message_inform(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
@@ -203,11 +241,14 @@ int cwmp_get_fault_code (int fault_code);
 int cwmp_scheduleInform_remove_all();
 int cwmp_scheduledDownload_remove_all();
 int cwmp_scheduledUpload_remove_all();
+int cwmp_scheduled_Download_remove_all();
+int cwmp_apply_scheduled_Download_remove_all();
 struct transfer_complete *cwmp_set_data_rpc_acs_transferComplete();
 void *thread_cwmp_rpc_cpe_scheduleInform (void *v);
 void *thread_cwmp_rpc_cpe_download (void *v);
 void *thread_cwmp_rpc_cpe_upload (void *v);
-
+void *thread_cwmp_rpc_cpe_schedule_download (void *v);
+void *thread_cwmp_rpc_cpe_apply_schedule_download (void *v);
 
 const char *whitespace_cb(mxml_node_t *node, int where);
 

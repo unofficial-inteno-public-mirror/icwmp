@@ -31,6 +31,7 @@
 #include "cwmp.h"
 #include "log.h"
 
+#include <stdarg.h>
 static int pid;
 static json_object *json_obj_in;
 static int pfds_in[2], pfds_out[2];
@@ -216,12 +217,18 @@ int external_simple(char *command, char *arg)
 	return 0;
 }
 
-int external_download(char *url, char *size, char *type, char *user, char *pass)
+int external_download(char *url, char *size, char *type, char *user, char *pass,...)
 {
 	DD(INFO,"executing download url '%s'", url);
 
+	time_t  c = 0;
 	json_object *json_obj_out;
+	char *id = NULL;
 
+	va_list ap; //création du pointeur
+  	va_start(ap,pass);
+	c = (time_t) va_arg(ap,time_t);
+	asprintf(&id, "%ld", c);
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
 
@@ -231,7 +238,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass)
 	json_obj_out_add(json_obj_out, "type", type);
 	if(user) json_obj_out_add(json_obj_out, "user", user);
 	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
-
+	if(id) json_obj_out_add(json_obj_out, "id", id);
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);
@@ -261,11 +268,18 @@ int external_upload(char *url, char *type, char *user, char *pass)
 	return 0;
 }
 
-int external_apply(char *action, char *arg)
+int external_apply(char *action, char *arg,...)
 {
+	time_t  c = 0;
 	DD(INFO,"executing apply %s", action);
 
 	json_object *json_obj_out;
+	char *id = NULL;
+
+	va_list ap; //création du pointeur
+  	va_start(ap,arg);
+	c = (time_t) va_arg(ap,time_t);
+	asprintf(&id, "%ld", c);
 
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
@@ -274,6 +288,7 @@ int external_apply(char *action, char *arg)
 	json_obj_out_add(json_obj_out, "action", action);
 	if (arg) json_obj_out_add(json_obj_out, "arg", arg);
 
+	if(id) json_obj_out_add(json_obj_out, "id", id);
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);

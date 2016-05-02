@@ -58,4 +58,7 @@ void bkp_session_delete_upload(struct upload *pupload);
 void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_complete);
 void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_complete);
 
+void bkp_session_insert_schedule_download(struct schedule_download *pschedule_download);
+void bkp_session_insert_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
+void bkp_session_delete_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
 #endif /* _BACKUPSESSION_H__ */

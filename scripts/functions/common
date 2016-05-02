@@ -94,7 +94,14 @@ icwmp_apply_vendor_configuration()
 {
 	local fault_code="9000"
 	
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /tmp/vendor_configuration_file.cfg
+	local current_file="/tmp/vendor_configuration_file.cfg"
+	if [ $# -eq 0 ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /tmp/vendor_configuration_file.cfg		
+	else
+		current_file="/etc/vendor_configuration_file_$1.cfg"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /etc/vendor_configuration_file_$1.cfg
+		rm "$current_file" 2> /dev/null
+	fi
 	if [ "$?" = "0" ];then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 		if [ "$?" != "0" ];then
@@ -106,7 +113,9 @@ icwmp_apply_vendor_configuration()
 			reboot
 		fi
 	else
-		rm /tmp/vendor_configuration_file.cfg 2> /dev/null
+		if [ -f "$current_file" ]; then
+			rm "$current_file" 2> /dev/null;
+		fi
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 		icwmp_fault_output "" "$fault_code"
 	fi

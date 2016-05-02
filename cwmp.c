@@ -553,6 +553,8 @@ int main(int argc, char **argv)
     pthread_t                       handle_notify_thread;
     pthread_t                       scheduleInform_thread;
     pthread_t                       download_thread;
+    pthread_t                       schedule_download_thread;
+	pthread_t                       apply_schedule_download_thread;
     pthread_t                       upload_thread;
     pthread_t                       ubus_thread;
     pthread_t                       http_cr_server_thread;
@@ -614,7 +616,16 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
-
+	error = pthread_create(&schedule_download_thread, NULL, &thread_cwmp_rpc_cpe_schedule_download, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the schedule download thread!");
+    }
+	error = pthread_create(&apply_schedule_download_thread, NULL, &thread_cwmp_rpc_cpe_apply_schedule_download, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the schedule download thread!");
+    }
     error = pthread_create(&upload_thread, NULL, &thread_cwmp_rpc_cpe_upload, (void *)cwmp);
     if (error<0)
     {
@@ -629,6 +640,8 @@ int main(int argc, char **argv)
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
     pthread_join(upload_thread, NULL);
+    pthread_join(schedule_download_thread, NULL);
+	pthread_join(apply_schedule_download_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
     exit_ipping_diagnostic();
     CWMP_LOG(INFO,"EXIT ICWMP");
