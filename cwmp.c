@@ -552,6 +552,7 @@ int main(int argc, char **argv)
     pthread_t                       periodic_event_thread;
     pthread_t                       handle_notify_thread;
     pthread_t                       scheduleInform_thread;
+    pthread_t                       change_du_state_thread;
     pthread_t                       download_thread;
     pthread_t                       schedule_download_thread;
 	pthread_t                       apply_schedule_download_thread;
@@ -616,6 +617,11 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
+    error = pthread_create(&change_du_state_thread, NULL, &thread_cwmp_rpc_cpe_change_du_state, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the state change thread!");
+    }
 	error = pthread_create(&schedule_download_thread, NULL, &thread_cwmp_rpc_cpe_schedule_download, (void *)cwmp);
     if (error<0)
     {
@@ -642,6 +648,7 @@ int main(int argc, char **argv)
     pthread_join(upload_thread, NULL);
     pthread_join(schedule_download_thread, NULL);
 	pthread_join(apply_schedule_download_thread, NULL);
+    pthread_join(change_du_state_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
     exit_ipping_diagnostic();
     CWMP_LOG(INFO,"EXIT ICWMP");

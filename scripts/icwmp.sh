@@ -68,6 +68,12 @@ case "$1" in
 		__arg5="$6"
 		action="download"
 		;;
+	du_download)
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
+		action="du_download"
+		;;
 	upload)
 		__arg1="$2"
 		__arg2="$3"
@@ -191,6 +197,36 @@ handle_action() {
 		/usr/sbin/icwmpd -m 1 "inform"
 	fi
 
+	if [ "$action" = "du_download" ]; then
+		local fault_code="9000"
+		if [ "$__arg2" = "" -o "$__arg3" = "" ];then
+			wget -O /tmp/icwmp_du_download "$__arg1" 2>> /tmp/IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		else
+			local url="http://$__arg2:$__arg3@`echo $__arg1|sed 's/http:\/\///g'`"
+			wget -O /tmp/icwmp_du_download "$url" 2> /dev/null
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		fi
+		mv /tmp/icwmp_du_download /tmp/du_change_state.ipk 2> /dev/null
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"			
+	fi
+	if [ "$action" = "du_uninstall" ]; then
+		/bin/opkg remove "$__arg1" 2> /dev/null
+		if [ "$?" != "0" ];then
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			icwmp_fault_output "" "$fault_code"
+			return 1
+		fi
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"			
+	fi
 	if [ "$action" = "download" ]; then
 		local fault_code="9000"
 		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
@@ -292,6 +328,12 @@ handle_action() {
 		esac
 	fi
 
+	if [ "$action" = "apply_du_download" ]; then
+		case "$__arg1" in
+			install)	icwmp_install_package ;;
+			update)		icwmp_update_package ;;
+		esac
+	fi
 	if [ "$action" = "factory_reset" ]; then
 		jffs2_mark_erase "rootfs_data"
 		sync
@@ -366,6 +408,12 @@ handle_action() {
 					json_get_var __arg6 id
 					action="download"
 					;;
+				du_download)
+					json_get_var __arg1 url
+					json_get_var __arg2 user
+					json_get_var __arg3 pass
+					action="du_download"
+					;;
 				upload)
 					json_get_var __arg1 url
 					json_get_var __arg2 type
@@ -389,6 +437,9 @@ handle_action() {
 						json_get_var __arg1 arg
 						json_get_var __arg2 id
 						action="apply_download"
+					elif [ "$action" = "du_download" ]; then
+						json_get_var __arg1 arg
+						action="apply_du_download"
 					else
 						json_get_var __arg1 arg
 						action="apply_value"

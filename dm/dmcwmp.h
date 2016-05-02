@@ -200,6 +200,19 @@ enum fault_code {
 	FAULT_9017,// Download failure: unable to complete download
 	FAULT_9018,// Download failure: file corrupted
 	FAULT_9019,// Download failure: file authentication failure
+	FAULT_9020,// Download failure: unable to complete download
+	FAULT_9021,// Cancelation of file transfer not permitted
+	FAULT_9022,// Invalid UUID format
+	FAULT_9023,// Unknown Execution Environment
+	FAULT_9024,// Disabled Execution Environment
+	FAULT_9025,// Diployment Unit to Execution environment mismatch
+	FAULT_9026,// Duplicate Deployment Unit
+	FAULT_9027,// System Ressources Exceeded
+	FAULT_9028,// Unknown Deployment Unit
+	FAULT_9029,// Invalid Deployment Unit State
+	FAULT_9030,// Invalid Deployment Unit Update: Downgrade not permitted
+	FAULT_9031,// Invalid Deployment Unit Update: Version not specified
+	FAULT_9032,// Invalid Deployment Unit Update: Version already exist
 	__FAULT_MAX
 };
 

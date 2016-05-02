@@ -38,8 +38,9 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/ippingdiagnostics.c			\
+	../dm/dmtree/softwaremodules.c					\
 	../dm/dmtree/common/x_inteno_syslog.c			
-
+	
 if DATAMODEL_TR098
 icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/lan_interfaces.c				\

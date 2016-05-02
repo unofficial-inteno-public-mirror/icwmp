@@ -42,6 +42,7 @@
 #include "ip.h"
 #include "ppp.h"
 #include "dns.h"
+#include "softwaremodules.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -120,6 +121,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
+	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
 #ifdef DATAMODEL_TR181
 	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
 	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },

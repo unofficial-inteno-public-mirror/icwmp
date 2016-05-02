@@ -37,6 +37,8 @@ static json_object *json_obj_in;
 static int pfds_in[2], pfds_out[2];
 static FILE *fpipe;
 char *external_MethodFault = NULL;
+char *external_MethodName = NULL;
+char *external_MethodVersion = NULL;
 
 void external_downloadFaultResp (char *fault_code)
 {
@@ -62,6 +64,37 @@ void external_fetch_uploadFaultResp (char **fault)
 	external_MethodFault = NULL;
 }
 
+void external_uninstallFaultResp (char *fault_code)
+{
+	FREE(external_MethodFault);
+	external_MethodFault = fault_code ? strdup(fault_code) : NULL;
+}
+
+void external_fetch_uninstallFaultResp (char **fault)
+{
+	*fault = external_MethodFault;
+	external_MethodFault = NULL;
+}
+
+void external_du_change_stateFaultResp (char *fault_code, char *version, char *name)
+{
+	FREE(external_MethodFault);
+	external_MethodFault = fault_code ? strdup(fault_code) : NULL;
+	FREE(external_MethodVersion);
+	external_MethodVersion = version ? strdup(version) : NULL;
+	FREE(external_MethodName);
+	external_MethodName = name ? strdup(name) : NULL;	
+}
+
+void external_fetch_du_change_stateFaultResp (char **fault, char **version, char **name)
+{
+	*fault = external_MethodFault;
+	external_MethodFault = NULL;
+	*version = external_MethodVersion;
+	external_MethodVersion = NULL;
+	*name = external_MethodName;
+	external_MethodName = NULL;
+}
 static void external_read_pipe_input(int (*external_handler)(char *msg))
 {
     char buf[1], *value = NULL, *c = NULL;
@@ -246,6 +279,26 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	return 0;
 }
 
+int external_change_du_state_download(char *url, char *user, char *pass)
+{
+	DD(INFO,"executing DU download url '%s'", url);
+	json_object *json_obj_out;
+
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
+
+	json_obj_out_add(json_obj_out, "command", "du_download");
+	json_obj_out_add(json_obj_out, "url", url);
+	if(user) json_obj_out_add(json_obj_out, "user", user);
+	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
+
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
+
+	json_object_put(json_obj_out);
+
+	return 0;
+}
+
 int external_upload(char *url, char *type, char *user, char *pass)
 {
 	DD(INFO,"executing download url '%s'", url);
@@ -260,6 +313,23 @@ int external_upload(char *url, char *type, char *user, char *pass)
 	json_obj_out_add(json_obj_out, "type", type);
 	if(user) json_obj_out_add(json_obj_out, "user", user);
 	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
+
+	external_write_pipe_output(json_object_to_json_string(json_obj_out));
+
+	json_object_put(json_obj_out);
+
+	return 0;
+}
+
+int external_change_du_state_uninstall(char *package_name)
+{
+	json_object *json_obj_out;
+
+	/* send data to the script */
+	json_obj_out = json_object_new_object();
+
+	json_obj_out_add(json_obj_out, "command", "du_uninstall");
+	json_obj_out_add(json_obj_out, "package_name", package_name);
 
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 

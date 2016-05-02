@@ -55,6 +55,8 @@ void bkp_session_insert_download(struct download *pdownload);
 void bkp_session_delete_download(struct download *pdownload);
 void bkp_session_insert_upload(struct upload *pupload);
 void bkp_session_delete_upload(struct upload *pupload);
+void bkp_session_insert_change_du_state(struct change_du_state *pchange_du_state);
+void bkp_session_delete_change_du_state(struct change_du_state *pchange_du_state);
 void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_complete);
 void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_complete);
 

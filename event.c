@@ -45,8 +45,9 @@ const struct EVENT_CONST_STRUCT EVENT_CONST [] = {
         [EVENT_IDX_M_Reboot]                        = {"M Reboot",                          EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
         [EVENT_IDX_M_ScheduleInform]                = {"M ScheduleInform",                  EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
         [EVENT_IDX_M_Download]                      = {"M Download",                        EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
-		[EVENT_IDX_M_Schedule_Download]             = {"M ScheduleDownload",                EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},      
-		[EVENT_IDX_M_Upload]                        = {"M Upload",                          EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT}
+		[EVENT_IDX_M_Schedule_Download]             = {"M ScheduleDownload",                EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
+		[EVENT_IDX_M_Upload]                        = {"M Upload",                          EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT},
+		[EVENT_IDX_M_ChangeDUState]                 = {"M ChangeDUState",                          EVENT_TYPE_MULTIPLE,EVENT_RETRY_AFTER_TRANSMIT_FAIL|EVENT_RETRY_AFTER_REBOOT}
 };
 
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container)
@@ -531,7 +532,7 @@ int cwmp_root_cause_TransferComplete (struct cwmp *cwmp, struct transfer_complet
 			}
 			break;
 		case TYPE_SCHEDULE_DOWNLOAD:
-			event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Download, p->command_key?p->command_key:"");
+		event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_Schedule_Download, p->command_key?p->command_key:"");
 			if (event_container == NULL)
 			{
 				pthread_mutex_unlock (&(cwmp->mutex_session_queue));
@@ -548,6 +549,37 @@ int cwmp_root_cause_TransferComplete (struct cwmp *cwmp, struct transfer_complet
 	rpc_acs->extra_data = (void *)p;
 	pthread_mutex_unlock (&(cwmp->mutex_session_queue));
 	return CWMP_OK;
+}
+
+int cwmp_root_cause_dustatechangeComplete (struct cwmp *cwmp, struct du_state_change_complete *p)
+{
+    struct event_container                      *event_container;
+    struct session                              *session;
+    struct rpc									*rpc_acs;
+
+    pthread_mutex_lock (&(cwmp->mutex_session_queue));
+    event_container = cwmp_add_event_container (cwmp, EVENT_IDX_11DU_STATE_CHANGE_COMPLETE, "");
+    if (event_container == NULL)
+    {
+        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+        return CWMP_MEM_ERR;
+    }
+	
+	event_container = cwmp_add_event_container (cwmp, EVENT_IDX_M_ChangeDUState, p->command_key?p->command_key:"");
+	if (event_container == NULL)
+	{
+		pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+		return CWMP_MEM_ERR;
+	}
+    session = list_entry (cwmp->head_event_container, struct session,head_event_container);
+    if((rpc_acs = cwmp_add_session_rpc_acs(session, RPC_ACS_DU_STATE_CHANGE_COMPLETE)) == NULL)
+    {
+        pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+        return CWMP_MEM_ERR;
+    }
+    rpc_acs->extra_data = (void *)p;
+    pthread_mutex_unlock (&(cwmp->mutex_session_queue));
+    return CWMP_OK;
 }
 
 int cwmp_root_cause_getRPCMethod (struct cwmp *cwmp)

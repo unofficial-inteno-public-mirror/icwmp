@@ -116,3 +116,72 @@ error:
 	jshn_message_delete();
 	return -1;
 }
+
+enum dustatechange_fault {
+	DUState_Change_FAULT,
+	DUState_Change_VERSION,
+	DUState_Change_NAME,
+	__DUSTATE_MAX
+};
+
+char *dustatechange_fault_policy[] = {
+	[DUState_Change_FAULT] 		= "fault_code",
+	[DUState_Change_VERSION] 	= "package_version",
+	[DUState_Change_NAME] 		= "package_name"
+};
+
+int
+cwmp_handle_dustate_changeFault(char *msg)
+{
+	printf("cwmp_handle_dustate_changeFault %s \n", msg);
+	int tmp;
+	char *tb[__DUSTATE_MAX] = {0};
+
+	jshn_message_parse(dustatechange_fault_policy, ARRAYSIZEOF(dustatechange_fault_policy), tb, msg);
+
+	if (!tb[DUState_Change_FAULT])
+		goto error;
+
+	DD(INFO,"triggered handle dustate_change fault %s", tb[DUState_Change_FAULT], tb[DUState_Change_VERSION], tb[DUState_Change_NAME]);
+
+	external_du_change_stateFaultResp (tb[DUState_Change_FAULT], tb[DUState_Change_VERSION], tb[DUState_Change_NAME]);
+
+	jshn_message_delete();
+	return 0;
+
+error:
+	jshn_message_delete();
+	return -1;
+}
+
+enum uninstall_fault {
+	UNINSTALL_FAULT,
+	__UNINSTALL_MAX
+};
+
+char *uninstall_fault_policy[] = {
+	[UNINSTALL_FAULT] = "fault_code"
+};
+
+int
+cwmp_handle_uninstallFault(char *msg)
+{
+	int tmp;
+	char *tb[__UNINSTALL_MAX] = {0};
+
+	jshn_message_parse(uninstall_fault_policy, ARRAYSIZEOF(uninstall_fault_policy), tb, msg);
+
+	if (!tb[UNINSTALL_FAULT])
+		goto error;
+
+	DD(INFO,"triggered handle upload fault %s", tb[UNINSTALL_FAULT]);
+
+	external_uninstallFaultResp (tb[UNINSTALL_FAULT]);
+
+	jshn_message_delete();
+	return 0;
+
+error:
+	jshn_message_delete();
+	return -1;
+}

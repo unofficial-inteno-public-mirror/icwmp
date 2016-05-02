@@ -47,6 +47,7 @@ enum rpc_cpe_methods_idx {
 	RPC_CPE_FACTORY_RESET,
 	RPC_CPE_SCHEDULE_INFORM,
 	RPC_CPE_SCHEDULE_DOWNLOAD,
+	RPC_CPE_CHANGE_DU_STATE,
 	RPC_CPE_CANCEL_TRANSFER,
 	RPC_CPE_FAULT,
 	__RPC_CPE_MAX
@@ -57,6 +58,7 @@ enum rpc_acs_methods_idx {
 	RPC_ACS_INFORM = 1,
 	RPC_ACS_GET_RPC_METHODS,
 	RPC_ACS_TRANSFER_COMPLETE,
+	RPC_ACS_DU_STATE_CHANGE_COMPLETE,
 	__RPC_ACS_MAX
 };
 
@@ -64,6 +66,12 @@ enum load_type {
 	TYPE_DOWNLOAD = 0,
 	TYPE_SCHEDULE_DOWNLOAD,
 	TYPE_UPLOAD
+};
+
+enum dustate_type {
+	DU_INSTALL = 1,
+	DU_UPDATE,
+	DU_UNINSTALL
 };
 
 enum fault_cpe_idx {
@@ -89,6 +97,13 @@ enum fault_cpe_idx {
 	FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED,
 	FAULT_CPE_DOWNLOAD_FAIL_FILE_AUTHENTICATION,
 	FAULT_CPE_DOWNLOAD_FAIL_WITHIN_TIME_WINDOW,
+	FAULT_CPE_DUPLICATE_DEPLOYMENT_UNIT,
+	FAULT_CPE_SYSTEM_RESOURCES_EXCEEDED,
+	FAULT_CPE_UNKNOWN_DEPLOYMENT_UNIT,
+	FAULT_CPE_INVALID_DEPLOYMENT_UNIT_STATE,
+	FAULT_CPE_INVALID_DOWNGRADE_REJECTED,
+	FAULT_CPE_INVALID_UPDATE_VERSION_UNSPECIFIED,
+	FAULT_CPE_INVALID_UPDATE_VERSION_EXIST,
 	__FAULT_CPE_MAX
 };
 
@@ -175,6 +190,25 @@ typedef struct apply_schedule_download {
 	char 								*file_type;
 	struct timeinterval 				timeintervals[2];
 } apply_schedule_download;
+
+typedef struct change_du_state {
+	struct list_head                    list;
+	time_t                              timeout;
+	char 								*command_key;
+	struct list_head                    list_operation;
+} change_du_state;
+
+typedef struct operations {
+	struct list_head                    list;	
+	int 								type;
+	char 								*url;
+	char 								*uuid;
+	char 								*version;
+	char 								*username;
+	char 								*password;
+	char 								*executionenvref;
+} operations;
+
 typedef struct upload {
     struct list_head                    list;
     time_t                              scheduled_time;
@@ -194,6 +228,30 @@ typedef struct transfer_complete {
 	int									type;
 } transfer_complete;
 
+typedef struct du_state_change_complete {	
+	char 								*command_key;
+	time_t                              timeout;
+	struct list_head					list_opresult;				
+} du_state_change_complete;
+
+typedef struct opresult {
+	struct list_head					list;
+	char								*uuid;
+	char								*du_ref;
+	char								*version;
+	char 								*current_state;
+	bool								resolved;
+	char 								*execution_unit_ref;
+	char 								*start_time;
+	char 								*complete_time;
+	int									fault;
+} opresult;
+
+typedef struct opfault {
+	int									fault_code;
+	char								*fault_string;	
+} opfault;
+
 #define MXML_DELETE(X)  do {if (X) { mxmlDelete(X); X = NULL; } } while(0)
 
 extern struct list_head		list_schedule_inform;
@@ -201,6 +259,7 @@ extern struct list_head		list_download;
 extern struct list_head		list_upload;
 extern struct list_head		list_schedule_download;
 extern struct list_head		list_apply_schedule_download;
+extern struct list_head		list_change_du_state;
 extern int					count_download_queue;
 extern const struct rpc_cpe_method rpc_cpe_methods[__RPC_CPE_MAX];
 extern const struct rpc_acs_method rpc_acs_methods[__RPC_ACS_MAX];
@@ -224,14 +283,17 @@ int cancel_transfer(char * key);
 int cwmp_handle_rpc_cpe_cancel_transfer(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_schedule_inform(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_schedule_download(struct session *session, struct rpc *rpc);
+int cwmp_handle_rpc_cpe_change_du_state(struct session *session, struct rpc *rpc);
 int cwmp_handle_rpc_cpe_fault(struct session *session, struct rpc *rpc);
 
 int cwmp_rpc_acs_prepare_message_inform(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 int cwmp_rpc_acs_parse_response_inform(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 int cwmp_rpc_acs_prepare_get_rpc_methods(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 int cwmp_rpc_acs_prepare_transfer_complete(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
+int cwmp_rpc_acs_prepare_du_state_change_complete(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
 int cwmp_rpc_acs_destroy_data_inform(struct session *session, struct rpc *rpc);
 int cwmp_rpc_acs_destroy_data_transfer_complete(struct session *session, struct rpc *rpc);
+int cwmp_rpc_acs_destroy_data_du_state_change_complete(struct session *session, struct rpc *rpc);
 
 int xml_handle_message(struct session *session);
 int xml_prepare_msg_out(struct session *session);
@@ -249,7 +311,10 @@ void *thread_cwmp_rpc_cpe_download (void *v);
 void *thread_cwmp_rpc_cpe_upload (void *v);
 void *thread_cwmp_rpc_cpe_schedule_download (void *v);
 void *thread_cwmp_rpc_cpe_apply_schedule_download (void *v);
+void *thread_cwmp_rpc_cpe_change_du_state (void *v);
 
+int cwmp_launch_change_du_state_download(struct operations *poperation, struct opresult **pchange_du_state_complete);
+int cwmp_launch_update_du_state_download(char *user, char *pass, char *url, struct opresult **pchange_du_state_complete);
 const char *whitespace_cb(mxml_node_t *node, int where);
 
 #endif
