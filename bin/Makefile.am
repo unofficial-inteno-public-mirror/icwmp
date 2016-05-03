@@ -5,6 +5,7 @@ icwmpd_SOURCES =			\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
+	../xmpp_cr.c			\
 	../ipping.c				\
 	../digestauth.c			\
 	../event.c				\
@@ -39,6 +40,7 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/ippingdiagnostics.c			\
 	../dm/dmtree/common/softwaremodules.c			\
+	../dm/dmtree/common/xmpp.c						\
 	../dm/dmtree/common/x_inteno_syslog.c			
 	
 if DATAMODEL_TR098
@@ -93,6 +95,7 @@ icwmpd_LDADD =			\
 	$(LIBJSON_LIBS)		\
 	$(LBLOBMSG_LIBS)	\
 	$(LIBZ_LIBS)		\
+	$(LIBSTROPHE_LIBS)	\
 	$(LIBM_LIBS)
 
 icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"

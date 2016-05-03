@@ -51,6 +51,7 @@ int http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **m
 
 void http_server_init(void);
 void http_server_listen(void);
+void http_success_cr();
 
 #endif
 

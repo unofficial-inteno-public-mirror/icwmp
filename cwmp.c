@@ -24,6 +24,9 @@
 #include "dmentry.h"
 #include "ubus.h"
 #include "ipping.h"
+#include "xmpp_cr.h"
+#include <strophe.h>
+#include <unistd.h>
  
 struct cwmp         	cwmp_main = {0};
 
@@ -544,6 +547,12 @@ void signal_handler(int signal_num)
     _exit(EXIT_SUCCESS);
 }
 
+void *thread_xmpp_client_listen (void *v)
+{
+    cwmp_xmpp_connect_client();
+    return NULL;
+}
+
 int main(int argc, char **argv)
 {
 
@@ -559,12 +568,21 @@ int main(int argc, char **argv)
     pthread_t                       upload_thread;
     pthread_t                       ubus_thread;
     pthread_t                       http_cr_server_thread;
+	pthread_t                       xmpp_client_thread;
     struct sigaction                act = {0};
 
+	xmpp_stanza_t *reply;
     if (error = cwmp_init(argc, argv, cwmp))
     {
         return error;
     }
+	if(cwmp->conf.xmpp_enable) {
+		error = pthread_create(&xmpp_client_thread, NULL, &thread_xmpp_client_listen, NULL);
+		if (error<0)
+		{
+		    CWMP_LOG(ERROR,"Error when lanching xmpp connection thread!");
+		}
+	}
     init_ipping_diagnostic();
     CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
@@ -650,7 +668,10 @@ int main(int argc, char **argv)
 	pthread_join(apply_schedule_download_thread, NULL);
     pthread_join(change_du_state_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
+	if(cwmp->conf.xmpp_enable) 
+		pthread_join(xmpp_client_thread, NULL);
     exit_ipping_diagnostic();
+	cwmp_xmpp_exit();
     CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }

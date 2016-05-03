@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <microxml.h>
 #include <libubox/list.h>
+#include <strophe.h>
 
 #define MAX_EVENTS							64
 #define MAX_INT32							2147483646
@@ -70,6 +71,11 @@
 #define LW_NOTIFICATION_PORT                "cwmp.lwn.port"
 #define UCI_DHCP_ACS_URL					"provisioning.iup.urlcwmp"
 
+#define UCI_XMPP_ENABLE		                "cwmp.xmpp.enable"
+#define UCI_XMPP_CONNECTION_ID				"cwmp.xmpp.id"
+#define UCI_XMPP_ALLOWED_JID				"cwmp.xmpp.allowed_jid"
+#define XMPP_CR_NS							"urn:broadband-forum-org:cwmp:xmppConnReq-1-0"
+#define XMPP_ERROR_NS						"urn:ietf:params:xml:ns:xmpp-stanzas"
 
 enum end_session {
 	END_SESSION_REBOOT = 1,
@@ -130,6 +136,12 @@ enum http_compression {
     COMP_DEFLATE
 };
 
+enum xmpp_cr_error {
+	XMPP_CR_NO_ERROR = 0,
+	XMPP_SERVICE_UNAVAILABLE,
+	XMPP_NOT_AUTHORIZED
+};
+
 typedef struct event_container {
     struct list_head                    list;
     int 								code;	/* required element of type xsd:string */
@@ -173,6 +185,9 @@ typedef struct config {
 	unsigned int 						supported_amd_version;
     unsigned int 						instance_mode;
 	unsigned int 						session_timeout;
+	bool								xmpp_enable;
+	int									xmpp_connection_id;
+	char								*xmpp_allowed_jid;
 } config;
 
 typedef struct env {
@@ -211,10 +226,26 @@ struct deviceid {
 	char *softwareversion;
 };
 
+struct xmpp_param {
+	bool xmpp_server_enable;
+	char *allowed_jid;
+	char *local_jid;
+	char *username;
+	char *password;
+	char *domain;
+	char *ressource;
+	int keepalive_interval;
+	int connect_attempt;
+	int retry_initial_interval;
+	int retry_interval_multiplier;
+	int retry_max_interval;	
+};
+
 typedef struct cwmp {
     struct env			env;
     struct config		conf;
     struct deviceid		deviceid;
+	struct xmpp_param	xmpp_param;
     struct list_head	head_session_queue;
     pthread_mutex_t		mutex_session_queue;
     struct session		*session_send;
@@ -232,6 +263,8 @@ typedef struct cwmp {
     struct session_status session_status;
     unsigned int cwmp_id;
     int cr_socket_desc;
+	xmpp_ctx_t 			*xmpp_ctx;
+	xmpp_conn_t 		*xmpp_conn;
 } cwmp;
 
 typedef struct session {

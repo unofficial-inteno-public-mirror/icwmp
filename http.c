@@ -318,8 +318,7 @@ error:
 	return -1;
 }
 
-static void
-http_success_cr()
+void http_success_cr()
 {
     struct event_container  *event_container;
     CWMP_LOG(INFO,"Connection Request thread: add connection request event in the queue");
