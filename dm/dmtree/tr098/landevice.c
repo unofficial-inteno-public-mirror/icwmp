@@ -3036,9 +3036,8 @@ inline int entry_landevice_ipinterface_instance (struct dmctx *ctx, char *idev, 
 {
 	IF_MATCH(ctx, DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", idev, ilan) {
 		struct ldipargs *ipargs = (struct ldipargs *)(ctx->args);
-		char linker[32] = "linker_interface:";
-		strcat(linker, section_name(ipargs->ldipsection));
-
+		char *linker;
+		dmastrcat(&linker, "linker_interface:", section_name(ipargs->ldipsection));
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.%s.", ctx, "0", 1, NULL, NULL, linker, idev, ilan);
 		DMPARAM("Alias", ctx, "1", get_lan_ip_int_alias, set_lan_ip_int_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_interface_enable_ipinterface, set_interface_enable_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);

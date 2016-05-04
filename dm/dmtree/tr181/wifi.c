@@ -1045,7 +1045,7 @@ int entry_method_root_Wifi(struct dmctx *ctx)
 inline int entry_wifi_radio_instance(struct dmctx *ctx, char *wnum)
 {
 	IF_MATCH(ctx, DMROOT"WiFi.Radio.%s.", wnum) {
-		char linker[32];
+		char linker[32] = "";
 		strcat(linker, section_name(cur_wifi_radio_args.wifi_radio_sec));
 		DMOBJECT(DMROOT"WiFi.Radio.%s.", ctx, "0", 1, NULL, NULL, linker, wnum);
 		DMPARAM("Alias", ctx, "1", get_radio_alias, set_radio_alias, NULL, 0, 1, UNDEF, NULL);

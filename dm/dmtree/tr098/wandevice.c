@@ -2213,10 +2213,8 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 														bool notif_permission, bool forced_inform_eip, int forced_notify)
 {
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
-	//ifname is section name
-	char linker[32] = "linker_interface:";
-	char *lan_name = section_name(wandcprotoargs->wancprotosection);
-	strcat(linker, lan_name);
+	char *linker;
+	dmastrcat(&linker, "linker_interface:", section_name(wandcprotoargs->wancprotosection));
 	if (proto == WAN_PROTO_IP) {
 		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", idev, iwan, iconp) {
 			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);

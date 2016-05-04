@@ -59,7 +59,7 @@ int set_ip_interface_enable(char *refparam, struct dmctx *ctx, int action, char 
 
 int get_ip_interface_name(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = section_name(cur_ip_args.ip_sec);
+	*value = dmstrdup(section_name(cur_ip_args.ip_sec));
 	return 0;
 }
 
@@ -125,6 +125,99 @@ int get_ipv4_addressing_type (char *refparam, struct dmctx *ctx, char **value)
 		*value = "Static";
 	else if (strcmp(*value, "dhcp") == 0)
 		*value = "DHCP";
+	else
+		*value = "";
+	return 0;
+}
+
+int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *wifname, *wtype, *br_inst, *mg, *device;
+	struct uci_section *port;
+	json_object *res;
+	char buf[8];
+	char linker[32] = "";
+
+	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ifname", &wifname);
+	if (wifname[0] == '\0') {
+		*value = "";
+		//return 0;
+	}
+	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "type", &wtype);
+	if (strcmp(wtype, "bridge") == 0) {
+		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "bridge_instance", &br_inst);
+		uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", br_inst, port) {
+			dmuci_get_value_by_section_string(port, "mg_port", &mg);
+			if (strcmp(mg, "true") == 0)
+				sprintf(linker, "%s+", section_name(port));
+
+			adm_entry_get_linker_param(DMROOT"Bridging.Bridge.", linker, value);
+			if (*value == NULL)
+				*value = "";
+			return 0;
+		}
+	} else if (wtype[0] == '\0' || strcmp(wtype, "anywan") == 0) {
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ip_args.ip_sec)}}, 1, &res);
+		strcpy (linker, wifname);
+		if (res) {
+			json_select(res, "device", -1, NULL, &device, NULL);
+			strcpy(linker, device);
+			if(device[0] == '\0') {
+				strncpy(buf, wifname, 6);
+				buf[6]='\0';
+				strcpy(linker, buf);
+			}
+		}
+	}
+	adm_entry_get_linker_param(DMROOT"ATM.Link.", linker, value);
+	if (*value == NULL)
+		adm_entry_get_linker_param(DMROOT"PTM.Link.", linker, value);
+	if (*value == NULL)
+		adm_entry_get_linker_param(DMROOT"Ethernet.Interface.", linker, value);
+	if (*value == NULL)
+		adm_entry_get_linker_param(DMROOT"WiFi.SSID.", linker, value);
+	if (*value == NULL)
+		*value = "";
+	return 0;
+}
+
+int set_ip_int_lower_layer(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *linker, *pch, *spch, *dup, *b_key, *proto, *ipaddr, *ip_inst, *ipv4_inst, *p, *type;
+	char sec[16];
+	struct uci_section *s;
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			adm_entry_get_linker_value(value, &linker);
+			p = strstr(value, ".Port.");
+			if (linker && p && strcmp(p, ".Port.1.") == 0)
+			{
+				strncpy(sec, linker, strlen(linker) - 1);
+				sec[strlen(linker) - 1] = '\0';
+				dmuci_get_option_value_string("dmmap", sec, "bridge_key", &b_key);
+				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "proto", &proto);
+				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ipaddr", &ipaddr);
+				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ip_int_instance", &ip_inst);
+				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ipv4_instance", &ipv4_inst);
+				uci_foreach_option_eq("network", "interface", "bridge_instance", b_key, s) {
+					dmuci_set_value_by_section(s, "proto", proto);
+					dmuci_set_value_by_section(s, "ipaddr", ipaddr);
+					dmuci_set_value_by_section(s, "ip_int_instance", ip_inst);
+					dmuci_set_value_by_section(s, "ipv4_instance", ipv4_inst);
+					dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "type", &type);
+					if (strcmp (type, "bridge"))
+						dmuci_delete_by_section(cur_ip_args.ip_sec, NULL, NULL);
+				}
+				return 0;
+			}
+			if (linker)
+				dmuci_set_value_by_section(cur_ip_args.ip_sec, "ifname", linker);
+
+			return 0;
+	}
 	return 0;
 }
 /*************************************************************
@@ -169,13 +262,61 @@ int set_ipv4_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 /*************************************************************
+ * ADD & DEL OBJ
+/*************************************************************/
+char *get_last_instance_cond(char *package, char *section, char *opt_inst, char *opt_cond, char *cond_val, char *opt_filter, char *val_filter)
+{
+	struct uci_section *s;
+	char *inst = NULL, *val, *val_f;
+
+	uci_foreach_sections(package, section, s) {
+		if (opt_cond) dmuci_get_value_by_section_string(s, opt_cond, &val);
+		if (opt_filter) dmuci_get_value_by_section_string(s, opt_filter, &val_f);
+		if(opt_cond && opt_filter && (strcmp(val, cond_val) == 0 || strcmp(val_f, val_filter) == 0))
+			continue;
+		inst = update_instance(s, inst, opt_inst);
+	}
+	return inst;
+}
+
+int add_ip_interface(struct dmctx *ctx, char **instance)
+{
+	char *last_inst;
+	char ip_name[32], ib[8];
+	char *p = ip_name;
+
+	last_inst = get_last_instance_cond("network", "interface", "ip_int_instance", "type", "alias", "ipaddr", "");
+	sprintf(ib, "%d", last_inst ? atoi(last_inst)+1 : 1);
+	dmstrappendstr(p, "ip_interface_");
+	dmstrappendstr(p, ib);
+	dmstrappendend(p);
+	dmuci_set_value("network", ip_name, "", "interface");
+	dmuci_set_value("network", ip_name, "proto", "static");
+	dmuci_set_value("network", ip_name, "ipaddr", "0.0.0.0");
+
+	*instance = dmuci_set_value("network", ip_name, "ip_int_instance", ib);
+	return 0;
+}
+
+int delete_ip_interface(struct dmctx *ctx)
+{
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "proto", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "type", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "bridge_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ip_int_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv4_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ifname", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipaddr", "");
+	return 0;
+}
+/*************************************************************
  * ENTRY METHOD
 /*************************************************************/
 int entry_method_root_ip(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"IP.") {
 		DMOBJECT(DMROOT"IP.", ctx, "0", 0, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"IP.Interface.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"IP.Interface.", ctx, "1", 1, add_ip_interface, NULL, NULL);
 		SUBENTRY(entry_ip_interface, ctx);
 		return 0;
 	}
@@ -186,17 +327,26 @@ inline int entry_ip_interface(struct dmctx *ctx)
 {
 	struct uci_section *net_sec = NULL;
 	char *ip_int = NULL, *ip_int_last = NULL;
-	char *type, *ipv4 ;
+	char *type, *ipv4, *ipaddr;
+	json_object *res;
 
 	uci_foreach_sections("network", "interface", net_sec) {
 		dmuci_get_value_by_section_string(net_sec, "type", &type);
-		if (!strcmp(type, "alias"))
+		if (!strcmp(type, "alias") || !strcmp(section_name(net_sec), "loopback"))
 			continue;
+		dmuci_get_value_by_section_string(net_sec, "ipaddr", &ipaddr);
+		if (ipaddr[0] == '\0') {
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(net_sec)}}, 1, &res);
+			if (res)
+				json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
+		}
+		if (ipaddr[0] == '\0') {
+			continue;
+		}
 		init_ip_args(ctx, net_sec);
 		ip_int = handle_update_instance(1, ctx, &ip_int_last, update_instance_alias, 3, net_sec, "ip_int_instance", "ip_int_alias");
 		SUBENTRY(entry_ip_interface_instance, ctx, ip_int);
-		dmuci_get_value_by_section_string(net_sec, "ipaddr", &ipv4);
-		SUBENTRY(entry_ipv4_address, ctx, net_sec, ipv4, ip_int);
+		SUBENTRY(entry_ipv4_address, ctx, net_sec, ipaddr, ip_int);
 	}
 	return 0;
 }
@@ -206,11 +356,9 @@ inline int entry_ipv4_address(struct dmctx *ctx, struct uci_section *net_sec, ch
 	struct uci_section *ipv4_sec = NULL;
 	char *type, *ifname, *proto, *ipv4, *ipv4_inst = NULL, *ipv4_inst_last = NULL ;
 
-	if(ipv4_address[0] != '\0') {
-		init_ipv4_args(ctx, net_sec, ipv4_address);
-		ipv4_inst = handle_update_instance(2, ctx, &ipv4_inst_last, update_instance_alias, 3, net_sec, "ipv4_instance", "ipv4_alias");
-		SUBENTRY(entry_ipv4_address_instance, ctx, ip_int, ipv4_inst);
-	}
+	init_ipv4_args(ctx, net_sec, ipv4_address);
+	ipv4_inst = handle_update_instance(2, ctx, &ipv4_inst_last, update_instance_alias, 3, net_sec, "ipv4_instance", "ipv4_alias");
+	SUBENTRY(entry_ipv4_address_instance, ctx, ip_int, ipv4_inst);
 	dmasprintf(&ifname, "br-%s", section_name(net_sec));
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, ipv4_sec) {
 		dmuci_get_value_by_section_string(net_sec, "ipaddr", &ipv4);
@@ -225,13 +373,13 @@ inline int entry_ipv4_address(struct dmctx *ctx, struct uci_section *net_sec, ch
 inline int entry_ip_interface_instance(struct dmctx *ctx, char *int_num)
 {
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.", int_num) {
-		char linker[32];
+		char linker[32] = "";
 		strcat(linker, section_name(cur_ip_args.ip_sec));
-		DMOBJECT(DMROOT"IP.Interface.%s.", ctx, "0", 1, NULL, NULL, linker, int_num);
+		DMOBJECT(DMROOT"IP.Interface.%s.", ctx, "1", 1, NULL, delete_ip_interface, linker, int_num);
 		DMPARAM("Alias", ctx, "1", get_ip_int_alias, set_ip_int_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_ip_interface_enable, set_ip_interface_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "0", get_ip_interface_name, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("LowerLayers", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);//TODO
+		DMPARAM("LowerLayers", ctx, "1", get_ip_int_lower_layer, set_ip_int_lower_layer, NULL, 0, 1, UNDEF, NULL);//TODO
 		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.", ctx, "0", 1, NULL, NULL, NULL, int_num);
 		return 0;
 	}
