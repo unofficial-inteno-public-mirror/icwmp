@@ -605,6 +605,24 @@ int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_layer3_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "";
+	if (cur_routefwdargs.routefwdsection) dmuci_get_value_by_section_string(cur_routefwdargs.routefwdsection, "routealias", value);
+	return 0;
+}
+
+int set_layer3_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if (cur_routefwdargs.routefwdsection) dmuci_set_value_by_section(cur_routefwdargs.routefwdsection, "routealias", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_layer3_forwarding(struct dmctx *ctx)
 {
@@ -666,6 +684,7 @@ inline int entry_layer3_forwarding_instance(struct dmctx *ctx, char *iroute, cha
 		DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
 		DMPARAM("Enable", ctx, permission, get_layer3_enable, set_layer3_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Alias", ctx, "1", get_layer3_alias, set_layer3_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Type", ctx, "0", get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DestIPAddress", ctx, permission, get_layer3_destip, set_layer3_destip, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DestSubnetMask", ctx, permission, get_layer3_destmask, set_layer3_destmask, NULL, 0, 1, UNDEF, NULL);

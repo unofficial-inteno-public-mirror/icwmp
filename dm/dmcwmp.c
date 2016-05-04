@@ -43,6 +43,7 @@
 #include "ppp.h"
 #include "dns.h"
 #include "softwaremodules.h"
+#include "routing.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -109,8 +110,8 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
 	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
 	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
-#endif
 	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
+#endif
 	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
 	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
@@ -134,6 +135,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
 	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
 	{ DMROOT"DNS.", 1, NULL, 0, &entry_method_root_dns },
+	{ DMROOT"Routing.", 1, NULL, 0, &entry_method_root_routing },
 #endif
 };
 

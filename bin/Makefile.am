@@ -27,7 +27,6 @@ icwmpd_SOURCES =			\
 	../dm/dmcommon.c		\
 	../dm/wepkey.c			\
 	../dm/dmtree/common/deviceinfo.c				\
-	../dm/dmtree/common/layer_3_forwarding.c		\
 	../dm/dmtree/common/managementserver.c			\
 	../dm/dmtree/common/root.c						\
 	../dm/dmtree/common/times.c						\
@@ -49,7 +48,8 @@ icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/landevice.c					\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
 	../dm/dmtree/tr098/wandevice.c					\
-	../dm/dmtree/tr098/x_inteno_se_wifi.c
+	../dm/dmtree/tr098/x_inteno_se_wifi.c			\
+	../dm/dmtree/tr098/layer_3_forwarding.c	
 endif
 if DATAMODEL_TR181
 icwmpd_SOURCES +=									\
@@ -61,7 +61,8 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/dhcp.c						\
 	../dm/dmtree/tr181/ip.c							\
 	../dm/dmtree/tr181/ppp.c						\
-	../dm/dmtree/tr181/dns.c
+	../dm/dmtree/tr181/dns.c						\
+	../dm/dmtree/tr181/routing.c
 endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
