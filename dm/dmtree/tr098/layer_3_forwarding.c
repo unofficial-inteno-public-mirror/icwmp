@@ -654,8 +654,8 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 			parse_proc_route_line(line, &proute);
 			if (is_proute_static(&proute))
 				continue;
-			init_args_rentry(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
 			ss = update_route_dynamic_section(&proute);
+			init_args_rentry(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
 			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
 			SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, "0");
 		}

@@ -638,8 +638,8 @@ inline int entry_router_ipv4forwarding(struct dmctx *ctx, char *irouter)
 			parse_proc_route_line(line, &proute);
 			if (is_proute_static(&proute))
 				continue;
-			init_args_ipv4forward(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
 			ss = update_route_dynamic_section(&proute);
+			init_args_ipv4forward(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
 			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
 			SUBENTRY(entry_router_ipv4forwarding_instance, ctx, irouter, iroute, "0");
 		}
