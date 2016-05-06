@@ -44,6 +44,7 @@
 #include "dns.h"
 #include "softwaremodules.h"
 #include "routing.h"
+#include "nat.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -136,6 +137,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
 	{ DMROOT"DNS.", 1, NULL, 0, &entry_method_root_dns },
 	{ DMROOT"Routing.", 1, NULL, 0, &entry_method_root_routing },
+	{ DMROOT"NAT.", 1, NULL, 0, &entry_method_root_nat },
 #endif
 };
 
