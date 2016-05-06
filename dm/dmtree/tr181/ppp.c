@@ -235,7 +235,9 @@ inline int entry_ppp_interface(struct dmctx *ctx)
 inline int entry_ppp_interface_instance(struct dmctx *ctx, char *int_num)
 {
 	IF_MATCH(ctx, DMROOT"PPP.Interface.%s.", int_num) {
-		DMOBJECT(DMROOT"PPP.Interface.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num);
+		char linker[32] = "";
+		strcat(linker, section_name(cur_ppp_args.ppp_sec));
+		DMOBJECT(DMROOT"PPP.Interface.%s.", ctx, "0", 1, NULL, NULL, linker, int_num);
 		DMPARAM("Alias", ctx, "1", get_ppp_alias, set_ppp_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_ppp_enable, set_ppp_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "0", get_ppp_name, NULL, NULL, 0, 1, UNDEF, NULL);
