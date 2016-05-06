@@ -779,15 +779,68 @@ int delete_br_port_all(struct dmctx *ctx)
 /*************************************************************
  * LOWER LAYER
 /*************************************************************/
+int check_port_with_ifname (char * ifname, struct uci_section **ss)
+{
+	struct uci_section *s;
+	if (check_ifname_is_vlan(ifname)) {
+		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+	} else if (strncmp(ifname, "ptm", 3) == 0) {
+		uci_foreach_option_eq("layer2_interface_vdsl", "vdsl_interface", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+	} else if (strncmp(ifname, "atm", 3) == 0) {
+		uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+	} else if (strncmp(ifname, "wl", 2) == 0) {
+		uci_foreach_option_eq("wireless", "wifi-iface", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+	} else {
+		uci_foreach_option_eq("ports", "ethport", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+		uci_foreach_option_eq("layer2_interface_ethernet", "ethernet_interface", "ifname", ifname, s) {
+			*ss = s;
+			break;
+		}
+	}
+	return 0;
+}
+
 int get_port_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker = "";
-	char *mg_port;
+	char *mg_port, *pch, *spch, *ifname, *ifname_dup, *p;
 	char buf[16];
+	char plinker[32];
+	struct uci_section *s = NULL;
+	char lbuf[512];
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "mg_port", &mg_port);
-	if (strcmp(mg_port, "true") ==  0) {
-		*value = "";
+	dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
+	if (ifname[0] != '\0' && strcmp(mg_port, "true") ==  0) {
+		ifname_dup = dmstrdup(ifname);
+		p = lbuf;
+		for (pch = strtok_r(ifname_dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
+			check_port_with_ifname(pch, &s);
+			sprintf(plinker, "%s+%s", section_name(s), pch);
+			adm_entry_get_linker_param(DMROOT"Bridging.Bridge.", plinker, value);
+			if (*value == NULL)
+				*value = "";
+			dmstrappendstr(p, *value);
+			dmstrappendchr(p, ',');
+		}
+		p = p -1;
+		dmstrappendend(p);
+		*value = dmstrdup(lbuf);
 		return 0;
 	} else {
 		dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", &linker);
@@ -820,8 +873,9 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 	struct uci_section *s;
 	switch (action) {
 		case VALUECHECK:
+			dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "mg_port", &mg_port);
 			adm_entry_get_linker_value(value, &linker);
-			if (linker && check_ifname_exist_in_br_ifname_list(linker))
+			if (strcmp(mg_port, "false") && linker && check_ifname_exist_in_br_ifname_list(linker))
 				return FAULT_9001;
 			return 0;
 		case VALUESET:
