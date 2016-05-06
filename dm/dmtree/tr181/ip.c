@@ -12,11 +12,13 @@
 #include <uci.h>
 #include <stdio.h>
 #include <ctype.h>
+#include "cwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcwmp.h"
 #include "dmcommon.h"
 #include "ip.h"
+#include "ipping.h"
 
 struct ip_args cur_ip_args = {0};
 struct ipv4_args cur_ipv4_args = {0};
@@ -43,6 +45,159 @@ inline int init_ipv4_args(struct dmctx *ctx, struct uci_section *s, char *ip_add
 /*************************************************************
  * GET & SET PARAM
 /*************************************************************/
+
+int get_ip_ping_diagnostics_state(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.state;
+	return 0;
+}	
+
+int set_ip_ping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:			
+			return 0;
+		case VALUESET:
+			if (strcmp(value, "Requested") == 0) {
+				ipping_diagnostic.state = set_ping_diagnostic(ipping_diagnostic.state, value);
+				cwmp_set_end_session(END_SESSION_IPPING_DIAGNOSTIC);
+			}				
+			return 0;
+	}
+	return 0;
+}
+
+int get_ip_ping_interface(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.interface;
+	return 0;
+}
+
+int set_ip_ping_interface(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:			
+			ipping_diagnostic.interface = set_ping_diagnostic(ipping_diagnostic.interface, value);			
+			return 0;
+	}
+	return 0;
+}
+
+int get_ip_ping_host(char *refparam, struct dmctx *ctx, char **value)
+{
+
+	*value = ipping_diagnostic.host;
+	return 0;
+}
+
+int set_ip_ping_host(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			TRACE();	
+			ipping_diagnostic.host = set_ping_diagnostic(ipping_diagnostic.host, value);
+			TRACE();
+			return 0;
+	}
+	return 0;
+}
+
+int get_ip_ping_repetition_number(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.repetition;
+	return 0;
+}
+
+int set_ip_ping_repetition_number(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:			
+			ipping_diagnostic.repetition = set_ping_diagnostic(ipping_diagnostic.repetition, value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_ip_ping_timeout(char *refparam, struct dmctx *ctx, char **value)
+{
+	
+	*value = ipping_diagnostic.timeout;	
+	return 0;
+}
+
+int set_ip_ping_timeout(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:			
+			ipping_diagnostic.timeout = set_ping_diagnostic(ipping_diagnostic.timeout, value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_ip_ping_block_size(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.size;
+	
+	return 0;
+}
+
+int set_ip_ping_block_size(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:			
+			ipping_diagnostic.size = set_ping_diagnostic(ipping_diagnostic.size, value);
+	}
+	return 0;
+}
+
+int get_ip_ping_success_count(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.success_count;
+	
+	return 0;
+}
+
+int get_ip_ping_failure_count(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.failure_count;
+	
+	return 0;
+}
+
+int get_ip_ping_average_response_time(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.average_response_time;	
+	return 0;
+}
+
+int get_ip_ping_min_response_time(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.minimum_response_time;
+	
+	return 0;
+}
+
+int get_ip_ping_max_response_time(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = ipping_diagnostic.maximum_response_time;
+	
+	return 0;
+}
+
+
 int get_ip_interface_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *lan_name = section_name(cur_ip_args.ip_sec);
@@ -132,17 +287,12 @@ int get_ipv4_addressing_type (char *refparam, struct dmctx *ctx, char **value)
 
 int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *wifname, *wtype, *br_inst, *mg, *device;
+	char *wifname, *wtype, *br_inst, *mg, *device, *proto;
 	struct uci_section *port;
 	json_object *res;
 	char buf[8];
-	char linker[32] = "";
+	char linker[64] = "";
 
-	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ifname", &wifname);
-	if (wifname[0] == '\0') {
-		*value = "";
-		//return 0;
-	}
 	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "type", &wtype);
 	if (strcmp(wtype, "bridge") == 0) {
 		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "bridge_instance", &br_inst);
@@ -158,6 +308,7 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 		}
 	} else if (wtype[0] == '\0' || strcmp(wtype, "anywan") == 0) {
 		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ip_args.ip_sec)}}, 1, &res);
+		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ifname", &wifname);
 		strcpy (linker, wifname);
 		if (res) {
 			json_select(res, "device", -1, NULL, &device, NULL);
@@ -168,6 +319,10 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 				strcpy(linker, buf);
 			}
 		}
+		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "proto", &proto);
+		if (strstr(proto, "ppp")) {
+			sprintf(linker, "%s", section_name(cur_ip_args.ip_sec));
+		}
 	}
 	adm_entry_get_linker_param(DMROOT"ATM.Link.", linker, value);
 	if (*value == NULL)
@@ -176,6 +331,8 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 		adm_entry_get_linker_param(DMROOT"Ethernet.Interface.", linker, value);
 	if (*value == NULL)
 		adm_entry_get_linker_param(DMROOT"WiFi.SSID.", linker, value);
+	if (*value == NULL)
+		adm_entry_get_linker_param(DMROOT"PPP.Interface.", linker, value);
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -316,8 +473,31 @@ int entry_method_root_ip(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"IP.") {
 		DMOBJECT(DMROOT"IP.", ctx, "0", 0, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"IP.Diagnostics.", ctx, "0", 0, NULL, NULL, NULL);
+		SUBENTRY(entry_ip_ping_diagnostic, ctx);
 		DMOBJECT(DMROOT"IP.Interface.", ctx, "1", 1, add_ip_interface, NULL, NULL);
 		SUBENTRY(entry_ip_interface, ctx);
+		return 0;
+	}
+	return FAULT_9005;
+}
+inline int entry_ip_ping_diagnostic(struct dmctx *ctx)
+{
+	IF_MATCH(ctx, DMROOT"IP.Diagnostics.IPPingDiagnostics.") {
+		printf("IPPingDiagnostics \n");
+		DMOBJECT(DMROOT"IP.Diagnostics.IPPingDiagnostics.", ctx, "0", 0, NULL, NULL, NULL);
+		DMPARAM("DiagnosticsState", ctx, "1", get_ip_ping_diagnostics_state, set_ip_ping_diagnostics_state, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Interface", ctx, "1", get_ip_ping_interface, set_ip_ping_interface, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Host", ctx, "1", get_ip_ping_host, set_ip_ping_host, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("NumberOfRepetitions", ctx, "1", get_ip_ping_repetition_number, set_ip_ping_repetition_number, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Timeout", ctx, "1", get_ip_ping_timeout, set_ip_ping_timeout, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("DataBlockSize", ctx, "1", get_ip_ping_block_size, set_ip_ping_block_size, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		//DMPARAM("DSCP", ctx, "1", get_ipping_dscp, set_ipping_dscp, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("SuccessCount", ctx, "0", get_ip_ping_success_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("FailureCount", ctx, "0", get_ip_ping_failure_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("AverageResponseTime", ctx, "0", get_ip_ping_average_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MinimumResponseTime", ctx, "0", get_ip_ping_min_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("MaximumResponseTime", ctx, "0", get_ip_ping_max_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

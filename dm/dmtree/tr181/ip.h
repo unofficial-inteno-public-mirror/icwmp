@@ -11,6 +11,7 @@
 #ifndef __IP_H
 #define __IP_H
 
+extern struct ip_ping_diagnostic ipping_diagnostic; 
 struct ip_args
 {
 	struct uci_section *ip_sec;
