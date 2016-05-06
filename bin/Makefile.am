@@ -37,7 +37,6 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_ipacccfg.c		\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
-	../dm/dmtree/common/ippingdiagnostics.c			\
 	../dm/dmtree/common/softwaremodules.c			\
 	../dm/dmtree/common/xmpp.c						\
 	../dm/dmtree/common/x_inteno_syslog.c			
@@ -49,6 +48,7 @@ icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
 	../dm/dmtree/tr098/wandevice.c					\
 	../dm/dmtree/tr098/x_inteno_se_wifi.c			\
+	../dm/dmtree/common/ippingdiagnostics.c			\	
 	../dm/dmtree/tr098/layer_3_forwarding.c	
 endif
 if DATAMODEL_TR181
@@ -62,6 +62,7 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/ip.c							\
 	../dm/dmtree/tr181/ppp.c						\
 	../dm/dmtree/tr181/dns.c						\
+	../dm/dmtree/tr181/nat.c						\
 	../dm/dmtree/tr181/routing.c
 endif
 icwmpd_CFLAGS =			\
