@@ -453,7 +453,6 @@ int set_router_ipv4forwarding_interface_linker_parameter(char *refparam, struct 
 		case VALUESET:
 			adm_entry_get_linker_value(value, &linker);
 			if (linker) {
-				//iface = linker + sizeof("linker_interface:") - 1;
 				dmuci_set_value_by_section(routeargs->routefwdsection, "interface", linker);
 				dmfree(linker);
 			}
@@ -494,42 +493,6 @@ int set_router_ipv4forwarding_metric(char *refparam, struct dmctx *ctx, int acti
 	return 0;
 }
 
-
-/*int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
-{
-	char *iface, *linker;
-
-	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
-	if (iface[0] != '\0') {
-		dmastrcat(&linker, "linker_interface:", iface);
-		adm_entry_get_linker_param(DMROOT"WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
-		if (*value == NULL) {
-			*value = "";
-		}
-		dmfree(linker);
-	}
-	return 0;
-}
-int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	int i;
-	char *linker, *iface;
-	
-	switch (action) {
-		case VALUECHECK:
-			return 0;
-		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
-			if (linker) {
-				iface = linker + sizeof("linker_interface:") - 1;
-				dmuci_set_value("cwmp", "cpe", "default_wan_interface", iface);
-				dmfree(linker);
-			}
-			return 0;
-	}
-	return 0;
-}*/
-
 int get_router_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct uci_section *s;
@@ -569,7 +532,7 @@ int get_router_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 
 int get_router_alias(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_value_by_section_string(cur_router_args.router_section, "vsalias", value);
+	dmuci_get_value_by_section_string(cur_router_args.router_section, "router_alias", value);
 	return 0;
 }
 
@@ -579,7 +542,7 @@ int set_router_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_router_args.router_section, "vsalias", value);
+			dmuci_set_value_by_section(cur_router_args.router_section, "router_alias", value);
 			return 0;
 	}
 	return 0;
@@ -656,7 +619,7 @@ inline int entry_method_router(struct dmctx *ctx)
 	update_section_list("dmmap","router", NULL, 1, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "router", s) {
 		init_router_args(ctx, s);
-		r = handle_update_instance(1, ctx, &r_last, update_instance_alias, 3, s, "rinstance", "ralias");
+		r = handle_update_instance(1, ctx, &r_last, update_instance_alias, 3, s, "router_instance", "router_alias");
 		SUBENTRY(entry_method_root_router_sub, ctx, r);
 		return 0;
 	}
@@ -698,7 +661,7 @@ int entry_method_root_router_sub(struct dmctx *ctx, char *irouter)
 {
 	IF_MATCH(ctx, DMROOT"Routing.Router.%s.", irouter) {
 		DMOBJECT(DMROOT"Routing.Router.%s.", ctx, "0", 1, NULL, NULL, NULL, irouter);
-		//DMPARAM("Alias", ctx, "1", get_router_alias, set_router_alias, NULL, 0, 1, UNDEF, NULL); //TODO
+		DMPARAM("Alias", ctx, "1", get_router_alias, set_router_alias, NULL, 0, 1, UNDEF, NULL); //TODO
 		DMOBJECT(DMROOT"Routing.Router.%s.IPv4Forwarding.", ctx, "0", 1, NULL, NULL, NULL, irouter);
 		SUBENTRY(entry_router_ipv4forwarding, ctx, irouter);
 	}
