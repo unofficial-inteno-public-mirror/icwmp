@@ -21,6 +21,7 @@ struct ipv4_args
 {
 	struct uci_section *ipv4_sec;
 	char *ip_address;
+	char *ip_6address;
 };
 
 
