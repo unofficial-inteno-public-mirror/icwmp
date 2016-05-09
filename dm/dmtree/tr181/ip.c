@@ -399,6 +399,12 @@ int set_ipv6_address(char *refparam, struct dmctx *ctx, int action, char *value)
 	}
 	return 0;
 }
+
+int get_ip_enable(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "true";
+	return 0;
+}
 /*************************************************************
  * GET & SET ALIAS
 /*************************************************************/
@@ -613,7 +619,7 @@ inline int entry_ipv4_address_instance(struct dmctx *ctx, char *int_num, char *i
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.IPv4Address.%s.", int_num, ip_inst) {
 		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num, ip_inst);
 		DMPARAM("Alias", ctx, "1", get_ipv4_alias, set_ipv4_alias, NULL, 0, 1, UNDEF, NULL);
-		//DMPARAM("Enable", ctx, "1", get_empty, set_interface_enable_ipinterface, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("Enable", ctx, "0", get_ip_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_firewall_enabled, set_firewall_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPAddress", ctx, "1", get_ipv4_address, set_ipv4_address, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("SubnetMask", ctx, "1", get_ipv4_netmask, set_ipv4_netmask, NULL, 0, 1, UNDEF, NULL);
@@ -628,6 +634,7 @@ inline int entry_ipv6_address_instance(struct dmctx *ctx, char *int_num, char *i
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.IPv6Address.%s.", int_num, ip_inst) {
 		DMOBJECT(DMROOT"IP.Interface.%s.IPv6Address.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num, ip_inst);
 		DMPARAM("Alias", ctx, "1", get_ipv6_alias, set_ipv6_alias, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Enable", ctx, "0", get_ip_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPAddress", ctx, "1", get_ipv6_address, set_ipv6_address, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
