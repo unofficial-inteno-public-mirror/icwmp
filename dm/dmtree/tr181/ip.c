@@ -484,7 +484,6 @@ int entry_method_root_ip(struct dmctx *ctx)
 inline int entry_ip_ping_diagnostic(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"IP.Diagnostics.IPPingDiagnostics.") {
-		printf("IPPingDiagnostics \n");
 		DMOBJECT(DMROOT"IP.Diagnostics.IPPingDiagnostics.", ctx, "0", 0, NULL, NULL, NULL);
 		DMPARAM("DiagnosticsState", ctx, "1", get_ip_ping_diagnostics_state, set_ip_ping_diagnostics_state, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Interface", ctx, "1", get_ip_ping_interface, set_ip_ping_interface, NULL, 0, 1, UNDEF, NULL);

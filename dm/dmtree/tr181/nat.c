@@ -58,6 +58,7 @@ int set_nat_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	}
 	return 0;
 }
+
 int get_nat_interface(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
