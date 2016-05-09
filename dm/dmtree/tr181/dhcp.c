@@ -19,6 +19,7 @@
 #include "dhcp.h"
 
 struct dhcp_args cur_dhcp_args = {0};
+struct dhcp_static_args cur_dhcp_staticargs = {0};
 
 /*************************************************************
  * INIT
@@ -29,6 +30,92 @@ inline int init_dhcp_args(struct dmctx *ctx, struct uci_section *s, char *interf
 	ctx->args = (void *)args;
 	args->interface = interface;
 	args->dhcp_sec = s;
+	return 0;
+}
+inline int init_args_dhcp_host(struct dmctx *ctx, struct uci_section *s)
+{
+	struct dhcp_static_args *args = &cur_dhcp_staticargs;
+	ctx->args = (void *)args;
+	args->dhcpsection = s;
+	return 0;
+}
+/*******************ADD-DEL OBJECT*********************/
+int add_dhcp_server(struct dmctx *ctx, char **instancepara)
+{
+	char *value;
+	char *instance;
+	struct uci_section *s = NULL;
+	
+	instance = get_last_instance("dhcp", "dhcp", "dhcp_instance");
+	dmuci_add_section("dhcp", "dhcp", &s, &value);
+	dmuci_set_value_by_section(s, "start", "100");
+	dmuci_set_value_by_section(s, "leasetime", "12h");
+	dmuci_set_value_by_section(s, "limit", "150");
+	*instancepara = update_instance(s, instance, "dhcp_instance");
+	return 0;
+}
+
+int delete_dhcp_server(struct dmctx *ctx)
+{
+	dmuci_delete_by_section(cur_dhcp_args.dhcp_sec, NULL, NULL);
+	return 0;
+}
+
+int delete_dhcp_server_all(struct dmctx *ctx)
+{
+	int found = 0;
+	char *lan_name;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
+
+	uci_foreach_sections("dhcp", "dhcp", s) {
+		if (found != 0)
+			dmuci_delete_by_section(ss, NULL, NULL);
+		ss = s;
+		found++;
+	}
+	if (ss != NULL)
+		dmuci_delete_by_section(ss, NULL, NULL);
+	return 0;	
+}
+
+int add_dhcp_staticaddress(struct dmctx *ctx, char **instancepara)
+{
+	char *value;
+	char *instance;
+	struct uci_section *s = NULL;
+	
+	instance = get_last_instance_lev2("dhcp", "host", "ldhcpinstance", "interface", cur_dhcp_args.interface);
+	dmuci_add_section("dhcp", "host", &s, &value);
+	dmuci_set_value_by_section(s, "mac", DHCPSTATICADDRESS_DISABLED_CHADDR);
+	dmuci_set_value_by_section(s, "interface", cur_dhcp_args.interface);
+	*instancepara = update_instance(s, instance, "ldhcpinstance");
+	return 0;
+}
+
+int delete_dhcp_staticaddress_all(struct dmctx *ctx)
+{
+	int found = 0;
+	char *lan_name;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
+
+	uci_foreach_option_eq("dhcp", "host", "interface", cur_dhcp_args.interface, s) {
+		if (found != 0)
+			dmuci_delete_by_section(ss, NULL, NULL);
+		ss = s;
+		found++;
+	}
+	if (ss != NULL)
+		dmuci_delete_by_section(ss, NULL, NULL);
+	return 0;	
+}
+
+int delete_dhcp_staticaddress(struct dmctx *ctx)
+{
+	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	
+	dmuci_delete_by_section(dhcpargs->dhcpsection, NULL, NULL);
 	return 0;
 }
 /*************************************************************
@@ -601,6 +688,78 @@ end:
 	dmuci_add_list_value("dhcp", cur_dhcp_args.interface, "dhcp_option", buf);
 	return 0;
 }
+
+int get_dhcp_static_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcp_staticargs.dhcpsection, "ldhcpalias", value);
+	return 0;
+}
+
+int set_dhcp_static_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_dhcp_staticargs.dhcpsection, "ldhcpalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *chaddr;
+	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	
+	dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "mac", &chaddr);
+	if (strcmp(chaddr, DHCPSTATICADDRESS_DISABLED_CHADDR) == 0)
+		dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "mac_orig", value);
+	else 
+		*value = chaddr;
+	return 0;
+}
+
+int set_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, int action, char *value)
+{	
+	char *chaddr;
+	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+		
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "mac", &chaddr);
+			if (strcmp(chaddr, DHCPSTATICADDRESS_DISABLED_CHADDR) == 0)
+				dmuci_set_value_by_section(dhcpargs->dhcpsection, "mac_orig", value);
+			else
+				dmuci_set_value_by_section(dhcpargs->dhcpsection, "mac", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	
+	dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "ip", value);
+	return 0;
+}
+
+int set_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(dhcpargs->dhcpsection, "ip", value);
+			return 0;
+	}
+	return 0;
+}
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
@@ -609,7 +768,7 @@ int entry_method_root_dhcp(struct dmctx *ctx)
 	IF_MATCH(ctx, DMROOT"DHCPv4.") {
 		DMOBJECT(DMROOT"DHCPv4.", ctx, "0", 0, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"DHCPv4.Server.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"DHCPv4.Server.Pool.", ctx, "0", 1, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.", ctx, "0", 1, add_dhcp_server, delete_dhcp_server_all, NULL);
 		SUBENTRY(entry_dhcp, ctx);
 		return 0;
 	}
@@ -624,16 +783,16 @@ inline int entry_dhcp(struct dmctx *ctx)
 		dmuci_get_value_by_section_string(s, "interface", &interface);
 		init_dhcp_args(ctx, s, interface);
 		idhcp = handle_update_instance(1, ctx, &idhcp_last, update_instance_alias, 3, s, "dhcp_instance", "dhcp_alias");
-		SUBENTRY(entry_dhcp_instance, ctx, idhcp);
+		SUBENTRY(entry_dhcp_instance, ctx, interface, idhcp);
 	}
 
 	return 0;
 }
 
-inline int entry_dhcp_instance(struct dmctx *ctx, char *int_num)
+inline int entry_dhcp_instance(struct dmctx *ctx, char *interface, char *int_num)
 {
 	IF_MATCH(ctx, DMROOT"DHCPv4.Server.Pool.%s.", int_num) {
-		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.", ctx, "0", NULL, NULL, NULL, NULL, int_num);
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.", ctx, "0", NULL, NULL, delete_dhcp_server, NULL, int_num);
 		DMPARAM("DNSServers", ctx, "1", get_dns_server, set_dns_server, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_DHCPServerConfigurable", ctx, "1", get_dhcp_configurable, set_dhcp_configurable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_dhcp_enable, set_dhcp_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -645,19 +804,32 @@ inline int entry_dhcp_instance(struct dmctx *ctx, char *int_num)
 		DMPARAM("DHCPLeaseTime", ctx, "1", get_dhcp_leasetime, set_dhcp_leasetime, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DomainName", ctx, "1", get_dhcp_domainname, set_dhcp_domainname, NULL, 0, 1, UNDEF, NULL);
 		//DMPARAM("Interface", ctx, "1", get_lan_dhcp_domainname, set_lan_dhcp_domainname, NULL, 0, 1, UNDEF, NULL); // refer to  IP.Interface
-		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.", ctx, "0", NULL, NULL, NULL, NULL, int_num); //TODO
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.", ctx, "0", NULL, add_dhcp_staticaddress, delete_dhcp_staticaddress_all, NULL, int_num); //TODO
+		SUBENTRY(entry_dhcp_static_address, ctx, interface, int_num);		
 		return 0;
 	}
 	return FAULT_9005;
 }
 
+
+inline int entry_dhcp_static_address(struct dmctx *ctx, char *interface, char *idev)
+{
+	struct uci_section *sss = NULL;
+	char *idhcp = NULL, *idhcp_last = NULL;
+	uci_foreach_option_cont("dhcp", "host", "interface", interface, sss) {
+		idhcp = handle_update_instance(2, ctx, &idhcp_last, update_instance_alias, 3, sss, "ldhcpinstance", "ldhcpalias");
+		init_args_dhcp_host(ctx, sss);
+		SUBENTRY(entry_dhcp_static_address_instance, ctx, idev, idhcp);
+	}
+}
+
 inline int entry_dhcp_static_address_instance(struct dmctx *ctx, char *int_num, char *st_address)
 {
 	IF_MATCH(ctx, DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.%s.", int_num, st_address) {
-		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.%s.", ctx, "0", NULL, NULL, NULL, NULL, int_num, st_address);
-		DMPARAM("Alias", ctx, "1", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Chaddr", ctx, "1", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Yiaddr", ctx, "1", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.%s.", ctx, "1", NULL, NULL, delete_dhcp_staticaddress, NULL, int_num, st_address);
+		DMPARAM("Alias", ctx, "1", get_dhcp_static_alias, set_dhcp_static_alias, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Chaddr", ctx, "1", get_dhcp_staticaddress_chaddr, set_dhcp_staticaddress_chaddr, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Yiaddr", ctx, "1", get_dhcp_staticaddress_yiaddr, set_dhcp_staticaddress_yiaddr, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

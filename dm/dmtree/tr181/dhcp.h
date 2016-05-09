@@ -17,6 +17,11 @@ struct dhcp_args
 	char *interface;
 };
 
+struct dhcp_static_args
+{
+	struct uci_section *dhcpsection;
+};
+
 int entry_method_root_dhcp(struct dmctx *ctx);
 
 #endif
