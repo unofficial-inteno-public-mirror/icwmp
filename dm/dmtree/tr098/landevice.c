@@ -242,6 +242,8 @@ int get_lan_dns(char *refparam, struct dmctx *ctx, char **value)
 		while (*p) {
 			if (*p == ' ' && p != *value && *(p-1) != ',')
 				*p++ = ',';
+			else
+				p++;
 		}
 	}
 	return 0;

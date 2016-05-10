@@ -127,8 +127,10 @@ int get_dns_server(char *refparam, struct dmctx *ctx, char **value)
 	int len;
 
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
-	DM_ASSERT(res, *value = "");
+	if(res)
 	json_parse_array(res, "dns-server", -1, NULL, value);
+	else
+		*value = "";
 	if ((*value)[0] == '\0') {
 		dmuci_get_option_value_string("network", cur_dhcp_args.interface, "dns", value);
 		*value = dmstrdup(*value); // MEM WILL BE FREED IN DMMEMCLEAN
@@ -136,6 +138,8 @@ int get_dns_server(char *refparam, struct dmctx *ctx, char **value)
 		while (*p) {
 			if (*p == ' ' && p != *value && *(p-1) != ',')
 				*p++ = ',';
+			else
+				p++;
 		}
 	}
 	return 0;
@@ -801,7 +805,7 @@ inline int entry_dhcp_instance(struct dmctx *ctx, char *interface, char *int_num
 		DMPARAM("ReservedAddresses", ctx, "1", get_dhcp_reserved_addresses, set_dhcp_reserved_addresses, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("SubnetMask", ctx, "1", get_dhcp_subnetmask, set_dhcp_subnetmask, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("IPRouters", ctx, "1", get_dhcp_iprouters, set_dhcp_iprouters, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DHCPLeaseTime", ctx, "1", get_dhcp_leasetime, set_dhcp_leasetime, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("LeaseTime", ctx, "1", get_dhcp_leasetime, set_dhcp_leasetime, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DomainName", ctx, "1", get_dhcp_domainname, set_dhcp_domainname, NULL, 0, 1, UNDEF, NULL);
 		//DMPARAM("Interface", ctx, "1", get_lan_dhcp_domainname, set_lan_dhcp_domainname, NULL, 0, 1, UNDEF, NULL); // refer to  IP.Interface
 		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.", ctx, "0", NULL, add_dhcp_staticaddress, delete_dhcp_staticaddress_all, NULL, int_num); //TODO
