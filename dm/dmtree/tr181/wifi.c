@@ -177,7 +177,7 @@ int get_radio_frequency(char *refparam, struct dmctx *ctx, char **value)
 	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
-	if(strcmp(freq, "2") ==0 ) {
+	if(strcmp(freq, "2") == 0 ) {
 		dmastrcat(value, freq, ".4GHz");  // MEM WILL BE FREED IN DMMEMCLEAN
 		return 0;
 	}

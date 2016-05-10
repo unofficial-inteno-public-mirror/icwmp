@@ -548,7 +548,27 @@ int get_ptm_stats_pack_sent(char *refparam, struct dmctx *ctx, char **value)
 	ubus_ptm_stats(res, value, "tx_packets");
 	return 0;
 }
-//////////////////////////////////////ADD OBJ//////////////////////////////
+
+int get_line_name(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = dmstrdup(cur_dsl_line_args.type);
+	return 0;
+}
+
+int get_atm_enable(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "true";
+	return 0;
+}
+
+int get_ptm_enable(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "true";
+	return 0;
+}
+/*************************************************************
+ * ADD OBJ
+/*************************************************************/
 int add_atm_link(struct dmctx *ctx, char **instancepara)
 {
 	int idx;
@@ -568,7 +588,7 @@ int add_atm_link(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value_by_section(s, "encapseoa", "llcsnap_eth");
 	dmuci_set_value_by_section(s, "ifname", ifname);
 	dmuci_set_value_by_section(s, "link_type", "EoA");
-	dmuci_set_value_by_section(s, "unit", buf+3);
+	dmuci_set_value_by_section(s, "unit", buf + 3);
 	dmuci_set_value_by_section(s, "vci", "35");
 	dmuci_set_value_by_section(s, "vpi", "8");
 	*instancepara = update_instance(s, instance, "atmlinkinstance");
@@ -592,7 +612,7 @@ int add_ptm_link(struct dmctx *ctx, char **instancepara)
 	dmuci_set_value_by_section(s, "baseifname", buf);
 	dmuci_set_value_by_section(s, "bridge", "0");
 	dmuci_set_value_by_section(s, "ifname", ifname);
-	dmuci_set_value_by_section(s, "unit", buf+3);
+	dmuci_set_value_by_section(s, "unit", buf + 3);
 	*instancepara = update_instance(s, instance, "ptmlinkinstance");
 	return 0;
 }
@@ -676,7 +696,9 @@ int delete_ptm_link(struct dmctx *ctx)
 		wan_remove_dev_interface(ss, cur_ptm_args.ifname);
 	return 0;
 }
-////////////////////////SET AND GET ALIAS/////////////////////////////////
+/*************************************************************
+ * SET AND GET ALIAS
+/*************************************************************/
 int get_dsl_link_alias(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_value_by_section_string(cur_dsl_line_args.line_sec, "dsllinkalias", value);
@@ -748,7 +770,9 @@ int set_ptm_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	}
 	return 0;
 }
-/////////////SUB ENTRIES///////////////////////////////////////////
+/*************************************************************
+ * SUB ENTRIES
+/*************************************************************/
 int entry_method_root_wan_dsl(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"DSL.") {
@@ -831,13 +855,14 @@ inline int entry_dsl_line_instance(struct dmctx *ctx, char *dev)
 		DMPARAM("Alias", ctx, "1", get_dsl_link_alias, set_dsl_link_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_dsl_status, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("LinkStatus", ctx, "0", get_dsl_link_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		//DMPARAM("Name", ctx, "0", get_eth_port_name, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("StandardsSupported", ctx, "0", get_dsl_link_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("StandardUsed", ctx, "0", get_dsl_link_standard_inuse, NULL, NULL, 0, 1, UNDEF, NULL);
-		//VDSL
-		DMPARAM("AllowedProfiles", ctx, "0", get_vdsl_link_supported_profile, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("CurrentProfile", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
-		//VDSL
+		DMPARAM("Name", ctx, "0", get_line_name, NULL, NULL, 0, 1, UNDEF, NULL);
+		if (strcmp(cur_dsl_line_args.type, "adsl") == 0) {
+			DMPARAM("StandardsSupported", ctx, "0", get_dsl_link_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("StandardUsed", ctx, "0", get_dsl_link_standard_inuse, NULL, NULL, 0, 1, UNDEF, NULL);
+		} else if (strcmp(cur_dsl_line_args.type, "vdsl") == 0) {
+			DMPARAM("AllowedProfiles", ctx, "0", get_vdsl_link_supported_profile, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("CurrentProfile", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+		}
 		DMPARAM("DownstreamMaxBitRate", ctx, "0", get_dsl_link_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("DownstreamAttenuation", ctx, "0", get_dsl_link_downstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
 		DMPARAM("DownstreamNoiseMargin", ctx, "0", get_dsl_link_downstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
@@ -857,9 +882,8 @@ inline int entry_dsl_channel_instance(struct dmctx *ctx, char *dev)
 		DMOBJECT(DMROOT"DSL.Channel.%s.",  ctx, "0", NULL, NULL, NULL, linker, dev);
 		DMPARAM("Alias", ctx, "1", get_channel_alias, set_channel_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_dsl_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		//DMPARAM("Name", ctx, "0", get_eth_port_name, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Name", ctx, "0", get_line_name, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("LowerLayers", ctx, "0", get_channel_lower_layer, NULL, NULL, 0, 1, UNDEF, NULL);
-		//DMPARAM("LPATH", ctx, "0", get_wan_device_dsl_datapath, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DownstreamCurrRate", ctx, "0", get_dsl_channel_downstreamcurrrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("UpstreamCurrRate", ctx, "0", get_dsl_channel_upstreamcurrrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_AnnexMEnable", ctx, "1", get_channel_annexm_status, set_channel_annexm_status, "xsd:boolean", 0, 1, UNDEF, NULL);
@@ -875,9 +899,9 @@ inline int entry_atm_link_instance(struct dmctx *ctx, char *idev)
 		IF_MATCH(ctx, DMROOT"ATM.Link.%s.", idev) {
 			DMOBJECT(DMROOT"ATM.Link.%s.", ctx, "1", NULL, NULL, delete_atm_link, cur_atm_args.ifname, idev);
 			DMPARAM("Alias", ctx, "1", get_atm_alias, set_atm_alias, NULL, 0, 1, UNDEF, NULL);
-			//DMPARAM("Enable", ctx, "1", get_interface_enable_wanproto, set_interface_enable_wanproto, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("Enable", ctx, "0", get_atm_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("Name", ctx, "0", get_atm_link_name, NULL, NULL, 0, 1, UNDEF, NULL);
-			//DMPARAM("Status", ctx, "0", get_wan_device_wan_dsl_interface_config_status, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Status", ctx, "0", get_atm_enable, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("LowerLayers", ctx, "0", get_atm_lower_layer, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("LinkType", ctx, "1", get_atm_link_type, set_atm_link_type, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("DestinationAddress", ctx, "1", get_atm_destination_address, set_atm_destination_address, NULL, 0, 1, UNDEF, NULL);
@@ -897,11 +921,10 @@ inline int entry_ptm_link_instance(struct dmctx *ctx, char *idev)
 		IF_MATCH(ctx, DMROOT"PTM.Link.%s.", idev) {
 			DMOBJECT(DMROOT"PTM.Link.%s.", ctx, "1", NULL, NULL, delete_ptm_link, cur_ptm_args.ifname, idev);
 			DMPARAM("Alias", ctx, "1", get_ptm_alias, set_ptm_alias, NULL, 0, 1, UNDEF, NULL);
-			//DMPARAM("Enable", ctx, "1", get_interface_enable_wanproto, set_interface_enable_wanproto, "xsd:boolean", 0, 1, UNDEF, NULL);
+			DMPARAM("Enable", ctx, "0", get_ptm_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("Name", ctx, "0", get_ptm_link_name, NULL, NULL, 0, 1, UNDEF, NULL);
-			//DMPARAM("Status", ctx, "0", get_wan_device_wan_dsl_interface_config_status, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("Status", ctx, "0", get_ptm_enable, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("LowerLayers", ctx, "0", get_ptm_lower_layer, NULL, NULL, 0, 1, UNDEF, NULL);
-			//DMPARAM("MACAddress", ctx, "0", get_wan_device_mng_interface_ip, NULL, NULL, forced_inform_eip, notif_permission, forced_notify, NULL);
 			DMOBJECT(DMROOT"PTM.Link.%s.Stats.", ctx, "1", 1, NULL, NULL, NULL, idev);
 			DMPARAM("BytesSent", ctx, "0", get_ptm_stats_bytes_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 			DMPARAM("BytesReceived", ctx, "0", get_ptm_stats_bytes_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
