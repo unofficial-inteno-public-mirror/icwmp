@@ -14,6 +14,7 @@
 struct host_args
 {
 	json_object *client;
+	char *key;
 };
 
 int entry_method_root_hosts(struct dmctx *ctx);

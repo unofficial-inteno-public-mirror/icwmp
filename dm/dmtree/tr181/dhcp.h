@@ -22,6 +22,11 @@ struct dhcp_static_args
 	struct uci_section *dhcpsection;
 };
 
+struct client_args
+{
+	json_object *client;
+};
+
 int entry_method_root_dhcp(struct dmctx *ctx);
 
 #endif

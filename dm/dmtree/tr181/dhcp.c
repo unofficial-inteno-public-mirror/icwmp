@@ -18,7 +18,9 @@
 #include "dmcommon.h"
 #include "dhcp.h"
 
+
 struct dhcp_args cur_dhcp_args = {0};
+struct client_args cur_dhcp_client_args = {0};
 struct dhcp_static_args cur_dhcp_staticargs = {0};
 
 /*************************************************************
@@ -39,6 +41,15 @@ inline int init_args_dhcp_host(struct dmctx *ctx, struct uci_section *s)
 	args->dhcpsection = s;
 	return 0;
 }
+
+inline int init_dhcp_client_args(struct dmctx *ctx, json_object *client)
+{
+	struct client_args *args = &cur_dhcp_client_args;
+	ctx->args = (void *)args;
+	args->client = client;
+	return 0;
+}
+
 /*******************ADD-DEL OBJECT*********************/
 int add_dhcp_server(struct dmctx *ctx, char **instancepara)
 {
@@ -764,6 +775,15 @@ int set_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action,
 	}
 	return 0;
 }
+
+int get_dhcp_client_chaddr(char *refparam, struct dmctx *ctx, char **value)
+{
+	printf("get_dhcp_client_chaddr \n");
+	json_select(cur_dhcp_client_args.client, "macaddr", 0, NULL, value, NULL);
+	printf("get_dhcp_client_chaddr 2\n");
+	return 0;
+}
+
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
@@ -809,7 +829,9 @@ inline int entry_dhcp_instance(struct dmctx *ctx, char *interface, char *int_num
 		DMPARAM("DomainName", ctx, "1", get_dhcp_domainname, set_dhcp_domainname, NULL, 0, 1, UNDEF, NULL);
 		//DMPARAM("Interface", ctx, "1", get_lan_dhcp_domainname, set_lan_dhcp_domainname, NULL, 0, 1, UNDEF, NULL); // refer to  IP.Interface
 		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.", ctx, "0", NULL, add_dhcp_staticaddress, delete_dhcp_staticaddress_all, NULL, int_num); //TODO
-		SUBENTRY(entry_dhcp_static_address, ctx, interface, int_num);		
+		SUBENTRY(entry_dhcp_static_address, ctx, interface, int_num);
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.Client.", ctx, "0", NULL, NULL, NULL, NULL, int_num); //TODO
+		SUBENTRY(entry_dhcp_client, ctx, interface, int_num);
 		return 0;
 	}
 	return FAULT_9005;
@@ -838,3 +860,52 @@ inline int entry_dhcp_static_address_instance(struct dmctx *ctx, char *int_num, 
 	}
 	return FAULT_9005;
 }
+
+inline int entry_dhcp_client(struct dmctx *ctx, char *interface, char *idev )
+{
+	printf("entry_dhcp_client \n");
+	//struct uci_section *ss = NULL;
+	struct uci_section *sss = NULL;
+	char *idx = NULL, *idx_last = NULL;
+	json_object *res = NULL, *client_obj = NULL;
+	char *dhcp, *network;
+	int id = 0;
+	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	if (res) {
+		printf("res not null \n");
+		json_object_object_foreach(res, key, client_obj) {
+			json_select(client_obj, "dhcp", 0, NULL, &dhcp, NULL);
+			printf("dhcp %s \n", dhcp);
+			if(strcmp(dhcp, "false") == 0)
+			{
+				json_select(client_obj, "network", 0, NULL, &network, NULL);
+				if(strcmp(network, interface) == 0)
+				{
+					printf("network %s \n", network);
+					init_dhcp_client_args(ctx, client_obj);
+					idx = handle_update_instance(2, ctx, &idx_last, update_instance_without_section, 1, ++id);
+					printf("before instance cll \n");
+					SUBENTRY(entry_dhcp_client_instance, ctx, idev, idx, key);
+				}
+			}
+
+
+		}
+	}
+	return 0;
+}
+
+inline int entry_dhcp_client_instance(struct dmctx *ctx, char *int_num, char *idx, char *key)
+{
+	char linker[32] = "linker_dhcp:";
+	strcat(linker, key);
+	printf("linker is %s \n",linker);
+	IF_MATCH(ctx, DMROOT"DHCPv4.Server.Pool.%s.Client.%s.", int_num, idx) {
+		printf("call entry_dhcp_static_address_instance \n");
+		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.Client.%s.", ctx, "1", NULL, NULL, NULL, linker, int_num, idx);
+		DMPARAM("Chaddr", ctx, "0", get_dhcp_client_chaddr, NULL, NULL, 0, 1, UNDEF, NULL);
+		return 0;
+	}
+	return FAULT_9005;
+}
+

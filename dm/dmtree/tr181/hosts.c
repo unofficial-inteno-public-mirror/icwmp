@@ -23,11 +23,12 @@ struct host_args cur_host_args = {0};
 /*************************************************************
  * INIT
 /*************************************************************/
-inline int init_host_args(struct dmctx *ctx, json_object *clients)
+inline int init_host_args(struct dmctx *ctx, json_object *clients, char *key)
 {
 	struct host_args *args = &cur_host_args;
 	ctx->args = (void *)args;
 	args->client = clients;
+	args->key = key;
 	return 0;
 }
 /*************************************************************
@@ -109,6 +110,65 @@ int get_host_leasetime_remaining(char *refparam, struct dmctx *ctx, char **value
 	}
 	return 0;
 }
+
+int  get_host_dhcp_client(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *iface, *linker;
+		dmastrcat(&linker, "linker_dhcp:", cur_host_args.key);
+		adm_entry_get_linker_param(DMROOT"DHCPv4.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		if (*value == NULL) {
+			*value = "";
+		}
+		dmfree(linker);
+	return 0;
+}
+
+char *get_interface_type(char *mac, char *ndev)
+{
+	json_object *res;
+	int wlctl_num;
+	struct uci_section *s, *d;
+	char *network, *device, *value, *wunit;
+	char buf[8], *p;
+
+	uci_foreach_sections("wireless", "wifi-device", d) {
+		wlctl_num = 0;
+		wunit = section_name(d);
+		uci_foreach_option_eq("wireless", "wifi-iface", "device", wunit, s) {
+			dmuci_get_value_by_section_string(s, "network", &network);
+			if (strcmp(network, ndev) == 0) {
+				if (wlctl_num != 0) {
+					sprintf(buf, "%s.%d", wunit, wlctl_num);
+					p = buf;
+				}
+				else {
+					p = wunit;
+				}
+				dmubus_call("router", "sta", UBUS_ARGS{{"vif", p}}, 1, &res);
+				if(res) {
+					json_object_object_foreach(res, key, val) {
+						json_select(val, "assoc_mac", 0, NULL, &value, NULL);
+						if (strcasecmp(value, mac) == 0)
+							return "802.11";
+					}
+				}
+				wlctl_num++;
+			}
+		}
+	}
+	return "Ethernet";
+}
+
+int get_host_interfacetype(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *mac, *network;
+	
+	json_select(cur_host_args.client, "macaddr", 0, NULL, &mac, NULL);
+	json_select(cur_host_args.client, "network", 0, NULL, &network, NULL);
+	*value = get_interface_type(mac, network);
+	return 0;
+}
+
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
@@ -131,7 +191,7 @@ inline int entry_host(struct dmctx *ctx)
 	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
 		json_object_object_foreach(res, key, client_obj) {
-			init_host_args(ctx, client_obj);
+			init_host_args(ctx, client_obj, key);
 			idx = handle_update_instance(2, ctx, &idx_last, update_instance_without_section, 1, ++id);
 			SUBENTRY(entry_host_instance, ctx, idx);
 		}
@@ -147,10 +207,10 @@ inline int entry_host_instance(struct dmctx *ctx, char *int_num)
 		DMPARAM("HostName", ctx, "0", get_host_hostname, NULL, NULL, 0, 0, UNDEF, NULL);
 		DMPARAM("Active", ctx, "0", get_host_active, NULL, "xsd:boolean", 0, 0, UNDEF, NULL);
 		DMPARAM("PhysAddress", ctx, "0", get_host_phy_address, NULL, NULL, 0, 0, UNDEF, NULL);
-		//DMPARAM("X_INTENO_SE_InterfaceType", ctx, "0", get_lan_host_interfacetype, NULL, NULL, 0, 0, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_InterfaceType", ctx, "0", get_host_interfacetype, NULL, NULL, 0, 0, UNDEF, NULL);
 		DMPARAM("AddressSource", ctx, "0", get_host_address_source, NULL, NULL, 0, 0, UNDEF, NULL);
 		DMPARAM("LeaseTimeRemaining", ctx, "0", get_host_leasetime_remaining, NULL, NULL, 0, 0, UNDEF, NULL);
-		//DMPARAM("DHCPClient", ctx, "0", get_eth_port_name, NULL, NULL, 0, 1, UNDEF, NULL); //TO CHECK R/W
+		DMPARAM("DHCPClient", ctx, "0", get_host_dhcp_client, NULL, NULL, 0, 1, UNDEF, NULL); //TO CHECK R/W
 		return 0;
 	}
 	return FAULT_9005;
