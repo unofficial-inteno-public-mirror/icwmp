@@ -90,10 +90,7 @@ int get_dsl_link_status(char *refparam, struct dmctx *ctx, char **value)
 }
 int get_dsl_link_supported_standard(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = "G.992.1_Annex_A, G.992.1_Annex_B, G.992.1_Annex_C, T1.413, T1.413i2, ETSI_101_388, G.992.2, G.992.3_Annex_A,"
-			" G.992.3_Annex_B, G.992.3_Annex_C, G.992.3_Annex_I, G.992.3_Annex_J, "
-			"G.992.3_Annex_L, G.992.3_Annex_M, G.992.4, G.992.5_Annex_A, G.992.5_Annex_B, "
-			"G.992.5_Annex_C,  G.992.5_Annex_I, G.992.5_Annex_J, G.992.5_Annex_M, G.993.1, G.993.1_Annex_A, G.993.2_Annex_A, G.993.2_Annex_B, G.993.2_Annex_C";
+	*value = "G.992.1_Annex_A, G.992.2, T1.413, G.992.3_Annex_A, G.992.3_Annex_L, G.992.5_Annex_A, G.992.5_Annex_M";
 	return 0;
 }
 
@@ -102,29 +99,41 @@ int get_dsl_link_standard_inuse(char *refparam, struct dmctx *ctx, char **value)
 	char *mode;
 	json_object *res = NULL;
 
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
-		DM_ASSERT(res, *value = "");
-		json_select(res, "dslstats", -1, "mode", &mode, NULL);
-		if (strcmp(mode, "G.Dmt") == 0)
-			*value = "G.992.1_Annex_A"; // TO CHECK
-		else if (strcmp(mode, "G.lite") == 0)
-			*value = "G.992.2";
-		else if (strcmp(mode, "T1.413") == 0)
-			*value = "T1.413";
-		else if (strcmp(mode, "ADSL2") == 0)
-			*value = "G.992.3_Annex_A";
-		else if (strcmp(mode, "AnnexL") == 0)
-			*value = "G.992.3_Annex_L";
-		else if (strcmp(mode, "ADSL2+") == 0)
-			*value = "G.992.5_Annex_A";
-		else
-			*value = mode;
+	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "dslstats", -1, "mode", &mode, NULL);
+	if (strcmp(mode, "G.Dmt") == 0)
+		*value = "G.992.1_Annex_A"; // TO CHECK
+	else if (strcmp(mode, "G.lite") == 0)
+		*value = "G.992.2";
+	else if (strcmp(mode, "T1.413") == 0)
+		*value = "T1.413";
+	else if (strcmp(mode, "ADSL2") == 0)
+		*value = "G.992.3_Annex_A";
+	else if (strcmp(mode, "AnnexL") == 0)
+		*value = "G.992.3_Annex_L";
+	else if (strcmp(mode, "ADSL2+") == 0)
+		*value = "G.992.5_Annex_A";
+	else
+		*value = mode;
 	return 0;
 }
 
 int get_vdsl_link_supported_profile(char *refparam, struct dmctx *ctx, char **value)
 {
 	*value = "8a, 8b, 8c, 8d, 12a, 12b, 17a, 17b, 30a";
+	return 0;
+}
+
+int get_vdsl_link_profile_inuse(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *mode;
+	json_object *res = NULL;
+
+	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "dslstats", -1, "mode", &mode, NULL);
+	*value = mode;
 	return 0;
 }
 
@@ -859,16 +868,22 @@ inline int entry_dsl_line_instance(struct dmctx *ctx, char *dev)
 		if (strcmp(cur_dsl_line_args.type, "adsl") == 0) {
 			DMPARAM("StandardsSupported", ctx, "0", get_dsl_link_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("StandardUsed", ctx, "0", get_dsl_link_standard_inuse, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamMaxBitRate", ctx, "0", get_dsl_link_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamAttenuation", ctx, "0", get_dsl_link_downstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamNoiseMargin", ctx, "0", get_dsl_link_downstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamMaxBitRate", ctx, "0", get_dsl_link_upstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamAttenuation", ctx, "0", get_dsl_link_upstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamNoiseMargin", ctx, "0", get_dsl_link_upstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
 		} else if (strcmp(cur_dsl_line_args.type, "vdsl") == 0) {
 			DMPARAM("AllowedProfiles", ctx, "0", get_vdsl_link_supported_profile, NULL, NULL, 0, 1, UNDEF, NULL);
-			DMPARAM("CurrentProfile", ctx, "0", get_empty, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("CurrentProfile", ctx, "0", get_vdsl_link_profile_inuse, NULL, NULL, 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamMaxBitRate", ctx, "0", get_dsl_link_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamAttenuation", ctx, "0", get_dsl_link_downstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("DownstreamNoiseMargin", ctx, "0", get_dsl_link_downstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamMaxBitRate", ctx, "0", get_dsl_link_upstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamAttenuation", ctx, "0", get_dsl_link_upstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
+			DMPARAM("UpstreamNoiseMargin", ctx, "0", get_dsl_link_upstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
 		}
-		DMPARAM("DownstreamMaxBitRate", ctx, "0", get_dsl_link_downstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("DownstreamAttenuation", ctx, "0", get_dsl_link_downstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
-		DMPARAM("DownstreamNoiseMargin", ctx, "0", get_dsl_link_downstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
-		DMPARAM("UpstreamMaxBitRate", ctx, "0", get_dsl_link_upstreammaxrate, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("UpstreamAttenuation", ctx, "0", get_dsl_link_upstreamattenuation, NULL, "xsd:int", 0, 1, UNDEF, NULL);
-		DMPARAM("UpstreamNoiseMargin", ctx, "0", get_dsl_link_upstreamnoisemargin, NULL, "xsd:int", 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
