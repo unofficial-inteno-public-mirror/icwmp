@@ -61,7 +61,6 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/dhcp.c						\
 	../dm/dmtree/tr181/ip.c							\
 	../dm/dmtree/tr181/ppp.c						\
-	../dm/dmtree/tr181/dns.c						\
 	../dm/dmtree/tr181/nat.c						\
 	../dm/dmtree/tr181/routing.c
 endif

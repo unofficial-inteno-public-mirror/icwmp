@@ -41,7 +41,6 @@
 #include "dhcp.h"
 #include "ip.h"
 #include "ppp.h"
-#include "dns.h"
 #include "softwaremodules.h"
 #include "routing.h"
 #include "nat.h"
@@ -137,7 +136,6 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"DHCPv4.", 1, NULL, 0, &entry_method_root_dhcp },
 	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
 	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
-	{ DMROOT"DNS.", 1, NULL, 0, &entry_method_root_dns },
 	{ DMROOT"Routing.", 1, NULL, 0, &entry_method_root_routing },
 	{ DMROOT"NAT.", 1, NULL, 0, &entry_method_root_nat },
 #endif
