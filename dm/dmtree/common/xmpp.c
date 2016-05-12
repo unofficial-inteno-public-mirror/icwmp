@@ -203,8 +203,7 @@ inline int entry_xmpp_connection(struct dmctx *ctx)
 
 	uci_foreach_sections("cwmp", "xmpp_connection", s) {
 		init_args_connection_entry(ctx, s);
-		iconnection = update_instance(s, iconnection, "connection_instance");
-		//iconnection = handle_update_instance(1, ctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
+		iconnection = handle_update_instance(1, ctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
 		SUBENTRY(entry_xmpp_connection_instance, ctx, iconnection);
 	}
 }

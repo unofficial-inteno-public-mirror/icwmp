@@ -45,6 +45,7 @@
 #include "softwaremodules.h"
 #include "routing.h"
 #include "nat.h"
+#include "xmpp.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -124,6 +125,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
+	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
 #ifdef DATAMODEL_TR181
 	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
 	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },

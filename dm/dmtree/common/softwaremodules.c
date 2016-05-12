@@ -222,13 +222,13 @@ char *get_softwaremodules_version(char *uuid)
 
 inline int entry_softwaremodules_deploymentunit(struct dmctx *ctx)
 {
-	char *idu = NULL;
+	char *idu = NULL, *idu_last = NULL;
 	char *permission = "1";
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("dmmap", "deploymentunit", s) {
 		init_args_du_entry(ctx, s);
-		idu = update_instance(s, idu, "duinstance");
+		idu = handle_update_instance(1, ctx, &idu_last, update_instance_alias, 3, s, "duinstance", "duinstance_alias");
 		SUBENTRY(entry_softwaremodules_deploymentunit_instance, ctx, idu);
 	}
 	return 0;
