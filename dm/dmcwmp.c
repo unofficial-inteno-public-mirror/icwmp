@@ -112,6 +112,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
 	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
 	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
+	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
 #endif
 	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
@@ -121,7 +122,6 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
 	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
-	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
 	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
