@@ -763,7 +763,8 @@ int set_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, int action, char *
 			return 0;
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
-				sprintf(buf, "%dm", (atoi(value) / 60));
+				int val = atoi(value);
+				sprintf(buf, "%dm%ds", (val / 60), (val % 60));
 				dmuci_set_value_by_section(s, "leasetime",  buf);
 				break;
 			}
@@ -827,7 +828,7 @@ int set_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, int action, char 
 	}
 end:
 	sprintf(buf, "15,%s", value);
-	dmuci_add_list_value("dhcp", lan_name, "dhcp_option", buf);
+	dmuci_add_list_value_by_section(s, "dhcp_option", buf);
 	return 0;
 }
 
