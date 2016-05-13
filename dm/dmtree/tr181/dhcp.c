@@ -640,9 +640,39 @@ int set_dhcp_leasetime(char *refparam, struct dmctx *ctx, int action, char *valu
 			return 0;
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", cur_dhcp_args.interface, s) {
-				sprintf(buf, "%dm", (atoi(value) / 60));
+				int val = atoi(value);
+				sprintf(buf, "%dm%ds", val/60, val%60);
 				dmuci_set_value_by_section(s, "leasetime",  buf);
 				break;
+			}
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_interface(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *linker;
+	linker = dmstrdup(cur_dhcp_args.interface);
+	adm_entry_get_linker_param(DMROOT"IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	if (*value == NULL)
+		*value = "";
+	dmfree(linker);
+	return 0;
+}
+
+int set_dhcp_interface_linker_parameter(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *linker;
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			adm_entry_get_linker_value(value, &linker);
+			if (linker) {
+				dmuci_set_value_by_section(cur_dhcp_args.dhcp_sec, "interface", linker);
+				dmfree(linker);
 			}
 			return 0;
 	}
@@ -700,7 +730,7 @@ int set_dhcp_domainname(char *refparam, struct dmctx *ctx, int action, char *val
 	}
 end:
 	sprintf(buf, "15,%s", value);
-	dmuci_add_list_value("dhcp", cur_dhcp_args.interface, "dhcp_option", buf);
+	dmuci_add_list_value_by_section(cur_dhcp_args.dhcp_sec, "dhcp_option", buf);
 	return 0;
 }
 
@@ -778,9 +808,7 @@ int set_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action,
 
 int get_dhcp_client_chaddr(char *refparam, struct dmctx *ctx, char **value)
 {
-	printf("get_dhcp_client_chaddr \n");
 	json_select(cur_dhcp_client_args.client, "macaddr", 0, NULL, value, NULL);
-	printf("get_dhcp_client_chaddr 2\n");
 	return 0;
 }
 
@@ -827,7 +855,7 @@ inline int entry_dhcp_instance(struct dmctx *ctx, char *interface, char *int_num
 		DMPARAM("IPRouters", ctx, "1", get_dhcp_iprouters, set_dhcp_iprouters, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("LeaseTime", ctx, "1", get_dhcp_leasetime, set_dhcp_leasetime, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DomainName", ctx, "1", get_dhcp_domainname, set_dhcp_domainname, NULL, 0, 1, UNDEF, NULL);
-		//DMPARAM("Interface", ctx, "1", get_lan_dhcp_domainname, set_lan_dhcp_domainname, NULL, 0, 1, UNDEF, NULL); // refer to  IP.Interface
+		DMPARAM("Interface", ctx, "1", get_dhcp_interface, set_dhcp_interface_linker_parameter, NULL, 0, 1, UNDEF, NULL); // refer to  IP.Interface
 		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.StaticAddress.", ctx, "0", NULL, add_dhcp_staticaddress, delete_dhcp_staticaddress_all, NULL, int_num); //TODO
 		SUBENTRY(entry_dhcp_static_address, ctx, interface, int_num);
 		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.Client.", ctx, "0", NULL, NULL, NULL, NULL, int_num); //TODO
@@ -863,8 +891,6 @@ inline int entry_dhcp_static_address_instance(struct dmctx *ctx, char *int_num, 
 
 inline int entry_dhcp_client(struct dmctx *ctx, char *interface, char *idev )
 {
-	printf("entry_dhcp_client \n");
-	//struct uci_section *ss = NULL;
 	struct uci_section *sss = NULL;
 	char *idx = NULL, *idx_last = NULL;
 	json_object *res = NULL, *client_obj = NULL;
@@ -872,24 +898,18 @@ inline int entry_dhcp_client(struct dmctx *ctx, char *interface, char *idev )
 	int id = 0;
 	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
-		printf("res not null \n");
 		json_object_object_foreach(res, key, client_obj) {
 			json_select(client_obj, "dhcp", 0, NULL, &dhcp, NULL);
-			printf("dhcp %s \n", dhcp);
-			if(strcmp(dhcp, "false") == 0)
+			if(strcmp(dhcp, "true") == 0)
 			{
 				json_select(client_obj, "network", 0, NULL, &network, NULL);
 				if(strcmp(network, interface) == 0)
 				{
-					printf("network %s \n", network);
 					init_dhcp_client_args(ctx, client_obj);
 					idx = handle_update_instance(2, ctx, &idx_last, update_instance_without_section, 1, ++id);
-					printf("before instance cll \n");
 					SUBENTRY(entry_dhcp_client_instance, ctx, idev, idx, key);
 				}
 			}
-
-
 		}
 	}
 	return 0;
@@ -899,9 +919,7 @@ inline int entry_dhcp_client_instance(struct dmctx *ctx, char *int_num, char *id
 {
 	char linker[32] = "linker_dhcp:";
 	strcat(linker, key);
-	printf("linker is %s \n",linker);
 	IF_MATCH(ctx, DMROOT"DHCPv4.Server.Pool.%s.Client.%s.", int_num, idx) {
-		printf("call entry_dhcp_static_address_instance \n");
 		DMOBJECT(DMROOT"DHCPv4.Server.Pool.%s.Client.%s.", ctx, "1", NULL, NULL, NULL, linker, int_num, idx);
 		DMPARAM("Chaddr", ctx, "0", get_dhcp_client_chaddr, NULL, NULL, 0, 1, UNDEF, NULL);
 		return 0;
