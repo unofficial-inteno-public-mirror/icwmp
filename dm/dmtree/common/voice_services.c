@@ -599,7 +599,7 @@ int get_voice_service_max_line()
 {
 	int num = 0;
 	json_object *res;
-	json_object *brcm;
+	json_object *brcm = NULL;
 	
   //dmubus_call("asterisk.brcm", "dump", UBUS_ARGS{}, 0, &res);
 	dmubus_call("asterisk", "status", UBUS_ARGS{}, 0, &res);
