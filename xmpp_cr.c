@@ -99,7 +99,7 @@ int check_xmpp_authorized(char *from)
 	char *pch, *spch, *str;
 	struct cwmp 	*cwmp = &cwmp_main;
 	
-	if (cwmp->conf.xmpp_allowed_jid[0] == '\0')
+	if (cwmp->conf.xmpp_allowed_jid == NULL || cwmp->conf.xmpp_allowed_jid[0] == '\0')
 		return 1;
 	else
 	{
