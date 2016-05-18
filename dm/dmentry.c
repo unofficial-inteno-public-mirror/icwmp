@@ -61,7 +61,6 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 
 int dm_ctx_init(struct dmctx *ctx)
 {
-	get_amd_version_config();
 	get_instance_mode_config();
 	dm_ctx_init_custom(ctx, CTX_INIT_ALL);
 	return 0;

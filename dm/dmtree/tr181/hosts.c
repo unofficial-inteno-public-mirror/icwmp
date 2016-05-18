@@ -147,7 +147,7 @@ char *get_interface_type(char *mac, char *ndev)
 				dmubus_call("router", "sta", UBUS_ARGS{{"vif", p}}, 1, &res);
 				if(res) {
 					json_object_object_foreach(res, key, val) {
-						json_select(val, "assoc_mac", 0, NULL, &value, NULL);
+						json_select(val, "macaddr", 0, NULL, &value, NULL);
 						if (strcasecmp(value, mac) == 0)
 							return "802.11";
 					}
@@ -169,6 +169,19 @@ int get_host_interfacetype(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
+{
+	int entries = 0;
+	json_object *res;
+
+	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	DM_ASSERT(res, *value = "0");
+	json_object_object_foreach(res, key, client_obj) {
+		entries++;
+	}
+	dmasprintf(value, "%d", entries); // MEM WILL BE FREED IN DMMEMCLEAN
+	return 0;
+}
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
@@ -176,6 +189,7 @@ int entry_method_root_hosts(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"Hosts.") {
 		DMOBJECT(DMROOT"Hosts.", ctx, "0", 0, NULL, NULL, NULL);
+		DMPARAM("HostNumberOfEntries", ctx, "0", get_host_nbr_entries, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"Hosts.Host.", ctx, "0", 1, NULL, NULL, NULL);
 		SUBENTRY(entry_host, ctx);
 		return 0;
