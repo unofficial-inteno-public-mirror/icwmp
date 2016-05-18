@@ -536,12 +536,34 @@ int set_br_vlan_vid(char *refparam, struct dmctx *ctx, int action, char *value)
 				dmstrappendstr(p, tmp);
 				dmstrappendend(p);
 				dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", buf);
-				return 0;
 			}
+			return 0;
 	}
 	return 0;
 }
 
+int get_br_vlan_priority(char *refparam,struct dmctx *ctx, char **value)
+{
+	*value = "0";
+	dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021p", value);
+	return 0;
+}
+
+int set_br_vlan_priority(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *ifname, *p, *vifname, *linker, *n_ifname;
+	char buf[256];
+	char tmp[8];
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021p", value);
+			return 0;
+	}
+	return 0;
+}
 /*************************************************************
  * GET SET ALIAS
 /*************************************************************/
@@ -1181,6 +1203,7 @@ inline int entry_bridge_vlan_instance(struct dmctx *ctx, char *br, char *vlan)
 		DMPARAM("Enable", ctx, "1", get_br_vlan_enable, set_br_vlan_enable, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "1", get_br_vlan_name, set_br_vlan_name, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("VLANID", ctx, "1", get_br_vlan_vid, set_br_vlan_vid, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_VLANPriority", ctx, "1", get_br_vlan_priority, set_br_vlan_priority, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
