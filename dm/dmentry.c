@@ -37,6 +37,9 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 	INIT_LIST_HEAD(&ctx->list_parameter);
 	INIT_LIST_HEAD(&ctx->set_list_tmp);
 	INIT_LIST_HEAD(&ctx->list_fault_param);
+	if(cwmp->conf.supported_amd_version == 0)
+		get_amd_version_config();
+	get_instance_mode_config();
 	ctx->amd_version = cwmp->conf.amd_version;
 	ctx->instance_mode = cwmp->conf.instance_mode;
 	return 0;
@@ -61,7 +64,6 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 
 int dm_ctx_init(struct dmctx *ctx)
 {
-	get_instance_mode_config();
 	dm_ctx_init_custom(ctx, CTX_INIT_ALL);
 	return 0;
 }
