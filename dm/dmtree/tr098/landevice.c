@@ -2659,6 +2659,54 @@ int get_wmm_enabled(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, char **value)
+{
+	char *freq;
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+
+	DM_ASSERT(wlanargs->res, *value = "");
+	json_select(wlanargs->res, "frequency", 0, NULL, &freq, NULL);
+	dmastrcat(value, freq, "GHz");
+	return 0;
+}
+
+int set_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *freq = NULL;
+	json_object *res = NULL;
+	struct uci_section *s = NULL;
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if(wlanargs->res)
+				json_select(wlanargs->res, "frequency", 0, NULL, &freq, NULL);
+			if (freq && strcmp(freq, value) == 0)
+			{
+				return 0;
+			}
+			else if (value[0] == '5' || value[0] == '2')
+			{
+				uci_foreach_sections("wireless", "wifi-device", s) {
+					dmubus_call("router", "wl", UBUS_ARGS{{"vif", section_name(s)}}, 1, &res);
+					if(res)
+					{
+						json_select(res, "frequency", 0, NULL, &freq, NULL);
+						if (strcmp(freq, value) == 0)
+						{
+							dmuci_set_value_by_section(wlanargs->lwlansection, "device", section_name(s));
+							return 0;
+						}
+					}
+				}
+			}
+			else
+				return 0;
+	}
+	return 0;
+}
 int set_wmm_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
@@ -3106,6 +3154,7 @@ inline int entry_landevice_wlanconfiguration_instance(struct dmctx *ctx, char *i
 		DMPARAM("X_INTENO_SE_OperatingChannelBandwidth", ctx, "1", get_x_inteno_se_operating_channel_bandwidth, set_x_inteno_se_operating_channel_bandwidth, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_MaxSSID", ctx, "1", get_x_inteno_se_maxssid, set_x_inteno_se_maxssid, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_ScanTimer", ctx, "1", get_x_inteno_se_scantimer, set_x_inteno_se_scantimer, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_Frequency", ctx, "1", get_x_inteno_se_frequency, set_x_inteno_se_frequency, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.WPS.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan); //Check if we can move it
 		DMPARAM("Enable", ctx, "1", get_wlan_wps_enable, set_wlan_wps_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.%s.WEPKey.", ctx, "0", 1, NULL, NULL, NULL, idev, iwlan);
