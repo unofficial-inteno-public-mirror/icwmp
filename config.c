@@ -845,8 +845,7 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
-	printf("after allowed jid initiation \n");
-    return CWMP_OK;
+	return CWMP_OK;
 }
 
 int get_amd_version_config()
@@ -1056,7 +1055,6 @@ int cwmp_get_deviceid(struct cwmp *cwmp) {
 }
 
 int cwmp_get_xmpp_param(struct cwmp *cwmp) {
-	printf("XMPP: cwmp_get_xmpp_param \n");
 	struct dmctx dmctx = {0};
 	
 	struct config   *conf;
@@ -1065,18 +1063,15 @@ int cwmp_get_xmpp_param(struct cwmp *cwmp) {
     conf = &(cwmp->conf);
 	xmpp = &(cwmp->xmpp_param);
 	
-	printf("XMPP %d id %d \n", conf->xmpp_enable, conf->xmpp_connection_id);	//
 	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)
     {
-		printf("conf enable \n");
-        char *enable;
+		char *enable;
 		asprintf(&instance, "%d", conf->xmpp_connection_id);
 		dm_ctx_init(&dmctx);
 		char *tmp;
 		asprintf(&tmp, "%s", get_xmpp_server_enable(instance));
 		//tmp = ;
 		enable = strdup(tmp);
-		printf("server enable %s \n", enable);
 		if(enable[0] == '\0' || enable[0] == '0')
 		{
 			conf->xmpp_enable = false;//disable xmpp_enable
@@ -1094,18 +1089,19 @@ int cwmp_get_xmpp_param(struct cwmp *cwmp) {
 		if(cwmp->xmpp_param.connect_attempt)
 		{
 			cwmp->xmpp_param.retry_initial_interval = atoi((const char *)get_xmpp_connect_initial_retry_interval(instance));
+			cwmp->xmpp_param.retry_initial_interval = (cwmp->xmpp_param.retry_initial_interval) ? cwmp->xmpp_param.retry_initial_interval : DEFAULT_RETRY_INITIAL_INTERVAL;
 			cwmp->xmpp_param.retry_interval_multiplier = atoi((const char *)get_xmpp_connect_retry_interval_multiplier(instance));
+			cwmp->xmpp_param.retry_interval_multiplier = (cwmp->xmpp_param.retry_interval_multiplier) ? cwmp->xmpp_param.retry_interval_multiplier : DEFAULT_RETRY_INTERVAL_MULTIPLIER;
 			cwmp->xmpp_param.retry_max_interval = atoi((const char *)get_xmpp_connect_retry_max_interval(instance));
+			cwmp->xmpp_param.retry_max_interval = (cwmp->xmpp_param.retry_max_interval) ? cwmp->xmpp_param.retry_max_interval : DEFAULT_RETRY_MAX_INTERVAL;
 		}
 		dm_ctx_clean(&dmctx);
-		printf("local jid %s user %s pass %s domain %s resource %s interval %d \n", cwmp->xmpp_param.local_jid, cwmp->xmpp_param.username, cwmp->xmpp_param.password, cwmp->xmpp_param.domain,cwmp->xmpp_param.ressource, cwmp->xmpp_param.keepalive_interval);
 		check_xmpp_config(cwmp);
-		printf("enable value after check %d \n", conf->xmpp_enable);
-    }
+	}
     else
     {
-        printf("XMPP IS DISABLED --> Nothing to do\n");
-		return CWMP_OK;
+        CWMP_LOG(INFO,"XMPP is Disabled");
+        return CWMP_OK;
     }	
 end:	
 	return CWMP_OK;
