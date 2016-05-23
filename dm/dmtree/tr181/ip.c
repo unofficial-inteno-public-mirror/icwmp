@@ -286,6 +286,57 @@ int get_ipv4_addressing_type (char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int set_ipv4_addressing_type(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *proto;
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if(strcasecmp(value, "static") == 0) {
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "proto", "static");
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "ipaddr", "0.0.0.0");
+			}
+			if(strcasecmp(value, "dhcp") == 0) {
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "proto", "dhcp");
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "ipaddr", "");
+			}
+			return 0;
+	}
+	return 0;
+}
+
+int get_ipv6_addressing_type (char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_ipv4_args.ipv4_sec, "proto", value);
+	if (strcmp(*value, "static") == 0)
+		*value = "Static";
+	else if (strcmp(*value, "dhcpv6") == 0)
+		*value = "DHCPv6";
+	else
+		*value = "";
+	return 0;
+}
+
+int set_ipv6_addressing_type(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *proto;
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if(strcasecmp(value, "static") == 0) {
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "proto", "static");
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "ip6addr", "0.0.0.0");
+			}
+			if(strcasecmp(value, "dhcpv6") == 0) {
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "proto", "dhcpv6");
+				dmuci_set_value_by_section(cur_ipv4_args.ipv4_sec, "ip6addr", "");
+			}
+			return 0;
+	}
+	return 0;
+}
 int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *wifname, *wtype, *br_inst, *mg, *device, *proto;
@@ -470,7 +521,7 @@ int set_ipv6_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 /*************************************************************
  * ADD & DEL OBJ
 /*************************************************************/
-char *get_last_instance_cond(char *package, char *section, char *opt_inst, char *opt_cond, char *cond_val, char *opt_filter, char *val_filter)
+char *get_last_instance_cond(char *package, char *section, char *opt_inst, char *opt_cond, char *cond_val, char *opt_filter, char *filter_val)
 {
 	struct uci_section *s;
 	char *inst = NULL, *val, *val_f;
@@ -478,7 +529,7 @@ char *get_last_instance_cond(char *package, char *section, char *opt_inst, char 
 	uci_foreach_sections(package, section, s) {
 		if (opt_cond) dmuci_get_value_by_section_string(s, opt_cond, &val);
 		if (opt_filter) dmuci_get_value_by_section_string(s, opt_filter, &val_f);
-		if(opt_cond && opt_filter && (strcmp(val, cond_val) == 0 || strcmp(val_f, val_filter) == 0))
+		if(opt_cond && opt_filter && (strcmp(val, cond_val) == 0 || strcmp(val_f, filter_val) == 0))
 			continue;
 		inst = update_instance(s, inst, opt_inst);
 	}
@@ -491,15 +542,13 @@ int add_ip_interface(struct dmctx *ctx, char **instance)
 	char ip_name[32], ib[8];
 	char *p = ip_name;
 
-	last_inst = get_last_instance_cond("network", "interface", "ip_int_instance", "type", "alias", "ipaddr", "");
+	last_inst = get_last_instance_cond("network", "interface", "ip_int_instance", "type", "alias", "proto", "");
 	sprintf(ib, "%d", last_inst ? atoi(last_inst)+1 : 1);
 	dmstrappendstr(p, "ip_interface_");
 	dmstrappendstr(p, ib);
 	dmstrappendend(p);
 	dmuci_set_value("network", ip_name, "", "interface");
-	dmuci_set_value("network", ip_name, "proto", "static");
-	dmuci_set_value("network", ip_name, "ipaddr", "0.0.0.0");
-
+	dmuci_set_value("network", ip_name, "proto", "dhcp");
 	*instance = dmuci_set_value("network", ip_name, "ip_int_instance", ib);
 	return 0;
 }
@@ -511,10 +560,57 @@ int delete_ip_interface(struct dmctx *ctx)
 	dmuci_set_value_by_section(cur_ip_args.ip_sec, "bridge_instance", "");
 	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ip_int_instance", "");
 	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv4_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv6_instance", "");
 	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ifname", "");
 	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipaddr", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ip6addr", "");
 	return 0;
 }
+
+int add_ipv4(struct dmctx *ctx, char **instancepara)
+{
+	char *instance;
+
+	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ipv4_instance", &instance);
+	*instancepara = update_instance(cur_ip_args.ip_sec, instance, "ipv4_instance");
+	if(instance[0] == '\0') {
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv4_instance", *instancepara);
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipaddr", "0.0.0.0");
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "proto", "static");
+	}
+	return 0;
+}
+
+int delete_ipv4(struct dmctx *ctx)
+{
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipaddr", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv4_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "proto", "");
+	return 0;
+}
+
+int add_ipv6(struct dmctx *ctx, char **instancepara)
+{
+	char *instance;
+
+	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ipv6_instance", &instance);
+	*instancepara = update_instance(cur_ip_args.ip_sec, instance, "ipv6_instance");
+	if(instance[0] == '\0') {
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv6_instance", *instancepara);
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "ip6addr", "::");
+		dmuci_set_value_by_section(cur_ip_args.ip_sec, "proto", "static");
+	}
+	return 0;
+}
+
+int delete_ipv6(struct dmctx *ctx)
+{
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ip6addr", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "ipv6_instance", "");
+	dmuci_set_value_by_section(cur_ip_args.ip_sec, "proto", "");
+	return 0;
+}
+
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
@@ -535,7 +631,7 @@ inline int entry_ip_interface(struct dmctx *ctx)
 {
 	struct uci_section *net_sec = NULL;
 	char *ip_int = NULL, *ip_int_last = NULL;
-	char *type, *ipv4addr = "", *ipv6addr = "";
+	char *type, *ipv4addr = "", *ipv6addr = "", *proto, *inst;
 	json_object *res;
 
 	uci_foreach_sections("network", "interface", net_sec) {
@@ -554,13 +650,15 @@ inline int entry_ip_interface(struct dmctx *ctx)
 			if (res)
 				json_select(res, "ipv6-address", 0, "address", &ipv6addr, NULL);
 		}
-		if (ipv4addr[0] == '\0' && ipv6addr[0] == '\0') {
+		dmuci_get_value_by_section_string(net_sec, "proto", &proto);
+		dmuci_get_value_by_section_string(net_sec, "ip_int_instance", &inst);
+		if (ipv4addr[0] == '\0' && ipv6addr[0] == '\0' && strcmp(proto, "dhcp") != 0 && strcmp(proto, "dhcpv6") != 0 && strcmp(inst, "") == 0) {
 			continue;
 		}
 		init_ip_args(ctx, net_sec);
 		ip_int = handle_update_instance(1, ctx, &ip_int_last, update_instance_alias, 3, net_sec, "ip_int_instance", "ip_int_alias");
 		SUBENTRY(entry_ip_interface_instance, ctx, ip_int);
-		SUBENTRY(entry_ip_address, ctx, net_sec, ipv4addr, ipv6addr,ip_int);
+		SUBENTRY(entry_ip_address, ctx, net_sec, ipv4addr, ipv6addr, ip_int);
 	}
 	return 0;
 }
@@ -568,7 +666,7 @@ inline int entry_ip_interface(struct dmctx *ctx)
 inline int entry_ip_address(struct dmctx *ctx, struct uci_section *net_sec, char *ipv4addr, char *ipv6addr,char *ip_int)
 {
 	struct uci_section *ip_sec = NULL;
-	char *type, *ifname, *proto, *ipv4, *ipv6, *ipv4_inst = NULL, *ipv6_inst = NULL,*ipv4_inst_last = NULL, *ipv6_inst_last = NULL ;
+	char *type, *ifname, *ipv4, *ipv6, *ipv4_inst = NULL, *ipv6_inst = NULL,*ipv4_inst_last = NULL, *ipv6_inst_last = NULL ;
 
 	init_ipv4_args(ctx, net_sec, ipv4addr, ipv6addr);
 	if(ipv4addr[0] != '\0') {
@@ -607,8 +705,8 @@ inline int entry_ip_interface_instance(struct dmctx *ctx, char *int_num)
 		DMPARAM("Enable", ctx, "1", get_ip_interface_enable, set_ip_interface_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "0", get_ip_interface_name, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("LowerLayers", ctx, "1", get_ip_int_lower_layer, set_ip_int_lower_layer, NULL, 0, 1, UNDEF, NULL);//TODO
-		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.", ctx, "0", 1, NULL, NULL, NULL, int_num);
-		DMOBJECT(DMROOT"IP.Interface.%s.IPv6Address.", ctx, "0", 1, NULL, NULL, NULL, int_num);
+		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.", ctx, "1", 1, add_ipv4, NULL, NULL, int_num);
+		DMOBJECT(DMROOT"IP.Interface.%s.IPv6Address.", ctx, "1", 1, add_ipv6, NULL, NULL, int_num);
 		return 0;
 	}
 	return FAULT_9005;
@@ -617,13 +715,13 @@ inline int entry_ip_interface_instance(struct dmctx *ctx, char *int_num)
 inline int entry_ipv4_address_instance(struct dmctx *ctx, char *int_num, char *ip_inst)
 {
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.IPv4Address.%s.", int_num, ip_inst) {
-		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num, ip_inst);
+		DMOBJECT(DMROOT"IP.Interface.%s.IPv4Address.%s.", ctx, "1", 1, NULL, delete_ipv4, NULL, int_num, ip_inst);
 		DMPARAM("Alias", ctx, "1", get_ipv4_alias, set_ipv4_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "0", get_ip_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("X_BROADCOM_COM_FirewallEnabled", ctx, "1", get_firewall_enabled, set_firewall_enabled, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPAddress", ctx, "1", get_ipv4_address, set_ipv4_address, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("SubnetMask", ctx, "1", get_ipv4_netmask, set_ipv4_netmask, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("AddressingType", ctx, "0", get_ipv4_addressing_type, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("AddressingType", ctx, "1", get_ipv4_addressing_type, set_ipv4_addressing_type, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
@@ -632,10 +730,11 @@ inline int entry_ipv4_address_instance(struct dmctx *ctx, char *int_num, char *i
 inline int entry_ipv6_address_instance(struct dmctx *ctx, char *int_num, char *ip_inst)
 {
 	IF_MATCH(ctx, DMROOT"IP.Interface.%s.IPv6Address.%s.", int_num, ip_inst) {
-		DMOBJECT(DMROOT"IP.Interface.%s.IPv6Address.%s.", ctx, "0", 1, NULL, NULL, NULL, int_num, ip_inst);
+		DMOBJECT(DMROOT"IP.Interface.%s.IPv6Address.%s.", ctx, "1", 1, NULL, delete_ipv6, NULL, int_num, ip_inst);
 		DMPARAM("Alias", ctx, "1", get_ipv6_alias, set_ipv6_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "0", get_ip_enable, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("IPAddress", ctx, "1", get_ipv6_address, set_ipv6_address, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Origin", ctx, "1", get_ipv6_addressing_type, set_ipv6_addressing_type, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;
