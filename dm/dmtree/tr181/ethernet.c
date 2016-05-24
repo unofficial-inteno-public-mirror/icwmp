@@ -137,7 +137,7 @@ int set_eth_port_maxbitrate(char *refparam, struct dmctx *ctx, int action, char 
 			return 0;
 		case VALUESET:
 			if (strcasecmp(value, "disabled") == 0 ) {
-				dmuci_set_value_by_section(cur_eth_port_args.eth_port_sec, "speed", value);
+				dmuci_set_value_by_section(cur_eth_port_args.eth_port_sec, "speed", "disabled");
 			} else if (strcasecmp(value, "auto") == 0 || strcmp(value, "-1") == 0) {
 				dmuci_set_value_by_section(cur_eth_port_args.eth_port_sec, "speed", "auto");
 			} else {
