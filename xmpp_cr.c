@@ -238,13 +238,13 @@ int ping_send_handler(xmpp_conn_t * const conn, void * const userdata)
 	return 1;
 }
 
-int conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status,
+void conn_handler(xmpp_conn_t * const conn, const xmpp_conn_event_t status,
 const int error, xmpp_stream_error_t * const stream_error,
 void * const userdata)
 {
 	xmpp_ctx_t *ctx = (xmpp_ctx_t *)userdata;
 	struct cwmp *cwmp = &cwmp_main;
-	int keepalive;
+	long int keepalive;
 	static int attempt = 0;
 
 	if (status == XMPP_CONN_CONNECT) {
@@ -253,7 +253,7 @@ void * const userdata)
 		CWMP_LOG(INFO,"XMPP Connection Established");
 		xmpp_handler_add(conn,cr_handler, NULL, "iq", NULL, ctx);
 		if (cwmp->xmpp_param.keepalive_interval > 0) {
-			keepalive = cwmp->xmpp_param.keepalive_interval * 1000;		
+			keepalive = cwmp->xmpp_param.keepalive_interval * 1000;
 			xmpp_timed_handler_add(conn,ping_send_handler, keepalive, ctx);
 		}
 		pres = xmpp_stanza_new(ctx);
@@ -263,18 +263,21 @@ void * const userdata)
 	}
 	else 
 	{
-		CWMP_LOG(DEBUG,"XMPP Connection Lost");
+		CWMP_LOG(INFO,"XMPP Connection Lost");
 		xmpp_stop(cwmp->xmpp_ctx);
 		cwmp_xmpp_exit();
-		CWMP_LOG(DEBUG,"XMPP Connection Retry");
+		CWMP_LOG(INFO,"XMPP Connection Retry");
 		srand(time(NULL));		
 		if (attempt == 0 && cwmp->xmpp_param.connect_attempt != 0 )
+		{
+			if (cwmp->xmpp_param.retry_initial_interval != 0)
 			sleep(rand()%cwmp->xmpp_param.retry_initial_interval);
+		}
 		else if(attempt > cwmp->xmpp_param.connect_attempt)
 		{
 			CWMP_LOG(INFO,"XMPP Connection Aborted");
+			pthread_exit(0);			
 			//xmpp_stop(cwmp->xmpp_ctx);
-			return -1;
 		}			
 		else if( attempt >= 1 && cwmp->xmpp_param.connect_attempt != 0 )
 		{
@@ -289,15 +292,17 @@ void * const userdata)
 		attempt += 1;		
 		cwmp_xmpp_connect_client();		
 	}
-	return 0;
 }
 
 void cwmp_xmpp_connect_client()
 {
 	xmpp_log_t 	*log;
 	char 		*jid, *pass;
+	static int attempt = 0;
+	int connected = 0, delay = 0;
 	const xmpp_conn_event_t status;
-	struct cwmp *cwmp = &cwmp_main;	
+	struct cwmp *cwmp = &cwmp_main;
+
 	xmpp_initialize();
 	log = xmpp_get_default_logger(XMPP_LEVEL_ERROR);	
 	cwmp->xmpp_ctx = xmpp_ctx_new(NULL, log);
@@ -307,9 +312,42 @@ void cwmp_xmpp_connect_client()
 	xmpp_conn_set_pass(cwmp->xmpp_conn, cwmp->xmpp_param.password);
 	free(jid);	
 	/* initiate connection */
-	xmpp_connect_client(cwmp->xmpp_conn, NULL, 0, conn_handler, cwmp->xmpp_ctx);
-	xmpp_run(cwmp->xmpp_ctx);
-	return NULL;
+	connected = xmpp_connect_client(cwmp->xmpp_conn, NULL, 0, conn_handler, cwmp->xmpp_ctx);
+	if (connected == -1 )
+	{
+		xmpp_stop(cwmp->xmpp_ctx);
+		cwmp_xmpp_exit();
+		CWMP_LOG(INFO,"XMPP Connection Retry");
+		srand(time(NULL));
+		if (attempt == 0 && cwmp->xmpp_param.connect_attempt != 0 )
+		{
+			if (cwmp->xmpp_param.retry_initial_interval != 0)
+				sleep(rand()%cwmp->xmpp_param.retry_initial_interval);
+		}
+		else if(attempt > cwmp->xmpp_param.connect_attempt)
+		{
+			CWMP_LOG(INFO,"XMPP Connection Aborted");
+			pthread_exit(0);
+		}
+		else if( attempt >= 1 && cwmp->xmpp_param.connect_attempt != 0 )
+		{
+			delay = cwmp->xmpp_param.retry_initial_interval * (cwmp->xmpp_param.retry_interval_multiplier/1000) * (attempt -1);
+			if (delay > cwmp->xmpp_param.retry_max_interval)
+				sleep(cwmp->xmpp_param.retry_max_interval);
+			else
+				sleep(delay);
+		}
+		else
+			sleep(DEFAULT_XMPP_RECONNECTION_RETRY);
+		attempt += 1;
+		cwmp_xmpp_connect_client();
+	}
+	else
+	{
+		attempt = 0;
+		CWMP_LOG(DEBUG,"XMPP Handle Connection");
+		xmpp_run(cwmp->xmpp_ctx);
+	}
 }
 
 void cwmp_xmpp_exit()
