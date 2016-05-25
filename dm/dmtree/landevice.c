@@ -1140,7 +1140,7 @@ int get_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, char **value
 		
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
-	json_select(res, "link", -1, NULL, value, NULL);
+	json_select(res, "up", -1, NULL, value, NULL);
 	return 0;
 }
 
@@ -1186,8 +1186,11 @@ int get_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, char **v
 	char *pch, *spch, *v;
 	int len;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct uci_section *s;
 	
-	dmuci_get_option_value_string("ports", "@ethports[0]", ethargs->eth, value);
+	uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
+		dmuci_get_value_by_section_string(s, "speed", value);
+	}
 	if ((*value)[0] == '\0')
 		return 0;
 	else {
@@ -1208,16 +1211,21 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 	char *val = NULL;
 	char *duplex;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct uci_section *s, *sec;
 	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
+			uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
+				sec = s;
+				break;
+			}
 			if (strcasecmp(value, "auto") == 0) {
-				dmuci_set_value("ports", "@ethports[0]", ethargs->eth, "auto");
+				dmuci_set_value_by_section(sec, "speed", value);
 				return 0;
 			} else {
-				dmuci_get_option_value_string("ports", "@ethports[0]", ethargs->eth, &duplex);
+				dmuci_get_value_by_section_string(sec, "speed", &duplex);
 				if (strcmp(duplex, "auto") == 0)
 					duplex = "FD";
 				else {
@@ -1229,7 +1237,7 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 						duplex = "FD";
 				}
 				dmastrcat(&val, value, duplex);
-				dmuci_set_value("ports", "@ethports[0]", ethargs->eth, val);
+				dmuci_set_value_by_section(sec, "speed", val);
 				dmfree(val);
 			}
 			return 0;
@@ -1242,8 +1250,11 @@ int get_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, char **v
 {
 	char *tmp;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
-	 
-	dmuci_get_option_value_string("ports", "@ethports[0]", ethargs->eth, &tmp);
+	struct uci_section *s;
+
+	uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
+		dmuci_get_value_by_section_string(s, "speed", &tmp);
+	}
 	if (strcmp(tmp, "auto") == 0) {
 		*value = "Auto";
 	}
@@ -1265,32 +1276,37 @@ int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int acti
 {
 	char *m, *spch, *rate, *val = NULL;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct uci_section *s, *sec;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
+			uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
+				sec = s;
+				break;
+			}
 			if (strcasecmp(value, "auto") == 0) {
-				dmuci_set_value("ports", "@ethports[0]", ethargs->eth, "auto");
+				dmuci_set_value_by_section(sec, "speed", "auto");
 				return 0;
 			}
-			dmuci_get_option_value_string("ports", "@ethports[0]", ethargs->eth, &m);
+			dmuci_get_value_by_section_string(sec, "speed", &m);
 			m = dmstrdup(m);
 			rate = m;
-			if (strcmp(rate, "auto") == 0)
+			if (strcasecmp(rate, "auto") == 0)
 				rate = "100";
 			else {
 				strtok_r(rate, "FHfh", &spch);
 			}
-			if (strcmp(value, "full") == 0)
+			if (strcasecmp(value, "full") == 0)
 				dmastrcat(&val, rate, "FD");
-			else if (strcmp(value, "half") == 0)
+			else if (strcasecmp(value, "half") == 0)
 				dmastrcat(&val, rate, "HD");
 			else {
 				dmfree(m);
 				return 0;
 			}
-			dmuci_set_value("ports", "@ethports[0]", ethargs->eth, val);
+			dmuci_set_value_by_section(sec, "speed", val);
 			dmfree(m);
 			dmfree(val);
 			return 0;
