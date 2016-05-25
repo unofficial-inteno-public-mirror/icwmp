@@ -51,10 +51,7 @@ AC_SUBST([LIBZ_LIBS])
 LIBM_LIBS='-lm'
 AC_SUBST([LIBM_LIBS])
 
-case "$CFLAGS" in
-	*_AADJ*) LIBJSON_LIBS='-ljson -ljson-c' ;;
-	*) LIBJSON_LIBS='-ljson' ;;
-esac
+LIBJSON_LIBS='-ljson-c'
 AC_SUBST([LIBJSON_LIBS])
 
 AC_ARG_WITH([uci-include-path],

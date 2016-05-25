@@ -12,7 +12,7 @@
 #ifndef __LAN_DEVICE_H
 #define __LAN_DEVICE_H
 #include <libubox/blobmsg_json.h>
-#include <json/json.h>
+#include <json-c/json.h>
 
 struct wl_clientargs
 {

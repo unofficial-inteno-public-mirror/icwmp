@@ -16,7 +16,7 @@
 #ifdef _AADJ
 #include <json-c/json.h>
 #else
-#include <json/json.h>
+#include <json-c/json.h>
 #endif
 
 #include "cwmp.h"

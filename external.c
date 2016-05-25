@@ -25,7 +25,7 @@
 
 #include <libubox/uloop.h>
 
-#include <json/json.h>
+#include <json-c/json.h>
 
 #include "external.h"
 #include "cwmp.h"
