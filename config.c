@@ -793,58 +793,63 @@ int get_global_config(struct config *conf)
     {
         return error;
     }
-	if((error = uci_get_value(UCI_XMPP_ENABLE,&value)) == CWMP_OK)
-    {
-        if(value != NULL)
-        {			
-			if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
-			{
-				conf->xmpp_enable = true;
-				CWMP_LOG(INFO,"Xmpp connection id is %d \n", conf->xmpp_enable);
-			}			
-			value = NULL;
+#ifdef XMPP_ENABLE
+	if(conf->amd_version >= AMD_5)
+	{
+		if((error = uci_get_value(UCI_XMPP_ENABLE,&value)) == CWMP_OK)
+		{
+		    if(value != NULL)
+				{
+				if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
+				{
+					conf->xmpp_enable = true;
+					CWMP_LOG(INFO,"Xmpp connection id is %d \n", conf->xmpp_enable);
+					}
+				value = NULL;
+			}
+		}
+		if((error = uci_get_value(UCI_XMPP_CONNECTION_ID,&value)) == CWMP_OK)
+		{
+		    int a = 0;
+		    if(value != NULL)
+		    {
+		        a = atoi(value);
+		        free(value);
+		        value = NULL;
+		    }
+		    if(a==0)
+		    {
+		        CWMP_LOG(INFO,"Xmpp connection id :Empty");
+		        conf->xmpp_connection_id = 0;
+		    }
+		    else
+		    {
+				CWMP_LOG(INFO,"Xmpp connection id :%d \n", a);
+		        conf->xmpp_connection_id = a;
+		    }
+		}
+		else
+		{
+		    return error;
+		}
+		if((error = uci_get_value(UCI_XMPP_ALLOWED_JID,&value)) == CWMP_OK)
+		{
+			if(value != NULL)
+		    {
+		        if (conf->xmpp_allowed_jid != NULL)
+		        {
+		            free(conf->xmpp_allowed_jid);
+		        }
+		        conf->xmpp_allowed_jid = value;
+		        value = NULL;
+		    }
+		}
+		else
+		{
+		    return error;
 		}
 	}
-	if((error = uci_get_value(UCI_XMPP_CONNECTION_ID,&value)) == CWMP_OK)
-    {
-        int a = 0;
-        if(value != NULL)
-        {
-            a = atoi(value);
-            free(value);
-            value = NULL;
-        }
-        if(a==0)
-        {
-            CWMP_LOG(INFO,"Xmpp connection id :Empty");
-            conf->xmpp_connection_id = 0;
-        }
-        else
-        {
-			CWMP_LOG(INFO,"Xmpp connection id :%d \n", a);
-            conf->xmpp_connection_id = a;
-        }
-    }
-    else
-    {
-        return error;
-    }
-	if((error = uci_get_value(UCI_XMPP_ALLOWED_JID,&value)) == CWMP_OK)
-    {
-		if(value != NULL)
-        {
-            if (conf->xmpp_allowed_jid != NULL)
-            {
-                free(conf->xmpp_allowed_jid);
-            }
-            conf->xmpp_allowed_jid = value;
-            value = NULL;
-        }
-    }
-    else
-    {
-        return error;
-    }
+#endif
 	return CWMP_OK;
 }
 
@@ -1054,6 +1059,7 @@ int cwmp_get_deviceid(struct cwmp *cwmp) {
 	return CWMP_OK;
 }
 
+#ifdef XMPP_ENABLE
 int cwmp_get_xmpp_param(struct cwmp *cwmp) {
 	struct dmctx dmctx = {0};
 	
@@ -1106,6 +1112,7 @@ int cwmp_get_xmpp_param(struct cwmp *cwmp) {
 end:	
 	return CWMP_OK;
 }
+#endif
 int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 {
     int         error;
@@ -1144,8 +1151,10 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     }
 	dm_global_init();
     cwmp_get_deviceid(cwmp);
+#ifdef XMPP_ENABLE
 	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)
 		cwmp_get_xmpp_param(cwmp);
+#endif
     dm_entry_load_enabled_notify();
     return CWMP_OK;
 }
@@ -1161,8 +1170,10 @@ int cwmp_config_reload(struct cwmp *cwmp)
     {
         return error;
     }
+#ifdef XMPP_ENABLE
 	if (conf->xmpp_enable && conf->xmpp_connection_id != 0)
 		cwmp_get_xmpp_param(cwmp);
+#endif
     dm_entry_load_enabled_notify();
     return CWMP_OK;
 }

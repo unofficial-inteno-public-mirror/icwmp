@@ -5,7 +5,6 @@ icwmpd_SOURCES =			\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
-	../xmpp_cr.c			\
 	../ipping.c				\
 	../digestauth.c			\
 	../event.c				\
@@ -38,8 +37,13 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/softwaremodules.c			\
-	../dm/dmtree/common/xmpp.c						\
 	../dm/dmtree/common/x_inteno_syslog.c			
+
+if XMPP_ENABLE
+icwmpd_SOURCES += 									\
+	../dm/dmtree/common/xmpp.c						\
+	../xmpp_cr.c					
+endif
 
 if DATAMODEL_TR098
 icwmpd_SOURCES += 									\

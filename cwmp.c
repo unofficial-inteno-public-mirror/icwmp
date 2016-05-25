@@ -547,11 +547,13 @@ void signal_handler(int signal_num)
     _exit(EXIT_SUCCESS);
 }
 
+#ifdef XMPP_ENABLE
 void *thread_xmpp_client_listen (void *v)
 {
     cwmp_xmpp_connect_client();
     return NULL;
 }
+#endif
 
 int main(int argc, char **argv)
 {
@@ -571,11 +573,12 @@ int main(int argc, char **argv)
 	pthread_t                       xmpp_client_thread;
     struct sigaction                act = {0};
 
-	xmpp_stanza_t *reply;
     if (error = cwmp_init(argc, argv, cwmp))
     {
         return error;
     }
+#ifdef XMPP_ENABLE
+    xmpp_stanza_t 					*reply;
 	if(cwmp->conf.xmpp_enable) {
 		error = pthread_create(&xmpp_client_thread, NULL, &thread_xmpp_client_listen, NULL);
 		if (error<0)
@@ -583,6 +586,7 @@ int main(int argc, char **argv)
 		    CWMP_LOG(ERROR,"Error when lanching xmpp connection thread!");
 		}
 	}
+#endif
     init_ipping_diagnostic();
     CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
@@ -668,10 +672,12 @@ int main(int argc, char **argv)
 	pthread_join(apply_schedule_download_thread, NULL);
     pthread_join(change_du_state_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
+#ifdef XMPP_ENABLE
 	if(cwmp->conf.xmpp_enable) 
 		pthread_join(xmpp_client_thread, NULL);
-    exit_ipping_diagnostic();
 	cwmp_xmpp_exit();
-    CWMP_LOG(INFO,"EXIT ICWMP");
+#endif
+    exit_ipping_diagnostic();
+	CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }

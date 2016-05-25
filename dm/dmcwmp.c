@@ -124,7 +124,9 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
+#ifdef XMPP_ENABLE
 	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
+#endif
 #ifdef DATAMODEL_TR181
 	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
 	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },

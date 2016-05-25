@@ -32,6 +32,11 @@ AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug], [enable debugging message
 AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel], [enable development messages])], AC_DEFINE(WITH_DEV_DEBUG),)
 AC_ARG_ENABLE(dummy_mode, [AS_HELP_STRING([--enable-dummy-mode], [enable dummy mode])], AC_DEFINE(DUMMY_MODE),)
 
+AC_ARG_ENABLE(xmpp, [AS_HELP_STRING([--enable-xmpp],
+	[enable xmpp; (default --enable-xmpp=disable]))],,)
+
+AM_CONDITIONAL([XMPP_DISABLE], [test "x$enable_xmpp" = "xdisable" ])
+AM_CONDITIONAL([XMPP_ENABLE], [test "x$enable_xmpp" = "xenable" ])
 # checks for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -109,6 +114,14 @@ AM_COND_IF([DATAMODEL_TR098], [
 
 AM_COND_IF([DATAMODEL_TR181], [
  AC_DEFINE(DATAMODEL_TR181)
+])
+
+AM_COND_IF([XMPP_DISABLE], [
+ AC_DEFINE(XMPP_DISABLE)
+])
+
+AM_COND_IF([XMPP_ENABLE], [
+ AC_DEFINE(XMPP_ENABLE)
 ])
 AM_COND_IF([HTTP_CURL], [
  AC_DEFINE(HTTP_CURL)
