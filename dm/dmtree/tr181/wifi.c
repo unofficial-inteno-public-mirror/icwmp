@@ -632,7 +632,7 @@ int get_access_point_security_modes(char *refparam, struct dmctx *ctx, char **va
 		*value = "WPA-Personal";
 	else if (strcmp(encryption, "wpa") == 0)
 		*value = "WPA-Enterprise";
-	else if (strcmp(encryption, "psk2") == 0 && strcmp(cipher, "tkip") == 0)
+	else if (strcmp(encryption, "psk2") == 0 && strcmp(cipher, "ccmp") == 0)
 		*value = "WPA2-Personal";
 	else if (strcmp(encryption, "wpa2") == 0)
 		*value = "WPA2-Enterprise";
