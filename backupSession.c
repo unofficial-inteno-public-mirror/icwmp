@@ -274,7 +274,6 @@ void bkp_session_insert_download(struct download *pdownload)
 
 void bkp_session_insert_schedule_download(struct schedule_download *pschedule_download)
 {
-	//printf("bkp_session_insert_schedule_download \n");
 	struct search_keywords	keys[16];
 	char 					delay[4][128];
 	int 					i;
@@ -348,7 +347,6 @@ void bkp_session_insert_schedule_download(struct schedule_download *pschedule_do
 
 void bkp_session_insert_apply_schedule_download(struct apply_schedule_download *papply_schedule_download)
 {
-	printf("bkp_session_insert_apply_schedule_download \n");
 	struct search_keywords	keys[9];
 	char 					delay[4][128];
 	int 					i;
@@ -683,7 +681,6 @@ void bkp_session_delete_du_state_change_complete(struct du_state_change_complete
 	mxml_node_t 			*b;
 	char 					schedule_time[128];
 	
-	printf("bkp_session_delete_change_du_state functio \n");
 	pthread_mutex_lock (&mutex_backup_session);	
 	keys[0].name = "command_key";
 	keys[0].value = pdu_state_change_complete->command_key;
@@ -692,7 +689,6 @@ void bkp_session_delete_du_state_change_complete(struct du_state_change_complete
 	keys[1].name = "time";
 	keys[1].value = schedule_time;
 	b = bkp_session_node_found(bkp_tree, "du_state_change_complete", keys, 2);
-	printf("bkp_session_delete_change_du_state \n");
 	if(b)
 		mxmlDelete(b);
 	pthread_mutex_unlock (&mutex_backup_session);
@@ -1850,11 +1846,7 @@ void load_du_state_change_complete (mxml_node_t	*tree,struct cwmp *cwmp)
 		}
 		b = mxmlWalkNext(b, tree, MXML_NO_DESCEND);
 	}
-	//list_add_tail (&(change_du_state_request->list_operation), &(list_change_du_state));
-	printf("before cwmp_root_cause_dustatechangeComplete \n");
-	cwmp_root_cause_dustatechangeComplete (cwmp, du_state_change_complete_request);
-	printf("after cwmp_root_cause_dustatechangeComplete \n");
-	//sotfware_version_value_change(cwmp, ptransfer_complete);
+	cwmp_root_cause_dustatechangeComplete (cwmp, du_state_change_complete_request);	
 }
 void load_transfer_complete(mxml_node_t	*tree,struct cwmp *cwmp)
 {

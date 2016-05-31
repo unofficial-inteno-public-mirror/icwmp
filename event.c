@@ -218,12 +218,9 @@ static void send_udp_message(struct addrinfo *servaddr, char *msg)
 {
 	int fd;
 
-	fd = socket(servaddr->ai_family, SOCK_DGRAM, 0);
-	printf ("servaddr->ai_family %d \n", servaddr->ai_family);
-	printf ("fd: %d \n", fd);
+	fd = socket(servaddr->ai_family, SOCK_DGRAM, 0);	
 	
 	if ( fd >= 0) {
-		printf("msg %s \n", msg);
 		sendto(fd, msg, strlen(msg), 0, servaddr->ai_addr, servaddr->ai_addrlen);
 		close(fd);
 	}
@@ -242,9 +239,7 @@ void free_all_list_lw_notify()
 	struct dm_parameter *dm_parameter;
 	while (list_lw_value_change.next != &list_lw_value_change) {
 		dm_parameter = list_entry(list_lw_value_change.next, struct dm_parameter, list);
-		printf("before del_list_lw_notify \n");
-		del_list_lw_notify(dm_parameter);
-		printf("after del_list_lw_notify \n");
+		del_list_lw_notify(dm_parameter);		
 	}
 }
 
@@ -257,13 +252,9 @@ void cwmp_lwnotification()
 	struct config   *conf;
 	conf = &(cwmp->conf);
 
-	printf("before udplw_server_param \n");
 	udplw_server_param(&servaddr);
-	printf("after udplw_server_param \n");
 	xml_prepare_lwnotification_message(&msg_out);
-	printf("after xml_prepare_lwnotification_message \n");
 	message_compute_signature(msg_out, signature);
-	printf("after message_compute_signature \n");
 	asprintf(&msg, "%s \n %s: %s \n %s: %s \n %s: %d\n %s: %s\n\n%s",
 			"POST /HTTPS/1.1",
 			"HOST",	conf->lw_notification_hostname,
@@ -273,12 +264,8 @@ void cwmp_lwnotification()
 			msg_out);
 
 	send_udp_message(servaddr, msg);
-	printf("after send_udp_message \n");
 	free_all_list_lw_notify(); 
-	printf("free_all_list_enabled_lwnotify \n");
-
 	//freeaddrinfo(servaddr); //To check
-	printf("freeaddrinfo \n");
 	FREE(msg);
 	FREE(msg_out);
 }

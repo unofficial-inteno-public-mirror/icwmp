@@ -98,38 +98,28 @@ char *add_softwaremodules_deploymentunit(char *uuid, char*url, char *username, c
 	char duname[16];
 	
 	
-	printf("add_softwaremodules_deploymentunit username %s pass % version %s name %s\n", username, password, name, version);
 	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");
-	printf("add_softwaremodules_deploymentunit instance %s \n", instance);
 	if (!instance)
 		sprintf(duname, "du%d", 0);
 	else
 		sprintf(duname, "du%s", instance);
 	dmuci_set_value("dmmap", duname, NULL, "deploymentunit");
-	printf("dmuci section added %s\n", value);
 	dmuci_set_value("dmmap", duname, "UUID", uuid);
 	dmuci_set_value("dmmap", duname, "URL", url);
 	dmuci_set_value("dmmap", duname, "Name", name);
 	dmuci_set_value("dmmap", duname, "Version", version);
 	dmuci_set_value("dmmap", duname, "username", username);
 	dmuci_set_value("dmmap", duname, "password", password);
-	printf("dmuci section added name \n");
 	dmuci_set_value("dmmap", duname, "Resolved", "1");
-	printf("dmuci section added uuid \n");
-	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");
-	printf("add_softwaremodules_deploymentunit instance %s\n", instance);
-	//dmuci_commit();
+	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");	
 	return instance;
 }
 
 int update_softwaremodules_url(char *uuid, char *url)
 {
 	struct uci_section *s = NULL;
-	printf("update_softwaremodules_url %s \n", uuid);
 	uci_foreach_option_eq("dmmap", "deploymentunit", "UUID", uuid, s) {
-		printf("section with uuid %s found\n", uuid);
 		dmuci_set_value_by_section(s, "URL", url);
-		printf("return 1\n");
 		return 1;
 	}
 	return 0;

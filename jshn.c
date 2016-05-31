@@ -133,7 +133,6 @@ char *dustatechange_fault_policy[] = {
 int
 cwmp_handle_dustate_changeFault(char *msg)
 {
-	printf("cwmp_handle_dustate_changeFault %s \n", msg);
 	int tmp;
 	char *tb[__DUSTATE_MAX] = {0};
 
