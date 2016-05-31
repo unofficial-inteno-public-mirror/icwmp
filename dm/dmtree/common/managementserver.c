@@ -19,6 +19,7 @@
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "managementserver.h"
+#include "xml.h"
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 {
@@ -221,6 +222,193 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 	return 0;
 }
 
+int get_lwn_protocol_supported(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "UDP";
+	return 0;
+}
+
+int get_lwn_protocol_used(char *refparam, struct dmctx *ctx, char **value)
+{
+	bool b;
+	char *tmp;
+	
+	dmuci_get_option_value_string("cwmp", "lwn", "enable", &tmp);
+	string_to_bool(tmp, &b);
+	if (b)
+		*value = "UDP";
+	else	
+		*value = "";
+	return 0;
+}
+
+int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if (strcmp(value,"UDP") ==0) {
+				dmuci_set_value("cwmp", "lwn", "enable", "1");
+				cwmp_set_end_session(END_SESSION_RELOAD);
+			} 
+			else {
+				dmuci_set_value("cwmp", "lwn", "enable", "0");
+				cwmp_set_end_session(END_SESSION_RELOAD);
+			}
+			return 0;
+	}
+	return 0;
+}
+
+int get_lwn_host(char *refparam, struct dmctx *ctx, char **value)
+{	
+	dmuci_get_option_value_string("cwmp", "lwn", "hostname", value);
+	return 0;
+}
+
+int set_lwn_host(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value("cwmp", "lwn", "hostname", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_lwn_port(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "lwn", "port", value);
+	return 0;
+}
+
+int set_lwn_port(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value("cwmp", "lwn", "port", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_management_server_http_compression_supportted(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "GZIP,Deflate";
+	return 0;
+}
+
+int get_management_server_http_compression(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "acs", "compression", value);
+	return 0;
+}
+
+int set_management_server_http_compression(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			 if (0 == strcasecmp(value, "gzip") || 0 == strcasecmp(value, "deflate") || 0 == strncasecmp(value, "disable", 7)) {
+				 return 0;
+			 }
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "acs", "compression", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "acs", "retry_min_wait_interval", value);
+	return 0;
+}
+
+int set_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	int a;
+	switch (action) {
+		case VALUECHECK:
+			a = atoi(value);
+			if (a <= 65535 && a >= 1) {
+				 return 0;
+			}
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "acs", "retry_min_wait_interval", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "acs", "retry_interval_multiplier", value);
+	return 0;
+}
+
+int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	int a;
+	switch (action) {
+		case VALUECHECK:
+			a = atoi(value);
+			if (a <= 65535 && a >= 1000) {
+				 return 0;
+			}
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "acs", "retry_interval_multiplier", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
+int get_alias_based_addressing(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "cpe", "amd_version", value);
+	if((*value)[0] == '\0'|| atoi(*value) <= AMD_4) {
+		*value = "false";
+	}
+	else {
+		*value = "true";
+	}
+	return 0;
+}
+
+int get_instance_mode(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_option_value_string("cwmp", "cpe", "instance_mode", value);
+	return 0;
+}
+
+int set_instance_mode(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			if (0 == strcmp(value, "InstanceNumber") || 0 == strcmp(value, "InstanceAlias") ) {
+				return 0;
+			}
+			return FAULT_9007;
+		case VALUESET:
+			dmuci_set_value("cwmp", "cpe", "instance_mode", value);
+			cwmp_set_end_session(END_SESSION_RELOAD);
+			return 0;
+	}
+	return 0;
+}
+
 int entry_method_root_ManagementServer(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"ManagementServer.") {
@@ -235,6 +423,17 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 		DMPARAM("ConnectionRequestURL", ctx, "0", get_management_server_connection_request_url, NULL, NULL, 1, 0, 2, NULL);
 		DMPARAM("ConnectionRequestUsername", ctx, "1", get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ConnectionRequestPassword", ctx, "1", get_empty, set_management_server_connection_request_passwd, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("HTTPCompressionSupported", ctx, "0", get_management_server_http_compression_supportted, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("HTTPCompression", ctx, "1", get_management_server_http_compression, set_management_server_http_compression, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("LightweightNotificationProtocolsSupported", ctx, "0", get_lwn_protocol_supported, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("LightweightNotificationProtocolsUsed", ctx, "1", get_lwn_protocol_used, set_lwn_protocol_used, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UDPLightweightNotificationHost", ctx, "1", get_lwn_host, set_lwn_host, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UDPLightweightNotificationPort", ctx, "1", get_lwn_port, set_lwn_port, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("CWMPRetryMinimumWaitInterval", ctx, "1", get_management_server_retry_min_wait_interval, set_management_server_retry_min_wait_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("CWMPRetryIntervalMultiplier", ctx, "1", get_management_server_retry_interval_multiplier, set_management_server_retry_interval_multiplier, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("AliasBasedAddressing", ctx, "0", get_alias_based_addressing, NULL, "xsd:boolean", 1, 1, UNDEF, NULL);
+		DMPARAM("InstanceMode", ctx, "1", get_instance_mode, set_instance_mode, NULL, 0, 1, UNDEF, NULL);
+
 		return 0;
 	}
 	return FAULT_9005;

@@ -558,17 +558,53 @@ int delete_ipacccfg_port_forwarding_instance(struct dmctx *ctx)
 	dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
 	return 0;
 }
-/**********************/
+
+////////////////////////SET AND GET ALIAS/////////////////////////////////
+int get_x_inteno_cfgobj_address_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_ipaccargs.ipaccsection, "frulealias", value);
+	return 0;
+}
+
+int set_x_inteno_cfgobj_address_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_ipaccargs.ipaccsection, "frulealias", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_port_forwarding_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_pforwardrgs.forwardsection, "forwardalias", value);
+	return 0;
+}
+
+int set_port_forwarding_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_pforwardrgs.forwardsection, "forwardalias", value);
+			return 0;
+	}
+	return 0;
+}
 
 /////////////SUB ENTRIES///////////////
 inline int entry_xinteno_ipacccfg_listcfgobj(struct dmctx *ctx)
 {
-	char *irule = NULL;
+	char *irule = NULL, *irule_last = NULL;
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("firewall", "rule", s) {
 		init_args_ipacc(ctx, s);
-		irule = update_instance(s, irule, "fruleinstance");
+		irule =  handle_update_instance(1, ctx, &irule_last, update_instance_alias, 3, s, "fruleinstance", "frulealias");
 		SUBENTRY(entry_xinteno_ipacccfg_listcfgobj_instance, ctx, irule);
 	}
 	return 0;
@@ -576,11 +612,11 @@ inline int entry_xinteno_ipacccfg_listcfgobj(struct dmctx *ctx)
 
 inline int entry_xinteno_ipacccfg_portforwarding(struct dmctx *ctx)
 {
-	char *iforward = NULL;
+	char *iforward = NULL, *iforward_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {
 		init_args_pforward(ctx, s);
-		iforward = update_instance(s, iforward, "forwardinstance");
+		iforward =  handle_update_instance(1, ctx, &iforward_last, update_instance_alias, 3, s, "forwardinstance", "forwardalias");
 		SUBENTRY(entry_xinteno_ipacccfg_portforwarding_instance, ctx, iforward);
 	}
 	return 0;
@@ -604,6 +640,7 @@ inline int entry_xinteno_ipacccfg_listcfgobj_instance(struct dmctx *ctx, char *i
 {
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.%s.", irule) {
 		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.%s.", ctx, "0", 1, NULL, NULL, NULL, irule);
+		DMPARAM("Alias", ctx, "1", get_x_inteno_cfgobj_address_alias, set_x_inteno_cfgobj_address_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_x_bcm_com_ip_acc_list_cfgobj_enable, set_x_bcm_com_ip_acc_list_cfgobj_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("AccAddressAndNetMask", ctx, "1", get_x_inteno_cfgobj_address_netmask, set_x_inteno_cfgobj_address_netmask, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("AccPort", ctx, "1", get_x_bcm_com_ip_acc_list_cfgobj_acc_port, set_x_bcm_com_ip_acc_list_cfgobj_acc_port, NULL, 0, 1, UNDEF, NULL);
@@ -616,6 +653,7 @@ inline int entry_xinteno_ipacccfg_portforwarding_instance(struct dmctx *ctx, cha
 {
 	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", iforward) {
 		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", ctx, "0", 1, NULL, delete_ipacccfg_port_forwarding_instance, NULL, iforward);
+		DMPARAM("Alias", ctx, "1", get_port_forwarding_alias, set_port_forwarding_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "1", get_port_forwarding_name, set_port_forwarding_name, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_port_forwarding_enable, set_port_forwarding_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("EnalbeNatLoopback", ctx, "1", get_port_forwarding_loopback, set_port_forwarding_loopback, "xsd:boolean", 0, 1, UNDEF, NULL);

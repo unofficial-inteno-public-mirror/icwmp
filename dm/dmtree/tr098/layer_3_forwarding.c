@@ -159,10 +159,15 @@ int get_forwarding_last_inst()
 	return max;
 }
 
-char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *inst_opt, bool *find_max)
+char *forwarding_update_instance_alias(int action, char **last_inst, void *argv[])
 {
-	char *instance;
+	char *instance, *alias;
 	char buf[8] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+	bool *find_max = (bool *) argv[3];
 
 	dmuci_get_value_by_section_string(s, inst_opt, &instance);
 	if (instance[0] == '\0') {
@@ -175,31 +180,38 @@ char *forwarding_update_instance(struct uci_section *s, char *last_inst, char *i
 			sprintf(buf, "%d", 1);
 		}
 		else {
-			sprintf(buf, "%d", atoi(last_inst)+1);
+			sprintf(buf, "%d", atoi(*last_inst)+1);
 		}
 		instance = dmuci_set_value_by_section(s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = dmuci_set_value_by_section(s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
 	}
 	return instance;
 }
 
-char *forwarding_update_instance_dynamic(struct proc_route *proute, char *last_inst, char *inst_opt, bool *find_max)
+struct uci_section *update_route_dynamic_section(struct proc_route *proute)
 {
-	struct uci_section *s;
-	char *instance, *name, *mask;
-	char buf[8] = {0};
-
+	struct uci_section *s = NULL;
+	char *name, *mask;
 	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
-		dmuci_get_value_by_section_string(s, "netmask", &mask);
-		if (strcmp(proute->mask, mask) == 0)
-			break;
-	}
-	if (!s) {
-		dmuci_add_section("dmmap", "route_dynamic", &s, &name);
-		dmuci_set_value_by_section(s, "target", proute->destination);
-		dmuci_set_value_by_section(s, "netmask", proute->mask);
-	}
-	instance = forwarding_update_instance(s, last_inst, inst_opt, find_max);
-	return instance;
+			dmuci_get_value_by_section_string(s, "netmask", &mask);
+			if (strcmp(proute->mask, mask) == 0)
+				return s;
+		}
+		if (!s) {
+			dmuci_add_section("dmmap", "route_dynamic", &s, &name);
+			dmuci_set_value_by_section(s, "target", proute->destination);
+			dmuci_set_value_by_section(s, "netmask", proute->mask);
+		}
+		return s;
 }
 
 int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value)
@@ -593,24 +605,42 @@ int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_layer3_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	*value = "";
+	if (cur_routefwdargs.routefwdsection) dmuci_get_value_by_section_string(cur_routefwdargs.routefwdsection, "routealias", value);
+	return 0;
+}
+
+int set_layer3_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if (cur_routefwdargs.routefwdsection) dmuci_set_value_by_section(cur_routefwdargs.routefwdsection, "routealias", value);
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_layer3_forwarding(struct dmctx *ctx)
 {
-	char *iroute = NULL;
+	char *iroute = NULL, *iroute_last = NULL;
 	char *permission = "1";
-	struct uci_section *s = NULL;
+	struct uci_section *s = NULL, *ss = NULL;
 	FILE* fp = NULL;
 	char line[MAX_PROC_ROUTE];
 	struct proc_route proute;
 	bool find_max = true;
 	uci_foreach_sections("network", "route", s) {
 		init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);
-		iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
+		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
 		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
 		init_args_rentry(ctx, s, "1", NULL, ROUTE_DISABLED);
-		iroute = forwarding_update_instance(s, iroute, "routeinstance", &find_max);
+		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
 		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
 	}
 	fp = fopen(ROUTE_FILE, "r");
@@ -624,8 +654,9 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 			parse_proc_route_line(line, &proute);
 			if (is_proute_static(&proute))
 				continue;
-			init_args_rentry(ctx, NULL, "0", &proute, ROUTE_DYNAMIC);
-			iroute = forwarding_update_instance_dynamic(&proute, iroute, "routeinstance", &find_max);
+			ss = update_route_dynamic_section(&proute);
+			init_args_rentry(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
+			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
 			SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, "0");
 		}
 		fclose(fp) ;
@@ -653,6 +684,7 @@ inline int entry_layer3_forwarding_instance(struct dmctx *ctx, char *iroute, cha
 		DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
 		DMPARAM("Enable", ctx, permission, get_layer3_enable, set_layer3_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("Status", ctx, "0", get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Alias", ctx, "1", get_layer3_alias, set_layer3_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Type", ctx, "0", get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DestIPAddress", ctx, permission, get_layer3_destip, set_layer3_destip, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("DestSubnetMask", ctx, permission, get_layer3_destmask, set_layer3_destmask, NULL, 0, 1, UNDEF, NULL);

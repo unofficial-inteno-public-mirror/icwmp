@@ -173,10 +173,7 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_option_value_string("cwmp", "cpe", "specversion", value);
-	if ((*value)[0] == '\0') {
-		*value = "1.0";
-	}		
+	*value = "1.0";
 	return 0;
 }
 

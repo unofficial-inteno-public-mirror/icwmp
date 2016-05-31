@@ -47,10 +47,11 @@ static size_t http_get_response(void *buffer, size_t size, size_t rxed, char **m
 
 int http_client_init(struct cwmp *cwmp);
 void http_client_exit(void);
-int http_send_message(struct cwmp *cwmp, char *msg_out, char **msg_in);
+int http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_in);
 
 void http_server_init(void);
 void http_server_listen(void);
+void http_success_cr();
 
 #endif
 

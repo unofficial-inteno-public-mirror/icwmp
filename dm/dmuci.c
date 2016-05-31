@@ -284,7 +284,6 @@ int dmuci_get_varstate_list(char *package, char *section, char *option, struct u
 	}
 	if (ptr.o) {
 		*value = &ptr.o->v.list;
-		printf("value list add%p\n", *value);
 	} else {
 		return -1;
 	}

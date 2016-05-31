@@ -20,7 +20,12 @@
 #include "dmuci.h"
 #include "dmmem.h"
 
+#ifdef DATAMODEL_TR098
 #define DMROOT "InternetGatewayDevice."
+#endif
+#ifdef DATAMODEL_TR181
+#define DMROOT "Device."
+#endif
 #ifdef UNDEF
 #undef UNDEF
 #endif
@@ -137,7 +142,12 @@ struct dmctx
 	char *addobj_instance;
 	char *linker;
 	char *linker_param;
+	unsigned int alias_register;
+	unsigned int nbrof_instance;
+	unsigned int amd_version;
+	unsigned int instance_mode;
 	char current_obj[512];
+	char *inst_buf[16];
 };
 
 struct prefix_method {
@@ -190,12 +200,38 @@ enum fault_code {
 	FAULT_9017,// Download failure: unable to complete download
 	FAULT_9018,// Download failure: file corrupted
 	FAULT_9019,// Download failure: file authentication failure
+	FAULT_9020,// Download failure: unable to complete download
+	FAULT_9021,// Cancelation of file transfer not permitted
+	FAULT_9022,// Invalid UUID format
+	FAULT_9023,// Unknown Execution Environment
+	FAULT_9024,// Disabled Execution Environment
+	FAULT_9025,// Diployment Unit to Execution environment mismatch
+	FAULT_9026,// Duplicate Deployment Unit
+	FAULT_9027,// System Ressources Exceeded
+	FAULT_9028,// Unknown Deployment Unit
+	FAULT_9029,// Invalid Deployment Unit State
+	FAULT_9030,// Invalid Deployment Unit Update: Downgrade not permitted
+	FAULT_9031,// Invalid Deployment Unit Update: Version not specified
+	FAULT_9032,// Invalid Deployment Unit Update: Version already exist
 	__FAULT_MAX
 };
 
+enum {
+	INSTANCE_UPDATE_NUMBER,
+	INSTANCE_UPDATE_ALIAS
+};
+
+enum instance_mode {
+	INSTANCE_MODE_NUMBER,
+	INSTANCE_MODE_ALIAS
+};
+
 extern struct list_head list_enabled_notify;
+extern struct list_head list_enabled_lw_notify;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
+char *update_instance_alias(int action, char **last_inst , void *argv[]);
+char *update_instance_without_section(int action, char **last_inst, void *argv[]);
 int get_empty(char *refparam, struct dmctx *args, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type);
 void del_list_parameter(struct dm_parameter *dm_parameter);
@@ -224,6 +260,7 @@ void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
 char *get_last_instance(char *package, char *section, char *opt_inst);
 char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
+char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_inst, char * (*up_instance)(int action, char **last_inst, void *argv[]), int argc, ...);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

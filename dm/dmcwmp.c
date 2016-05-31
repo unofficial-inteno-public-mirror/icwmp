@@ -11,6 +11,7 @@
 #include "cwmp.h"
 #include "dmuci.h"
 #include "dmcwmp.h"
+#include "xml.h"
 #include "root.h"
 #include "times.h"
 #include "upnp.h"
@@ -30,10 +31,24 @@
 #include "layer_2_bridging.h"
 #include "ippingdiagnostics.h"
 #include "x_inteno_syslog.h"
+#include "dmentry.h"
+#include "dmcommon.h"
+#include "wifi.h"
+#include "ethernet.h"
+#include "wan.h"
+#include "bridging.h"
+#include "hosts.h"
+#include "dhcp.h"
+#include "ip.h"
+#include "ppp.h"
+#include "softwaremodules.h"
+#include "routing.h"
+#include "nat.h"
+#include "xmpp.h"
 
-static char *get_parameter_notification (char *param);
+static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
-static int set_parameter_notification(char *param, char *value);
+static int set_parameter_notification(struct dmctx *ctx, char *param, char *value);
 static int check_param_prefix (struct dmctx *ctx);
 static int check_obj_is_nl1(char *refparam, char *inparam, int ndot);
 static int get_value_obj(DMOBJECT_API_ARGS);
@@ -74,33 +89,58 @@ static int get_linker_value_check_obj(DMOBJECT_API_ARGS);
 static int get_linker_value_check_param(DMPARAM_API_ARGS);
 
 LIST_HEAD(list_enabled_notify);
+LIST_HEAD(list_enabled_lw_notify);
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
 	[1] = {"1", "passive"},
-	[2] = {"2", "active"}
+	[2] = {"2", "active"},
+	[3] = {"3", "passive_lw"},
+	[4] = {"4", "passive_passive_lw"},
+	[5] = {"5", "active_lw"},
+	[6] = {"6", "passive_active_lw"}
 };
 
 struct prefix_method prefix_methods[] = {
 	{ DMROOT, 1, NULL, 1, &entry_method_root },
 	{ DMROOT"DeviceInfo.", 1, NULL, 1, &entry_method_root_DeviceInfo },
 	{ DMROOT"ManagementServer.", 1, NULL, 1, &entry_method_root_ManagementServer },
+#ifdef DATAMODEL_TR098
 	{ DMROOT"LANDevice.", 1, NULL, 0, &entry_method_root_LANDevice },
 	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
 	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
-	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
 	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
+	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
+	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
+	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
+#endif
 	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
 	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
 	{ DMROOT"X_INTENO_SE_IGMP.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IGMP },
-	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
 	{ DMROOT"X_INTENO_SE_ICE.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_Ice },
 	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
 	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
-	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
+	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
+#ifdef XMPP_ENABLE
+	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
+#endif
+#ifdef DATAMODEL_TR181
+	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
+	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },
+	{ DMROOT"DSL.", 1, NULL, 0, &entry_method_root_wan_dsl },
+	{ DMROOT"ATM.", 1, NULL, 0, &entry_method_root_wan_atm },
+	{ DMROOT"PTM.", 1, NULL, 0, &entry_method_root_wan_ptm },
+	{ DMROOT"Bridging.", 1, NULL, 0, &entry_method_root_bridging },
+	{ DMROOT"Hosts.", 1, NULL, 0, &entry_method_root_hosts },
+	{ DMROOT"DHCPv4.", 1, NULL, 0, &entry_method_root_dhcp },
+	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
+	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
+	{ DMROOT"Routing.", 1, NULL, 0, &entry_method_root_routing },
+	{ DMROOT"NAT.", 1, NULL, 0, &entry_method_root_nat },
+#endif
 };
 
 int dm_entry_set_prefix_methods_enable(void)
@@ -113,23 +153,101 @@ int dm_entry_set_prefix_methods_enable(void)
 	}
 	return 0;
 }
+/***************************
+ * update instance & alias
+ ***************************/
+char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_inst, char * (*up_instance)(int action, char **last_inst, void *argv[]), int argc, ...)
+{
+	va_list arg;
+	char *instance, *inst_mode;
+	char *alias;
+	int i = 0;
+	int pos = instance_ranck - 1;
+	unsigned int alias_resister = 0, max, action;
+	void *argv[argc];
 
+	va_start(arg,argc);
+	for (i=0; i<argc; i++)
+	{
+		argv[i] = va_arg(arg, void*);
+	}
+	va_end(arg);
+	if (ctx->amd_version >= AMD_4) {
+		if(pos < ctx->nbrof_instance) {
+			action = (ctx->alias_register & (1 << pos)) ? INSTANCE_UPDATE_ALIAS : INSTANCE_UPDATE_NUMBER;
+		} else {
+			action = (ctx->instance_mode == INSTANCE_MODE_ALIAS) ? INSTANCE_UPDATE_ALIAS : INSTANCE_UPDATE_NUMBER;
+		}
+	} else {
+		action = INSTANCE_UPDATE_NUMBER;
+	}
+	instance = up_instance(action, last_inst, argv);
+	if(*last_inst)
+		ctx->inst_buf[pos] = dmstrdup(*last_inst);
+
+	return instance;
+}
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 {
 	char *instance;
-	char buf[8] = {0};
+	void *argv[3];
+
+	argv[0]= s;
+	argv[1]= inst_opt;
+	argv[2]= "";
+
+	instance = update_instance_alias(0, &last_inst, argv);
+	return instance;
+}
+
+char *update_instance_alias(int action, char **last_inst , void *argv[])
+{
+	char *instance;
+	char *alias;
+	char buf[64] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
 
 	dmuci_get_value_by_section_string(s, inst_opt, &instance);
 	if (instance[0] == '\0') {
-		if (last_inst == NULL)
+		if (*last_inst == NULL)
 			sprintf(buf, "%d", 1);
 		else
-			sprintf(buf, "%d", atoi(last_inst)+1);
+			sprintf(buf, "%d", atoi(*last_inst)+1);
 		instance = dmuci_set_value_by_section(s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = dmuci_set_value_by_section(s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
 	}
 	return instance;
 }
 
+char *update_instance_without_section(int action, char **last_inst, void *argv[])
+{
+	char *instance;
+	char *alias;
+	char buf[64] = {0};
+
+	int instnbr = (int) argv[0];
+
+	if (action == INSTANCE_MODE_ALIAS) {
+		sprintf(buf, "[cpe-%d]", instnbr);
+		instance = dmstrdup(buf);
+	} else {
+		sprintf(buf, "%d", instnbr);
+		instance = dmstrdup(buf);
+	}
+	return instance;
+}
 char *get_last_instance(char *package, char *section, char *opt_inst)
 {
 	struct uci_section *s;
@@ -150,7 +268,6 @@ char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char 
 	}
 	return instance;
 }
-
 
 int get_empty(char *refparam, struct dmctx *args, char **value)
 {
@@ -258,6 +375,16 @@ void add_list_enabled_notify(char *param, char *notification, char *value)
 	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
 }
 
+void add_list_enabled_lwnotify(char *param, char *notification, char *value)
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+
+	dm_enabled_notify = calloc(1, sizeof(struct param_fault)); // Should be calloc and not dmcalloc
+	list_add_tail(&dm_enabled_notify->list, &list_enabled_lw_notify);
+	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
+	dm_enabled_notify->value = value ? strdup(value) : strdup(""); // Should be strdup and not dmstrdup
+	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
+}
 void del_list_enabled_notify(struct dm_enabled_notify *dm_enabled_notify)
 {
 	list_del(&dm_enabled_notify->list); // Should be free and not dmfree
@@ -272,6 +399,15 @@ void free_all_list_enabled_notify()
 	struct dm_enabled_notify *dm_enabled_notify;
 	while (list_enabled_notify.next != &list_enabled_notify) {
 		dm_enabled_notify = list_entry(list_enabled_notify.next, struct dm_enabled_notify, list);
+		del_list_enabled_notify(dm_enabled_notify);
+	}
+}
+
+void free_all_list_enabled_lwnotify()
+{
+	struct dm_enabled_notify *dm_enabled_notify;
+	while (list_enabled_lw_notify.next != &list_enabled_lw_notify) {
+		dm_enabled_notify = list_entry(list_enabled_lw_notify.next, struct dm_enabled_notify, list);
 		del_list_enabled_notify(dm_enabled_notify);
 	}
 }
@@ -292,26 +428,27 @@ void dm_update_enabled_notify_byname(char *name, char *new_value)
 	}
 }
 
-static char *get_parameter_notification (char *param)
+static char *get_parameter_notification (struct dmctx *ctx, char *param)
 {
 	int i, maxlen = 0, len;
 	struct uci_list *list_notif;
-	char *pch;
+	char *pch, *new_param;
 	char *notification = "0";
 	struct uci_element *e;
 
+	update_param_instance_alias(ctx, param, &new_param);
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
 		dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 		if (list_notif) {
 			uci_foreach_element(list_notif, e) {
 				pch = e->name;
-				if (strcmp(pch, param) == 0) {
+				if (strcmp(pch, new_param) == 0) {
 					notification = notifications[i].value;
 					return notification;
 				}
 				len = strlen(pch);
 				if (pch[len-1] == '.') {
-					if (strstr(param, pch)) {
+					if (strstr(new_param, pch)) {
 						if (len > maxlen )
 						{
 							notification = notifications[i].value;
@@ -322,6 +459,7 @@ static char *get_parameter_notification (char *param)
 			}
 		}
 	}
+	dmfree(new_param);
 	return notification;
 }
 
@@ -350,26 +488,71 @@ static int remove_parameter_notification(char *param)
 	return 0;
 }
 
-static int set_parameter_notification(char *param, char *value)
+int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param)
 {
-	char *tmp = NULL, *buf = NULL, *pch;
+	char *pch, *spch, *p;
+	char buf[512];
+	int i = 0, j = 0;
+
+	char *dup = dmstrdup(param);
+	p = buf;
+	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+		if (isdigit(pch[0])) {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, pch);
+			i++;
+		} else if (pch[0]== '[') {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, ctx->inst_buf[i]);
+			i++;
+		} else {
+			if(j > 0) {
+				dmstrappendchr(p, '.');
+				dmstrappendstr(p, pch);
+			}
+			if(j == 0) {
+				dmstrappendstr(p, pch);
+				j++;
+			}
+		}
+	}
+	if (param[strlen(param)-1] == '.')
+		dmstrappendchr(p, '.');
+	dmstrappendend(p);
+	*new_param = dmstrdup(buf);
+	dmfree(dup);
+	return 0;
+}
+
+static int set_parameter_notification(struct dmctx *ctx, char *param, char *value)
+{
+	char *tmp = NULL, *buf = NULL, *pch, *new_param;
 	char *notification = NULL;
 	struct uci_section *s;
 	dmuci_get_section_type("cwmp", "@notifications[0]", &tmp);
+	update_param_instance_alias(ctx, param, &new_param);
 	if (!tmp || tmp[0] == '\0') {
 		dmuci_add_section("cwmp", "notifications", &s, &buf);
 	} else {
-		remove_parameter_notification(param);
+		remove_parameter_notification(new_param);
 	}
 
-	notification = get_parameter_notification(param);
+	notification = get_parameter_notification(ctx, new_param);
 	if (strcmp(notification, value) == 0)  {
-		return 0;
+		goto end;
 	}
 	if (strcmp(value, "1") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive", new_param);
 	} else if (strcmp(value, "2") == 0) {
-		dmuci_add_list_value("cwmp", "@notifications[0]", "active", param);
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active", new_param);
+	} else if (strcmp(value, "3") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_lw", new_param);
+	} else if (strcmp(value, "4") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_passive_lw", new_param);
+	} else if (strcmp(value, "5") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "active_lw", new_param);
+	} else if (strcmp(value, "6") == 0) {
+		dmuci_add_list_value("cwmp", "@notifications[0]", "passive_active_lw", new_param);
 	} else if (strcmp(value, "0") == 0) {
 		struct uci_list *list_notif;
 		struct uci_element *e;
@@ -380,9 +563,9 @@ static int set_parameter_notification(char *param, char *value)
 				uci_foreach_element(list_notif, e) {
 					pch = e->name;
 					len = strlen(pch);
-					if (pch[len-1] == '.' && strstr(param, pch)) {
-						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", param);
-						return 0;
+					if (pch[len-1] == '.' && strstr(new_param, pch)) {
+						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", new_param);
+						goto end;
 					}
 				}
 			}
@@ -391,7 +574,8 @@ static int set_parameter_notification(char *param, char *value)
 	} else {
 		return -1;
 	}
-
+end:
+	dmfree(new_param);
 	return 0;
 }
 
@@ -717,7 +901,7 @@ static int get_notification_param(DMPARAM_API_ARGS)
 	char *notification;
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}
@@ -735,7 +919,7 @@ static int get_notification_inparam_isparam_check_param(DMPARAM_API_ARGS)
 		return FAULT_9005;
 	}
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}
@@ -751,7 +935,7 @@ static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS)
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (strstr(full_param, ctx->in_param)) {		
 		if (forced_notify == UNDEF) {
-			notification = get_parameter_notification(full_param);
+			notification = get_parameter_notification(ctx, full_param);
 		} else {
 			notification = notifications[forced_notify].value;
 		}
@@ -832,7 +1016,7 @@ static int add_object_obj(DMOBJECT_API_ARGS)
 	ctx->addobj_instance = instance;
 	char *objinst;
 	dmasprintf(&objinst, "%s%s.", ctx->current_obj, instance);
-	set_parameter_notification(objinst, "0");
+	set_parameter_notification(ctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
 }
@@ -954,7 +1138,7 @@ int dm_entry_set_notification(struct dmctx *ctx)
 	} else {
 		ctx->method_obj=&set_notification_check_obj;
 		ctx->method_param=&set_notification_check_param; 
-	}	
+	}
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (!prefix_methods[i].enable) continue;
 		int ret = prefix_methods[i].method(ctx);
@@ -978,7 +1162,7 @@ static int set_notification_check_obj(DMOBJECT_API_ARGS)
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
 	}
 	else if (ctx->setaction == VALUESET) {
-		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		set_parameter_notification(ctx, ctx->in_param, ctx->in_notification);
 		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 	return 0;
@@ -1001,7 +1185,7 @@ static int set_notification_check_param(DMPARAM_API_ARGS)
 		}
 		add_set_list_tmp(ctx, ctx->in_param, ctx->in_notification);
 	} else if (ctx->setaction == VALUESET) {
-		set_parameter_notification(ctx->in_param, ctx->in_notification);
+		set_parameter_notification(ctx, ctx->in_param, ctx->in_notification);
 		cwmp_set_end_session(END_SESSION_RELOAD);
 	}
 
@@ -1037,7 +1221,7 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
 
 	dmastrcat(&full_param, ctx->current_obj, lastname);
 	if (forced_notify == UNDEF) {
-		notification = get_parameter_notification(full_param);
+		notification = get_parameter_notification(ctx, full_param);
 	} else {
 		notification = notifications[forced_notify].value;
 	}
@@ -1047,7 +1231,11 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
 	}
 
 	(get_cmd)(full_param, ctx, &value);
+	if (notification[0] == '1' || notification[0] == '2' || notification[0] == '4' || notification[0] == '6') 
 	add_list_enabled_notify(full_param, notification, value);
+	if (notification[0] >= '3') {
+		add_list_enabled_lwnotify(full_param, notification, value);
+	}
 	dmfree(full_param);
 	return 0;
 }
@@ -1097,6 +1285,7 @@ int dm_entry_get_linker_value(struct dmctx *ctx)
 	int i;
 	ctx->method_obj = &get_linker_value_check_obj;
 	ctx->method_param = &get_linker_value_check_param;
+	dmentry_instance_lookup_inparam(ctx);
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (!prefix_methods[i].enable) continue;
 		int ret = prefix_methods[i].method(ctx);

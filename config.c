@@ -352,6 +352,27 @@ int check_global_config (struct config *conf)
     return CWMP_OK;
 }
 
+int check_xmpp_config (struct cwmp *cwmp)
+{
+    if ((cwmp->xmpp_param.username)[0] == '\0')
+    {
+        cwmp->conf.xmpp_enable = 0;
+    }
+	if ((cwmp->xmpp_param.password)[0] == '\0')
+    {
+        cwmp->conf.xmpp_enable = 0;
+    }
+	if ((cwmp->xmpp_param.domain)[0] == '\0')
+    {
+        cwmp->conf.xmpp_enable = 0;
+    }
+	if ((cwmp->xmpp_param.ressource)[0] == '\0')
+    {
+        cwmp->conf.xmpp_enable = 0;
+    }
+	return CWMP_OK;
+}
+
 static void uppercase ( char *sPtr )
 {
 	while ( *sPtr != '\0' )
@@ -488,6 +509,64 @@ int get_global_config(struct config *conf)
                 free(conf->acs_passwd);
             }
             conf->acs_passwd = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
+    if((error = get_amd_version_config())!= CWMP_OK)
+    {
+        return error;
+    }
+    if((error = uci_get_value(UCI_ACS_COMPRESSION ,&value)) == CWMP_OK)
+    {
+        conf->compression = COMP_NONE;
+        if(conf->amd_version >= AMD_5 && value != NULL)
+        {
+            if (0 == strcasecmp(value, "gzip")) {
+                conf->compression = COMP_GZIP;
+            } else if (0 == strcasecmp(value, "deflate")) {
+                conf->compression = COMP_DEFLATE;
+            } else {
+                conf->compression = COMP_NONE;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
+    if((error = uci_get_value(UCI_ACS_RETRY_MIN_WAIT_INTERVAL ,&value)) == CWMP_OK)
+    {
+        conf->retry_min_wait_interval = DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL;
+        if(conf->amd_version >= AMD_3 && value != NULL)
+        {
+            int a = atoi(value) ;
+            if ( a <= 65535 || a >=1) {
+                conf->retry_min_wait_interval = a;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    else
+    {
+        return error;
+    }
+    if((error = uci_get_value(UCI_ACS_RETRY_INTERVAL_MULTIPLIER ,&value)) == CWMP_OK)
+    {
+        conf->retry_interval_multiplier = DEFAULT_RETRY_INTERVAL_MULTIPLIER;
+        if(conf->amd_version >= AMD_3 && value != NULL)
+        {
+            int a = atoi(value) ;
+            if ( a <= 65535 || a >=1000) {
+                conf->retry_interval_multiplier = a;
+            }
+            free(value);
             value = NULL;
         }
     }
@@ -706,10 +785,204 @@ int get_global_config(struct config *conf)
 	{
 		return error;
 	}
-
-    return CWMP_OK;
+    if((error = get_instance_mode_config())!= CWMP_OK)
+    {
+        return error;
+    }
+	if((error = get_session_timeout_config())!= CWMP_OK)
+    {
+        return error;
+    }
+#ifdef XMPP_ENABLE
+	if(conf->amd_version >= AMD_5)
+	{
+		if((error = uci_get_value(UCI_XMPP_ENABLE,&value)) == CWMP_OK)
+		{
+		    if(value != NULL)
+				{
+				if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
+				{
+					conf->xmpp_enable = true;
+					CWMP_LOG(INFO,"Xmpp connection id is %d \n", conf->xmpp_enable);
+					}
+				value = NULL;
+			}
+		}
+		if((error = uci_get_value(UCI_XMPP_CONNECTION_ID,&value)) == CWMP_OK)
+		{
+		    int a = 0;
+		    if(value != NULL)
+		    {
+		        a = atoi(value);
+		        free(value);
+		        value = NULL;
+		    }
+		    if(a==0)
+		    {
+		        CWMP_LOG(INFO,"Xmpp connection id :Empty");
+		        conf->xmpp_connection_id = 0;
+		    }
+		    else
+		    {
+				CWMP_LOG(INFO,"Xmpp connection id :%d \n", a);
+		        conf->xmpp_connection_id = a;
+		    }
+		}
+		else
+		{
+		    return error;
+		}
+		if((error = uci_get_value(UCI_XMPP_ALLOWED_JID,&value)) == CWMP_OK)
+		{
+			if(value != NULL)
+		    {
+		        if (conf->xmpp_allowed_jid != NULL)
+		        {
+		            free(conf->xmpp_allowed_jid);
+		        }
+		        conf->xmpp_allowed_jid = value;
+		        value = NULL;
+		    }
+		}
+		else
+		{
+		    return error;
+		}
+	}
+#endif
+	return CWMP_OK;
 }
 
+int get_amd_version_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.amd_version = DEFAULT_AMD_VERSION;
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 if ( a >= 1 ) {
+				 cwmp->conf.amd_version = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+		 cwmp->conf.supported_amd_version = cwmp->conf.amd_version;
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_session_timeout_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_SESSION_TIMEOUT ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.session_timeout = DEFAULT_SESSION_TIMEOUT;
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 if ( a >= 1 ) {
+				 cwmp->conf.session_timeout = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_instance_mode_config()
+{
+	 int error;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_INSTANCE_MODE ,&value)) == CWMP_OK)
+	    {
+		 cwmp->conf.instance_mode = DEFAULT_INSTANCE_MODE;
+	        if(value != NULL)
+	        {
+	            if ( 0 == strcmp(value, "InstanceNumber") ) {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_NUMBER;
+	            } else {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_ALIAS;
+	            }
+	            free(value);
+	            value = NULL;
+	        }
+	    }
+	    else
+	    {
+	        return error;
+	    }
+	 return CWMP_OK;
+}
+int get_lwn_config(struct config *conf)
+{
+    int error;
+    int a = 0;    
+    char *value = NULL;
+    if((error = uci_get_value(LW_NOTIFICATION_ENABLE,&value)) == CWMP_OK)
+    {
+	    if(value != NULL)
+        {
+            uppercase(value);
+            if ((strcmp(value,"TRUE")==0) || (strcmp(value,"1")==0))
+            {
+                conf->lw_notification_enable = true;
+            }
+            else
+            {
+                conf->lw_notification_enable = false;
+            }
+            free(value);
+            value = NULL;
+        }
+    }
+    if((error = uci_get_value(LW_NOTIFICATION_HOSTNAME,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            conf->lw_notification_hostname = strdup(value);
+            free(value);
+            value = NULL;
+        }
+        else
+        {
+            conf->lw_notification_hostname = strdup(conf->acsurl);
+        }
+                
+    }
+    if((error = uci_get_value(LW_NOTIFICATION_PORT,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            a = atoi(value);
+            conf->lw_notification_port = a;
+            free(value);
+            value = NULL;
+        }
+        else
+        {
+            conf->lw_notification_port = DEFAULT_LWN_PORT;
+        }
+	}
+    return CWMP_OK;
+}
 int global_env_init (int argc, char** argv, struct env *env)
 {
     int i,error=0;
@@ -760,6 +1033,7 @@ int global_conf_init (struct config *conf)
     {
         return error;
     }
+    get_lwn_config(conf);
     return CWMP_OK;
 }
 
@@ -785,10 +1059,66 @@ int cwmp_get_deviceid(struct cwmp *cwmp) {
 	return CWMP_OK;
 }
 
+#ifdef XMPP_ENABLE
+int cwmp_get_xmpp_param(struct cwmp *cwmp) {
+	struct dmctx dmctx = {0};
+	
+	struct config   *conf;
+	char *instance;
+	struct xmpp_param   *xmpp;
+    conf = &(cwmp->conf);
+	xmpp = &(cwmp->xmpp_param);
+	
+	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)
+    {
+		char *enable;
+		asprintf(&instance, "%d", conf->xmpp_connection_id);
+		dm_ctx_init(&dmctx);
+		char *tmp;
+		asprintf(&tmp, "%s", get_xmpp_server_enable(instance));
+		//tmp = ;
+		enable = strdup(tmp);
+		if(enable[0] == '\0' || enable[0] == '0')
+		{
+			conf->xmpp_enable = false;//disable xmpp_enable
+			goto end;
+		}
+		asprintf(&(cwmp->xmpp_param.local_jid), "%s-%s-%s", cwmp->deviceid.oui, cwmp->deviceid.productclass, cwmp->deviceid.serialnumber);
+		//xmpp->allowed_jid = strdup((const char *)get_xmpp_allowed_jid());
+		//xmpp->username = strdup(cwmp->xmpp_param.local_jid);
+		xmpp->username = strdup((const char *)get_xmpp_username(instance));
+		xmpp->password = strdup((const char *)get_xmpp_password(instance));
+		cwmp->xmpp_param.domain = strdup((const char *)get_xmpp_domain(instance));
+		cwmp->xmpp_param.ressource = strdup((const char *)get_xmpp_resource(instance));	
+		cwmp->xmpp_param.keepalive_interval = atoi((const char *)get_xmpp_keepalive_interval(instance));
+		cwmp->xmpp_param.connect_attempt = atoi((const char *)get_xmpp_connect_attempts(instance));
+		if(cwmp->xmpp_param.connect_attempt)
+		{
+			cwmp->xmpp_param.retry_initial_interval = atoi((const char *)get_xmpp_connect_initial_retry_interval(instance));
+			cwmp->xmpp_param.retry_initial_interval = (cwmp->xmpp_param.retry_initial_interval) ? cwmp->xmpp_param.retry_initial_interval : DEFAULT_RETRY_INITIAL_INTERVAL;
+			cwmp->xmpp_param.retry_interval_multiplier = atoi((const char *)get_xmpp_connect_retry_interval_multiplier(instance));
+			cwmp->xmpp_param.retry_interval_multiplier = (cwmp->xmpp_param.retry_interval_multiplier) ? cwmp->xmpp_param.retry_interval_multiplier : DEFAULT_RETRY_INTERVAL_MULTIPLIER;
+			cwmp->xmpp_param.retry_max_interval = atoi((const char *)get_xmpp_connect_retry_max_interval(instance));
+			cwmp->xmpp_param.retry_max_interval = (cwmp->xmpp_param.retry_max_interval) ? cwmp->xmpp_param.retry_max_interval : DEFAULT_RETRY_MAX_INTERVAL;
+		}
+		dm_ctx_clean(&dmctx);
+		check_xmpp_config(cwmp);
+	}
+    else
+    {
+        CWMP_LOG(INFO,"XMPP is Disabled");
+        return CWMP_OK;
+    }	
+end:	
+	return CWMP_OK;
+}
+#endif
 int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 {
     int         error;
     struct env  env;
+	struct config   *conf;
+    conf = &(cwmp->conf);
     memset(&env,0,sizeof(struct env));
     if(error = global_env_init (argc, argv, &env))
     {
@@ -821,6 +1151,10 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     }
 	dm_global_init();
     cwmp_get_deviceid(cwmp);
+#ifdef XMPP_ENABLE
+	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)
+		cwmp_get_xmpp_param(cwmp);
+#endif
     dm_entry_load_enabled_notify();
     return CWMP_OK;
 }
@@ -828,12 +1162,18 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 int cwmp_config_reload(struct cwmp *cwmp)
 {
     int error;
+	struct config   *conf;
+    conf = &(cwmp->conf);
     memset(&cwmp->env,0,sizeof(struct env));
     memset(&cwmp->conf,0,sizeof(struct config));
     if(error = global_conf_init(&(cwmp->conf)))
     {
         return error;
     }
+#ifdef XMPP_ENABLE
+	if (conf->xmpp_enable && conf->xmpp_connection_id != 0)
+		cwmp_get_xmpp_param(cwmp);
+#endif
     dm_entry_load_enabled_notify();
     return CWMP_OK;
 }

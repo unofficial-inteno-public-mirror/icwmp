@@ -13,6 +13,9 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
 #include "cwmp.h"
 #include "backupSession.h"
 #include "xml.h"
@@ -21,6 +24,9 @@
 #include "dmentry.h"
 #include "ubus.h"
 #include "ipping.h"
+#include "xmpp_cr.h"
+#include <strophe.h>
+#include <unistd.h>
  
 struct cwmp         	cwmp_main = {0};
 
@@ -75,20 +81,19 @@ int cwmp_session_rpc_destructor (struct rpc *rpc)
 
 int cwmp_get_retry_interval (struct cwmp *cwmp)
 {
-    switch (cwmp->retry_count_session)
-    {
-        case 0: return MAX_INT32;
-        case 1: return 6;
-        case 2: return 11;
-        case 3: return 21;
-        case 4: return 41;
-        case 5: return 81;
-        case 6: return 161;
-        case 7: return 321;
-        case 8: return 641;
-        case 9: return 1281;
-        default: return 2561;
-    }
+	int retry_count = 0;
+	double  min = 0;
+    double  max = 0;
+    int  m = cwmp->conf.retry_min_wait_interval;
+    int  k = cwmp->conf.retry_interval_multiplier;
+    int  exp = cwmp->retry_count_session;
+    if (exp == 0) return MAX_INT32;
+    if (exp > 10) exp = 10;
+    min = pow(((double)k/1000), (double)(exp-1)) * m;
+    max = pow(((double)k/1000), (double)exp) * m;
+    srand (time(NULL));
+    retry_count = rand() % ((int)max + 1 - (int)min) + (int)min;
+    return (retry_count);
 }
 
 static void cwmp_prepare_value_change (struct cwmp *cwmp, struct session *session)
@@ -542,6 +547,14 @@ void signal_handler(int signal_num)
     _exit(EXIT_SUCCESS);
 }
 
+#ifdef XMPP_ENABLE
+void *thread_xmpp_client_listen (void *v)
+{
+    cwmp_xmpp_connect_client();
+    return NULL;
+}
+#endif
+
 int main(int argc, char **argv)
 {
 
@@ -550,15 +563,30 @@ int main(int argc, char **argv)
     pthread_t                       periodic_event_thread;
     pthread_t                       handle_notify_thread;
     pthread_t                       scheduleInform_thread;
+    pthread_t                       change_du_state_thread;
     pthread_t                       download_thread;
+    pthread_t                       schedule_download_thread;
+	pthread_t                       apply_schedule_download_thread;
+    pthread_t                       upload_thread;
     pthread_t                       ubus_thread;
     pthread_t                       http_cr_server_thread;
+	pthread_t                       xmpp_client_thread;
     struct sigaction                act = {0};
 
     if (error = cwmp_init(argc, argv, cwmp))
     {
         return error;
     }
+#ifdef XMPP_ENABLE
+    xmpp_stanza_t 					*reply;
+	if(cwmp->conf.xmpp_enable) {
+		error = pthread_create(&xmpp_client_thread, NULL, &thread_xmpp_client_listen, NULL);
+		if (error<0)
+		{
+		    CWMP_LOG(ERROR,"Error when lanching xmpp connection thread!");
+		}
+	}
+#endif
     init_ipping_diagnostic();
     CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
@@ -611,7 +639,26 @@ int main(int argc, char **argv)
     {
         CWMP_LOG(ERROR,"Error when creating the download thread!");
     }
-
+    error = pthread_create(&change_du_state_thread, NULL, &thread_cwmp_rpc_cpe_change_du_state, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the state change thread!");
+    }
+	error = pthread_create(&schedule_download_thread, NULL, &thread_cwmp_rpc_cpe_schedule_download, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the schedule download thread!");
+    }
+	error = pthread_create(&apply_schedule_download_thread, NULL, &thread_cwmp_rpc_cpe_apply_schedule_download, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the schedule download thread!");
+    }
+    error = pthread_create(&upload_thread, NULL, &thread_cwmp_rpc_cpe_upload, (void *)cwmp);
+    if (error<0)
+    {
+        CWMP_LOG(ERROR,"Error when creating the download thread!");
+    }
     cwmp_schedule_session(cwmp);
 #if 1
     pthread_join(ubus_thread, NULL);
@@ -620,8 +667,17 @@ int main(int argc, char **argv)
     pthread_join(handle_notify_thread, NULL);
     pthread_join(scheduleInform_thread, NULL);
     pthread_join(download_thread, NULL);
+    pthread_join(upload_thread, NULL);
+    pthread_join(schedule_download_thread, NULL);
+	pthread_join(apply_schedule_download_thread, NULL);
+    pthread_join(change_du_state_thread, NULL);
     pthread_join(http_cr_server_thread, NULL);
+#ifdef XMPP_ENABLE
+	if(cwmp->conf.xmpp_enable) 
+		pthread_join(xmpp_client_thread, NULL);
+	cwmp_xmpp_exit();
+#endif
     exit_ipping_diagnostic();
-    CWMP_LOG(INFO,"EXIT ICWMP");
+	CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }

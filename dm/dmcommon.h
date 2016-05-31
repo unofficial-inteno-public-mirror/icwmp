@@ -15,7 +15,10 @@
 #include <libubox/blobmsg_json.h>
 #include <json-c/json.h>
 #include "dmcwmp.h"
-
+#define NVRAM_FILE "/proc/nvram/WpaKey"
+#define MAX_DHCP_LEASES 256
+#define ARP_FILE "/proc/net/arp"
+#define DHCPSTATICADDRESS_DISABLED_CHADDR "00:00:00:00:00:01"
 #define DM_ASSERT(X, Y) \
 do { \
 	if(!(X)) { \
@@ -68,5 +71,17 @@ int ipcalc_rev_start(char *ip_str, char *mask_str, char *ipstart_str, char *star
 int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_str, char *end_str);
 int network_get_ipaddr(char **value, char *iface);
 void remove_vid_interfaces_from_ifname(char *vid, char *ifname, char *new_ifname);
+void update_section_option_list(char *config, char *section, char *option, char *option_2,char *val, char *val_2, char *name);
+void update_section_list(char *config, char *section, char *option, int number, char *filter, char *option1, char *val1,  char *option2, char *val2);
+char *get_nvram_wpakey();
+int reset_wlan(struct uci_section *s);
+int get_cfg_layer2idx(char *pack, char *section_type, char *option, int shift);
+int wan_remove_dev_interface(struct uci_section *interface_setion, char *dev);
+int filter_lan_device_interface(struct uci_section *s, void *v);
+void update_remove_vlan_from_bridge_interface(char *bridge_key, struct uci_section *vb);
+int filter_lan_ip_interface(struct uci_section *ss, void *v);
+void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname);
+int max_array(int a[], int size);
+int check_ifname_is_vlan(char *ifname);
 
 #endif

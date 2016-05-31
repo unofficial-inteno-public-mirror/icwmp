@@ -53,7 +53,14 @@ void bkp_session_insert_schedule_inform(time_t schedule_time,char *command_key);
 void bkp_session_delete_schedule_inform(time_t schedule_time,char *command_key);
 void bkp_session_insert_download(struct download *pdownload);
 void bkp_session_delete_download(struct download *pdownload);
+void bkp_session_insert_upload(struct upload *pupload);
+void bkp_session_delete_upload(struct upload *pupload);
+void bkp_session_insert_change_du_state(struct change_du_state *pchange_du_state);
+void bkp_session_delete_change_du_state(struct change_du_state *pchange_du_state);
 void bkp_session_insert_transfer_complete(struct transfer_complete *ptransfer_complete);
 void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_complete);
 
+void bkp_session_insert_schedule_download(struct schedule_download *pschedule_download);
+void bkp_session_insert_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
+void bkp_session_delete_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
 #endif /* _BACKUPSESSION_H__ */

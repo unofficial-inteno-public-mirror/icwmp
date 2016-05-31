@@ -19,6 +19,7 @@ TMP_SET_NOTIFICATION="/tmp/.tmp_set_notification"
 FAULT_CPE_NO_FAULT="0"
 FAULT_CPE_INTERNAL_ERROR="2"
 FAULT_CPE_DOWNLOAD_FAILURE="10"
+FAULT_CPE_UPLOAD_FAILURE="11"
 FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED="18"
 
 for ffile in `ls /usr/share/icwmp/functions/`; do
@@ -66,6 +67,19 @@ case "$1" in
 		__arg4="$5"
 		__arg5="$6"
 		action="download"
+		;;
+	du_download)
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
+		action="du_download"
+		;;
+	upload)
+		__arg1="$2"
+		__arg2="$3"
+		__arg3="$4"
+		__arg4="$5"
+		action="upload"
 		;;
 	factory_reset)
 		action="factory_reset"
@@ -183,6 +197,36 @@ handle_action() {
 		/usr/sbin/icwmpd -m 1 "inform"
 	fi
 
+	if [ "$action" = "du_download" ]; then
+		local fault_code="9000"
+		if [ "$__arg2" = "" -o "$__arg3" = "" ];then
+			wget -O /tmp/icwmp_du_download "$__arg1" 2>> /tmp/IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		else
+			local url="http://$__arg2:$__arg3@`echo $__arg1|sed 's/http:\/\///g'`"
+			wget -O /tmp/icwmp_du_download "$url" 2> /dev/null
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		fi
+		mv /tmp/icwmp_du_download /tmp/du_change_state.ipk 2> /dev/null
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"			
+	fi
+	if [ "$action" = "du_uninstall" ]; then
+		/bin/opkg remove "$__arg1" 2> /dev/null
+		if [ "$?" != "0" ];then
+			let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
+			icwmp_fault_output "" "$fault_code"
+			return 1
+		fi
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"			
+	fi
 	if [ "$action" = "download" ]; then
 		local fault_code="9000"
 		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
@@ -231,7 +275,13 @@ handle_action() {
 				mv /tmp/icwmp_download /tmp/web_content.ipk 2> /dev/null
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			elif [ "$__arg3" = "3" ];then
+				if [ "$__arg6" != "0" ]; then
+					local tmp="/etc/vendor_configuration_file_${__arg6}.cfg"
+					echo $tmp >> /etc/config/ibh
+					mv /tmp/icwmp_download "$tmp" 2> /dev/null									else
+					echo "arg6 is empty #$__arg6#" >> /etc/config/ibh
 				mv /tmp/icwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+				fi
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			else
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
@@ -240,15 +290,50 @@ handle_action() {
 			fi
 		fi
 	fi
-
+	if [ "$action" = "upload" ]; then
+		local fault_code="9000"
+		if [ "$__arg3" = "" -o "$__arg4" = "" ];then
+			curl -T /etc/config/cwmp "$__arg1" 2> /dev/null #TO ADD IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		else
+			curl -T /etc/config/cwmp -u $__arg3:$__arg4 "$__arg1" 2> /dev/null #TO ADD IBH
+			if [ "$?" != "0" ];then
+				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
+				icwmp_fault_output "" "$fault_code"
+				return 1
+			fi
+		fi		
+	fi
 	if [ "$action" = "apply_download" ]; then
 		case "$__arg1" in
 			1) icwmp_apply_firmware ;;
-			2) icwmp_apply_web_content ;;
-			3) icwmp_apply_vendor_configuration ;;
+			2)
+				if [ "$__arg2" != "0" ]; then 
+					icwmp_apply_web_content $__arg2
+				else
+					icwmp_apply_web_content
+				fi
+			;;
+			3) 
+				if [ "$__arg2" != "0" ]; then 
+					icwmp_apply_vendor_configuration $__arg2
+				else
+					icwmp_apply_vendor_configuration
+				fi
+			;;
 		esac
 	fi
 
+	if [ "$action" = "apply_du_download" ]; then
+		case "$__arg1" in
+			install)	icwmp_install_package ;;
+			update)		icwmp_update_package ;;
+		esac
+	fi
 	if [ "$action" = "factory_reset" ]; then
 		jffs2_mark_erase "rootfs_data"
 		sync
@@ -320,7 +405,21 @@ handle_action() {
 					json_get_var __arg3 type
 					json_get_var __arg4 user
 					json_get_var __arg5 pass
+					json_get_var __arg6 id
 					action="download"
+					;;
+				du_download)
+					json_get_var __arg1 url
+					json_get_var __arg2 user
+					json_get_var __arg3 pass
+					action="du_download"
+					;;
+				upload)
+					json_get_var __arg1 url
+					json_get_var __arg2 type
+					json_get_var __arg3 user
+					json_get_var __arg4 pass
+					action="upload"
 					;;
 				factory_reset)
 					action="factory_reset"
@@ -336,7 +435,11 @@ handle_action() {
 						action="apply_value"
 					elif [ "$action" = "download" ]; then
 						json_get_var __arg1 arg
+						json_get_var __arg2 id
 						action="apply_download"
+					elif [ "$action" = "du_download" ]; then
+						json_get_var __arg1 arg
+						action="apply_du_download"
 					else
 						json_get_var __arg1 arg
 						action="apply_value"

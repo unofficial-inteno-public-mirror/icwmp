@@ -10,14 +10,28 @@
 #ifndef _FREECWMP_MESSAGES_H__
 #define _FREECWMP_MESSAGES_H__
 
+#define CWMP_LWNOTIFICATION_MESSAGE \
+"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"								\
+"<Notification "											\
+	"xmlns=\"urn:broadband-forum-org:cwmp:lwnotif-1-0\" " 						\
+	"xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" "						\
+	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "					\
+	"xsi:schemaLocation=\"urn:broadband-forum-org:cwmp:lwnotif-1-0 "				\
+	"http://www.broadband-forum.org/cwmp/cwmp-UDPLightweightNotification-1-0.xsd\">" 		\
+	"<TS/>" 											\
+	"<UN/>"												\
+	"<CN/>"												\
+	"<OUI/>"											\
+	"<ProductClass/>"										\
+	"<SerialNumber/>"										\
+"</Notification>"
 #define CWMP_INFORM_MESSAGE \
 "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"							\
 "<soap_env:Envelope "												\
 	"xmlns:soap_env=\"http://schemas.xmlsoap.org/soap/envelope/\" "						\
 	"xmlns:soap_enc=\"http://schemas.xmlsoap.org/soap/encoding/\" "						\
 	"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "							\
-	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "						\
-	"xmlns:cwmp=\"urn:dslforum-org:cwmp-1-2\">"								\
+	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" >"						\
         "<soap_env:Header>"											\
 		"<cwmp:ID soap_env:mustUnderstand=\"1\"/>"							\
 	"</soap_env:Header>"											\
@@ -45,8 +59,7 @@
 	"xmlns:soap_env=\"http://schemas.xmlsoap.org/soap/envelope/\" "	\
 	"xmlns:soap_enc=\"http://schemas.xmlsoap.org/soap/encoding/\" "	\
 	"xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" "		\
-	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" "	\
-	"xmlns:cwmp=\"urn:dslforum-org:cwmp-1-2\">"			\
+	"xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">"	\
 	"<soap_env:Header>"						\
 		"<cwmp:ID soap_env:mustUnderstand=\"1\"/>"		\
 	"</soap_env:Header>"						\

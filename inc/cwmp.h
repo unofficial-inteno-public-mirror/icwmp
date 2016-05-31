@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <microxml.h>
 #include <libubox/list.h>
+#include <strophe.h>
 
 #define MAX_EVENTS							64
 #define MAX_INT32							2147483646
@@ -29,7 +30,14 @@
 #define CONNECTION_REQUEST_RESTRICT_PERIOD	5
 #define CONNECTION_REQUEST_RESTRICT_REQUEST	50
 #define DEFAULT_CONNECTION_REQUEST_PORT		7547
-
+#define DEFAULT_LWN_PORT                    7547 
+#define DEFAULT_RETRY_MINIMUM_WAIT_INTERVAL 5
+#define DEFAULT_RETRY_INITIAL_INTERVAL		60
+#define DEFAULT_RETRY_INTERVAL_MULTIPLIER	2000
+#define DEFAULT_RETRY_MAX_INTERVAL			60
+#define DEFAULT_AMD_VERSION                 2
+#define DEFAULT_INSTANCE_MODE               0
+#define DEFAULT_SESSION_TIMEOUT				60
 #define DEFAULT_ACSURL						"http://192.168.1.1:8080/openacs/acs"
 #define UCI_DHCP_DISCOVERY_PATH				"cwmp.acs.dhcp_discovery"
 #define UCI_DHCP_ACS_URL_PATH				"cwmp.acs.dhcp_url_path"
@@ -43,6 +51,9 @@
 #define UCI_ACS_SSL_CAPATH					"cwmp.acs.ssl_capath"
 #define UCI_ACS_INSECURE_ENABLE				"cwmp.acs.insecure_enable" 
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
+#define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
+#define UCI_ACS_RETRY_MIN_WAIT_INTERVAL		"cwmp.acs.retry_min_wait_interval"
+#define UCI_ACS_RETRY_INTERVAL_MULTIPLIER	"cwmp.acs.retry_interval_multiplier"
 #define UCI_LOG_SEVERITY_PATH				"cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH					"cwmp.cpe.userid"
 #define UCI_CPE_PASSWD_PATH					"cwmp.cpe.passwd"
@@ -53,8 +64,20 @@
 #define UCI_CPE_LOG_MAX_SIZE				"cwmp.cpe.log_max_size"
 #define UCI_CPE_ENABLE_STDOUT_LOG			"cwmp.cpe.log_to_console"
 #define UCI_CPE_ENABLE_FILE_LOG				"cwmp.cpe.log_to_file"
+#define UCI_CPE_AMD_VERSION					"cwmp.cpe.amd_version"
+#define UCI_CPE_INSTANCE_MODE				"cwmp.cpe.instance_mode"
+#define UCI_CPE_SESSION_TIMEOUT				"cwmp.cpe.session_timeout"
 #define DM_SOFTWARE_VERSION_PATH			"InternetGatewayDevice.DeviceInfo.SoftwareVersion"
+#define LW_NOTIFICATION_ENABLE              "cwmp.lwn.enable"
+#define LW_NOTIFICATION_HOSTNAME            "cwmp.lwn.hostname"
+#define LW_NOTIFICATION_PORT                "cwmp.lwn.port"
+#define UCI_DHCP_ACS_URL					"provisioning.iup.urlcwmp"
 
+#define UCI_XMPP_ENABLE		                "cwmp.xmpp.enable"
+#define UCI_XMPP_CONNECTION_ID				"cwmp.xmpp.id"
+#define UCI_XMPP_ALLOWED_JID				"cwmp.xmpp.allowed_jid"
+#define XMPP_CR_NS							"urn:broadband-forum-org:cwmp:xmppConnReq-1-0"
+#define XMPP_ERROR_NS						"urn:ietf:params:xml:ns:xmpp-stanzas"
 
 enum end_session {
 	END_SESSION_REBOOT = 1,
@@ -100,11 +123,25 @@ enum event_idx_enum {
 	EVENT_IDX_8DIAGNOSTICS_COMPLETE,
 	EVENT_IDX_9REQUEST_DOWNLOAD,
 	EVENT_IDX_10AUTONOMOUS_TRANSFER_COMPLETE,
+	EVENT_IDX_11DU_STATE_CHANGE_COMPLETE,
 	EVENT_IDX_M_Reboot,
 	EVENT_IDX_M_ScheduleInform,
 	EVENT_IDX_M_Download,
+	EVENT_IDX_M_Schedule_Download,
 	EVENT_IDX_M_Upload,
+	EVENT_IDX_M_ChangeDUState,
 	__EVENT_IDX_MAX
+};
+enum http_compression {
+    COMP_NONE,
+    COMP_GZIP,
+    COMP_DEFLATE
+};
+
+enum xmpp_cr_error {
+	XMPP_CR_NO_ERROR = 0,
+	XMPP_SERVICE_UNAVAILABLE,
+	XMPP_NOT_AUTHORIZED
 };
 
 typedef struct event_container {
@@ -137,9 +174,22 @@ typedef struct config {
     char                                *ubus_socket;
     int                                 connection_request_port;
     int                                 period;
+    int                                 compression;
     time_t                              time;
     bool                                periodic_enable;
     bool                                insecure_enable;
+	int 								retry_min_wait_interval;
+    int 								retry_interval_multiplier;
+	bool                                lw_notification_enable;
+    char                                *lw_notification_hostname;
+    int                                 lw_notification_port;
+    unsigned int 						amd_version;
+	unsigned int 						supported_amd_version;
+    unsigned int 						instance_mode;
+	unsigned int 						session_timeout;
+	bool								xmpp_enable;
+	int									xmpp_connection_id;
+	char								*xmpp_allowed_jid;
 } config;
 
 typedef struct env {
@@ -178,10 +228,26 @@ struct deviceid {
 	char *softwareversion;
 };
 
+struct xmpp_param {
+	bool xmpp_server_enable;
+	char *allowed_jid;
+	char *local_jid;
+	char *username;
+	char *password;
+	char *domain;
+	char *ressource;
+	int keepalive_interval;
+	int connect_attempt;
+	int retry_initial_interval;
+	int retry_interval_multiplier;
+	int retry_max_interval;	
+};
+
 typedef struct cwmp {
     struct env			env;
     struct config		conf;
     struct deviceid		deviceid;
+	struct xmpp_param	xmpp_param;
     struct list_head	head_session_queue;
     pthread_mutex_t		mutex_session_queue;
     struct session		*session_send;
@@ -199,6 +265,8 @@ typedef struct cwmp {
     struct session_status session_status;
     unsigned int cwmp_id;
     int cr_socket_desc;
+	xmpp_ctx_t 			*xmpp_ctx;
+	xmpp_conn_t 		*xmpp_conn;
 } cwmp;
 
 typedef struct session {
@@ -228,6 +296,7 @@ typedef struct rpc {
 
 extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
+extern struct list_head list_lw_value_change;
 extern struct list_head list_value_change;
 extern pthread_mutex_t mutex_value_change;
 
@@ -249,5 +318,6 @@ void connection_request_port_value_change(struct cwmp *cwmp, int port);
 void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type);
 void cwmp_set_end_session (unsigned int end_session_flag);
 void *thread_handle_notify(void *v);
+int zlib_compress (char *message, unsigned char **zmsg, int *zlen, int type);
 
 #endif /* _CWMP_H__ */

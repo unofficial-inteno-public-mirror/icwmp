@@ -8,6 +8,12 @@ config 'cwmp' 'acs'
 	option 'ParameterKey' ''
 	option 'dhcp_discovery' 'enable'
 	option 'dhcp_url_path' 'provisioning.iup.urlcwmp'
+	# compression possible configs: GZIP, Deflate, Disabled
+	option compression 'Disabled'
+	#­ possible configs interval :[1:65535]
+	option retry_min_wait_interval '5'
+	#­ possible configs interval :[1000:65535]
+	option retry_interval_multiplier '2000'
 
 config 'cwmp' 'cpe'
 	option 'interface' 'eth0.1'
@@ -25,5 +31,25 @@ config 'cwmp' 'cpe'
 	option 'port' '7547'
 	option 'ubus_socket' '/var/run/ubus.sock'
 	option provisioning_code ''
-	option specversion '1.0'
+	option amd_version '2'
+	# compression possible configs: InstanceNumber, InstanceAlias
+	option instance_mode 'InstanceAlias'
+	option session_timeout '60'
+config 'cwmp' 'lwn'
+	option enable '1'
+	option hostname ''
+	option port ''
 
+config 'cwmp' 'xmpp'
+	option enable '0'
+	option id '0'
+	option allowed_jid ''
+
+config xmpp_connection
+	option connection_instance '1'
+	option enable '0'
+	option username 'cpe'
+	option password 'pass'
+	option domain 	''
+	option resource 'icwmp'
+	option interval '300'

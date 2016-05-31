@@ -56,7 +56,19 @@ struct ldwlanargs
 
 struct ldethargs
 {
+	struct uci_section *lan_ethsection;
 	char *eth;
+};
+
+struct wlan_psk
+{
+	struct uci_section *wlanpsk;
+};
+
+struct wlan_wep
+{
+	struct uci_section *wlanwep;
+	unsigned int key_index;
 };
 
 int entry_method_root_LANDevice(struct dmctx *ctx);

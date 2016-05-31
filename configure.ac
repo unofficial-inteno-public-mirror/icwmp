@@ -2,6 +2,8 @@ AC_INIT([icwmp], [0.1], [mohamed.kallel@pivasoftware.com])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([cwmp.c])
 
+AM_INIT_AUTOMAKE([subdir-objects])
+
 # additional options
 
 AC_ARG_ENABLE(acs, [AS_HELP_STRING([--enable-acs],
@@ -14,6 +16,12 @@ AS_IF([test "x$enable_acs" = "xmulti"], [AC_DEFINE(ACS_MULTI)])
 AS_IF([test "x$enable_acs" = "xyes"], [AC_DEFINE(ACS_MULTI)])
 AS_IF([test "x$enable_acs" = "xno"], [AC_DEFINE(ACS_MULTI)])
 
+AC_ARG_ENABLE(datamodel, [AS_HELP_STRING([--enable-datamodel],
+	[specify which Data Model will be used; (default --enable-datamodel=tr098]))],,)
+
+AM_CONDITIONAL([DATAMODEL_TR098], [test "x$enable_datamodel" = "xtr098" ])
+AM_CONDITIONAL([DATAMODEL_TR181], [test "x$enable_datamodel" = "xtr181" ])
+
 AC_ARG_ENABLE(http, [AS_HELP_STRING([--enable-http],
 	[specify which HTTP library is going to be used; one can choose from zstream and curl (default --enable-http=curl]))],,)
 
@@ -24,6 +32,11 @@ AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug], [enable debugging message
 AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel], [enable development messages])], AC_DEFINE(WITH_DEV_DEBUG),)
 AC_ARG_ENABLE(dummy_mode, [AS_HELP_STRING([--enable-dummy-mode], [enable dummy mode])], AC_DEFINE(DUMMY_MODE),)
 
+AC_ARG_ENABLE(xmpp, [AS_HELP_STRING([--enable-xmpp],
+	[enable xmpp; (default --enable-xmpp=disable]))],,)
+
+AM_CONDITIONAL([XMPP_DISABLE], [test "x$enable_xmpp" = "xdisable" ])
+AM_CONDITIONAL([XMPP_ENABLE], [test "x$enable_xmpp" = "xenable" ])
 # checks for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -32,6 +45,11 @@ AM_PROG_CC_C_O
 LIBPTHREAD_LIBS='-lpthread'
 AC_SUBST([LIBPTHREAD_LIBS])
 
+LIBZ_LIBS='-lz'
+AC_SUBST([LIBZ_LIBS])
+
+LIBM_LIBS='-lm'
+AC_SUBST([LIBM_LIBS])
 LIBJSON_LIBS='-ljson-c'
 AC_SUBST([LIBJSON_LIBS])
 
@@ -77,6 +95,30 @@ AC_SUBST([LIBUBUS_LIBS])
 LBLOBMSG_LIBS='-lblobmsg_json'
 AC_SUBST([LBLOBMSG_LIBS])
 
+LCRYPTO_LIBS='-lcrypto'
+AC_SUBST([LCRYPTO_LIBS])
+
+LIBSTROPHE_LIBS='-lstrophe'
+AC_SUBST([LIBSTROPHE_LIBS])
+
+LSSL_LIBS='-lssl'
+AC_SUBST([LSSL_LIBS])
+
+AM_COND_IF([DATAMODEL_TR098], [
+ AC_DEFINE(DATAMODEL_TR098)
+])
+
+AM_COND_IF([DATAMODEL_TR181], [
+ AC_DEFINE(DATAMODEL_TR181)
+])
+
+AM_COND_IF([XMPP_DISABLE], [
+ AC_DEFINE(XMPP_DISABLE)
+])
+
+AM_COND_IF([XMPP_ENABLE], [
+ AC_DEFINE(XMPP_ENABLE)
+])
 AM_COND_IF([HTTP_CURL], [
  AC_DEFINE(HTTP_CURL)
  PKG_CHECK_MODULES(LIBCURL, [libcurl])

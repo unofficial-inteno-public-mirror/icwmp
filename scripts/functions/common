@@ -8,11 +8,20 @@ icwmp_fault_output() {
 	
 	local MSG=""
 	local fault_code="$2"
-
+	if [ "$action" = "apply_du_download" ] 
+	then
+		local package_name="$3"
+		local package_version="$4"
+	fi
 	case "$action" in
 		*download)
 		json_init
 		json_add_string "fault_code" "$fault_code"
+		if [ "$#" = "4" ] 
+		then 
+			json_add_string "package_name" "$package_name"
+			json_add_string "package_version" "$package_version" 
+		fi
 		json_close_object
 		MSG=`json_dump`
 		;;
@@ -90,11 +99,49 @@ icwmp_apply_web_content()
 	fi
 }
 
+icwmp_install_package()
+{
+	local fault_code="9000"
+	
+	var=`/bin/opkg install /tmp/du_change_state.ipk`
+
+	if [ "$?" != "0" ];then
+		rm /tmp/du_change_state.ipk 2> /dev/null
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+		icwmp_fault_output "" "$fault_code"
+   else
+   		name="`expr "$var" : 'Installing \([^(]*\)'`"
+		version="`expr "$var" : 'Installing [^(]*(\(.*\))'`"
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT" "$name" "$version"
+	fi
+}
+
+icwmp_update_package()
+{
+	local fault_code="9000"
+	
+	/bin/opkg install /tmp/du_change_state.ipk
+	if [ "$?" != "0" ];then
+		rm /tmp/du_change_state.ipk 2> /dev/null
+		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
+		icwmp_fault_output "" "$fault_code"
+   else
+		icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
+	fi
+}
+
 icwmp_apply_vendor_configuration()
 {
 	local fault_code="9000"
 	
-	/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /tmp/vendor_configuration_file.cfg
+	local current_file="/tmp/vendor_configuration_file.cfg"
+	if [ $# -eq 0 ]; then
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /tmp/vendor_configuration_file.cfg		
+	else
+		current_file="/etc/vendor_configuration_file_$1.cfg"
+		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q import < /etc/vendor_configuration_file_$1.cfg
+		rm "$current_file" 2> /dev/null
+	fi
 	if [ "$?" = "0" ];then
 		/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -q commit
 		if [ "$?" != "0" ];then
@@ -106,7 +153,9 @@ icwmp_apply_vendor_configuration()
 			reboot
 		fi
 	else
-		rm /tmp/vendor_configuration_file.cfg 2> /dev/null
+		if [ -f "$current_file" ]; then
+			rm "$current_file" 2> /dev/null;
+		fi
 		let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAIL_FILE_CORRUPTED
 		icwmp_fault_output "" "$fault_code"
 	fi
