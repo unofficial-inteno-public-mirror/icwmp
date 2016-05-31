@@ -235,18 +235,18 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 	if (!strlen(*msg_in))
 		FREE(*msg_in);
 
-	curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
-	if (ip && ip[0] != '\0') {
-		if (!ip_acs || strcmp(ip_acs, ip) != 0) {
-			FREE(ip_acs);
-			ip_acs = strdup(ip);
-			external_init();
-			external_simple("allow_cr_ip", ip_acs);
-			external_exit();
-		}
-	}
+    curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+    if (ip && ip[0] != '\0') {
+        if (!ip_acs || strcmp(ip_acs, ip) != 0) {
+            FREE(ip_acs);
+            ip_acs = strdup(ip);
+            external_init();
+            external_simple("allow_cr_ip", ip_acs);
+            external_exit();
+        }
+    }
 
-	curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 	if(http_code == 204)
 	{
 		CWMP_LOG (INFO,"Receive HTTP 204 No Content");

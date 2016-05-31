@@ -721,7 +721,7 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 				}
 			} else {
 				pch = strtok_r(ltime, "s", &spch);
-	if (strcmp(pch, ltime_ini) != 0)
+				if (strcmp(pch, ltime_ini) != 0)
 				mtime +=  atoi(pch);
 			}
 		}
@@ -729,7 +729,7 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 	else {
 		pch = strtok_r(ltime, "m", &spch);
 		if (strcmp(pch, ltime_ini) != 0) {
-		mtime += 60 * atoi(pch);
+			mtime += 60 * atoi(pch);
 			if(spch[0] !='\0') {
 				ltime += strlen(pch)+1;
 				ltime_ini += strlen(pch)+1;

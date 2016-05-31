@@ -410,8 +410,8 @@ int event_remove_noretry_event_container(struct session *session)
 {
 	struct event_container              *event_container;
 	struct dm_parameter                 *dm_parameter;
-	struct list_head *ilist, *q;
 
+	struct list_head *ilist, *q;
 	list_for_each_safe(ilist,q,&(session->head_event_container))
 	{
 		event_container = list_entry(ilist, struct event_container, list);
