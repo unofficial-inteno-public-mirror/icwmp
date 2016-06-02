@@ -2,17 +2,24 @@
 
 
 # USAGE:
-# ./generate_xml.sh <scripts path> <product class> <device protocol> <model name> <software version>
+# ./generate_xml.sh <data model> <scripts path> <product class> <device protocol> <model name> <software version>
 # If the input arguments are empty, then use the default values:
-SCRIPTS_PATH=${1:-"/home/anis/iop-aa/package/icwmp/src/dm/dmtree/"}
-PRODUCT_CLASS=${2:-"DG301-W7P2U"}
-DEVICE_PROTOCOL=${3:-"DEVICE_PROTOCOL_DSLFTR069v1"}
-MODEL_NAME=${4:-"DG301-W7P2U"}
-SOFTWARE_VERSION=${5:-"1.2.3.4B"}
+DATA_MODEL=${1:-"tr098"}
+SCRIPTS_PATH=${2:-"/home/piva/iop-bb/feeds/feed_inteno_packages/icwmp/src/dm/dmtree/"}
+PRODUCT_CLASS=${3:-"DG301-W7P2U"}
+DEVICE_PROTOCOL=${4:-"DEVICE_PROTOCOL_DSLFTR069v1"}
+MODEL_NAME=${5:-"DG301-W7P2U"}
+SOFTWARE_VERSION=${6:-"1.2.3.4B"}
 cnt_obj=0
 cnt_param=0
+SCRIPTS_PATH_COMMON=${SCRIPTS_PATH}/"common/"
+SCRIPTS_PATH=${SCRIPTS_PATH}/${DATA_MODEL}
 
+if [ "$DATA_MODEL" == "tr098" ]; then
 ROOT_PATH="InternetGatewayDevice."
+else
+	ROOT_PATH="Device."
+fi
 # Funtcions
 # Check if object of parameters or get none in case of object contains an intance
 is_object() {
@@ -163,13 +170,17 @@ echo "Start Generation of inteno.xml"
 
 EXEC_PATH=`pwd`
 SCRIPTS_LIST_FILE="$EXEC_PATH/script_list.txt"
+echo "" > $SCRIPTS_LIST_FILE
 # Extract object and parameter list from scripts
 list=`ls $SCRIPTS_PATH |grep -v "common"`
 cd $SCRIPTS_PATH
 
 cat `echo $list` | grep "DMOBJECT\|DMPARAM" |grep -v "^\\s*#" |sed 's/^[ \t]*//' |awk -F '[(,)]' '{type=""; { if($1=="DMOBJECT") { type = "object"; obj_name = $2; print $1 " " $2;} else {if($7 ~ /xsd:/) {print $1 " " obj_name$2 " " $7;} else {print $1 " " obj_name$2;}} } }' | awk '{print $1","$2","$3}' | sort -t, -k2 | sed -e "s|.\%|.#|g" | sed -e "s|\"||g" | sed -e "s|DMROOT|$ROOT_PATH|g" > $SCRIPTS_LIST_FILE
 
+list=`ls $SCRIPTS_PATH_COMMON |grep -v "common"`
+cd $SCRIPTS_PATH_COMMON
 
+cat `echo $list` | grep "DMOBJECT\|DMPARAM" |grep -v "^\\s*#" |sed 's/^[ \t]*//' |awk -F '[(,)]' '{type=""; { if($1=="DMOBJECT") { type = "object"; obj_name = $2; print $1 " " $2;} else {if($7 ~ /xsd:/) {print $1 " " obj_name$2 " " $7;} else {print $1 " " obj_name$2;}} } }' | awk '{print $1","$2","$3}' | sort -t, -k2 | sed -e "s|.\%|.#|g" | sed -e "s|\"||g" | sed -e "s|DMROOT|$ROOT_PATH|g" >> $SCRIPTS_LIST_FILE
 cd $EXEC_PATH
 
 echo "" > tmp.txt
