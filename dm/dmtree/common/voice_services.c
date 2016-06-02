@@ -2011,6 +2011,7 @@ inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char 
 		init_line_code_args(ctx, i, brcmargs->sip_section, code_sec);
 		id = handle_update_instance(4, ctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
 		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, id);
+		i++;
 	}
 	return 0;
 }
