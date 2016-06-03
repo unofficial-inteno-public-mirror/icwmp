@@ -22,11 +22,20 @@
 #include "ippingdiagnostics.h"
 #include "ipping.h"
 
+static inline char *ipping_get(char *option, char *def)
+{
+	char *tmp;
+	dmuci_get_varstate_string("cwmp", "@ippingdiagnostic[0]", option, &tmp);
+	if(tmp && tmp[0] == '\0')
+		return dmstrdup(def);
+	else
+		return tmp;
+}
 int get_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.state;
+	*value = ipping_get("DiagnosticState", "None");
 	return 0;
-}	
+}
 
 int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value)
 {
@@ -35,7 +44,8 @@ int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, 
 			return 0;
 		case VALUESET:
 			if (strcmp(value, "Requested") == 0) {
-				ipping_diagnostic.state = set_ping_diagnostic(ipping_diagnostic.state, value);
+				IPPING_STOP
+				dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "DiagnosticState", value);
 				cwmp_set_end_session(END_SESSION_IPPING_DIAGNOSTIC);
 			}				
 			return 0;
@@ -45,7 +55,7 @@ int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, 
 
 int get_ipping_interface(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.interface;
+	dmuci_get_varstate_string("cwmp", "@ippingdiagnostic[0]", "interface", value);	
 	return 0;
 }
 
@@ -54,8 +64,9 @@ int set_ipping_interface(char *refparam, struct dmctx *ctx, int action, char *va
 	switch (action) {
 		case VALUECHECK:
 			return 0;
-		case VALUESET:			
-			ipping_diagnostic.interface = set_ping_diagnostic(ipping_diagnostic.interface, value);			
+		case VALUESET:
+			//IPPING_STOP
+			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "interface", value);
 			return 0;
 	}
 	return 0;
@@ -64,7 +75,7 @@ int set_ipping_interface(char *refparam, struct dmctx *ctx, int action, char *va
 int get_ipping_host(char *refparam, struct dmctx *ctx, char **value)
 {
 
-	*value = ipping_diagnostic.host;
+	dmuci_get_varstate_string("cwmp", "@ippingdiagnostic[0]", "Host", value);
 	return 0;
 }
 
@@ -75,7 +86,8 @@ int set_ipping_host(char *refparam, struct dmctx *ctx, int action, char *value)
 			return 0;
 		case VALUESET:
 			TRACE();	
-			ipping_diagnostic.host = set_ping_diagnostic(ipping_diagnostic.host, value);
+			IPPING_STOP
+			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "Host", value);
 			TRACE();
 			return 0;
 	}
@@ -84,7 +96,7 @@ int set_ipping_host(char *refparam, struct dmctx *ctx, int action, char *value)
 
 int get_ipping_repetition_number(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.repetition;
+	*value = ipping_get("NumberOfRepetitions", "3");
 	return 0;
 }
 
@@ -95,7 +107,8 @@ int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, int action, 
 		case VALUECHECK:
 			return 0;
 		case VALUESET:			
-			ipping_diagnostic.repetition = set_ping_diagnostic(ipping_diagnostic.repetition, value);
+			IPPING_STOP
+			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "NumberOfRepetitions", value);
 			return 0;
 	}
 	return 0;
@@ -104,7 +117,7 @@ int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, int action, 
 int get_ipping_timeout(char *refparam, struct dmctx *ctx, char **value)
 {
 	
-	*value = ipping_diagnostic.timeout;	
+	*value = ipping_get("Timeout", "1000");	
 	return 0;
 }
 
@@ -114,8 +127,9 @@ int set_ipping_timeout(char *refparam, struct dmctx *ctx, int action, char *valu
 	switch (action) {
 		case VALUECHECK:
 			return 0;
-		case VALUESET:			
-			ipping_diagnostic.timeout = set_ping_diagnostic(ipping_diagnostic.timeout, value);
+		case VALUESET:
+			IPPING_STOP
+			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "Timeout", value);
 			return 0;
 	}
 	return 0;
@@ -123,7 +137,7 @@ int set_ipping_timeout(char *refparam, struct dmctx *ctx, int action, char *valu
 
 int get_ipping_block_size(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.size;
+	*value = ipping_get("DataBlockSize", "64");
 	
 	return 0;
 }
@@ -133,42 +147,43 @@ int set_ipping_block_size(char *refparam, struct dmctx *ctx, int action, char *v
 	switch (action) {
 		case VALUECHECK:
 			return 0;
-		case VALUESET:			
-			ipping_diagnostic.size = set_ping_diagnostic(ipping_diagnostic.size, value);
+		case VALUESET:
+			IPPING_STOP
+			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "DataBlockSize", value);
 	}
 	return 0;
 }
 
 int get_ipping_success_count(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.success_count;
+	*value = ipping_get("SuccessCount", "0");
 	
 	return 0;
 }
 
 int get_ipping_failure_count(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.failure_count;
+	*value = ipping_get("FailureCount", "0");
 	
 	return 0;
 }
 
 int get_ipping_average_response_time(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.average_response_time;	
+	*value = ipping_get("AverageResponseTime", "0");
 	return 0;
 }
 
 int get_ipping_min_response_time(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.minimum_response_time;
+	*value = ipping_get("MinimumResponseTime", "0");
 	
 	return 0;
 }
 
 int get_ipping_max_response_time(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = ipping_diagnostic.maximum_response_time;
+	*value = ipping_get("MaximumResponseTime", "0");	
 	
 	return 0;
 }

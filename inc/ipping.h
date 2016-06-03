@@ -10,24 +10,7 @@
 #ifndef __IPPING__H
 #define __IPPING__H
 
-struct ip_ping_diagnostic {
-    char *state;
-    char *interface;
-    char *host;
-    char *repetition;
-    char *timeout;
-    char *size;
-    //char *dscp
-    char *success_count;
-    char *failure_count;
-    char *average_response_time;
-    char *minimum_response_time;
-    char *maximum_response_time;  
-};
-
-int init_ipping_diagnostic();
-int exit_ipping_diagnostic();
+#define FUNCTION_PATH "/usr/share/icwmp/functions/ipping_launch"
+#define IPPING_STOP DMCMD("/bin/sh", 2, FUNCTION_PATH, "stop");
 int cwmp_ip_ping_diagnostic();
-char *set_ping_diagnostic(char *param, char *value);
-
 #endif

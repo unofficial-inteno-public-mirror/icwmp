@@ -23,6 +23,40 @@
 struct uci_context *uci_ctx;
 struct uci_context *uci_varstate_ctx;
 
+struct uci_section *dmuci_walk_state_section (char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk) {
+	struct uci_section *s = NULL;
+	struct uci_element *e, *m;
+	char *value, *dup;
+	char *pch, *spch;
+	struct uci_list *list_value, *list_section;
+	struct uci_ptr ptr = {0};
+	if (walk == GET_FIRST_SECTION) {
+		if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, NULL, NULL, NULL) != UCI_OK) {
+			goto end;
+		}
+		list_section = &(ptr.p)->sections;
+		e = list_to_element(list_section->next);
+	}
+	else {
+		list_section = &prev_section->package->sections;
+		e = list_to_element(prev_section->e.list.next);
+	}
+	while(&e->list != list_section) {
+		s = uci_to_section(e);
+		if (strcmp(s->type, stype) == 0) {
+			switch(cmp) {
+				case CMP_SECTION:
+					goto end;
+				default:
+					break;
+			}
+		}
+		e = list_to_element(e->list.next);
+		s = NULL;
+	}
+end:
+	return s;
+}
 char *dmuci_list_to_string(struct uci_list *list, char *delimitor)
 {
 	struct uci_element *e = NULL;
@@ -385,6 +419,33 @@ char *dmuci_set_value(char *package, char *section, char *option, char *value)
 	return "";
 }
 
+char *dmuci_set_varstate_value(char *package, char *section, char *option, char *value)
+{
+	char *tmp = {0};	
+	struct uci_option *o;
+	struct uci_ptr ptr = {0};
+	uci_add_delta_path(uci_varstate_ctx, uci_varstate_ctx->savedir);
+	uci_set_savedir(uci_varstate_ctx, VARSTATE_CONFIG);
+	struct uci_section *curr_section = NULL;
+	
+	curr_section = dmuci_walk_state_section(package, "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+	if(!curr_section)
+	{
+		dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+	}
+
+	if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, section, option, value)) {
+		return "";
+	}
+	if (uci_set(uci_varstate_ctx, &ptr) != UCI_OK) {
+		return "";
+	}
+	uci_save(uci_varstate_ctx, ptr.p);
+	if (ptr.o) {
+		return dmstrdup(ptr.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
+	}
+	return "";
+}
 /**** UCI ADD LIST *****/
 int dmuci_add_list_value(char *package, char *section, char *option, char *value)
 {
@@ -429,6 +490,23 @@ int dmuci_add_section(char *package, char *stype, struct uci_section **s, char *
 		return -1;
 	}
 
+	*value = dmstrdup((*s)->e.name); // MEM WILL BE FREED IN DMMEMCLEAN
+	return 0;
+}
+
+int dmuci_add_state_section(char *package, char *stype, struct uci_section **s, char **value)
+{
+	struct uci_ptr ptr = {0};
+	*s = NULL;
+
+	if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, NULL, NULL, NULL)) {
+		*value = "";
+		return -1;
+	}
+	if (uci_add_section(uci_varstate_ctx, ptr.p, stype, s) != UCI_OK) {
+		*value = "";
+		return -1;
+	}
 	*value = dmstrdup((*s)->e.name); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }

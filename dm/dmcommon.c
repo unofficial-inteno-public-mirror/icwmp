@@ -269,6 +269,33 @@ int dmcmd(char *cmd, int n, ...)
 	return dmcmd_pfds[0];
 }
 
+int dmcmd_no_wait(char *cmd, int n, ...)
+{
+	va_list arg;
+	int i, pid;
+	static int dmcmd_pfds[2];
+	char *argv[n+2];
+
+	argv[0] = cmd;
+	va_start(arg,n);
+	for (i=0; i<n; i++)
+	{
+		argv[i+1] = strdup(va_arg(arg, char*));
+	}
+	va_end(arg);
+
+	argv[n+1] = NULL;
+
+	if ((pid = fork()) == -1)
+		return -1;
+
+	if (pid == 0) {
+		execvp(argv[0], (char **) argv);
+		exit(ESRCH);
+	} else if (pid < 0)
+		return -1;
+	return 0;
+}
 int dmcmd_read(int pipe, char *buffer, int size)
 {
 	int rd;

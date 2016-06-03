@@ -319,5 +319,5 @@ void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *par
 void cwmp_set_end_session (unsigned int end_session_flag);
 void *thread_handle_notify(void *v);
 int zlib_compress (char *message, unsigned char **zmsg, int *zlen, int type);
-
+int cwmp_get_int_event_code(char *code);
 #endif /* _CWMP_H__ */

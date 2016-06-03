@@ -230,11 +230,13 @@ cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
 
 enum enum_inform {
 	INFORM_GET_RPC_METHODS,
+	INFORM_EVENT,
 	__INFORM_MAX
 };
 
 static const struct blobmsg_policy inform_policy[] = {
 	[INFORM_GET_RPC_METHODS] = { .name = "GetRPCMethods", .type = BLOBMSG_TYPE_BOOL },
+	[INFORM_EVENT] = { .name = "event", .type = BLOBMSG_TYPE_STRING },
 };
 
 static int
@@ -244,6 +246,7 @@ cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
 {
     struct blob_attr *tb[__INFORM_MAX];
     bool grm = false;
+    char *event = "";
     struct event_container  *event_container;
     struct session          *session;
 
@@ -254,6 +257,9 @@ cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
 
 	if (tb[INFORM_GET_RPC_METHODS]) {
 		grm = blobmsg_data(tb[INFORM_GET_RPC_METHODS]);
+	}
+	if (tb[INFORM_EVENT]) {
+		event = blobmsg_data(tb[INFORM_EVENT]);
 	}
 	if (grm) {
 		pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
@@ -276,15 +282,17 @@ cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
 		blobmsg_add_string(&b, "info", "Session with GetRPCMethods will start");
 	}
 	else {
+		int event_code = cwmp_get_int_event_code(event);
+		pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
+		cwmp_add_event_container (&cwmp_main, event_code, "");
+		pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
+		pthread_cond_signal(&(cwmp_main.threshold_session_send));
 		if (cwmp_main.session_status.last_status == SESSION_RUNNING) {
 			blobmsg_add_u32(&b, "status", -1);
-			blobmsg_add_string(&b, "info", "Session already running");
+			blobmsg_add_string(&b, "info", "Session already running, event will be sent at the end of the session");
 		}
-		else {
-			pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
-			cwmp_add_event_container (&cwmp_main, EVENT_IDX_6CONNECTION_REQUEST, "");
-			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
-			pthread_cond_signal(&(cwmp_main.threshold_session_send));
+		else
+		{
 			blobmsg_add_u32(&b, "status", 1);
 			blobmsg_add_string(&b, "info", "Session started");
 		}

@@ -30,6 +30,29 @@
  
 struct cwmp         	cwmp_main = {0};
 
+int cwmp_get_int_event_code(char *code)
+{
+	printf("code is %s\n", code);
+	if (code && code[0] == '1')
+		return EVENT_IDX_1BOOT;
+	
+	else if (code && code[0] == '2')
+		return EVENT_IDX_2PERIODIC;
+
+	else if (code && code[0] == '3')
+		return EVENT_IDX_3SCHEDULED;
+
+	else if (code && code[0] == '4')
+		return EVENT_IDX_4VALUE_CHANGE;
+
+	else if (code && code[0] == '6')
+		return EVENT_IDX_6CONNECTION_REQUEST;
+
+	else if (code && code[0] == '8')
+		return EVENT_IDX_8DIAGNOSTICS_COMPLETE;
+	else 
+		return EVENT_IDX_6CONNECTION_REQUEST;
+}
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type)
 {
     struct rpc     *rpc_acs;
@@ -587,7 +610,6 @@ int main(int argc, char **argv)
 		}
 	}
 #endif
-    init_ipping_diagnostic();
     CWMP_LOG(INFO,"STARTING ICWMP");
     cwmp->start_time = time(NULL);
 
@@ -677,7 +699,6 @@ int main(int argc, char **argv)
 		pthread_join(xmpp_client_thread, NULL);
 	cwmp_xmpp_exit();
 #endif
-    exit_ipping_diagnostic();
-	CWMP_LOG(INFO,"EXIT ICWMP");
+    CWMP_LOG(INFO,"EXIT ICWMP");
     return CWMP_OK;
 }
