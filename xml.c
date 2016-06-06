@@ -4182,7 +4182,7 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		strcmp(file_type,"2 Web Content") &&
 		strcmp(file_type,"3 Vendor Configuration File"))
 	{
-		error = FAULT_CPE_REQUEST_DENIED;
+		error = FAULT_CPE_INVALID_ARGUMENTS;
 	}
 	else if(count_download_queue>=MAX_DOWNLOAD_QUEUE)
 	{
