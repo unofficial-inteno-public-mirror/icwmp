@@ -1827,8 +1827,24 @@ bool dm_service_enable_set(void)
 void codec_update_id()
 {
 	int i = 0;
+	int found = 0;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
 	for (i = 0; i < available_sip_codecs; i++) {
 		update_section_list("dmmap","codec_id", "id", 1, allowed_sip_codecs[i].id, NULL, NULL, NULL, NULL);
+	}
+	if(i == 0)
+	{
+		uci_foreach_sections("dmmap", "codec_id", s) {
+			if (found != 0) {
+				dmuci_delete_by_section(ss, NULL, NULL);
+			}
+			ss = s;
+			found++;
+		}
+		if (ss != NULL) {
+			dmuci_delete_by_section(ss, NULL, NULL);
+		}
 	}
 }
 ////////////////////////SET AND GET ALIAS/////////////////////////////////
