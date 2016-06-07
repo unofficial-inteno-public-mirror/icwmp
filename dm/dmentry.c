@@ -119,17 +119,25 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
-			fault = dm_entry_get_value(ctx);
+			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+				fault = FAULT_9005;
+			else
+				fault = dm_entry_get_value(ctx);
 			break;
 		case CMD_GET_NAME:
-			if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
+			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+				fault = FAULT_9005;
+			else if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
 				fault = dm_entry_get_name(ctx);
 			} else {
 				fault = FAULT_9003;
 			}
 			break;
 		case CMD_GET_NOTIFICATION:
-			fault = dm_entry_get_notification(ctx);
+			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+				fault = FAULT_9005;
+			else
+				fault = dm_entry_get_notification(ctx);
 			break;
 		case CMD_SET_VALUE:
 			ctx->in_value = arg1 ? arg1 : "";
