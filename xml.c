@@ -2248,7 +2248,7 @@ int cwmp_launch_download(struct download *pdownload, struct transfer_complete **
 
     sprintf(file_size,"%d",pdownload->file_size);
     external_download(pdownload->url, file_size, pdownload->file_type,
-    		pdownload->username, pdownload->password);
+    		pdownload->username, pdownload->password, 0);
     external_handle_action(cwmp_handle_downloadFault);
     external_fetch_downloadFaultResp(&fault_code);
 
@@ -2527,7 +2527,7 @@ void *thread_cwmp_rpc_cpe_download (void *v)
                     }
                     bkp_session_insert_transfer_complete(ptransfer_complete);
                     bkp_session_save();
-                    external_apply("download", pdownload->file_type);
+                    external_apply("download", pdownload->file_type, 0);
                     external_handle_action(cwmp_handle_downloadFault);
                     external_fetch_downloadFaultResp(&fault_code);
                     if(fault_code != NULL)
@@ -2789,7 +2789,7 @@ void *thread_cwmp_rpc_cpe_schedule_download (void *v)
                     }
                     bkp_session_insert_transfer_complete(ptransfer_complete);
                     bkp_session_save();
-                    external_apply("download", current_download->file_type);
+                    external_apply("download", current_download->file_type, 0);
                     external_handle_action(cwmp_handle_downloadFault);
                     external_fetch_downloadFaultResp(&fault_code);
                     if(fault_code != NULL)
@@ -3136,7 +3136,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									res->fault = error;
 									break;
 								}
-								external_apply("du_download", "install");
+								external_apply("du_download", "install", 0);
 								external_handle_action(cwmp_handle_dustate_changeFault);
 								external_fetch_du_change_stateFaultResp(&fault_code, &package_version, &package_name);
 								if(fault_code != NULL)
@@ -3311,7 +3311,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									break;
 									break;
 								}
-								external_apply("du_download", "update");
+								external_apply("du_download", "update", 0);
 								external_handle_action(cwmp_handle_dustate_changeFault);
 								external_fetch_du_change_stateFaultResp(&fault_code, &package_version, &package_name);
 								if(fault_code != NULL)
@@ -4447,7 +4447,7 @@ int cwmp_handle_rpc_cpe_schedule_download(struct session *session, struct rpc *r
 		strcmp(file_type,"4 Tone File") &&
 		strcmp(file_type,"5 Ringer File"))
 	{
-		error = FAULT_CPE_REQUEST_DENIED;
+		error = FAULT_CPE_INVALID_ARGUMENTS;
 	}
 	else if((
 		strcmp(windowmode0,"1 At Any Time") &&

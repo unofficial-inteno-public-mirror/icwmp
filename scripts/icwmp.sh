@@ -275,7 +275,7 @@ handle_action() {
 				mv /tmp/icwmp_download /tmp/web_content.ipk 2> /dev/null
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			elif [ "$__arg3" = "3" ];then
-				if [ "$__arg6" != "0" ]; then
+				if [ "$__arg6" != "" ]; then
 					local tmp="/etc/vendor_configuration_file_${__arg6}.cfg"
 					mv /tmp/icwmp_download "$tmp" 2> /dev/null
 				else
@@ -318,7 +318,7 @@ handle_action() {
 				fi
 			;;
 			3) 
-				if [ "$__arg2" != "0" ]; then 
+				if [ "$__arg2" != "" ]; then 
 					icwmp_apply_vendor_configuration $__arg2
 				else
 					icwmp_apply_vendor_configuration
@@ -404,7 +404,7 @@ handle_action() {
 					json_get_var __arg3 type
 					json_get_var __arg4 user
 					json_get_var __arg5 pass
-					json_get_var __arg6 id
+					json_get_var __arg6 ids
 					action="download"
 					;;
 				du_download)
@@ -434,7 +434,7 @@ handle_action() {
 						action="apply_value"
 					elif [ "$action" = "download" ]; then
 						json_get_var __arg1 arg
-						json_get_var __arg2 id
+						json_get_var __arg2 ids
 						action="apply_download"
 					elif [ "$action" = "du_download" ]; then
 						json_get_var __arg1 arg

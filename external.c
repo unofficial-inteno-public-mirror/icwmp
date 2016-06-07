@@ -250,7 +250,7 @@ int external_simple(char *command, char *arg)
 	return 0;
 }
 
-int external_download(char *url, char *size, char *type, char *user, char *pass,...)
+int external_download(char *url, char *size, char *type, char *user, char *pass, time_t c)
 {
 	DD(INFO,"executing download url '%s'", url);
 
@@ -271,7 +271,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	json_obj_out_add(json_obj_out, "type", type);
 	if(user) json_obj_out_add(json_obj_out, "user", user);
 	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
-	if(id) json_obj_out_add(json_obj_out, "id", id);
+	if(id) json_obj_out_add(json_obj_out, "ids", id);
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);
@@ -338,18 +338,14 @@ int external_change_du_state_uninstall(char *package_name)
 	return 0;
 }
 
-int external_apply(char *action, char *arg,...)
+int external_apply(char *action, char *arg, time_t c)
 {
-	time_t  c = 0;
 	DD(INFO,"executing apply %s", action);
 
 	json_object *json_obj_out;
 	char *id = NULL;
 
-	va_list ap; //création du pointeur
-  	va_start(ap,arg);
-	c = (time_t) va_arg(ap,time_t);
-	asprintf(&id, "%ld", c);
+	if (c) asprintf(&id, "%ld", c);
 
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
@@ -358,7 +354,7 @@ int external_apply(char *action, char *arg,...)
 	json_obj_out_add(json_obj_out, "action", action);
 	if (arg) json_obj_out_add(json_obj_out, "arg", arg);
 
-	if(id) json_obj_out_add(json_obj_out, "id", id);
+	if(id) json_obj_out_add(json_obj_out, "ids", id);
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);
