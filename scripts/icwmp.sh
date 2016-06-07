@@ -200,7 +200,7 @@ handle_action() {
 	if [ "$action" = "du_download" ]; then
 		local fault_code="9000"
 		if [ "$__arg2" = "" -o "$__arg3" = "" ];then
-			wget -O /tmp/icwmp_du_download "$__arg1" 2>> /tmp/IBH
+			wget -O /tmp/icwmp_du_download "$__arg1" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
@@ -277,10 +277,9 @@ handle_action() {
 			elif [ "$__arg3" = "3" ];then
 				if [ "$__arg6" != "0" ]; then
 					local tmp="/etc/vendor_configuration_file_${__arg6}.cfg"
-					echo $tmp >> /etc/config/ibh
-					mv /tmp/icwmp_download "$tmp" 2> /dev/null									else
-					echo "arg6 is empty #$__arg6#" >> /etc/config/ibh
-				mv /tmp/icwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
+					mv /tmp/icwmp_download "$tmp" 2> /dev/null
+				else
+					mv /tmp/icwmp_download /tmp/vendor_configuration_file.cfg 2> /dev/null
 				fi
 				icwmp_fault_output "" "$FAULT_CPE_NO_FAULT"
 			else
@@ -293,14 +292,14 @@ handle_action() {
 	if [ "$action" = "upload" ]; then
 		local fault_code="9000"
 		if [ "$__arg3" = "" -o "$__arg4" = "" ];then
-			curl -T /etc/config/cwmp "$__arg1" 2> /dev/null #TO ADD IBH
+			curl -T /etc/config/cwmp "$__arg1" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
 				return 1
 			fi
 		else
-			curl -T /etc/config/cwmp -u $__arg3:$__arg4 "$__arg1" 2> /dev/null #TO ADD IBH
+			curl -T /etc/config/cwmp -u $__arg3:$__arg4 "$__arg1" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
