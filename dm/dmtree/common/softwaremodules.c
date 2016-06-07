@@ -88,8 +88,6 @@ int get_deploymentunit_execution_env_ref(char *refparam, struct dmctx *ctx, char
 	return 0;
 }
 
-/***** ADD DEL OBJ *******/
-//add_softwaremodules_deploymentunit(p->uuid, p->url, p->username, p->pasword; package_name, package_version)
 char *add_softwaremodules_deploymentunit(char *uuid, char*url, char *username, char *password, char *name, char *version)
 {
 	char *value;
@@ -98,6 +96,17 @@ char *add_softwaremodules_deploymentunit(char *uuid, char*url, char *username, c
 	char duname[16];
 	
 	
+	uci_foreach_option_eq("dmmap", "deploymentunit", "UUID", uuid, deploymentsection) {
+		dmuci_set_value_by_section(deploymentsection, "URL", url);
+		dmuci_set_value_by_section(deploymentsection, "URL", url);
+		dmuci_set_value_by_section(deploymentsection, "Name", name);
+		dmuci_set_value_by_section(deploymentsection, "Version", version);
+		dmuci_set_value_by_section(deploymentsection, "username", username);
+		dmuci_set_value_by_section(deploymentsection, "password", password);
+		dmuci_set_value_by_section(deploymentsection, "Resolved", "1");
+		dmuci_get_value_by_section_string(deploymentsection, "duinstance", &instance);
+		goto end;
+	}
 	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");
 	if (!instance)
 		sprintf(duname, "du%d", 0);
@@ -111,7 +120,9 @@ char *add_softwaremodules_deploymentunit(char *uuid, char*url, char *username, c
 	dmuci_set_value("dmmap", duname, "username", username);
 	dmuci_set_value("dmmap", duname, "password", password);
 	dmuci_set_value("dmmap", duname, "Resolved", "1");
-	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");	
+	instance = get_last_instance("dmmap", "deploymentunit", "duinstance");
+	return instance;
+end:
 	return instance;
 }
 
