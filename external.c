@@ -254,14 +254,10 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 {
 	DD(INFO,"executing download url '%s'", url);
 
-	time_t  c = 0;
 	json_object *json_obj_out;
 	char *id = NULL;
 
-	va_list ap; //création du pointeur
-  	va_start(ap,pass);
-	c = (time_t) va_arg(ap,time_t);
-	asprintf(&id, "%ld", c);
+	if (c) asprintf(&id, "%ld", c);
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
 
