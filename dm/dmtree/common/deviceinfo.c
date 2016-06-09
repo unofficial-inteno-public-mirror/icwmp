@@ -11,11 +11,24 @@
 #include <ctype.h>
 #include <uci.h>
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "deviceinfo.h"
+
+struct dev_vcf cur_dev_vcf = {0};
+
+inline int init_args_vcf(struct dmctx *ctx, struct uci_section *s)
+{
+	struct dev_vcf *args = &cur_dev_vcf;
+	ctx->args = (void *)args;
+	args->vcf_sec = s;
+	return 0;
+}
 
 char *get_deviceid_manufacturer()
 {
@@ -288,6 +301,42 @@ int get_catv_voltage(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_vcf_name(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "name", value);
+	return 0;
+}
+
+int get_vcf_version(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "version", value);
+	return 0;
+}
+
+int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "date", value);
+	return 0;
+}
+
+int get_vcf_backup_restore(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "backup_restore", value);
+	return 0;
+}
+
+int get_vcf_desc(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "description", value);
+	return 0;
+}
+
+int get_vcf_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "vcf_alias", value);
+	return 0;
+}
+
 int entry_method_root_DeviceInfo(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"DeviceInfo.") {
@@ -311,6 +360,53 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 		DMPARAM("RFOutputLevel", ctx, "0", get_catv_rf_output_level, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Temperature", ctx, "0", get_catv_temperature, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Voltage", ctx, "0", get_catv_voltage, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"DeviceInfo.VendorConfigFile.", ctx, "0", 0, NULL, NULL, NULL);
+		SUBENTRY(entry_method_device_info_vcf, ctx);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_method_device_info_vcf(struct dmctx *ctx)
+{
+	char *vcf = NULL, *vcf_last = NULL;
+	struct uci_section *s = NULL;
+	DIR *dir;
+	struct dirent *d_file;
+	struct stat attr;
+	char *path = NULL;
+	char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+
+	if ((dir = opendir ("/etc/config/")) != NULL) {
+		while ((d_file = readdir (dir)) != NULL) {
+			if(d_file->d_name[0] == '.')
+				continue;
+			dmastrcat(&path, "/etc/config/", d_file->d_name);
+			stat(path, &attr);
+			strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&attr.st_mtime));
+			update_section_list("dmmap","vcf", "name", 1,  d_file->d_name, "date", s_now, "backup_restore", "true");
+			dmfree(path);
+		}
+		uci_foreach_sections("dmmap", "vcf", s) {
+			init_args_vcf(ctx, s);
+			vcf = handle_update_instance(1, ctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
+			SUBENTRY(entry_method_device_info_vcf_instance, ctx, vcf);
+		}
+	}
+	closedir (dir);
+	return 0;
+}
+
+inline int entry_method_device_info_vcf_instance(struct dmctx *ctx, char *ivcf)
+{
+	IF_MATCH(ctx, DMROOT"DeviceInfo.VendorConfigFile.%s.", ivcf) {
+		DMOBJECT(DMROOT"DeviceInfo.VendorConfigFile.%s.", ctx, "0", 1, NULL, NULL, NULL, ivcf);
+		DMPARAM("Alias", ctx, "0", get_vcf_alias, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Name", ctx, "0",  get_vcf_name, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Version", ctx, "0",  get_vcf_version, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Date", ctx, "0",  get_vcf_date, NULL, "xsd:dateTime", 0, 1, UNDEF, NULL);
+		DMPARAM("Description", ctx, "0",  get_vcf_desc, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("UseForBackupRestore", ctx, "0",  get_vcf_backup_restore, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

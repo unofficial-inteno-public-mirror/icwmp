@@ -24,4 +24,8 @@ char *get_deviceid_serialnumber();
 char *get_softwareversion();
 int entry_method_root_DeviceInfo(struct dmctx *ctx);
 
+struct dev_vcf
+{
+	struct uci_section *vcf_sec;
+};
 #endif
