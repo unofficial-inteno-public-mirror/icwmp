@@ -36,9 +36,9 @@ ipping_launch() {
 		let i++
 		res=$(ping -q -c 1 -s $dsize -W $timeout $host 2>&1)
 		ba=`echo "$res" | grep "bad address"`
-		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticsState=Error_CannotResolveHostName; return; }
+		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticState=Error_CannotResolveHostName; return; }
 		stc=`echo "$res" | grep "packets received"`
-		[ -z "$stc" ] && { $UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticsState=Error_Other; return; }
+		[ -z "$stc" ] && { $UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticState=Error_Other; return; }
 		times=`echo "$res" | grep "round-trip"`
 		[ -z "$times" ] && continue
 		sc1=`echo $stc | awk '{print $4}'`

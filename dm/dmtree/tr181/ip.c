@@ -64,12 +64,19 @@ int get_ip_ping_diagnostics_state(char *refparam, struct dmctx *ctx, char **valu
 
 int set_ip_ping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	switch (action) {
 		case VALUECHECK:			
 			return 0;
 		case VALUESET:
 			if (strcmp(value, "Requested") == 0) {
 				IPPING_STOP
+				curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+				if(!curr_section)
+				{
+					dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+				}
 				dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "DiagnosticState", value);
 				cwmp_set_end_session(END_SESSION_IPPING_DIAGNOSTIC);
 			}				
@@ -86,11 +93,18 @@ int get_ip_ping_interface(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ip_ping_interface(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			//IPPING_STOP
+			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+			}
 			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "interface", value);
 			return 0;
 	}
@@ -106,14 +120,19 @@ int get_ip_ping_host(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ip_ping_host(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			TRACE();	
 			IPPING_STOP
+			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+			}
 			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "Host", value);
-			TRACE();
 			return 0;
 	}
 	return 0;
@@ -127,12 +146,19 @@ int get_ip_ping_repetition_number(char *refparam, struct dmctx *ctx, char **valu
 
 int set_ip_ping_repetition_number(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			IPPING_STOP
+			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+			}
 			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "NumberOfRepetitions", value);
 			return 0;
 	}
@@ -148,12 +174,19 @@ int get_ip_ping_timeout(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ip_ping_timeout(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			IPPING_STOP
+			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+			}
 			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "Timeout", value);
 			return 0;
 	}
@@ -169,11 +202,18 @@ int get_ip_ping_block_size(char *refparam, struct dmctx *ctx, char **value)
 
 int set_ip_ping_block_size(char *refparam, struct dmctx *ctx, int action, char *value)
 {
+	char *tmp;
+	struct uci_section *curr_section = NULL;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			IPPING_STOP
+			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
+			}
 			dmuci_set_varstate_value("cwmp", "@ippingdiagnostic[0]", "DataBlockSize", value);
 	}
 	return 0;

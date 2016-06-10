@@ -426,14 +426,7 @@ char *dmuci_set_varstate_value(char *package, char *section, char *option, char 
 	struct uci_ptr ptr = {0};
 	uci_add_delta_path(uci_varstate_ctx, uci_varstate_ctx->savedir);
 	uci_set_savedir(uci_varstate_ctx, VARSTATE_CONFIG);
-	struct uci_section *curr_section = NULL;
 	
-	curr_section = dmuci_walk_state_section(package, "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
-	if(!curr_section)
-	{
-		dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
-	}
-
 	if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, section, option, value)) {
 		return "";
 	}
@@ -508,6 +501,7 @@ int dmuci_add_state_section(char *package, char *stype, struct uci_section **s, 
 		return -1;
 	}
 	*value = dmstrdup((*s)->e.name); // MEM WILL BE FREED IN DMMEMCLEAN
+	uci_save(uci_varstate_ctx, ptr.p);
 	return 0;
 }
 
