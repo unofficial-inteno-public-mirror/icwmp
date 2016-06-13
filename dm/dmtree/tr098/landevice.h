@@ -71,5 +71,11 @@ struct wlan_wep
 	unsigned int key_index;
 };
 
+typedef struct dhcp_param
+{
+	char *interface;
+	char *state_sec;
+}dhcp_param;
+
 int entry_method_root_LANDevice(struct dmctx *ctx);
 #endif

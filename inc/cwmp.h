@@ -79,6 +79,14 @@
 #define XMPP_CR_NS							"urn:broadband-forum-org:cwmp:xmppConnReq-1-0"
 #define XMPP_ERROR_NS						"urn:ietf:params:xml:ns:xmpp-stanzas"
 
+enum action
+{
+	NONE = 0,
+	START,
+	STOP,
+	RESTART,
+};
+
 enum end_session {
 	END_SESSION_REBOOT = 1,
 	END_SESSION_EXTERNAL_ACTION = 1<<1,
@@ -291,15 +299,25 @@ typedef struct rpc {
     struct list_head	*list_set_value_fault;
 } rpc;
 
+typedef struct execute_end_session {
+    struct list_head                    list;
+    int                           		action;
+    void								*data;
+	void (*function)(int, void*);
+} execute_end_session;
+
 #define ARRAYSIZEOF(a)  (sizeof(a) / sizeof((a)[0]))
 #define FREE(x) do { free(x); x = NULL; } while (0)
 
+extern struct list_head		list_execute_end_session;
 extern struct cwmp	cwmp_main;
 extern const struct EVENT_CONST_STRUCT	EVENT_CONST [__EVENT_IDX_MAX];
 extern struct list_head list_lw_value_change;
 extern struct list_head list_value_change;
 extern pthread_mutex_t mutex_value_change;
 
+int dm_add_end_session(void(*function)(int a, void *d), int action, void *data);
+int apply_end_session();
 struct rpc *cwmp_add_session_rpc_cpe (struct session *session, int type);
 struct session *cwmp_add_queue_session (struct cwmp *cwmp);
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type);

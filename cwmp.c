@@ -30,9 +30,49 @@
  
 struct cwmp         	cwmp_main = {0};
 
+LIST_HEAD(list_execute_end_session);
+
+int dm_add_end_session(void(*function)(int a, void *d), int action, void *data)
+{
+	struct execute_end_session 			*execute_end_session;
+
+	execute_end_session = calloc (1,sizeof(struct execute_end_session));
+	if (execute_end_session == NULL)
+	{
+		return -1;
+	}
+	execute_end_session->action = action;
+	execute_end_session->data = data;
+	execute_end_session->function = function;
+	list_add_tail (&(execute_end_session->list), &(list_execute_end_session));
+
+	return 0;
+}
+
+int cwmp_free_dm_end_session(struct execute_end_session *execute_end_session)
+{
+	if(execute_end_session != NULL)
+	{
+		if(execute_end_session->data != NULL)
+		{
+			FREE(execute_end_session->data);
+		}
+		FREE(execute_end_session);
+	}
+}
+
+int apply_end_session()
+{
+	struct execute_end_session *p, *q;
+	list_for_each_entry_safe(p, q, &(list_execute_end_session), list) {
+		p->function(p->action, p->data);
+		list_del(&(p->list));
+		cwmp_free_dm_end_session(p);
+	}
+}
+
 int cwmp_get_int_event_code(char *code)
 {
-	printf("code is %s\n", code);
 	if (code && code[0] == '1')
 		return EVENT_IDX_1BOOT;
 	
@@ -486,6 +526,7 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp)
 int run_session_end_func (struct session *session)
 {
 
+	apply_end_session();
 	if (session->end_session & END_SESSION_EXTERNAL_ACTION)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");

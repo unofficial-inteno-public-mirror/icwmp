@@ -11,6 +11,7 @@
 
 #include <ctype.h>
 #include <uci.h>
+#include "cwmp.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
@@ -124,6 +125,94 @@ inline int init_wlan_wep_args(struct dmctx *ctx, struct uci_section *s)
 	ctx->args = (void *)args;
 	args->wlanwep = s;
 	return 0;
+}
+
+void update_dhcp_conf_start(int i, void *data)
+{
+		json_object *res;
+		struct dmctx dmctx = {0};
+		struct dhcp_param *dhcp_param = (struct dhcp_param *)(data);
+		char *mask, *start, *dhcp_name, *ipaddr, buf[16];
+		
+		dm_ctx_init(&dmctx);
+		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
+		if (ipaddr[0] == '\0') {
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			if (res) {
+				json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
+			}
+		}
+		if (ipaddr[0] == '\0')
+			goto end;
+
+		dmuci_get_option_value_string("network", dhcp_param->interface, "netmask", &mask);
+		if (mask[0] == '\0') {
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			if (res) {
+				json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
+				if (mask[0] == '\0')
+					goto end;
+				mask = cidr2netmask(atoi(mask));
+			}
+		}
+		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "start", &start);
+		ipcalc_rev_start(ipaddr, mask, start, buf);
+		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "dhcp_sec", &dhcp_name);
+		dmuci_set_value("dhcp", dhcp_name, "start", buf);
+		dmuci_set_varstate_value("cwmp", dhcp_param->state_sec, "start", "");
+		dmuci_commit();
+		dm_ctx_clean(&dmctx);
+end:
+		FREE(dhcp_param->state_sec);
+		FREE(dhcp_param->interface);
+		return;
+}
+
+void update_dhcp_conf_end(int i, void *data)
+{
+		json_object *res;
+		char *ipaddr, *mask, *start, *dhcp_name, *limit, buf[16];
+		struct dhcp_param *dhcp_param = (struct dhcp_param *)(data);
+		struct dmctx dmctx = {0};
+
+		dm_ctx_init(&dmctx);
+		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
+		if (ipaddr[0] == '\0') {
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			if (res) {
+				json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
+			}
+		}
+		if (ipaddr[0] == '\0')
+			goto end;
+
+		dmuci_get_option_value_string("network", dhcp_param->interface, "netmask", &mask);
+		if (mask[0] == '\0') {
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			if (res) {
+				json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
+				if (mask[0] == '\0')
+					goto end;
+				mask = cidr2netmask(atoi(mask));
+			}
+		}
+		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "dhcp_sec", &dhcp_name);
+		dmuci_get_option_value_string("network", dhcp_param->interface, "netmask", &mask); //TODO
+		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "start", &start);
+		if (!start || start[0] == '\0')
+			dmuci_get_option_value_string("dhcp", dhcp_name, "start", &start);
+		if (!start || start[0] == '\0')
+			goto end;
+		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "limit", &limit);
+		dmuci_set_varstate_value("cwmp", dhcp_param->state_sec, "limit", "");
+		ipcalc_rev_end(ipaddr, mask, start, limit, buf);
+		dmuci_set_value("dhcp", dhcp_name, "limit", buf);
+		dmuci_commit();
+		dm_ctx_clean(&dmctx);
+end:
+		FREE(dhcp_param->state_sec);
+		FREE(dhcp_param->interface);
+		return;
 }
 /*******************ADD-DEL OBJECT*********************/
 int add_landevice_dhcpstaticaddress(struct dmctx *ctx, char **instancepara)
@@ -425,12 +514,36 @@ end:
 
 int get_lan_dhcp_interval_address_start(char *refparam, struct dmctx *ctx, char **value)
 {
+	char *s_name, *tmp;
+	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	char *lan_name = section_name(lanargs->ldlansection);
+
+	dmasprintf(&s_name, "@%s[0]", lan_name);
+	dmuci_get_varstate_string("cwmp", s_name, "start", &tmp);
+	dmfree(s_name);
+	if(tmp[0] != '\0')
+	{
+		*value = tmp;
+		return 0;
+	}
 	int ret = get_lan_dhcp_interval_address(ctx, value, LANIP_INTERVAL_START);
 	return ret;
 }
 
 int get_lan_dhcp_interval_address_end(char *refparam, struct dmctx *ctx, char **value)
 {
+	char *s_name, *tmp;
+	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	char *lan_name = section_name(lanargs->ldlansection);
+
+	dmasprintf(&s_name, "@%s[0]", lan_name);
+	dmuci_get_varstate_string("cwmp", s_name, "limit", &tmp);
+	dmfree(s_name);	
+	if(tmp[0] != '\0')
+	{
+		*value = tmp;
+		return 0;
+	}
 	int ret = get_lan_dhcp_interval_address(ctx, value, LANIP_INTERVAL_END);
 	return ret;
 }
@@ -439,43 +552,35 @@ int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, ch
 {
 	json_object *res;
 	char *ipaddr = "", *mask = "", *start , *limit, buf[16];
+	char *s_name = "", *tmp, *dhcp_name = NULL;
 	struct uci_section *s = NULL;
+	struct uci_section *curr_section = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
+	struct dhcp_param *dhcp_param_1;
 				
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_get_value_by_section_string(lanargs->ldlansection, "ipaddr", &ipaddr);
-			if (ipaddr[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
-				if (res) {
-					json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
-				}
-			}
-			if (ipaddr[0] == '\0')
-				return 0;
-
-			dmuci_get_value_by_section_string(lanargs->ldlansection, "netmask", &mask);
-			if (mask[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
-				if (res) {
-					json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
-					if (mask[0] == '\0')
-						return 0;
-					mask = cidr2netmask(atoi(mask));
-				}
-			}
-			if (mask[0] == '\0')
-				mask = "255.255.255.0";
-
-			ipcalc_rev_start(ipaddr, mask, value, buf);
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
-				dmuci_set_value_by_section(s, "start", buf);
+				dhcp_name = section_name(s);
 				break;
 			}
-
+			if (!s) return 0;
+			dmasprintf(&s_name, "@%s[0]", lan_name);
+			curr_section = dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", lan_name, &curr_section, &tmp);
+			}
+			dmuci_set_varstate_value("cwmp", s_name, "start", value);
+			dmuci_set_varstate_value("cwmp", s_name, "dhcp_sec", dhcp_name);
+			dmfree(s_name);
+			dhcp_param_1 = calloc(1, sizeof(struct dhcp_param));
+			dhcp_param_1->interface = strdup(lan_name);
+			dhcp_param_1->state_sec = strdup((curr_section)->e.name);
+			dm_add_end_session(&update_dhcp_conf_start, 0, (void*)(dhcp_param_1));
 			return 0;
 	}
 	return 0;
@@ -485,10 +590,13 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 {
 	int i_val;
 	json_object *res;
-	char *ipaddr = "", *mask = "", *start, buf[16];
+	char *ipaddr = "", *mask = "", *start, buf[16], *tmp, *s_name = NULL;
 	struct uci_section *s = NULL;
+	struct uci_section *curr_section = NULL;
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
+	char *dhcp_name = NULL;
+	struct dhcp_param *dhcp_param;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -496,35 +604,24 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
 				dmuci_get_value_by_section_string(s, "start", &start);
+				dhcp_name = section_name(s);
 				break;
 			}
 			if (!s) return 0;
 
-			dmuci_get_value_by_section_string(lanargs->ldlansection, "ipaddr", &ipaddr);
-			if (ipaddr[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
-				if (res) {
-					json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
+			dmasprintf(&s_name, "@%s[0]", lan_name);
+			curr_section = dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			if(!curr_section)
+			{
+				dmuci_add_state_section("cwmp", lan_name, &curr_section, &tmp);
 				}
-			}
-			if (ipaddr[0] == '\0')
-				return 0;
-
-			dmuci_get_value_by_section_string(lanargs->ldlansection, "netmask", &mask);
-			if (mask[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
-				if (res) {
-					json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
-					if (mask[0] == '\0')
-						return 0;
-					mask = cidr2netmask(atoi(mask));
-				}
-			}
-			if (mask[0] == '\0')
-				mask = "255.255.255.0";
-
-			ipcalc_rev_end(ipaddr, mask, start, value, buf);
-			dmuci_set_value_by_section(s, "limit", buf);
+			dmuci_set_varstate_value("cwmp", s_name, "limit", value);
+			dmuci_set_varstate_value("cwmp", s_name, "dhcp_sec", dhcp_name);
+			dmfree(s_name);
+			dhcp_param = calloc(1, sizeof(struct dhcp_param));
+			dhcp_param->interface = strdup(lan_name);
+			dhcp_param->state_sec = strdup((curr_section)->e.name);
+			dm_add_end_session(&update_dhcp_conf_end, 0, (void*)(dhcp_param));
 			return 0;
 	}
 	return 0;
