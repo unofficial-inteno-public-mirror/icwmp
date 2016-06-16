@@ -315,7 +315,24 @@ int get_vcf_version(char *refparam, struct dmctx *ctx, char **value)
 
 int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "date", value);
+	DIR *dir;
+	struct dirent *d_file;
+	struct stat attr;
+	char path[128];
+	char date[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+	*value = "";
+	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "name", value);
+	if ((dir = opendir ("/etc/config/")) != NULL) {
+		while ((d_file = readdir (dir)) != NULL) {
+			if(strcmp(*value, d_file->d_name) == 0) {
+				sprintf(path, "/etc/config/%s", d_file->d_name);
+				stat(path, &attr);
+				strftime(date, sizeof date, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&attr.st_mtime));
+				*value = dmstrdup(date);
+			}
+		}
+	}
+	closedir (dir);
 	return 0;
 }
 
@@ -396,18 +413,12 @@ inline int entry_method_device_info_vcf(struct dmctx *ctx)
 	struct uci_section *s = NULL, *del_sec = NULL;
 	DIR *dir;
 	struct dirent *d_file;
-	struct stat attr;
-	char path[128];
-	char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
 
 	if ((dir = opendir ("/etc/config/")) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(d_file->d_name[0] == '.')
 				continue;
-			sprintf(path, "/etc/config/%s", d_file->d_name);
-			stat(path, &attr);
-			strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&attr.st_mtime));
-			update_section_list("dmmap","vcf", "name", 1, d_file->d_name, "date", s_now, "backup_restore", "1");
+			update_section_list("dmmap","vcf", "name", 1, d_file->d_name, NULL, NULL, "backup_restore", "1");
 		}
 	}
 	closedir (dir);
