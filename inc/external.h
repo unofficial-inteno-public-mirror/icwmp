@@ -29,7 +29,7 @@ void external_uninstallFaultResp (char *fault_code);
 void external_fetch_uninstallFaultResp (char **fault);
 int external_simple(char *command, char *arg);
 int external_download(char *url, char *size, char *type, char *user, char *pass,time_t c);
-int external_upload(char *url, char *type, char *user, char *pass);
+int external_upload(char *url, char *type, char *user, char *pass, char *name);
 int external_apply(char *action, char *arg,time_t c);
 int external_change_du_state_uninstall(char *package_name);
 int external_handle_action(int (*external_handler)(char *msg));

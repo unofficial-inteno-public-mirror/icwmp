@@ -23,6 +23,7 @@ char *get_deviceid_productclass();
 char *get_deviceid_serialnumber();
 char *get_softwareversion();
 int entry_method_root_DeviceInfo(struct dmctx *ctx);
+int lookup_vcf_name(char *instance, char **value);
 
 struct dev_vcf
 {

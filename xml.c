@@ -2349,27 +2349,34 @@ int cwmp_launch_schedule_download(struct schedule_download *pdownload, struct tr
 
     return error;
 }
+
 int cwmp_launch_upload(struct upload *pupload, struct transfer_complete **ptransfer_complete)
 {
-    int							i, error = FAULT_CPE_NO_FAULT;
-    char						*upload_startTime;
-    struct transfer_complete	*p;
-    char						*fault_code;
-    
-    upload_startTime = mix_get_time();
+	int							i, error = FAULT_CPE_NO_FAULT;
+	char						*upload_startTime;
+	struct transfer_complete	*p;
+	char						*fault_code;
+	char *name = "";
+	struct dmctx dmctx = {0};
+	upload_startTime = mix_get_time();
 
-    bkp_session_delete_upload(pupload);
-    bkp_session_save();
+	bkp_session_delete_upload(pupload);
+	bkp_session_save();
 
-    external_upload(pupload->url, pupload->file_type,
-    		pupload->username, pupload->password);
-    external_handle_action(cwmp_handle_uploadFault);
-    external_fetch_uploadFaultResp(&fault_code);
+	dm_ctx_init(&dmctx);
+	if (pupload->file_type[0] == '3' && pupload->f_instance && isdigit(pupload->f_instance[0])) {
+		lookup_vcf_name(pupload->f_instance, &name);
+	}
+	external_upload(pupload->url, pupload->file_type,
+			pupload->username, pupload->password, name);
+	dm_ctx_clean(&dmctx);
+	external_handle_action(cwmp_handle_uploadFault);
+	external_fetch_uploadFaultResp(&fault_code);
 
-    if(fault_code != NULL)
-    {
-    	if(fault_code[0]=='9')
-    	{
+	if(fault_code != NULL)
+	{
+		if(fault_code[0]=='9')
+		{
 			for(i=1;i<__FAULT_CPE_MAX;i++)
 			{
 				if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
@@ -2378,13 +2385,9 @@ int cwmp_launch_upload(struct upload *pupload, struct transfer_complete **ptrans
 					break;
 				}
 			}
-    	}
-    	free(fault_code);
-    }
-    /*else {
-    	error = FAULT_CPE_INTERNAL_ERROR;
-    }*/
-
+		}
+		free(fault_code);
+	}
 	p = calloc (1,sizeof(struct transfer_complete));
 	if(p == NULL)
 	{
@@ -2402,63 +2405,7 @@ int cwmp_launch_upload(struct upload *pupload, struct transfer_complete **ptrans
 
 	*ptransfer_complete = p;
 
-    return error;
-}
-
-int cwmp_launch_uninstall(struct upload *pupload, struct transfer_complete **ptransfer_complete)
-{
-    int							i, error = FAULT_CPE_NO_FAULT;
-    char						*upload_startTime;
-    struct transfer_complete	*p;
-    char						*fault_code;
-    
-    upload_startTime = mix_get_time();
-
-    bkp_session_delete_upload(pupload);
-    bkp_session_save();
-
-    external_upload(pupload->url, pupload->file_type,
-    		pupload->username, pupload->password);
-    external_handle_action(cwmp_handle_uploadFault);
-    external_fetch_uploadFaultResp(&fault_code);
-
-    if(fault_code != NULL)
-    {
-    	if(fault_code[0]=='9')
-    	{
-			for(i=1;i<__FAULT_CPE_MAX;i++)
-			{
-				if(strcmp(FAULT_CPE_ARRAY[i].CODE,fault_code) == 0)
-				{
-					error = i;
-					break;
-				}
-			}
-    	}
-    	free(fault_code);
-    }
-    /*else {
-    	error = FAULT_CPE_INTERNAL_ERROR;
-    }*/
-
-	p = calloc (1,sizeof(struct transfer_complete));
-	if(p == NULL)
-	{
-		error = FAULT_CPE_INTERNAL_ERROR;
-		return error;
-	}
-
-	p->command_key			= strdup(pupload->command_key);
-	p->start_time 			= strdup(upload_startTime);
-	p->complete_time		= strdup(mix_get_time());
-	if(error != FAULT_CPE_NO_FAULT)
-	{
-		p->fault_code 		= error;
-	}
-
-	*ptransfer_complete = p;
-
-    return error;
+	return error;
 }
 
 void *thread_cwmp_rpc_cpe_download (void *v)
@@ -3741,25 +3688,29 @@ int cwmp_free_upload_request(struct upload *upload)
 	{
 		if(upload->command_key != NULL)
 		{
-			free(upload->command_key);
+			FREE(upload->command_key);
 		}
 		if(upload->file_type != NULL)
 		{
-			free(upload->file_type);
+			FREE(upload->file_type);
 		}
 		if(upload->url != NULL)
 		{
-			free(upload->url);
+			FREE(upload->url);
 		}
 		if(upload->username != NULL)
 		{
-			free(upload->username);
+			FREE(upload->username);
 		}
 		if(upload->password != NULL)
 		{
-			free(upload->password);
+			FREE(upload->password);
 		}
-		free(upload);
+		if(upload->f_instance != NULL)
+		{
+			FREE(upload->f_instance);
+		}
+		FREE(upload);
 	}
 	return CWMP_OK;
 }
@@ -4529,7 +4480,7 @@ int cwmp_handle_rpc_cpe_schedule_download(struct session *session, struct rpc *r
 	return 0;
 
 fault:
-    cwmp_free_schedule_download_request(schedule_download);
+	cwmp_free_schedule_download_request(schedule_download);
 	if (cwmp_create_fault_message(session, rpc, error))
 		goto error;
 	return 0;
@@ -4569,7 +4520,7 @@ int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
 		error = FAULT_CPE_INTERNAL_ERROR;
 		goto fault;
 	}
-
+	upload->f_instance = strdup("");
 	while (b != NULL) {
 		if (b && b->type == MXML_TEXT &&
 			b->value.text.string &&
@@ -4593,6 +4544,9 @@ int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
 				{
 					error = FAULT_CPE_INTERNAL_ERROR;
 					goto fault;
+				}
+				if (isdigit(b->value.text.string[0])) {
+					upload->f_instance = strdup(b->value.text.string);
 				}
 				FREE(tmp);
 			}
@@ -4623,9 +4577,8 @@ int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
 		}
 		b = mxmlWalkNext(b, n, MXML_DESCEND);
 	}
-
-	if(strcmp(file_type,"3 Vendor Configuration File") &&
-		strcmp(file_type,"4 Vendor Log File"))
+	if(strncmp(file_type, "3 Vendor Configuration File", sizeof"3 Vendor Configuration File" -1) != 0 &&
+		strncmp(file_type, "4 Vendor Log File", sizeof"4 Vendor Log File" -1) != 0)
 	{
 		error = FAULT_CPE_REQUEST_DENIED;
 	}
@@ -4715,7 +4668,7 @@ int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
 	return 0;
 
 fault:
-    cwmp_free_upload_request(upload);
+	cwmp_free_upload_request(upload);
 	if (cwmp_create_fault_message(session, rpc, error))
 		goto error;
 	return 0;

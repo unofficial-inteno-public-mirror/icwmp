@@ -11,6 +11,8 @@ NEW_LINE='\n'
 CWMP_PROMPT="icwmp>"
 UCI_GET="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} get -q"
 UCI_SHOW="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} show -q"
+UCI_IMPORT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} import -q"
+UCI_EXPORT="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} export -q"
 TMP_SET_VALUE="/tmp/.tmp_set_value"
 TMP_SET_NOTIFICATION="/tmp/.tmp_set_notification"
 
@@ -79,6 +81,7 @@ case "$1" in
 		__arg2="$3"
 		__arg3="$4"
 		__arg4="$5"
+		__arg5="$6"
 		action="upload"
 		;;
 	factory_reset)
@@ -291,15 +294,21 @@ handle_action() {
 	fi
 	if [ "$action" = "upload" ]; then
 		local fault_code="9000"
+		if [ "$__arg5" = "" ];then
+			__arg5="all_configs"
+			$UCI_EXPORT > "/tmp/${__arg5}"
+		else 
+			$UCI_EXPORT "$__arg5" > "/tmp/${__arg5}"
+		fi
 		if [ "$__arg3" = "" -o "$__arg4" = "" ];then
-			curl -T /etc/config/cwmp "$__arg1" 2> /dev/null
-			if [ "$?" != "0" ];then
+				curl -T "/tmp/${__arg5}" "$__arg1" 2> /dev/null
+				if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
 				return 1
-			fi
+		fi
 		else
-			curl -T /etc/config/cwmp -u $__arg3:$__arg4 "$__arg1" 2> /dev/null
+			curl -T "/tmp/${__arg5}" -u $__arg3:$__arg4 "$__arg1" 2> /dev/null
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_UPLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
@@ -418,6 +427,7 @@ handle_action() {
 					json_get_var __arg2 type
 					json_get_var __arg3 user
 					json_get_var __arg4 pass
+					json_get_var __arg5 name
 					action="upload"
 					;;
 				factory_reset)

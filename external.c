@@ -295,7 +295,7 @@ int external_change_du_state_download(char *url, char *user, char *pass)
 	return 0;
 }
 
-int external_upload(char *url, char *type, char *user, char *pass)
+int external_upload(char *url, char *type, char *user, char *pass, char *name)
 {
 	DD(INFO,"executing download url '%s'", url);
 
@@ -307,6 +307,7 @@ int external_upload(char *url, char *type, char *user, char *pass)
 	json_obj_out_add(json_obj_out, "command", "upload");
 	json_obj_out_add(json_obj_out, "url", url);
 	json_obj_out_add(json_obj_out, "type", type);
+	json_obj_out_add(json_obj_out, "name", name);
 	if(user) json_obj_out_add(json_obj_out, "user", user);
 	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
 

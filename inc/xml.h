@@ -210,13 +210,14 @@ typedef struct operations {
 } operations;
 
 typedef struct upload {
-    struct list_head                    list;
-    time_t                              scheduled_time;
+	struct list_head					list;
+	time_t								scheduled_time;
 	char 								*command_key;
 	char 								*file_type;
 	char 								*url;
 	char 								*username;
 	char 								*password;
+	char 								*f_instance;
 } upload;
 
 typedef struct transfer_complete {

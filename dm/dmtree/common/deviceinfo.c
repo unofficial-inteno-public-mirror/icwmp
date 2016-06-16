@@ -337,6 +337,16 @@ int get_vcf_alias(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int lookup_vcf_name(char *instance, char **value) {
+	struct uci_section *s = NULL;
+	uci_foreach_option_eq("dmmap", "vcf", "vcf_instance", instance, s) {
+		dmuci_get_value_by_section_string(s, "name", value);
+	}
+	return 0;
+}
+/*************************************************************
+ * ENTRY METHOD
+/*************************************************************/
 int entry_method_root_DeviceInfo(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"DeviceInfo.") {
@@ -367,33 +377,57 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 	return FAULT_9005;
 }
 
+int check_file_dir(char *name)
+{
+	DIR *dir;
+	struct dirent *d_file;
+	if ((dir = opendir ("/etc/config/")) != NULL) {
+		while ((d_file = readdir (dir)) != NULL) {
+			if(strcmp(name, d_file->d_name) == 0)
+				return 1;
+		}
+	}
+	return 0;
+}
+
 inline int entry_method_device_info_vcf(struct dmctx *ctx)
 {
-	char *vcf = NULL, *vcf_last = NULL;
-	struct uci_section *s = NULL;
+	char *vcf = NULL, *vcf_last = NULL, *name;
+	struct uci_section *s = NULL, *del_sec = NULL;
 	DIR *dir;
 	struct dirent *d_file;
 	struct stat attr;
-	char *path = NULL;
+	char path[128];
 	char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
 
 	if ((dir = opendir ("/etc/config/")) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(d_file->d_name[0] == '.')
 				continue;
-			dmastrcat(&path, "/etc/config/", d_file->d_name);
+			sprintf(path, "/etc/config/%s", d_file->d_name);
 			stat(path, &attr);
 			strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&attr.st_mtime));
-			update_section_list("dmmap","vcf", "name", 1,  d_file->d_name, "date", s_now, "backup_restore", "true");
-			dmfree(path);
-		}
-		uci_foreach_sections("dmmap", "vcf", s) {
-			init_args_vcf(ctx, s);
-			vcf = handle_update_instance(1, ctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
-			SUBENTRY(entry_method_device_info_vcf_instance, ctx, vcf);
+			update_section_list("dmmap","vcf", "name", 1, d_file->d_name, "date", s_now, "backup_restore", "1");
 		}
 	}
 	closedir (dir);
+	uci_foreach_sections("dmmap", "vcf", s) {
+		dmuci_get_value_by_section_string(s, "name", &name);
+		if(del_sec) {
+			dmuci_delete_by_section(del_sec, NULL, NULL);
+			del_sec = NULL;
+		}
+		if (check_file_dir(name) == 0) {
+			del_sec = s;
+			continue;
+		}
+		init_args_vcf(ctx, s);
+		vcf = handle_update_instance(1, ctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
+		SUBENTRY(entry_method_device_info_vcf_instance, ctx, vcf);
+	}
+	if(del_sec)
+		dmuci_delete_by_section(del_sec, NULL, NULL);
+
 	return 0;
 }
 
