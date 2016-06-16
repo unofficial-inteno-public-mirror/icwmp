@@ -1390,7 +1390,7 @@ int set_line_x_002207_line_profile(char *refparam, struct dmctx *ctx, int action
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			uci_foreach_option_eq("voice_client", "sip_service_provider", "profileinstance", brcmargs->profile_num, sip_s) {
+			uci_foreach_option_eq("voice_client", "sip_service_provider", "profileinstance", value, sip_s) {
 				break;
 			}
 			if (!sip_s || strcmp(brcmargs->profile_num, value) == 0)
