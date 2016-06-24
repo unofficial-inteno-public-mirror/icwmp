@@ -271,11 +271,6 @@ enum set_value_action {
 	VALUESET
 };
 
-//TO BE REMOVED
-enum action_set_enum {
-	ACTION_SET,
-	ACTION_CHECK
-};
 enum {
 	CMD_GET_VALUE,
 	CMD_GET_NAME,

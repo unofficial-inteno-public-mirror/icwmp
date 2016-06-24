@@ -68,8 +68,8 @@ static int get_notification_inparam_isobj_check_obj(DMOBJECT_API_ARGS);
 static int get_notification_param(DMPARAM_API_ARGS);
 static int get_notification_inparam_isparam_check_param(DMPARAM_API_ARGS);
 static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS);
-static int inform_check_obj(DMOBJECT_API_ARGS);
-static int inform_check_param(DMPARAM_API_ARGS);
+static int inform_check_obj(DMOBJECT_ARGS);
+static int inform_check_param(DMPARAM_ARGS);
 static int add_object_obj(DMOBJECT_API_ARGS);
 static int add_object_param(DMPARAM_API_ARGS);
 static int delete_object_obj(DMOBJECT_API_ARGS);
@@ -188,6 +188,20 @@ int plugin_leaf_match(DMOBJECT_ARGS)
 	str = dmctx->in_param + strlen(node->current_object);
 	if (!strchr(str, '.'))
 		return 0;
+	return FAULT_9005;
+}
+
+int plugin_obj_forcedinform_match(DMOBJECT_ARGS)
+{
+	unsigned char fi;
+	if (forced_inform) {
+		if (forced_inform->get_forced_inform)
+			fi = forced_inform->get_forced_inform(node->current_object, dmctx, data, instance);
+		else
+			fi = forced_inform->val;
+		if (fi)
+			return 0;
+	}
 	return FAULT_9005;
 }
 
@@ -1150,31 +1164,45 @@ static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS)
 ***************/
 int dm_entry_inform(struct dmctx *ctx)
 {
-	int i;
+	DMOBJ *root = tEntryObj;
+	DMNODE node = {.current_object = ""};
+	int err;
+
+	ctx->inparam_isparam = 0;
+	ctx->stop = 0;
+	ctx->checkobj = plugin_obj_forcedinform_match;
+	ctx->checkleaf = NULL;
 	ctx->method_obj = &inform_check_obj;
 	ctx->method_param = &inform_check_param;
-	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		if (!prefix_methods[i].enable) continue;
-		if (prefix_methods[i].forced_inform)
-			prefix_methods[i].method(ctx);
-	}
+	dm_browse(ctx, &node, root, NULL, NULL);
 	return 0;
 }
 
-static int inform_check_obj(DMOBJECT_API_ARGS)
+static int inform_check_obj(DMOBJECT_ARGS)
 {
-	return FAULT_9005;
+	return 0;
 }
 
-static int inform_check_param(DMPARAM_API_ARGS)
+static int inform_check_param(DMPARAM_ARGS)
 {
-	if (!forced_inform) 
-		return FAULT_9005;
-	char *full_param;
 	char *value = NULL;
-	dmastrcat(&full_param, ctx->current_obj, lastname);
-	(get_cmd)(full_param, ctx, &value);
-	add_list_paramameter(ctx, full_param, value, type ? type : "xsd:string");
+	char *full_param;
+	unsigned char fi;
+
+	if (!forced_inform)
+		return FAULT_9005;
+
+	if (forced_inform->get_forced_inform)
+		fi = forced_inform->get_forced_inform(node->current_object, dmctx, data, instance);
+	else
+		fi = forced_inform->val;
+
+	if (!fi)
+		return FAULT_9005;
+
+	dmastrcat(&full_param, dmctx->current_obj, lastname);
+	(get_cmd)(full_param, dmctx, &value);
+	add_list_paramameter(dmctx, full_param, value, DMT_TYPE[type]);
 	return 0;
 }
 
@@ -1275,7 +1303,7 @@ int dm_entry_set_value(struct dmctx *ctx)
 
 	ctx->inparam_isparam = 1;
 	ctx->stop = 0;
-	ctx->setaction = VALUECHECK;
+	ctx->setaction = VALUESET;
 	ctx->checkobj = plugin_obj_match;
 	ctx->checkleaf = plugin_leaf_match;
 	ctx->method_obj = mobj_set_value;
@@ -1303,7 +1331,7 @@ static int mparam_set_value(DMPARAM_ARGS)
 
 	dmctx->stop = 1;
 
-	if (dmctx->setaction == VALUECHECK) {
+	if (dmctx->setaction == VALUESET) {
 		perm = permission->val;
 		if (permission->get_permission != NULL)
 			perm = permission->get_permission(refparam, dmctx, data, instance);
@@ -1313,7 +1341,7 @@ static int mparam_set_value(DMPARAM_ARGS)
 			return FAULT_9008;
 		}
 		//err = setvalue(refparam, dmctx, data, instance, dmctx->value, ACTION_CHECK);
-		err =(set_cmd)(refparam, dmctx, VALUECHECK, dmctx->in_value);
+		err =(set_cmd)(refparam, dmctx, VALUESET, dmctx->in_value);
 		if (err){
 			return err;
 		}
