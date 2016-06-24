@@ -382,7 +382,7 @@ void dm_entry_cli(int argc, char** argv)
 	/* GET NAME */
 	if (strcmp(cmd, "get_name") == 0) {
 		if (argc < 6) goto invalid_arguments;
-		param =argv[4];
+		param = argv[4];
 		next_level =argv[5];
 		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_NAME, param, next_level, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_NAME, output);
@@ -390,14 +390,14 @@ void dm_entry_cli(int argc, char** argv)
 	/* GET VALUE */
 	else if (strcmp(cmd, "get_value") == 0) {
 		if (argc < 5) goto invalid_arguments;
-		param =argv[4];
+		param = argv[4];
 		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_VALUE, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_VALUE, output);
 	}
 	/* GET NOTIFICATION */
 	else if (strcmp(cmd, "get_notification") == 0) {
 		if (argc < 5) goto invalid_arguments;
-		param =argv[4];
+		param = argv[4];
 		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_NOTIFICATION, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_NOTIFICATION, output);
 	}

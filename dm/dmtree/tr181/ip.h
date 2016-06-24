@@ -20,11 +20,18 @@ struct ip_args
 struct ipv4_args
 {
 	struct uci_section *ipv4_sec;
-	char *ip_address;
+	char *ip_4address;
 	char *ip_6address;
 };
-
-
-int entry_method_root_ip(struct dmctx *ctx);
+extern DMOBJ tIPObj[];
+extern DMOBJ tInterfaceObj[];
+extern DMLEAF tIPv4Params[];
+extern DMLEAF tIPv6Params[];
+extern DMLEAF tIPintParams[] ;
+unsigned char get_ipv4_finform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+unsigned char get_ipv6_finform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+int browseIPIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseIfaceIPv4Inst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseIfaceIPv6Inst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 #endif

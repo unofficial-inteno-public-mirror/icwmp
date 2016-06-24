@@ -14,5 +14,8 @@
 #ifndef __ROOT_H
 #define __ROOT_H
 #include "dmcwmp.h"
-int entry_method_root(struct dmctx *ctx);
+extern DMOBJ tEntryObj[];
+extern DMOBJ tRootObj[];
+extern DMLEAF tRootParams[];
+
 #endif

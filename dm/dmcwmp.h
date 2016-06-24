@@ -21,10 +21,10 @@
 #include "dmmem.h"
 
 #ifdef DATAMODEL_TR098
-#define DMROOT "InternetGatewayDevice."
+#define DMROOT "InternetGatewayDevice"
 #endif
 #ifdef DATAMODEL_TR181
-#define DMROOT "Device."
+#define DMROOT "Device"
 #endif
 #ifdef UNDEF
 #undef UNDEF
@@ -68,12 +68,32 @@
 	int error = ctx->method_param(lastname, ctx, permission, get_cmd, set_cmd, type, forced_inform, notif_permission, forced_notify, linker);	\
 	if ((ctx)->stop) return error;																												\
 }
-
+// TO REMOVE JUST FOR COMPILE
 #define SUBENTRY(f, ctx, ...) {			\
 	int error = f(ctx, ## __VA_ARGS__);	\
 	if ((ctx)->stop) return error;		\
 }
+// new sub entry
+#define DM_LINK_INST_OBJ(dmctx, parent_node, data, instance) \
+	do { \
+		(dmctx)->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance); \
+		if ((dmctx)->stop) \
+			return (dmctx)->faultcode; \
+	} while(0)
 
+extern struct dm_permession_s DMREAD;
+extern struct dm_permession_s DMWRITE;
+extern struct dm_forced_inform_s DMFINFRM;
+
+enum dmt_type_enum {
+	DMT_STRING,
+	DMT_UNINT,
+	DMT_INT,
+	DMT_BOOL,
+	DMT_TIME,
+};
+
+// TO REMOVE JUST FOR COMPILE
 #define DMPARAM_API_ARGS \
 	char *lastname, \
 	struct dmctx *ctx, \
@@ -85,7 +105,19 @@
 	bool notif_permission, \
 	int forced_notify, \
 	char *linker
-
+// TO BE USED
+#define DMPARAM_ARGS \
+	struct dmctx *dmctx, \
+	struct dmnode *node, \
+	char *lastname, \
+	struct dm_permession_s *permission, \
+	int type, \
+	int (*get_cmd)(char *refparam, struct dmctx *dmctx, char **value), \
+	int (*set_cmd)(char *refparam, struct dmctx *dmctx, char *value, int action), \
+	struct dm_forced_inform_s *forced_inform, \
+	void *data, \
+	char *instance
+// TO REMOVE JUST FOR COMPILE
 #define DMOBJECT_API_ARGS \
 	struct dmctx *ctx, \
 	char *permission, \
@@ -93,9 +125,66 @@
 	int (*addobj)(struct dmctx *ctx, char **instance), \
 	int (*delobj)(struct dmctx *ctx), \
 	char *linker
+// TO BE USED
+#define DMOBJECT_ARGS \
+	struct dmctx *dmctx, \
+	struct dmnode *node, \
+	struct dm_permession_s *permission, \
+	int (*addobj)(char *refparam, struct dmctx *dmctx, void *data, char **instance), \
+	int (*delobj)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
+	struct dm_forced_inform_s *forced_inform, \
+	void *data, \
+	char *instance
 
 #define TAILLE_MAX 1024
-	
+
+struct dm_forced_inform_s;
+struct dm_permession_s;
+struct dm_parameter;
+struct dm_leaf_s;
+struct dm_obj_s;
+struct dmnode;
+struct dmctx;
+
+struct dm_permession_s {
+	char *val;
+	char *(*get_permission)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+};
+
+struct dm_forced_inform_s {
+	unsigned char val;
+	unsigned char (*get_forced_inform)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+};
+
+typedef struct dm_leaf_s {
+	/* PARAM, permission, type, getvlue, setvalue, forced_inform*/
+	char *parameter;
+	struct dm_permession_s *permission;
+	int type;
+	int (*getvalue)(char *refparam, struct dmctx *dmctx, char **value);
+	int (*setvalue)(char *refparam, struct dmctx *dmctx, char *value, int action);
+	struct dm_forced_inform_s *forced_inform;
+	//bool notif_permission;
+	//int forced_notify;
+	//int (*linker)(char *refparam); //TODO
+} DMLEAF;
+
+typedef struct dm_obj_s {
+	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, nextobj, leaf*/
+	char *obj;
+	struct dm_permession_s *permission;
+	int (*addobj)(char *refparam, struct dmctx *dmctx, void *data, char **instance);
+	int (*delobj)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+	int (*browseinstobj)(struct dmctx *dmctx, struct dmnode *node, void *data, char *instance);
+	//char *linker;
+	struct dm_forced_inform_s *forced_inform;
+	struct dm_obj_s *nextobj;
+	struct dm_leaf_s *leaf;
+	//struct dm_forced_inform_s *forced_inform;
+
+} DMOBJ;
+
+
 struct set_tmp {
 	struct list_head list;
 	char *name;
@@ -127,8 +216,10 @@ struct dmctx
 	bool stop;
 	bool tree;
 	bool match;
-	int (*method_param)(DMPARAM_API_ARGS);
-	int (*method_obj)(DMOBJECT_API_ARGS);
+	int (*method_param)(DMPARAM_ARGS);
+	int (*method_obj)(DMOBJECT_ARGS);
+	int (*checkobj)(DMOBJECT_ARGS);
+	int (*checkleaf)(DMOBJECT_ARGS);
 	void *args;
 	struct list_head list_parameter;
 	struct list_head set_list_tmp;
@@ -146,9 +237,21 @@ struct dmctx
 	unsigned int nbrof_instance;
 	unsigned int amd_version;
 	unsigned int instance_mode;
+	unsigned char inparam_isparam;
+	unsigned char findobj;
 	char current_obj[512];
 	char *inst_buf[16];
 };
+
+
+typedef struct dmnode {
+	DMOBJ *obj;
+	struct dmnode *parent;
+	char *current_object;
+	unsigned char instance_level;
+	unsigned char matched;
+	unsigned char is_instanceobj;
+} DMNODE;
 
 struct prefix_method {
 	const char *prefix_name;
@@ -168,6 +271,11 @@ enum set_value_action {
 	VALUESET
 };
 
+//TO BE REMOVED
+enum action_set_enum {
+	ACTION_SET,
+	ACTION_CHECK
+};
 enum {
 	CMD_GET_VALUE,
 	CMD_GET_NAME,

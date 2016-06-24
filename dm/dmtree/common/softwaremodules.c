@@ -237,7 +237,7 @@ inline int entry_softwaremodules_deploymentunit(struct dmctx *ctx)
 
 inline int entry_softwaremodules_deploymentunit_instance(struct dmctx *ctx, char *idu)
 {	
-	IF_MATCH(ctx, DMROOT"SoftwareModules.DeploymentUnit.%s.", idu) {
+	/*IF_MATCH(ctx, DMROOT"SoftwareModules.DeploymentUnit.%s.", idu) {
 		DMOBJECT(DMROOT"SoftwareModules.DeploymentUnit.%s.", ctx, "0", 1, NULL, NULL, NULL, idu);
 		DMPARAM("UUID", ctx, "0", get_deploymentunit_uuid, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Name", ctx, "0", get_deploymentunit_name, NULL, NULL, 0, 1, UNDEF, NULL);
@@ -247,18 +247,18 @@ inline int entry_softwaremodules_deploymentunit_instance(struct dmctx *ctx, char
 		DMPARAM("Version", ctx, "0", get_deploymentunit_version, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ExecutionEnvRef", ctx, "0", get_deploymentunit_execution_env_ref, NULL, NULL, 0, 1, UNDEF, NULL);			  
 		return 0;
-	}
+	}*/
 	return FAULT_9005;
 }
 
 int entry_method_root_software_modules(struct dmctx *ctx)
 {
-	IF_MATCH(ctx, DMROOT"SoftwareModules.") {
+	/*IF_MATCH(ctx, DMROOT"SoftwareModules.") {
 		DMOBJECT(DMROOT"SoftwareModules.", ctx, "0", 1, NULL, NULL, NULL);
 		DMOBJECT(DMROOT"SoftwareModules.DeploymentUnit.", ctx, "0", 1, NULL, NULL, NULL);
 		SUBENTRY(entry_softwaremodules_deploymentunit, ctx);
 		return 0;
-	}
+	}*/
 	return FAULT_9005;
 }
 

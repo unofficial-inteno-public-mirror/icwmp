@@ -26,48 +26,10 @@ icwmpd_SOURCES =			\
 	../dm/dmcommon.c		\
 	../dm/wepkey.c			\
 	../dm/dmtree/common/deviceinfo.c				\
-	../dm/dmtree/common/managementserver.c			\
-	../dm/dmtree/common/root.c						\
-	../dm/dmtree/common/times.c						\
-	../dm/dmtree/common/upnp.c						\
-	../dm/dmtree/common/voice_services.c			\
-	../dm/dmtree/common/x_inteno_se_ice.c			\
-	../dm/dmtree/common/x_inteno_se_igmp.c			\
-	../dm/dmtree/common/x_inteno_se_ipacccfg.c		\
-	../dm/dmtree/common/x_inteno_se_logincfg.c		\
-	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/softwaremodules.c			\
-	../dm/dmtree/common/x_inteno_syslog.c			
-
-if XMPP_ENABLE
-icwmpd_SOURCES += 									\
-	../dm/dmtree/common/xmpp.c						\
-	../xmpp_cr.c					
-endif
-
-if DATAMODEL_TR098
-icwmpd_SOURCES += 									\
-	../dm/dmtree/tr098/lan_interfaces.c				\
-	../dm/dmtree/tr098/landevice.c					\
-	../dm/dmtree/tr098/layer_2_bridging.c			\
-	../dm/dmtree/tr098/wandevice.c					\
-	../dm/dmtree/tr098/x_inteno_se_wifi.c			\
-	../dm/dmtree/tr098/ippingdiagnostics.c			\	
-	../dm/dmtree/tr098/layer_3_forwarding.c	
-endif
-if DATAMODEL_TR181
-icwmpd_SOURCES +=									\
-	../dm/dmtree/tr181/wifi.c						\
-	../dm/dmtree/tr181/ethernet.c					\
-	../dm/dmtree/tr181/wan.c						\
-	../dm/dmtree/tr181/bridging.c					\
-	../dm/dmtree/tr181/hosts.c						\
-	../dm/dmtree/tr181/dhcp.c						\
-	../dm/dmtree/tr181/ip.c							\
-	../dm/dmtree/tr181/ppp.c						\
-	../dm/dmtree/tr181/nat.c						\
-	../dm/dmtree/tr181/routing.c
-endif
+	../dm/dmtree/tr181/root.c					\
+	../dm/dmtree/tr181/ip.c						
+	
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
 	$(LIBUCI_CFLAGS)	\

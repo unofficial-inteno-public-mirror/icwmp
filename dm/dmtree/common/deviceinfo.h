@@ -16,14 +16,18 @@
 
 #define BASE_MAC_ADDR "/proc/nvram/BaseMacAddr"
 #define UPTIME "/proc/uptime"
+extern DMLEAF tDeviceInfoParams[];
+extern DMLEAF tCatTvParams[];
+extern DMLEAF tVcfParams[];
+extern DMOBJ tDeviceInfoObj[];
 
 char *get_deviceid_manufacturer();
 char *get_deviceid_manufactureroui();
 char *get_deviceid_productclass();
 char *get_deviceid_serialnumber();
 char *get_softwareversion();
-int entry_method_root_DeviceInfo(struct dmctx *ctx);
 int lookup_vcf_name(char *instance, char **value);
+int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 struct dev_vcf
 {

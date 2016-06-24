@@ -558,7 +558,7 @@ int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, ch
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
 	struct dhcp_param *dhcp_param_1;
-				
+
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -614,7 +614,7 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", lan_name, &curr_section, &tmp);
-				}
+			}
 			dmuci_set_varstate_value("cwmp", s_name, "limit", value);
 			dmuci_set_varstate_value("cwmp", s_name, "dhcp_sec", dhcp_name);
 			dmfree(s_name);
@@ -1004,7 +1004,7 @@ int set_interface_ipaddress(char *refparam, struct dmctx *ctx, int action, char 
 {
 	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
 	char *lan_name = section_name(ipargs->ldipsection);
-	
+
 	switch (action) {
 		case VALUECHECK:
 			return 0;
