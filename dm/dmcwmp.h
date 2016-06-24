@@ -130,8 +130,8 @@ enum dmt_type_enum {
 	struct dmctx *dmctx, \
 	struct dmnode *node, \
 	struct dm_permession_s *permission, \
-	int (*addobj)(char *refparam, struct dmctx *dmctx, void *data, char **instance), \
-	int (*delobj)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
+	int (*addobj)(struct dmctx *dmctx, char **instance), \
+	int (*delobj)(struct dmctx *dmctx), \
 	struct dm_forced_inform_s *forced_inform, \
 	void *data, \
 	char *instance

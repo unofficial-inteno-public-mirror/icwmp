@@ -37,7 +37,7 @@ DMOBJ tRootObj[] = {
 //{"ManagementServer", &DMREAD, NULL, NULL, NULL, &DMFINFRM, NULL, tMgmtServerParams},
 //{"Time", &DMREAD, NULL, NULL, NULL, NULL, NULL, tTimeParams},
 //{"Services", &DMREAD, NULL, NULL, NULL, NULL, tServiceObj, NULL},
-//{"IP", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tIPObj, NULL},
+{"IP", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tIPObj, NULL},
 //{"PPP", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tPPPObj, NULL},
 {0}
 };

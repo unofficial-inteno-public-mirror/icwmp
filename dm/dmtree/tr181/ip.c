@@ -690,7 +690,8 @@ int delete_ipv6(struct dmctx *ctx)
 /* *** Device.IP. *** */
 DMOBJ tIPObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-{"Interface", &DMREAD, NULL, NULL, browseIPIfaceInst, &DMFINFRM, tInterfaceObj, tIPintParams},
+{"Interface", &DMWRITE, add_ip_interface, delete_ip_interface, browseIPIfaceInst, &DMFINFRM, tInterfaceObj, tIPintParams},
+{"Diagnostics", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tDiagnosticObj, NULL},
 {0}
 };
 
@@ -704,25 +705,54 @@ DMLEAF tIPintParams[] = {
 /* *** Device.IP.Interface. *** */
 DMOBJ tInterfaceObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-{"IPv4Address", &DMREAD, NULL, NULL, browseIfaceIPv4Inst, &DMFINFRM, NULL, tIPv4Params},
-{"IPv6Address", &DMREAD, NULL, NULL, browseIfaceIPv6Inst, &DMFINFRM, NULL, tIPv6Params},
+{"IPv4Address", &DMREAD, add_ipv4, delete_ipv4, browseIfaceIPv4Inst, &DMFINFRM, NULL, tIPv4Params},
+{"IPv6Address", &DMREAD, add_ipv6, delete_ipv6, browseIfaceIPv6Inst, &DMFINFRM, NULL, tIPv6Params},
 {0}
 };
 
+DMOBJ tDiagnosticObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
+{"IPPingDiagnostics", &DMREAD, NULL, NULL, NULL, &DMFINFRM, NULL, tIpPingDiagParams},
+{0}
+};
 /* *** Device.IP.Interface.{i}.IPv4Address. *** */
 DMLEAF tIPv4Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
+{"Alias", &DMWRITE, DMT_STRING, get_ipv4_alias, set_ipv4_alias, &IPv4INFRM},
+{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv4INFRM},
+{"X_BROADCOM_COM_FirewallEnabled", &DMWRITE, DMT_BOOL, get_firewall_enabled, set_firewall_enabled, &IPv4INFRM},
 {"IPAddress", &DMWRITE, DMT_STRING, get_ipv4_address, set_ipv4_address, &IPv4INFRM},
+{"SubnetMask", &DMWRITE, DMT_STRING, get_ipv4_netmask, set_ipv4_netmask, &IPv4INFRM},
+{"AddressingType", &DMWRITE, DMT_STRING, get_ipv4_addressing_type, set_ipv4_addressing_type, &IPv4INFRM},
 {0}
 };
+
 
 /* *** Device.IP.Interface.{i}.IPv6Address. *** */
 DMLEAF tIPv6Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
+{"Alias", &DMWRITE, DMT_STRING, get_ipv6_alias, set_ipv6_alias, &IPv6INFRM},
+{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv6INFRM},
 {"IPAddress", &DMWRITE, DMT_STRING, get_ipv6_address, set_ipv6_address, &IPv6INFRM},
+{"Origin", &DMWRITE, DMT_STRING, get_ipv6_addressing_type, set_ipv6_addressing_type, &IPv6INFRM},
 {0}
 };
 
+DMLEAF tIpPingDiagParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform*/
+{"DiagnosticsState", &DMWRITE, DMT_STRING, get_ip_ping_diagnostics_state, set_ip_ping_diagnostics_state, NULL},
+{"Interface", &DMWRITE, DMT_BOOL, get_ip_ping_interface, set_ip_ping_diagnostics_state, NULL},
+{"Host", &DMWRITE, DMT_STRING, get_ip_ping_host, set_ip_ping_host, NULL},
+{"NumberOfRepetitions", &DMWRITE, DMT_UNINT, get_ip_ping_repetition_number, set_ip_ping_repetition_number, NULL},
+{"Timeout", &DMWRITE, DMT_UNINT, get_ip_ping_timeout, set_ip_ping_timeout, NULL},
+{"DataBlockSize", &DMWRITE, DMT_UNINT, get_ip_ping_block_size, set_ip_ping_block_size, NULL},
+{"SuccessCount", &DMREAD, DMT_UNINT, get_ip_ping_success_count, NULL, NULL},
+{"FailureCount", &DMREAD, DMT_UNINT, get_ip_ping_failure_count, set_ipv6_addressing_type, NULL},
+{"AverageResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_average_response_time, NULL, NULL},
+{"MinimumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_min_response_time, NULL, NULL},
+{"MaximumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_max_response_time, NULL, NULL},
+{0}
+};
 
 int browseIPIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {

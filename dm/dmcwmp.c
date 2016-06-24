@@ -51,7 +51,6 @@ static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
 static int set_parameter_notification(struct dmctx *ctx, char *param, char *value);
 static int check_param_prefix (struct dmctx *ctx);
-static int check_obj_is_nl1(char *refparam, char *inparam, int ndot);
 static int get_value_obj(DMOBJECT_ARGS);
 static int get_value_param(DMPARAM_ARGS);
 static int mobj_get_value_in_param(DMOBJECT_ARGS);
@@ -70,8 +69,8 @@ static int get_notification_inparam_isparam_check_param(DMPARAM_API_ARGS);
 static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS);
 static int inform_check_obj(DMOBJECT_ARGS);
 static int inform_check_param(DMPARAM_ARGS);
-static int add_object_obj(DMOBJECT_API_ARGS);
-static int add_object_param(DMPARAM_API_ARGS);
+static int mparam_add_object(DMPARAM_ARGS);
+static int mobj_add_object(DMOBJECT_ARGS);
 static int delete_object_obj(DMOBJECT_API_ARGS);
 static int delete_object_param(DMPARAM_API_ARGS);
 static int mobj_set_value(MOBJ_ARGS);
@@ -202,6 +201,11 @@ int plugin_obj_forcedinform_match(DMOBJECT_ARGS)
 		if (fi)
 			return 0;
 	}
+	return FAULT_9005;
+}
+
+int plugin_leaf_onlyobj_match(MOBJ_ARGS)
+{
 	return FAULT_9005;
 }
 
@@ -802,22 +806,6 @@ static int check_param_prefix (struct dmctx *ctx)
 	return -1;
 }
 
-static int check_obj_is_nl1(char *refparam, char *inparam, int ndot)
-{
-	unsigned int len, i;
-	len = strlen(refparam);
-	for (i = len - 1; i >= 0; i--) {
-		if (refparam[i] == '.') {
-			if (--ndot == 0)
-				break;
-		}
-	}
-	i++;
-	if (strlen(inparam) == i)
-		return 0;
-	return -1;
-}
-
 int string_to_bool(char *v, bool *b)
 {
 	if (v[0] == '1' && v[1] == '\0') {
@@ -851,7 +839,7 @@ int dm_entry_get_value(struct dmctx *ctx)
 	DMOBJ *root = tEntryObj;
 	DMNODE node = {.current_object = ""};
 
-	if (ctx->in_param[0] == '\0' || rootcmp(ctx->in_param, root->obj) == 0) { //|| check_param_prefix(ctx) == 0
+	if (ctx->in_param[0] == '\0' || rootcmp(ctx->in_param, root->obj) == 0) {
 		ctx->inparam_isparam = 0;
 		ctx->method_obj = get_value_obj;
 		ctx->method_param = get_value_param;
@@ -1034,7 +1022,6 @@ static int mparam_get_name_in_obj(DMPARAM_ARGS)
 		perm = permission->get_permission(refparam, dmctx, data, instance);
 
 	dmastrcat(&refparam, node->current_object, lastname);
-	//dm_add_param_list(dmctx, refparam, perm, NULL);
 	add_list_paramameter(dmctx, refparam, perm, NULL);
 	return 0;
 }
@@ -1055,7 +1042,6 @@ static int mobj_get_name_in_obj(DMOBJECT_ARGS)
 		perm = permission->get_permission(refparam, dmctx, data, instance);
 
 	refparam = node->current_object;
-	//dm_add_param_list(dmctx, refparam, perm, NULL);
 	add_list_paramameter(dmctx, refparam, perm, NULL);
 	return 0;
 }
@@ -1211,47 +1197,60 @@ static int inform_check_param(DMPARAM_ARGS)
  * **************/
 int dm_entry_add_object(struct dmctx *ctx)
 {
-	int i;
-	if (ctx->tree)
+	DMOBJ *root = tEntryObj;
+	DMNODE node = {.current_object = ""};
+	int err;
+
+	if (ctx->in_param == NULL || ctx->in_param[0] == '\0' || (*(ctx->in_param + strlen(ctx->in_param) - 1) != '.'))
 		return FAULT_9005;
-	ctx->method_obj=&add_object_obj;
-	ctx->method_param=&add_object_param;
-	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		if (!prefix_methods[i].enable) continue;
-		int ret = prefix_methods[i].method(ctx);
-		if (ctx->stop)
-			return ret;
-	}	
+
+	ctx->inparam_isparam = 0;
+	ctx->stop = 0;
+	ctx->checkobj = plugin_obj_match;
+	ctx->checkleaf = plugin_leaf_onlyobj_match;
+	ctx->method_obj = mobj_add_object;
+	ctx->method_param = mparam_add_object;
+	err = dm_browse(ctx, &node, root, NULL, NULL);
+	if (ctx->stop)
+		return err;
+	else
+		return FAULT_9005;
+}
+
+static int mparam_add_object(DMPARAM_ARGS)
+{
 	return FAULT_9005;
 }
 
-static int add_object_obj(DMOBJECT_API_ARGS)
+static int mobj_add_object(DMOBJECT_ARGS)
 {
-	char *instance;
-	if (strcmp(ctx->current_obj, ctx->in_param) != 0)
+	char *addinst;
+	char newparam[256];
+	char *refparam = node->current_object;
+	char *perm = permission->val;
+	char *objinst;
+
+	if (strcmp(refparam, dmctx->in_param) != 0)
 		return FAULT_9005;
 
-	ctx->stop = true;
-	if (addobj == NULL)
-		return FAULT_9005; 
+	dmctx->stop = 1;
+	if (node->is_instanceobj)
+		return FAULT_9005;
+	if (permission->get_permission != NULL)
+		perm = permission->get_permission(refparam, dmctx, data, instance);
 
-	int fault = (addobj)(ctx, &instance);
+	if (perm[0] == '0' || addobj == NULL)
+		return FAULT_9005;
+
+	int fault = (addobj)(dmctx, &instance);
 	if (fault)
 		return fault;
-
-	ctx->addobj_instance = instance;
-	char *objinst;
-	dmasprintf(&objinst, "%s%s.", ctx->current_obj, instance);
-	set_parameter_notification(ctx, objinst, "0");
+	dmctx->addobj_instance = instance;
+	dmasprintf(&objinst, "%s%s.", dmctx->current_obj, instance);
+	set_parameter_notification(dmctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
 }
-
-static int add_object_param(DMPARAM_API_ARGS)
-{
-	return FAULT_9005; 
-}
-
  /* **************
  * del object 
  * **************/
@@ -1340,12 +1339,10 @@ static int mparam_set_value(DMPARAM_ARGS)
 			dmfree(refparam);
 			return FAULT_9008;
 		}
-		//err = setvalue(refparam, dmctx, data, instance, dmctx->value, ACTION_CHECK);
 		err =(set_cmd)(refparam, dmctx, VALUESET, dmctx->in_value);
 		if (err){
 			return err;
 		}
-		//dm_add_setvalue_list(dmctx, setvalue, refparam, dmctx->value, data, instance);
 		add_set_list_tmp(dmctx, dmctx->in_param, dmctx->in_value);
 	}
 	return 0;
