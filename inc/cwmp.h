@@ -19,7 +19,9 @@
 #include <pthread.h>
 #include <microxml.h>
 #include <libubox/list.h>
+#ifdef XMPP_ENABLE
 #include <strophe.h>
+#endif
 
 #define MAX_EVENTS							64
 #define MAX_INT32							2147483646
@@ -273,8 +275,10 @@ typedef struct cwmp {
     struct session_status session_status;
     unsigned int cwmp_id;
     int cr_socket_desc;
+#ifdef XMPP_ENABLE
 	xmpp_ctx_t 			*xmpp_ctx;
 	xmpp_conn_t 		*xmpp_conn;
+#endif
 } cwmp;
 
 typedef struct session {

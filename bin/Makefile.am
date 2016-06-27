@@ -105,7 +105,6 @@ icwmpd_LDADD =			\
 icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 icwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 
-icwmpd_LDFLAGS+=$(STAGING_DIR)/usr/lib/libstrophe.so
 CWMP_BKP_FILE=/etc/icwmpd/.icwmpd_backup_session.xml
 icwmpd_CFLAGS+=-DCWMP_BKP_FILE=\"$(CWMP_BKP_FILE)\"
 icwmpd_CFLAGS+=-I../inc
@@ -114,4 +113,3 @@ icwmpd_CFLAGS+=-I../dm/dmtree/
 icwmpd_CFLAGS+=-I../dm/dmtree/common
 icwmpd_CFLAGS+=-I../dm/dmtree/tr098
 icwmpd_CFLAGS+=-I../dm/dmtree/tr181
-icwmpd_CFLAGS+="-I$(STAGING_DIR)/usr/include/strophe/"

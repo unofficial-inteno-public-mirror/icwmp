@@ -15,7 +15,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef XMPP_ENABLE
 #include <strophe.h>
+#endif
 
 #define DEFAULT_XMPP_RECONNECTION_RETRY			5
 void cwmp_xmpp_connect_client();
