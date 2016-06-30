@@ -16,8 +16,9 @@ struct eth_port_args
 	struct uci_section *eth_port_sec;
 	char *ifname;
 };
-
-
-int entry_method_root_Ethernet(struct dmctx *ctx);
-
+extern DMOBJ tEthernetObj[];
+DMOBJ tEthernetStatObj[];
+DMLEAF tEthernetParams[];
+DMLEAF tEthernetStatParams[];
+inline int browseEthIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

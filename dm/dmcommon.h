@@ -52,6 +52,13 @@ do { \
 	if (mpp) close (mpp); \
 } while (0)
 
+enum notification_enum {
+	notification_none,
+	notification_passive,
+	notification_active,
+	__MAX_notification
+};
+
 void compress_spaces(char *str);
 char *cut_fx(char *str, char *delimiter, int occurence);
 pid_t get_pid(char *pname);

@@ -107,6 +107,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 {
 	int fault = 0;
 	bool setnotif = true;
+	int err;
 	
 	if (!inparam) inparam = "";
 	ctx->in_param = inparam;
@@ -148,8 +149,8 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			break;
 		case CMD_SET_NOTIFICATION:
 			if (arg2)
-				string_to_bool(arg2, &setnotif);
-			if (setnotif && arg1 &&
+				err = string_to_bool(arg2, &setnotif);
+			if (!err && arg1 &&
 				(strcmp(arg1, "0") == 0 ||
 				strcmp(arg1, "1") == 0  ||
 				strcmp(arg1, "2") == 0 ||
@@ -159,6 +160,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 				strcmp(arg1, "6") == 0)) {
 				ctx->in_notification = arg1;
 				ctx->setaction = VALUECHECK;
+				ctx->notification_change = setnotif;
 				fault = dm_entry_set_notification(ctx);
 			} else {
 				fault = FAULT_9003;

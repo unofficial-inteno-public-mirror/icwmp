@@ -85,6 +85,10 @@ extern struct dm_permession_s DMREAD;
 extern struct dm_permession_s DMWRITE;
 extern struct dm_forced_inform_s DMFINFRM;
 
+extern struct dm_notif_s DMNONE;
+extern struct dm_notif_s DMACTIVE;
+extern struct dm_notif_s DMPASSIVE;
+
 enum dmt_type_enum {
 	DMT_STRING,
 	DMT_UNINT,
@@ -93,19 +97,6 @@ enum dmt_type_enum {
 	DMT_TIME,
 };
 
-// TO REMOVE JUST FOR COMPILE
-#define DMPARAM_API_ARGS \
-	char *lastname, \
-	struct dmctx *ctx, \
-	char *permission, \
-	int (*get_cmd)(char *refparam, struct dmctx *ctx, char **value), \
-	int (*set_cmd)(char *refparam, struct dmctx *ctx, int action, char *value), \
-	char *type, \
-	bool forced_inform, \
-	bool notif_permission, \
-	int forced_notify, \
-	char *linker
-// TO BE USED
 #define DMPARAM_ARGS \
 	struct dmctx *dmctx, \
 	struct dmnode *node, \
@@ -115,24 +106,20 @@ enum dmt_type_enum {
 	int (*get_cmd)(char *refparam, struct dmctx *dmctx, char **value), \
 	int (*set_cmd)(char *refparam, struct dmctx *dmctx, char *value, int action), \
 	struct dm_forced_inform_s *forced_inform, \
+	struct dm_notif_s *notification, \
+	char *(*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
 	void *data, \
 	char *instance
-// TO REMOVE JUST FOR COMPILE
-#define DMOBJECT_API_ARGS \
-	struct dmctx *ctx, \
-	char *permission, \
-	bool notif_permission, \
-	int (*addobj)(struct dmctx *ctx, char **instance), \
-	int (*delobj)(struct dmctx *ctx), \
-	char *linker
-// TO BE USED
+
 #define DMOBJECT_ARGS \
 	struct dmctx *dmctx, \
 	struct dmnode *node, \
 	struct dm_permession_s *permission, \
 	int (*addobj)(struct dmctx *dmctx, char **instance), \
-	int (*delobj)(struct dmctx *dmctx), \
+	int (*delobj)(struct dmctx *dmctx, unsigned char del_action), \
 	struct dm_forced_inform_s *forced_inform, \
+	struct dm_notif_s *notification, \
+	char *(*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
 	void *data, \
 	char *instance
 
@@ -145,6 +132,7 @@ struct dm_leaf_s;
 struct dm_obj_s;
 struct dmnode;
 struct dmctx;
+struct dm_notif_s;
 
 struct dm_permession_s {
 	char *val;
@@ -156,32 +144,35 @@ struct dm_forced_inform_s {
 	unsigned char (*get_forced_inform)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 };
 
+struct dm_notif_s {
+	char *val;
+	char *(*get_notif)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+};
+
 typedef struct dm_leaf_s {
-	/* PARAM, permission, type, getvlue, setvalue, forced_inform*/
+	/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
 	char *parameter;
 	struct dm_permession_s *permission;
 	int type;
 	int (*getvalue)(char *refparam, struct dmctx *dmctx, char **value);
 	int (*setvalue)(char *refparam, struct dmctx *dmctx, char *value, int action);
 	struct dm_forced_inform_s *forced_inform;
-	//bool notif_permission;
-	//int forced_notify;
-	//int (*linker)(char *refparam); //TODO
+	struct dm_notif_s *notification;
+	char *(*get_linker)(struct dmctx *dmctx);
 } DMLEAF;
 
 typedef struct dm_obj_s {
-	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, nextobj, leaf*/
+	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, notification, nextobj, leaf*/
 	char *obj;
 	struct dm_permession_s *permission;
-	int (*addobj)(char *refparam, struct dmctx *dmctx, void *data, char **instance);
-	int (*delobj)(char *refparam, struct dmctx *dmctx, void *data, char *instance);
+	int (*addobj)(struct dmctx *dmctx, char **instance);
+	int (*delobj)(struct dmctx *dmctx, unsigned char del_action);
 	int (*browseinstobj)(struct dmctx *dmctx, struct dmnode *node, void *data, char *instance);
-	//char *linker;
 	struct dm_forced_inform_s *forced_inform;
+	struct dm_notif_s *notification;
 	struct dm_obj_s *nextobj;
 	struct dm_leaf_s *leaf;
-	//struct dm_forced_inform_s *forced_inform;
-
+	char *(*get_linker)(struct dmctx *dmctx);
 } DMOBJ;
 
 
@@ -228,7 +219,8 @@ struct dmctx
 	int faultcode;
 	int setaction;
 	char *in_param;
-	char *in_notification; 
+	char *in_notification;
+	bool notification_change;
 	char *in_value;
 	char *addobj_instance;
 	char *linker;
@@ -271,6 +263,10 @@ enum set_value_action {
 	VALUESET
 };
 
+enum del_action_enum {
+	DEL_INST,
+	DEL_ALL
+};
 enum {
 	CMD_GET_VALUE,
 	CMD_GET_NAME,

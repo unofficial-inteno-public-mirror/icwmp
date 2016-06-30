@@ -16,6 +16,8 @@
 #include "root.h"
 #include "deviceinfo.h"
 #include "ip.h"
+#include "ethernet.h"
+#include "bridging.h"
 
 int entry_method_root(struct dmctx *ctx)
 {
@@ -23,21 +25,20 @@ int entry_method_root(struct dmctx *ctx)
 }
 
 DMOBJ tEntryObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-		//{"Manufacturer", "0", get_device_manufacturer, NULL, NULL, 1, 1, UNDEF, NULL, NULL, NULL},
-
-{DMROOT, &DMREAD, NULL, NULL, NULL, &DMFINFRM, tRootObj, NULL},
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, NOTIFICATION, nextobj, leaf, linker*/
+{DMROOT, &DMREAD, NULL, NULL, NULL, &DMFINFRM, &DMNONE, tRootObj, NULL, NULL},
 {0}
 };
 
 /* *** Device. *** */
 DMOBJ tRootObj[] = {
-/* OBJ permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-{"DeviceInfo", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tDeviceInfoObj, tDeviceInfoParams},
+/* OBJ permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, notification, linker*/
+{"DeviceInfo", &DMREAD, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tDeviceInfoObj, tDeviceInfoParams, NULL},
 //{"ManagementServer", &DMREAD, NULL, NULL, NULL, &DMFINFRM, NULL, tMgmtServerParams},
 //{"Time", &DMREAD, NULL, NULL, NULL, NULL, NULL, tTimeParams},
 //{"Services", &DMREAD, NULL, NULL, NULL, NULL, tServiceObj, NULL},
-{"IP", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tIPObj, NULL},
-//{"PPP", &DMREAD, NULL, NULL, NULL, &DMFINFRM, tPPPObj, NULL},
+{"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
+{"IP",&DMREAD, NULL, NULL, NULL, NULL, NULL, tIPObj, NULL, NULL},
+{"Ethernet", &DMREAD, NULL, NULL, NULL, NULL, NULL, tEthernetObj, NULL, NULL},
 {0}
 };

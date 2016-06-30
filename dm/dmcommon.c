@@ -26,6 +26,12 @@
 #include "dmubus.h"
 #include "dmcommon.h"
 
+char *array_notifcation_char[__MAX_notification] = {
+	[notification_none] = "0",
+	[notification_passive] = "1",
+	[notification_active] = "2",
+};
+
 void compress_spaces(char *str)
 {
 	char *dst = str;
@@ -651,4 +657,14 @@ int check_ifname_is_vlan(char *ifname)
 	if (pch && atoi(pch+1) >= 2)
 		return 1;
 	return 0;
+}
+
+int dmcommon_check_notification_value(char *value)
+{
+	int i;
+	for (i = 0; i< __MAX_notification; i++) {
+		if (strcmp(value, array_notifcation_char[i]) == 0)
+			return 0;
+	}
+	return -1;
 }

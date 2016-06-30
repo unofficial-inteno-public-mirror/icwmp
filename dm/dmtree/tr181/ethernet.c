@@ -21,6 +21,18 @@
 struct eth_port_args cur_eth_port_args = {0};
 char *wan_ifname = NULL;
 
+/**************************************************************************
+* LINKER
+***************************************************************************/
+char *get_linker_val(struct dmctx *dmctx) {
+	if (cur_eth_port_args.ifname)
+		return cur_eth_port_args.ifname;
+	else
+		return "";
+}
+/**************************************************************************
+* INIT
+***************************************************************************/
 inline int init_eth_port(struct dmctx *ctx, struct uci_section *s, char *ifname)
 {
 	struct eth_port_args *args = &cur_eth_port_args;
@@ -29,8 +41,9 @@ inline int init_eth_port(struct dmctx *ctx, struct uci_section *s, char *ifname)
 	args->ifname = ifname;
 	return 0;
 }
-
-///////////////////SET & GET ALIAS////////////////////////////////////
+/**************************************************************************
+* SET & GET ALIAS
+***************************************************************************/
 int get_eth_port_alias(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_value_by_section_string(cur_eth_port_args.eth_port_sec, "eth_port_alias", value);
@@ -48,7 +61,9 @@ int set_eth_port_alias(char *refparam, struct dmctx *ctx, int action, char *valu
 	}
 	return 0;
 }
-//////////////////////////GET & SET ETH PARAM////////////////:
+/**************************************************************************
+* GET & SET ETH PARAM
+***************************************************************************/
 int get_eth_port_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
@@ -268,19 +283,44 @@ int get_eth_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **valu
 	return 0;
 }
 
-/////////////////////ENTRY METHOD //////////////////////////
-int entry_method_root_Ethernet(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"Ethernet.") {
-		DMOBJECT(DMROOT"Ethernet.", ctx, "0", 0, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Ethernet.Interface.", ctx, "0", 1, NULL, NULL, NULL);
-		SUBENTRY(entry_method_eth_interface, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
+/*************************************************************
+ * ENTRY METHOD
+/*************************************************************/
 
-inline int entry_method_eth_interface(struct dmctx *ctx)
+DMOBJ tEthernetObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
+{"Interface", &DMREAD, NULL, NULL, browseEthIfaceInst, NULL, NULL, tEthernetStatObj, tEthernetParams, get_linker_val},
+{0}
+};
+
+DMOBJ tEthernetStatObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tEthernetStatParams, NULL},
+{0}
+};
+
+DMLEAF tEthernetParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
+{"Alias", &DMWRITE, DMT_STRING, get_eth_port_alias, set_eth_port_alias, NULL, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_eth_port_enable, set_eth_port_enable, NULL, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_eth_port_status, NULL, NULL, NULL, NULL},
+{"MaxBitRate", &DMWRITE, DMT_STRING, get_eth_port_maxbitrate, set_eth_port_maxbitrate, NULL, NULL, NULL},
+{"Name", &DMREAD, DMT_STRING, get_eth_port_name, NULL, NULL, NULL, NULL},
+{"MACAddress", &DMREAD, DMT_STRING, get_eth_port_mac_address, NULL, NULL, NULL, NULL},
+{"DuplexMode", &DMWRITE, DMT_STRING, get_eth_port_duplexmode, set_eth_port_duplexmode, NULL, NULL, NULL},
+{0}
+};
+
+DMLEAF tEthernetStatParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
+{"BytesSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_bytes, NULL, NULL, NULL, NULL},
+{"BytesReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_bytes, NULL, NULL, NULL, NULL},
+{"PacketsSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_packets, NULL, NULL, NULL, NULL},
+{"PacketsReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_packets, NULL, NULL, NULL, NULL},
+{0}
+};
+
+inline int browseEthIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *int_num = NULL, *int_num_last = NULL, *ifname;
 	struct uci_section *ss = NULL;
@@ -291,30 +331,11 @@ inline int entry_method_eth_interface(struct dmctx *ctx)
 		if (strcmp(ifname, wan_ifname) == 0) {
 			dmasprintf(&ifname, "%s.1", ifname);
 		}
-		init_eth_port(ctx, ss, ifname);
-		int_num =  handle_update_instance(1, ctx, &int_num_last, update_instance_alias, 3, ss, "eth_port_instance", "eth_port_alias");
-		SUBENTRY(entry_eth_interface_instance, ctx, int_num);
+		init_eth_port(dmctx, ss, ifname);
+		int_num =  handle_update_instance(1, dmctx, &int_num_last, update_instance_alias, 3, ss, "eth_port_instance", "eth_port_alias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, int_num);
+
 	}
 	return 0;
 }
 
-inline int entry_eth_interface_instance(struct dmctx *ctx, char *int_num)
-{
-	IF_MATCH(ctx, DMROOT"Ethernet.Interface.%s.", int_num) {
-		DMOBJECT(DMROOT"Ethernet.Interface.%s.", ctx, "0", 1, NULL, NULL, cur_eth_port_args.ifname, int_num);
-		DMPARAM("Alias", ctx, "1", get_eth_port_alias, set_eth_port_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Enable", ctx, "1", get_eth_port_enable, set_eth_port_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Status", ctx, "0", get_eth_port_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("MaxBitRate", ctx, "1", get_eth_port_maxbitrate, set_eth_port_maxbitrate, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Name", ctx, "0", get_eth_port_name, NULL, NULL, 0, 1, UNDEF, NULL); //TO CHECK R/W
-		DMPARAM("MACAddress", ctx, "0", get_eth_port_mac_address, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DuplexMode", ctx, "1", get_eth_port_duplexmode, set_eth_port_duplexmode, NULL, 0, 1, UNDEF, NULL);
-		DMOBJECT(DMROOT"Ethernet.Interface.%s.Stats.", ctx, "0", 1, NULL, NULL, NULL, int_num);
-		DMPARAM("BytesSent", ctx, "0", get_eth_port_stats_tx_bytes, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("BytesReceived", ctx, "0", get_eth_port_stats_rx_bytes, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("PacketsSent", ctx, "0", get_eth_port_stats_tx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("PacketsReceived", ctx, "0", get_eth_port_stats_rx_packets, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}

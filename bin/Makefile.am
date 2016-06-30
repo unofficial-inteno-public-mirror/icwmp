@@ -28,7 +28,9 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/deviceinfo.c				\
 	../dm/dmtree/common/softwaremodules.c			\
 	../dm/dmtree/tr181/root.c					\
-	../dm/dmtree/tr181/ip.c						
+	../dm/dmtree/tr181/ip.c						\
+	../dm/dmtree/tr181/ethernet.c				\
+	../dm/dmtree/tr181/bridging.c				
 	
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
