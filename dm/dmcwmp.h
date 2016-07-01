@@ -150,7 +150,7 @@ struct dm_notif_s {
 };
 
 typedef struct dm_leaf_s {
-	/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
+	/* PARAM, permission, type, getvalue, setvalue, forced_inform, notification(7)*/
 	char *parameter;
 	struct dm_permession_s *permission;
 	int type;
@@ -158,11 +158,10 @@ typedef struct dm_leaf_s {
 	int (*setvalue)(char *refparam, struct dmctx *dmctx, char *value, int action);
 	struct dm_forced_inform_s *forced_inform;
 	struct dm_notif_s *notification;
-	char *(*get_linker)(struct dmctx *dmctx);
 } DMLEAF;
 
 typedef struct dm_obj_s {
-	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, notification, nextobj, leaf*/
+	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, notification, nextobj, leaf, linker(10)*/
 	char *obj;
 	struct dm_permession_s *permission;
 	int (*addobj)(struct dmctx *dmctx, char **instance);

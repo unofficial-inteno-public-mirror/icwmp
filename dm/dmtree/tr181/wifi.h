@@ -22,6 +22,23 @@ struct wifi_ssid_args
 	char *ifname;
 	char *linker;
 };
-int entry_method_root_Wifi(struct dmctx *ctx);
+struct wifi_acp_args
+{
+	struct uci_section *wifi_acp_sec;
+	char *ifname;
+};
 
+extern DMOBJ tWifiObj[];
+DMOBJ tWifiRadioStatsObj[];
+DMOBJ tAcessPointSecurityObj[];
+DMOBJ tWifiSsidStatsObj[];
+DMLEAF tWifiAcessPointParams[];
+DMLEAF tWifiSsidParams[];
+DMLEAF tWifiRadioParams[];
+DMLEAF tWifiAcessPointSecurityParams[];
+DMLEAF tWifiRadioStatsParams[];
+DMLEAF tWifiSsidStatsParams[];
+inline int browseWifiSsidInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseWifiAccessPointInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseWifiRadioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

@@ -288,35 +288,35 @@ int get_eth_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **valu
 /*************************************************************/
 
 DMOBJ tEthernetObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, linker*/
 {"Interface", &DMREAD, NULL, NULL, browseEthIfaceInst, NULL, NULL, tEthernetStatObj, tEthernetParams, get_linker_val},
 {0}
 };
 
 DMOBJ tEthernetStatObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, linker*/
 {"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tEthernetStatParams, NULL},
 {0}
 };
 
 DMLEAF tEthernetParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
-{"Alias", &DMWRITE, DMT_STRING, get_eth_port_alias, set_eth_port_alias, NULL, NULL, NULL},
-{"Enable", &DMWRITE, DMT_BOOL, get_eth_port_enable, set_eth_port_enable, NULL, NULL, NULL},
-{"Status", &DMREAD, DMT_STRING, get_eth_port_status, NULL, NULL, NULL, NULL},
-{"MaxBitRate", &DMWRITE, DMT_STRING, get_eth_port_maxbitrate, set_eth_port_maxbitrate, NULL, NULL, NULL},
-{"Name", &DMREAD, DMT_STRING, get_eth_port_name, NULL, NULL, NULL, NULL},
-{"MACAddress", &DMREAD, DMT_STRING, get_eth_port_mac_address, NULL, NULL, NULL, NULL},
-{"DuplexMode", &DMWRITE, DMT_STRING, get_eth_port_duplexmode, set_eth_port_duplexmode, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_eth_port_alias, set_eth_port_alias, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_eth_port_enable, set_eth_port_enable, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_eth_port_status, NULL, NULL, NULL},
+{"MaxBitRate", &DMWRITE, DMT_STRING, get_eth_port_maxbitrate, set_eth_port_maxbitrate, NULL, NULL},
+{"Name", &DMREAD, DMT_STRING, get_eth_port_name, NULL, NULL, NULL},
+{"MACAddress", &DMREAD, DMT_STRING, get_eth_port_mac_address, NULL, NULL, NULL},
+{"DuplexMode", &DMWRITE, DMT_STRING, get_eth_port_duplexmode, set_eth_port_duplexmode, NULL, NULL},
 {0}
 };
 
 DMLEAF tEthernetStatParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
-{"BytesSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_bytes, NULL, NULL, NULL, NULL},
-{"BytesReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_bytes, NULL, NULL, NULL, NULL},
-{"PacketsSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_packets, NULL, NULL, NULL, NULL},
-{"PacketsReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_packets, NULL, NULL, NULL, NULL},
+{"BytesSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_bytes, NULL, NULL, NULL},
+{"BytesReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_bytes, NULL, NULL, NULL},
+{"PacketsSent", &DMREAD, DMT_UNINT, get_eth_port_stats_tx_packets, NULL, NULL, NULL},
+{"PacketsReceived", &DMREAD, DMT_UNINT, get_eth_port_stats_rx_packets, NULL, NULL, NULL},
 {0}
 };
 

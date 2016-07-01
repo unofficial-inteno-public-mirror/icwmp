@@ -18,6 +18,7 @@
 #include "ip.h"
 #include "ethernet.h"
 #include "bridging.h"
+#include "wifi.h"
 
 int entry_method_root(struct dmctx *ctx)
 {
@@ -34,10 +35,8 @@ DMOBJ tEntryObj[] = {
 DMOBJ tRootObj[] = {
 /* OBJ permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, notification, linker*/
 {"DeviceInfo", &DMREAD, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tDeviceInfoObj, tDeviceInfoParams, NULL},
-//{"ManagementServer", &DMREAD, NULL, NULL, NULL, &DMFINFRM, NULL, tMgmtServerParams},
-//{"Time", &DMREAD, NULL, NULL, NULL, NULL, NULL, tTimeParams},
-//{"Services", &DMREAD, NULL, NULL, NULL, NULL, tServiceObj, NULL},
 {"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
+{"WiFi",&DMREAD, NULL, NULL, NULL, NULL, NULL, tWifiObj, NULL, NULL},
 {"IP",&DMREAD, NULL, NULL, NULL, NULL, NULL, tIPObj, NULL, NULL},
 {"Ethernet", &DMREAD, NULL, NULL, NULL, NULL, NULL, tEthernetObj, NULL, NULL},
 {0}

@@ -219,7 +219,7 @@ int dm_browse_leaf(struct dmctx *dmctx, DMNODE *parent_node, DMLEAF *leaf, void 
 		return 0;
 
 	for (; leaf->parameter; leaf++) {
-		err = dmctx->method_param(dmctx, parent_node, leaf->parameter, leaf->permission, leaf->type, leaf->getvalue, leaf->setvalue, leaf->forced_inform, leaf->notification, leaf->get_linker, data, instance);
+		err = dmctx->method_param(dmctx, parent_node, leaf->parameter, leaf->permission, leaf->type, leaf->getvalue, leaf->setvalue, leaf->forced_inform, leaf->notification, NULL, data, instance);
 		if (dmctx->stop)
 			return err;
 	}

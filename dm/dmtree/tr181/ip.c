@@ -736,12 +736,12 @@ DMOBJ tDiagnosticObj[] = {
 /* *** Device.IP.Interface.{i}.IPv4Address. *** */
 DMLEAF tIPv4Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
-{"Alias", &DMWRITE, DMT_STRING, get_ipv4_alias, set_ipv4_alias, &IPv4INFRM, NULL, NULL},
-{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv4INFRM, NULL, NULL},
-{"X_BROADCOM_COM_FirewallEnabled", &DMWRITE, DMT_BOOL, get_firewall_enabled, set_firewall_enabled, &IPv4INFRM, NULL, NULL},
-{"IPAddress", &DMWRITE, DMT_STRING, get_ipv4_address, set_ipv4_address, &IPv4INFRM, NULL, NULL},
-{"SubnetMask", &DMWRITE, DMT_STRING, get_ipv4_netmask, set_ipv4_netmask, &IPv4INFRM, NULL, NULL},
-{"AddressingType", &DMWRITE, DMT_STRING, get_ipv4_addressing_type, set_ipv4_addressing_type, &IPv4INFRM, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_ipv4_alias, set_ipv4_alias, &IPv4INFRM, NULL},
+{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv4INFRM, NULL},
+{"X_BROADCOM_COM_FirewallEnabled", &DMWRITE, DMT_BOOL, get_firewall_enabled, set_firewall_enabled, &IPv4INFRM, NULL},
+{"IPAddress", &DMWRITE, DMT_STRING, get_ipv4_address, set_ipv4_address, &IPv4INFRM, NULL},
+{"SubnetMask", &DMWRITE, DMT_STRING, get_ipv4_netmask, set_ipv4_netmask, &IPv4INFRM, NULL},
+{"AddressingType", &DMWRITE, DMT_STRING, get_ipv4_addressing_type, set_ipv4_addressing_type, &IPv4INFRM, NULL},
 {0}
 };
 
@@ -749,26 +749,26 @@ DMLEAF tIPv4Params[] = {
 /* *** Device.IP.Interface.{i}.IPv6Address. *** */
 DMLEAF tIPv6Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
-{"Alias", &DMWRITE, DMT_STRING, get_ipv6_alias, set_ipv6_alias, &IPv6INFRM, NULL, NULL},
-{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv6INFRM, NULL, NULL},
-{"IPAddress", &DMWRITE, DMT_STRING, get_ipv6_address, set_ipv6_address, &IPv6INFRM, NULL, NULL},
-{"Origin", &DMWRITE, DMT_STRING, get_ipv6_addressing_type, set_ipv6_addressing_type, &IPv6INFRM, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_ipv6_alias, set_ipv6_alias, &IPv6INFRM, NULL},
+{"Enable", &DMREAD, DMT_BOOL, get_ip_enable, NULL, &IPv6INFRM, NULL},
+{"IPAddress", &DMWRITE, DMT_STRING, get_ipv6_address, set_ipv6_address, &IPv6INFRM, NULL},
+{"Origin", &DMWRITE, DMT_STRING, get_ipv6_addressing_type, set_ipv6_addressing_type, &IPv6INFRM, NULL},
 {0}
 };
 
 DMLEAF tIpPingDiagParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"DiagnosticsState", &DMWRITE, DMT_STRING, get_ip_ping_diagnostics_state, set_ip_ping_diagnostics_state, NULL, NULL, NULL},
-{"Interface", &DMWRITE, DMT_BOOL, get_ip_ping_interface, set_ip_ping_diagnostics_state, NULL, NULL, NULL},
-{"Host", &DMWRITE, DMT_STRING, get_ip_ping_host, set_ip_ping_host, NULL, NULL, NULL},
-{"NumberOfRepetitions", &DMWRITE, DMT_UNINT, get_ip_ping_repetition_number, set_ip_ping_repetition_number, NULL, NULL, NULL},
-{"Timeout", &DMWRITE, DMT_UNINT, get_ip_ping_timeout, set_ip_ping_timeout, NULL, NULL, NULL},
-{"DataBlockSize", &DMWRITE, DMT_UNINT, get_ip_ping_block_size, set_ip_ping_block_size, NULL, NULL, NULL},
-{"SuccessCount", &DMREAD, DMT_UNINT, get_ip_ping_success_count, NULL, NULL, NULL},
-{"FailureCount", &DMREAD, DMT_UNINT, get_ip_ping_failure_count, set_ipv6_addressing_type, NULL, NULL, NULL},
-{"AverageResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_average_response_time, NULL, NULL, NULL, NULL},
-{"MinimumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_min_response_time, NULL, NULL, NULL, NULL},
-{"MaximumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_max_response_time, NULL, NULL, NULL, NULL},
+{"DiagnosticsState", &DMWRITE, DMT_STRING, get_ip_ping_diagnostics_state, set_ip_ping_diagnostics_state, NULL, NULL},
+{"Interface", &DMWRITE, DMT_BOOL, get_ip_ping_interface, set_ip_ping_diagnostics_state, NULL, NULL},
+{"Host", &DMWRITE, DMT_STRING, get_ip_ping_host, set_ip_ping_host, NULL, NULL},
+{"NumberOfRepetitions", &DMWRITE, DMT_UNINT, get_ip_ping_repetition_number, set_ip_ping_repetition_number, NULL, NULL},
+{"Timeout", &DMWRITE, DMT_UNINT, get_ip_ping_timeout, set_ip_ping_timeout, NULL, NULL},
+{"DataBlockSize", &DMWRITE, DMT_UNINT, get_ip_ping_block_size, set_ip_ping_block_size, NULL, NULL},
+{"SuccessCount", &DMREAD, DMT_UNINT, get_ip_ping_success_count, NULL, NULL},
+{"FailureCount", &DMREAD, DMT_UNINT, get_ip_ping_failure_count, set_ipv6_addressing_type, NULL, NULL},
+{"AverageResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_average_response_time, NULL, NULL, NULL},
+{"MinimumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_min_response_time, NULL, NULL, NULL},
+{"MaximumResponseTime", &DMREAD, DMT_UNINT, get_ip_ping_max_response_time, NULL, NULL, NULL},
 {0}
 };
 

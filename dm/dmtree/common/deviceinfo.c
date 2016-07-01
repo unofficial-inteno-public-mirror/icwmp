@@ -354,7 +354,7 @@ int get_vcf_alias(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_access_point_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_vcf_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -462,7 +462,7 @@ DMLEAF tCatTvParams[] = {
 
 DMLEAF tVcfParams[] = {
 /* PARAM, permission, type, getvalue, setvalue, forced_inform, notification*/
-{"Alias", &DMWRITE, DMT_STRING, get_vcf_alias, set_access_point_alias, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_vcf_alias, set_vcf_alias, NULL, NULL, NULL},
 {"Name", &DMREAD, DMT_STRING, get_vcf_name, NULL, NULL, NULL, NULL},
 {"Version", &DMREAD, DMT_STRING, get_vcf_version, NULL, NULL, NULL, NULL},
 {"Date", &DMREAD, DMT_STRING, get_vcf_date, NULL, NULL, NULL, NULL},

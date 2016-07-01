@@ -1124,10 +1124,10 @@ DMOBJ tBridgePortStatObj[] = {
 
 DMLEAF tBridgePortStatParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification, linker*/
-{"BytesSent", &DMREAD, DMT_UNINT, get_br_port_stats_tx_bytes, NULL, NULL, NULL, NULL},
-{"BytesReceived", &DMREAD, DMT_UNINT, get_br_port_stats_rx_bytes, NULL, NULL, NULL, NULL},
-{"PacketsSent", &DMREAD, DMT_UNINT, get_br_port_stats_tx_packets, NULL, NULL, NULL, NULL},
-{"PacketsReceived", &DMREAD, DMT_UNINT, get_br_port_stats_rx_packets, NULL, NULL, NULL, NULL},
+{"BytesSent", &DMREAD, DMT_UNINT, get_br_port_stats_tx_bytes, NULL, NULL, NULL},
+{"BytesReceived", &DMREAD, DMT_UNINT, get_br_port_stats_rx_bytes, NULL, NULL, NULL},
+{"PacketsSent", &DMREAD, DMT_UNINT, get_br_port_stats_tx_packets, NULL, NULL, NULL},
+{"PacketsReceived", &DMREAD, DMT_UNINT, get_br_port_stats_rx_packets, NULL, NULL, NULL},
 {0}
 };
 
