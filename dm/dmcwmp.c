@@ -582,7 +582,7 @@ void free_all_list_fault_param(struct dmctx *ctx)
 	}
 }
 
-void add_list_enabled_notify(char *param, char *notification, char *value)
+void add_list_enabled_notify(struct dmctx *dmctx, char *param, struct dm_notif_s *notification, char *value)
 {
 	struct dm_enabled_notify *dm_enabled_notify;
 
@@ -590,10 +590,10 @@ void add_list_enabled_notify(char *param, char *notification, char *value)
 	list_add_tail(&dm_enabled_notify->list, &list_enabled_notify);
 	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
 	dm_enabled_notify->value = value ? strdup(value) : strdup(""); // Should be strdup and not dmstrdup
-	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
+	dm_enabled_notify->notification = notification->val ? strdup(notification->val): strdup(notification->get_notif(param, dmctx, NULL, NULL)); // Should be strdup and not dmstrdup
 }
 
-void add_list_enabled_lwnotify(char *param, char *notification, char *value)
+void add_list_enabled_lwnotify(struct dmctx *dmctx, char *param, struct dm_notif_s *notification, char *value)
 {
 	struct dm_enabled_notify *dm_enabled_notify;
 
@@ -601,7 +601,7 @@ void add_list_enabled_lwnotify(char *param, char *notification, char *value)
 	list_add_tail(&dm_enabled_notify->list, &list_enabled_lw_notify);
 	dm_enabled_notify->name = strdup(param); // Should be strdup and not dmstrdup
 	dm_enabled_notify->value = value ? strdup(value) : strdup(""); // Should be strdup and not dmstrdup
-	dm_enabled_notify->notification = strdup(notification); // Should be strdup and not dmstrdup
+	dm_enabled_notify->notification = notification->val ? strdup(notification->val): strdup(notification->get_notif(param, dmctx, NULL, NULL)); // Should be strdup and not dmstrdup
 }
 void del_list_enabled_notify(struct dm_enabled_notify *dm_enabled_notify)
 {
@@ -1519,9 +1519,9 @@ static int enabled_notify_check_param(DMPARAM_ARGS)
 	(get_cmd)(refparam, dmctx, &value);
 	if (notif[0] == '1' || notif[0] == '2'
 			|| notif[0] == '4' || notif[0] == '6')
-		add_list_enabled_notify(refparam, notification, value);
+		add_list_enabled_notify(dmctx, refparam, notification, value);
 	if (notif[0] >= '3') {
-		add_list_enabled_lwnotify(refparam, notification, value);
+		add_list_enabled_lwnotify(dmctx, refparam, notification, value);
 	}
 	dmfree(refparam);
 	return 0;

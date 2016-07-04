@@ -19,6 +19,7 @@
 #include "ethernet.h"
 #include "bridging.h"
 #include "wifi.h"
+#include "wan.h"
 
 int entry_method_root(struct dmctx *ctx)
 {
@@ -39,5 +40,8 @@ DMOBJ tRootObj[] = {
 {"WiFi",&DMREAD, NULL, NULL, NULL, NULL, NULL, tWifiObj, NULL, NULL},
 {"IP",&DMREAD, NULL, NULL, NULL, NULL, NULL, tIPObj, NULL, NULL},
 {"Ethernet", &DMREAD, NULL, NULL, NULL, NULL, NULL, tEthernetObj, NULL, NULL},
+{"DSL",&DMREAD, NULL, NULL, NULL, NULL, NULL, tDslObj, NULL, NULL},
+{"ATM",&DMREAD, NULL, NULL, NULL, NULL, NULL, tAtmObj, NULL, NULL},
+{"PTM", &DMREAD, NULL, NULL, NULL, NULL, NULL, tPtmObj, NULL, NULL},
 {0}
 };

@@ -33,8 +33,22 @@ struct ptm_args
 	struct uci_section *ptm_sec;
 	char *ifname;
 };
-int entry_method_root_wan_dsl(struct dmctx *ctx);
-int entry_method_root_wan_ptm(struct dmctx *ctx);
-int entry_method_root_wan_atm(struct dmctx *ctx);
+
+extern DMOBJ tDslObj[];
+extern DMOBJ tAtmObj[];
+extern DMOBJ tPtmObj[];
+DMOBJ tAtmLinkStatsObj[];
+DMOBJ tPtmLinkStatsObj[];
+DMLEAF tDslLineParams[];
+DMLEAF tDslChanelParams[] ;
+DMLEAF tAtmLineParams[];
+DMLEAF tAtmLinkStatsParams[] ;
+DMLEAF tPtmLinkStatsParams[];
+DMLEAF tPtmLineParams[];
+
+inline int browseDslLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseDslChannelInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseAtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browsePtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 #endif
