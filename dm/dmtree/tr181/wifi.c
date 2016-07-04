@@ -117,10 +117,10 @@ int get_radio_enable(char *refparam, struct dmctx *ctx, char **value)
 	char *val;
 	dmuci_get_value_by_section_string(cur_wifi_radio_args.wifi_radio_sec, "disabled", &val);
 
-	if (val[0] == '0')
-		*value = "1";
-	else
+	if (val[0] == '1')
 		*value = "0";
+	else
+		*value = "1";
 	return 0;
 }
 
@@ -146,10 +146,10 @@ int set_radio_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 int get_radio_status (char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_value_by_section_string(cur_wifi_radio_args.wifi_radio_sec, "disabled", value);
-	if ((*value)[0] == '\0' || (*value)[0] == '0')
-		*value = "Up";
-	else
+	if ((*value)[0] == '1')
 		*value = "Down";
+	else
+		*value = "Up";
 	return 0;
 }
 int get_radio_max_bit_rate (char *refparam, struct dmctx *ctx, char **value)

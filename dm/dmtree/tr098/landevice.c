@@ -1565,10 +1565,10 @@ int get_wlan_enable(char *refparam, struct dmctx *ctx, char **value)
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "disabled", &val);
 
-	if (val[0] == '0')
-		*value = "1";
-	else
+	if (val[0] == '1')
 		*value = "0";
+	else
+		*value = "1";
 	return 0;
 }
 
