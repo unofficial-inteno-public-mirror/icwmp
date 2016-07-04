@@ -1163,59 +1163,77 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 		return 0;
 	ifname_dup = dmstrdup(cur_bridging_args.ifname);
 	for (pch = strtok_r(ifname_dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
-		uci_foreach_option_eq("ports", "ethport", "ifname", pch, eth_s) {
-			dmuci_set_value_by_section(eth_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(eth_s, "mg_port", "false");
-			dmuci_set_value_by_section(eth_s, "penable", "1");
-			init_bridging_port_args(dmctx, eth_s, false, pch);
-			port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		bool found = false;
+		if(!found) {
+			uci_foreach_option_eq("ports", "ethport", "ifname", pch, eth_s) {
+				dmuci_set_value_by_section(eth_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(eth_s, "mg_port", "false");
+				dmuci_set_value_by_section(eth_s, "penable", "1");
+				init_bridging_port_args(dmctx, eth_s, false, pch);
+				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				found  = true ;
+				break;
+			}
 		}
-		uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", pch, atm_s) {
-			dmuci_set_value_by_section(atm_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(atm_s, "mg_port", "false");
-			dmuci_set_value_by_section(atm_s, "penable", "1");
-			init_bridging_port_args(dmctx, atm_s, false, pch);
-			port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, atm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		if(!found) {
+			uci_foreach_option_eq("layer2_interface_adsl", "atm_bridge", "ifname", pch, atm_s) {
+				dmuci_set_value_by_section(atm_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(atm_s, "mg_port", "false");
+				dmuci_set_value_by_section(atm_s, "penable", "1");
+				init_bridging_port_args(dmctx, atm_s, false, pch);
+				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, atm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				found  = true ;
+				break;
+			}
 		}
-		uci_foreach_option_eq("layer2_interface_vdsl", "vdsl_interface", "ifname", pch, ptm_s) {
-			dmuci_set_value_by_section(ptm_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(ptm_s, "mg_port", "false");
-			dmuci_set_value_by_section(ptm_s, "penable", "1");
-			init_bridging_port_args(dmctx, ptm_s, false, pch);
-			port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, ptm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		if(!found) {
+			uci_foreach_option_eq("layer2_interface_vdsl", "vdsl_interface", "ifname", pch, ptm_s) {
+				dmuci_set_value_by_section(ptm_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(ptm_s, "mg_port", "false");
+				dmuci_set_value_by_section(ptm_s, "penable", "1");
+				init_bridging_port_args(dmctx, ptm_s, false, pch);
+				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, ptm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				found  = true ;
+				break;
+			}
 		}
-		uci_foreach_option_eq("layer2_interface_ethernet", "ethernet_interface", "ifname", pch, w_eth_s) {
-			dmuci_set_value_by_section(w_eth_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(w_eth_s, "mg_port", "false");
-			dmuci_set_value_by_section(w_eth_s, "penable", "1");
-			init_bridging_port_args(dmctx, w_eth_s, false, pch);
-			port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, w_eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		if(!found) {
+			uci_foreach_option_eq("layer2_interface_ethernet", "ethernet_interface", "ifname", pch, w_eth_s) {
+				dmuci_set_value_by_section(w_eth_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(w_eth_s, "mg_port", "false");
+				dmuci_set_value_by_section(w_eth_s, "penable", "1");
+				init_bridging_port_args(dmctx, w_eth_s, false, pch);
+				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, w_eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				found  = true ;
+				break;
+			}
 		}
-		uci_foreach_option_eq("wireless", "wifi-iface", "ifname", pch, wl_s) {
-			dmuci_set_value_by_section(wl_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(wl_s, "mg_port", "false");
-			dmuci_set_value_by_section(wl_s, "penable", "1");
-			init_bridging_port_args(dmctx, wl_s, false, pch);
-			port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, wl_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		if(!found) {
+			uci_foreach_option_eq("wireless", "wifi-iface", "ifname", pch, wl_s) {
+				dmuci_set_value_by_section(wl_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(wl_s, "mg_port", "false");
+				dmuci_set_value_by_section(wl_s, "penable", "1");
+				init_bridging_port_args(dmctx, wl_s, false, pch);
+				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, wl_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				found  = true ;
+				break;
+			}
 		}
-		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", pch, vlan_s) {
-			dmuci_set_value_by_section(vlan_s, "bridge_key", cur_bridging_args.br_key);
-			dmuci_set_value_by_section(vlan_s, "mg_port", "false");
-			dmuci_set_value_by_section(vlan_s, "penable", "1");
-			init_bridging_port_args(dmctx, vlan_s, true, pch);
-			port =  handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, vlan_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
-			break;
+		if(!found) {
+			uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", pch, vlan_s) {
+				dmuci_set_value_by_section(vlan_s, "bridge_key", cur_bridging_args.br_key);
+				dmuci_set_value_by_section(vlan_s, "mg_port", "false");
+				dmuci_set_value_by_section(vlan_s, "penable", "1");
+				init_bridging_port_args(dmctx, vlan_s, true, pch);
+				port =  handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, vlan_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
+				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				break;
+			}
 		}
 	}
 	dmfree(ifname_dup);

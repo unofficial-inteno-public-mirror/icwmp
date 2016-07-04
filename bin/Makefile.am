@@ -31,7 +31,8 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/tr181/ip.c						\
 	../dm/dmtree/tr181/ethernet.c				\
 	../dm/dmtree/tr181/bridging.c				\
-	../dm/dmtree/tr181/wifi.c				
+	../dm/dmtree/tr181/wifi.c					\
+	../dm/dmtree/tr181/wan.c				
 	
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
