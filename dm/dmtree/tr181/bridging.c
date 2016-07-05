@@ -730,18 +730,24 @@ int add_br_vlan(struct dmctx *ctx, char **instance)
 	return 0;
 }
 
-int delete_br_vlan(struct dmctx *ctx)
+int delete_br_vlan(struct dmctx *ctx, unsigned char del_action)
 {
 	char *vid, *ifname;
 	char new_ifname[128];
 
-	dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
-	dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021q", &vid);
-	if(ifname[0] != '\0' && vid[0] != '\0'){
-		remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
-		dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
+	switch (del_action) {
+	case DEL_INST:
+		dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
+		dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "vlan8021q", &vid);
+		if(ifname[0] != '\0' && vid[0] != '\0'){
+			remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
+		}
+		dmuci_delete_by_section(cur_bridging_vlan_args.bridge_vlan_sec, NULL, NULL);
+		break;
+	case DEL_ALL:
+		return FAULT_9005;
 	}
-	dmuci_delete_by_section(cur_bridging_vlan_args.bridge_vlan_sec, NULL, NULL);
 	return 0;
 }
 
@@ -782,31 +788,36 @@ int add_br_port(struct dmctx *ctx, char **instance)
 	return 0;
 }
 
-int delete_br_port(struct dmctx *ctx)
+int delete_br_port(struct dmctx *ctx, unsigned char del_action)
 {
 	char *iface, *ifname, *linker;
 	char new_ifname[128];
 	struct uci_section *vlan_s;
 
-	dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
-	if(ifname[0] != '\0'){
-		remove_interface_from_ifname(cur_bridging_port_args.ifname, ifname, new_ifname);
-		dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
-		dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_port_instance", "");
-		dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_port_alias", "");
-		dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_key", "");
-		dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "penable", "0");
-		return 0;
+	switch (del_action) {
+	case DEL_INST:
+		dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
+		if(ifname[0] != '\0'){
+			remove_interface_from_ifname(cur_bridging_port_args.ifname, ifname, new_ifname);
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
+			dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_port_instance", "");
+			dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_port_alias", "");
+			dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "bridge_key", "");
+			dmuci_set_value_by_section(cur_bridging_port_args.bridge_port_sec, "penable", "0");
+			return 0;
+		}
+		dmasprintf(&linker, "%s+%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
+		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", linker, vlan_s) {
+			dmuci_set_value_by_section(vlan_s, "br_port_linker", "");
+		}
+		dmuci_delete_by_section(cur_bridging_port_args.bridge_port_sec, NULL, NULL);//del port from dmmap
+		dmfree(linker);
+		break;
+	case DEL_ALL:
+		return FAULT_9005;
 	}
-	dmasprintf(&linker, "%s+%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
-	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", linker, vlan_s) {
-		dmuci_set_value_by_section(vlan_s, "br_port_linker", "");
-	}
-	dmuci_delete_by_section(cur_bridging_port_args.bridge_port_sec, NULL, NULL);//del port from dmmap
-	dmfree(linker);
 	return 0;
 }
-
 
 int delete_br_port_all(struct dmctx *ctx)
 {
@@ -935,7 +946,7 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 				dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "mg_port", &mg_port);
 				//remove old port (ifname) from bridge
 				if (cur_bridging_port_args.ifname[0] != 0 && strcmp(cur_bridging_port_args.ifname, linker) != 0) {
-					delete_br_port(ctx);
+					delete_br_port(ctx, DEL_INST);
 				}
 				// check if the current port is already linked with VLAN
 				sprintf(pr_linker,"%s+%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);

@@ -20,6 +20,7 @@
 #include "bridging.h"
 #include "wifi.h"
 #include "wan.h"
+#include "dhcp.h"
 
 int entry_method_root(struct dmctx *ctx)
 {
@@ -43,5 +44,6 @@ DMOBJ tRootObj[] = {
 {"DSL",&DMREAD, NULL, NULL, NULL, NULL, NULL, tDslObj, NULL, NULL},
 {"ATM",&DMREAD, NULL, NULL, NULL, NULL, NULL, tAtmObj, NULL, NULL},
 {"PTM", &DMREAD, NULL, NULL, NULL, NULL, NULL, tPtmObj, NULL, NULL},
+{"DHCPv4", &DMREAD, NULL, NULL, NULL, NULL, NULL, tDhcpServerObj, NULL, NULL},
 {0}
 };

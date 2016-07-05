@@ -21,6 +21,25 @@ struct dsl_channel_args cur_dsl_channel_args = {0};
 struct atm_args cur_atm_args = {0};
 struct ptm_args cur_ptm_args = {0};
 
+/**************************************************************************
+* LINKER
+***************************************************************************/
+char *get_atm_linker(struct dmctx *dmctx) {
+	if (cur_atm_args.ifname)
+		return cur_atm_args.ifname;
+	else
+		return "";
+}
+
+char *get_ptm_linker(struct dmctx *dmctx) {
+	if (cur_ptm_args.ifname)
+		return cur_ptm_args.ifname;
+	else
+		return "";
+}
+/**************************************************************************
+* INIT
+***************************************************************************/
 inline int init_dsl_link(struct dmctx *ctx, struct uci_section *s, char *type)
 {
 	struct dsl_line_args *args = &cur_dsl_line_args;
@@ -683,19 +702,25 @@ int delete_atm_link_all(struct dmctx *ctx)
 	return 0;
 }
 
-int delete_atm_link(struct dmctx *ctx)
+int delete_atm_link(struct dmctx *ctx, unsigned char del_action)
 {
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
 
-	dmuci_delete_by_section(cur_atm_args.atm_sec, NULL, NULL);
-	uci_foreach_option_cont("network", "interface", "ifname", cur_atm_args.ifname, s) {
-		if (ss)
+	switch (del_action) {
+	case DEL_INST:
+		dmuci_delete_by_section(cur_atm_args.atm_sec, NULL, NULL);
+		uci_foreach_option_cont("network", "interface", "ifname", cur_atm_args.ifname, s) {
+			if (ss)
+				wan_remove_dev_interface(ss, cur_atm_args.ifname);
+			ss = s;
+		}
+		if (ss != NULL)
 			wan_remove_dev_interface(ss, cur_atm_args.ifname);
-		ss = s;
+		break;
+	case DEL_ALL:
+		return FAULT_9005;
 	}
-	if (ss != NULL)
-		wan_remove_dev_interface(ss, cur_atm_args.ifname);
 	return 0;
 }
 
@@ -723,19 +748,25 @@ int delete_ptm_link_all(struct dmctx *ctx)
 	return 0;
 }
 
-int delete_ptm_link(struct dmctx *ctx)
+int delete_ptm_link(struct dmctx *ctx, unsigned char del_action)
 {
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
 
-	dmuci_delete_by_section(cur_ptm_args.ptm_sec, NULL, NULL);
-	uci_foreach_option_cont("network", "interface", "ifname", cur_ptm_args.ifname, s) {
-		if (ss)
+	switch (del_action) {
+	case DEL_INST:
+		dmuci_delete_by_section(cur_ptm_args.ptm_sec, NULL, NULL);
+		uci_foreach_option_cont("network", "interface", "ifname", cur_ptm_args.ifname, s) {
+			if (ss)
+				wan_remove_dev_interface(ss, cur_ptm_args.ifname);
+			ss = s;
+		}
+		if (ss != NULL)
 			wan_remove_dev_interface(ss, cur_ptm_args.ifname);
-		ss = s;
+		break;
+	case DEL_ALL:
+		return FAULT_9005;
 	}
-	if (ss != NULL)
-		wan_remove_dev_interface(ss, cur_ptm_args.ifname);
 	return 0;
 }
 /*************************************************************
@@ -826,13 +857,13 @@ DMOBJ tDslObj[] = {
 
 DMOBJ tAtmObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Link", &DMWRITE, NULL, NULL, browseAtmLinkInst, NULL, NULL, tAtmLinkStatsObj, tAtmLineParams, NULL},
+{"Link", &DMWRITE, add_atm_link, delete_atm_link, browseAtmLinkInst, NULL, NULL, tAtmLinkStatsObj, tAtmLineParams, get_atm_linker},
 {0}
 };
 
 DMOBJ tPtmObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Link", &DMWRITE, NULL, NULL, browsePtmLinkInst, NULL, NULL, tPtmLinkStatsObj, tPtmLineParams, NULL},
+{"Link", &DMWRITE, add_ptm_link, delete_ptm_link, browsePtmLinkInst, NULL, NULL, tPtmLinkStatsObj, tPtmLineParams, get_ptm_linker},
 {0}
 };
 

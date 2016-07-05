@@ -11,6 +11,8 @@
 #ifndef __DHCP_H
 #define __DHCP_H
 
+#include <json-c/json.h>
+
 struct dhcp_args
 {
 	struct uci_section *dhcp_sec;
@@ -25,8 +27,19 @@ struct dhcp_static_args
 struct client_args
 {
 	json_object *client;
+	char *key;
 };
 
-int entry_method_root_dhcp(struct dmctx *ctx);
+
+extern DMOBJ tDhcpServerObj[] ;
+DMOBJ tDhcpServerPoolObj[];
+DMOBJ tDhcpServerPoolAddressObj[];
+DMLEAF tDhcpServerPoolParams[];
+DMLEAF tDhcpServerPoolAddressParams[];
+DMLEAF tDhcpServerPoolClientParams[];
+
+inline int browseDhcpInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseDhcpStaticInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseDhcpClientInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 #endif
