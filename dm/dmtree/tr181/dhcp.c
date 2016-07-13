@@ -641,7 +641,7 @@ int set_dhcp_leasetime(char *refparam, struct dmctx *ctx, int action, char *valu
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", cur_dhcp_args.interface, s) {
 				int val = atoi(value);
-				sprintf(buf, "%dm%ds", val/60, val%60);
+				sprintf(buf, "%ds", val);
 				dmuci_set_value_by_section(s, "leasetime",  buf);
 				break;
 			}
