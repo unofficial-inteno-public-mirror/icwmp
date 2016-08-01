@@ -11,5 +11,7 @@ struct pforwardrgs
 	struct uci_section *forwardsection;
 };
 
-int entry_method_root_X_INTENO_SE_IpAccCfg(struct dmctx *ctx);
+extern DMOBJ tSe_IpAccObj[];
+extern DMLEAF tSe_IpAccCfgParam[];
+extern DMLEAF tSe_PortForwardingParam[];
 #endif

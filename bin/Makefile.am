@@ -31,6 +31,12 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/times.c						\
 	../dm/dmtree/common/upnp.c						\
 	../dm/dmtree/common/x_inteno_se_ice.c 			\
+	../dm/dmtree/common/x_inteno_se_ice.c 			\
+	../dm/dmtree/common/x_inteno_se_igmp.c 			\
+	../dm/dmtree/common/x_inteno_se_ipacccfg.c		\
+	../dm/dmtree/common/x_inteno_se_logincfg.c		\
+	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
+	../dm/dmtree/common/x_inteno_syslog.c			\
 	../dm/dmtree/common/root.c						\
 if DATAMODEL_TR181
 icwmpd_SOURCES +=								\

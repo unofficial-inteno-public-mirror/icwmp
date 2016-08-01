@@ -12,6 +12,6 @@
 #ifndef __POWER_MGMT_H
 #define __POWER_MGMT_H
 
+extern DMLEAF tSe_PowerManagementParam[];
 bool dm_powermgmt_enable_set(void);
-int entry_method_root_X_INTENO_SE_PowerManagement(struct dmctx *ctx);
 #endif

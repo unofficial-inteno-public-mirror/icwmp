@@ -108,15 +108,11 @@ bool dm_powermgmt_enable_set(void)
 		return false;
 	}
 }
-int entry_method_root_X_INTENO_SE_PowerManagement(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_PowerManagement.") {
-		DMOBJECT(DMROOT"X_INTENO_SE_PowerManagement.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("EthernetAutoPowerDownEnable", ctx, "1", get_pwr_mgmt_value_ethapd, set_power_mgmt_param_ethapd, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("EnergyEfficientEthernetEnable", ctx, "1", get_pwr_mgmt_value_eee, set_power_mgmt_param_eee, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("NumberOfEthernetInterfacesPoweredUp", ctx, "0", get_pwr_nbr_interfaces_up, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("NumberOfEthernetInterfacesPoweredDown", ctx, "0", get_pwr_nbr_interfaces_down, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
+
+DMLEAF tSe_PowerManagementParam[] = {
+{"EthernetAutoPowerDownEnable", &DMWRITE, DMT_BOOL, get_pwr_mgmt_value_ethapd, set_power_mgmt_param_ethapd, NULL, NULL},
+{"EnergyEfficientEthernetEnable", &DMWRITE, DMT_BOOL, get_pwr_mgmt_value_eee, set_power_mgmt_param_eee, NULL, NULL},
+{"NumberOfEthernetInterfacesPoweredUp", &DMREAD, DMT_UNINT, get_pwr_nbr_interfaces_up, NULL, NULL, NULL},
+{"NumberOfEthernetInterfacesPoweredDown", &DMREAD, DMT_UNINT, get_pwr_nbr_interfaces_down, NULL, NULL, NULL},
+{0}
+};

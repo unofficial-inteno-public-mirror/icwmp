@@ -19,6 +19,11 @@
 #include "times.h"
 #include "upnp.h"
 #include "x_inteno_se_ice.h"
+#include "x_inteno_se_igmp.h"
+#include "x_inteno_se_ipacccfg.h"
+#include "x_inteno_se_logincfg.h"
+#include "x_inteno_se_power_mgmt.h"
+#include "x_inteno_syslog.h"
 #ifdef DATAMODEL_TR181
 #include "ip.h"
 #include "ethernet.h"
@@ -56,6 +61,11 @@ DMOBJ tRootObj[] = {
 {"Time", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tTimeParams, NULL},
 {"UPnP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tUPnPObj, NULL, NULL},
 {"X_INTENO_SE_ICE", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IceParam, NULL},
+{"X_INTENO_SE_IGMP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IgmpParam, NULL},
+{"X_INTENO_SE_IpAccCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tSe_IpAccObj, NULL, NULL},
+{"X_INTENO_SE_LoginCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_LoginCfgParam, NULL},
+{"X_INTENO_SE_PowerManagement", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_PowerManagementParam, NULL},
+{"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
 #ifdef DATAMODEL_TR181
 {"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
 {"WiFi",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tWifiObj, NULL, NULL},

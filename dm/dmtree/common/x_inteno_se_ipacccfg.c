@@ -21,8 +21,8 @@
 struct ipaccargs cur_ipaccargs = {0};
 struct pforwardrgs cur_pforwardrgs = {0};
 
-inline int entry_xinteno_ipacccfg_listcfgobj(struct dmctx *ctx);
-inline int entry_xinteno_ipacccfg_portforwarding(struct dmctx *ctx);
+inline int browseport_forwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseAccListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int init_args_ipacc(struct dmctx *ctx, struct uci_section *s)
 {
 	struct ipaccargs *args = &cur_ipaccargs;
@@ -533,29 +533,29 @@ int add_ipacccfg_port_forwarding(struct dmctx *ctx, char **instancepara)
 }
 
 
-int delete_ipacccfg_port_forwarding_all(struct dmctx *ctx)
+int delete_ipacccfg_port_forwarding(struct dmctx *ctx, unsigned char del_action)
 {
-	struct uci_section *s = NULL; 
-	struct uci_section *ss = NULL;
 	int found = 0;
+	struct pforwardrgs *forwardargs;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
 	
-	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {	
-		if (found != 0)
-			dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-		found++;
+	switch (del_action) {
+		case DEL_INST:
+			forwardargs = (struct pforwardrgs *)ctx->args;
+			dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
+			break;
+		case DEL_ALL:
+			uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {
+				if (found != 0)
+					dmuci_delete_by_section(ss, NULL, NULL);
+				ss = s;
+				found++;
+			}
+			if (ss != NULL)
+				dmuci_delete_by_section(ss, NULL, NULL);
+			break;
 	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-	return 0;
-}
-
-
-int delete_ipacccfg_port_forwarding_instance(struct dmctx *ctx)
-{	
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
-	
-	dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
 	return 0;
 }
 
@@ -596,78 +596,61 @@ int set_port_forwarding_alias(char *refparam, struct dmctx *ctx, int action, cha
 	return 0;
 }
 
-/////////////SUB ENTRIES///////////////
-inline int entry_xinteno_ipacccfg_listcfgobj(struct dmctx *ctx)
+DMLEAF tSe_PortForwardingParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_port_forwarding_alias, set_port_forwarding_alias, NULL, NULL},
+{"Name", &DMWRITE, DMT_STRING, get_port_forwarding_name, set_port_forwarding_name, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_port_forwarding_enable, set_port_forwarding_enable, NULL, NULL},
+{"EnalbeNatLoopback", &DMWRITE, DMT_BOOL, get_port_forwarding_loopback, set_port_forwarding_enable, NULL, NULL},
+{"Protocol", &DMWRITE, DMT_STRING, get_port_forwarding_protocol, set_port_forwarding_protocol, NULL, NULL},
+{"ExternalZone", &DMWRITE, DMT_STRING, get_port_forwarding_external_zone, set_port_forwarding_external_zone, NULL, NULL},
+{"InternalZone", &DMWRITE, DMT_STRING, get_port_forwarding_internal_zone, set_port_forwarding_internal_zone, NULL, NULL},
+{"ExternalPort", &DMWRITE, DMT_STRING, get_port_forwarding_external_port, set_port_forwarding_external_port, NULL, NULL},
+{"InternalZone", &DMWRITE, DMT_STRING, get_port_forwarding_internal_zone, set_port_forwarding_internal_zone, NULL, NULL},
+{"SourcePort", &DMWRITE, DMT_STRING, get_port_forwarding_source_port, set_port_forwarding_source_port, NULL, NULL},
+{"InternalIpAddress", &DMWRITE, DMT_STRING, get_port_forwarding_internal_ipaddress, set_port_forwarding_internal_ipaddress, NULL, NULL},
+{"ExternalIpAddress", &DMWRITE, DMT_STRING, get_port_forwarding_external_ipaddress, set_port_forwarding_external_ipaddress, NULL, NULL},
+{"SourceIpAddress", &DMWRITE, DMT_STRING, get_port_forwarding_source_ipaddress, set_port_forwarding_source_ipaddress, NULL, NULL},
+{"SourceMacAddress", &DMWRITE, DMT_STRING, get_port_forwarding_src_mac, set_port_forwarding_src_mac, NULL, NULL},
+{0}
+};
+
+DMLEAF tSe_IpAccCfgParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_x_inteno_cfgobj_address_alias, set_x_inteno_cfgobj_address_alias, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_x_bcm_com_ip_acc_list_cfgobj_enable, set_x_bcm_com_ip_acc_list_cfgobj_enable, NULL, NULL},
+{"AccAddressAndNetMask", &DMWRITE, DMT_STRING, get_x_inteno_cfgobj_address_netmask, set_x_inteno_cfgobj_address_netmask, NULL, NULL},
+{"AccPort", &DMWRITE, DMT_STRING, get_x_bcm_com_ip_acc_list_cfgobj_acc_port, set_x_bcm_com_ip_acc_list_cfgobj_acc_port, NULL, NULL},
+{0}
+};
+
+DMOBJ tSe_IpAccObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"X_INTENO_SE_IpAccListCfgObj", &DMREAD, NULL, NULL, NULL, browseAccListInst, NULL, NULL, NULL, tSe_IpAccCfgParam, NULL},
+{"X_INTENO_SE_PortForwarding", &DMWRITE, add_ipacccfg_port_forwarding, delete_ipacccfg_port_forwarding, NULL, browseport_forwardingInst, NULL, NULL, NULL, tSe_PortForwardingParam, NULL},
+{0}
+};
+
+inline int browseAccListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *irule = NULL, *irule_last = NULL;
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("firewall", "rule", s) {
-		init_args_ipacc(ctx, s);
-		irule =  handle_update_instance(1, ctx, &irule_last, update_instance_alias, 3, s, "fruleinstance", "frulealias");
-		SUBENTRY(entry_xinteno_ipacccfg_listcfgobj_instance, ctx, irule);
+		init_args_ipacc(dmctx, s);
+		irule =  handle_update_instance(1, dmctx, &irule_last, update_instance_alias, 3, s, "fruleinstance", "frulealias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, irule);
 	}
 	return 0;
 }
 
-inline int entry_xinteno_ipacccfg_portforwarding(struct dmctx *ctx)
+inline int browseport_forwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *iforward = NULL, *iforward_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {
-		init_args_pforward(ctx, s);
-		iforward =  handle_update_instance(1, ctx, &iforward_last, update_instance_alias, 3, s, "forwardinstance", "forwardalias");
-		SUBENTRY(entry_xinteno_ipacccfg_portforwarding_instance, ctx, iforward);
+		init_args_pforward(dmctx, s);
+		iforward =  handle_update_instance(1, dmctx, &iforward_last, update_instance_alias, 3, s, "forwardinstance", "forwardalias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iforward);
 	}
 	return 0;
 }
-//////////////////////////////////////
 
-int entry_method_root_X_INTENO_SE_IpAccCfg(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.") {
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.", ctx, "1", 1, add_ipacccfg_port_forwarding, delete_ipacccfg_port_forwarding_all, NULL);
-		SUBENTRY(entry_xinteno_ipacccfg_listcfgobj, ctx);
-		SUBENTRY(entry_xinteno_ipacccfg_portforwarding, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_xinteno_ipacccfg_listcfgobj_instance(struct dmctx *ctx, char *irule)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.%s.", irule) {
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_IpAccListCfgObj.%s.", ctx, "0", 1, NULL, NULL, NULL, irule);
-		DMPARAM("Alias", ctx, "1", get_x_inteno_cfgobj_address_alias, set_x_inteno_cfgobj_address_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Enable", ctx, "1", get_x_bcm_com_ip_acc_list_cfgobj_enable, set_x_bcm_com_ip_acc_list_cfgobj_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("AccAddressAndNetMask", ctx, "1", get_x_inteno_cfgobj_address_netmask, set_x_inteno_cfgobj_address_netmask, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("AccPort", ctx, "1", get_x_bcm_com_ip_acc_list_cfgobj_acc_port, set_x_bcm_com_ip_acc_list_cfgobj_acc_port, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_xinteno_ipacccfg_portforwarding_instance(struct dmctx *ctx, char *iforward)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", iforward) {
-		DMOBJECT(DMROOT"X_INTENO_SE_IpAccCfg.X_INTENO_SE_PortForwarding.%s.", ctx, "0", 1, NULL, delete_ipacccfg_port_forwarding_instance, NULL, iforward);
-		DMPARAM("Alias", ctx, "1", get_port_forwarding_alias, set_port_forwarding_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Name", ctx, "1", get_port_forwarding_name, set_port_forwarding_name, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Enable", ctx, "1", get_port_forwarding_enable, set_port_forwarding_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("EnalbeNatLoopback", ctx, "1", get_port_forwarding_loopback, set_port_forwarding_loopback, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Protocol", ctx, "1", get_port_forwarding_protocol, set_port_forwarding_protocol, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ExternalZone", ctx, "1", get_port_forwarding_external_zone, set_port_forwarding_external_zone, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("InternalZone", ctx, "1", get_port_forwarding_internal_zone, set_port_forwarding_internal_zone, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ExternalPort", ctx, "1", get_port_forwarding_external_port, set_port_forwarding_external_port, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("InternalPort", ctx, "1", get_port_forwarding_internal_port, set_port_forwarding_internal_port, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourcePort", ctx, "1", get_port_forwarding_source_port, set_port_forwarding_source_port, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("InternalIpAddress", ctx, "1", get_port_forwarding_internal_ipaddress, set_port_forwarding_internal_ipaddress, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ExternalIpAddress", ctx, "1", get_port_forwarding_external_ipaddress, set_port_forwarding_external_ipaddress, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceIpAddress", ctx, "1", get_port_forwarding_source_ipaddress, set_port_forwarding_source_ipaddress, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceMacAddress", ctx, "1", get_port_forwarding_src_mac, set_port_forwarding_src_mac, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
