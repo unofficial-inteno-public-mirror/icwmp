@@ -6,6 +6,7 @@ struct sewifiargs
 	struct uci_section *sewifisection;
 };
 
-int entry_method_root_SE_Wifi(struct dmctx *ctx);
+extern DMLEAF tsewifiradioParam[];
+extern DMOBJ tsewifiObj[];
 
 #endif

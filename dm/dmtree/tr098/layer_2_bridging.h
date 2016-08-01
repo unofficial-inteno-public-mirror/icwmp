@@ -12,6 +12,12 @@
 #ifndef __Layer_2_bridging_H
 #define __Layer_2_bridging_H
 
-int entry_method_root_Layer2Bridging(struct dmctx *ctx);
+extern DMOBJ tLayer2BridgingObj[];
+extern DMOBJ tBridge_VlanObj[];
+extern DMLEAF tbridge_vlanParam[];
+extern DMLEAF tlayer2_bridgeParam[];
+extern DMLEAF tlayer2_markingParam[];
+extern DMLEAF tavailableinterfaceParam[];
+bool check_init_layer2(struct dmctx *dmctx, void *data);
 
 #endif

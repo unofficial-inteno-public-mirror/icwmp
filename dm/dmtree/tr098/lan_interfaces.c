@@ -19,8 +19,8 @@
 struct linterfargs cur_linterfargs = {0};
 struct wifaceargs cur_wifaceargs = {0};
 static inline void laninterface_lookup(char *eths[], int *size);
-inline int entry_laninterface_lan(struct dmctx *ctx);
-inline int entry_laninterface_wlan(struct dmctx *ctx);
+inline int browselaninterface_lanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browselaninterface_wlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 //////////////////////INIT ARGS////////////////////////////////
 static inline int init_lan_interface_args(char *lif, struct uci_section *port_sec)
 {
@@ -130,63 +130,61 @@ int set_wlan_conf_alias(char *refparam, struct dmctx *ctx, int action, char *val
 	return 0;
 }
 /////////////SUB ENTRIES///////////////
-inline int entry_laninterface_lan(struct dmctx *ctx)
+bool check_laninterfaces(struct dmctx *dmctx, void *data)
+{
+	init_laninterface_lan(dmctx);
+	return true;
+}
+
+DMLEAF tlaninterface_lanParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_lan_eth_int_alias, set_lan_eth_int_alias, NULL, NULL},
+{"X_INTENO_COM_EthName", &DMREAD, DMT_STRING, get_eth_name, NULL, NULL, NULL},
+{0}
+};
+
+DMLEAF tlaninterface_wlanParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_wlan_conf_alias, set_wlan_conf_alias, NULL, NULL},
+{0}
+};
+
+DMLEAF tLANInterfacesParam[] = {
+{"LANEthernetInterfaceNumberOfEntries", &DMREAD, DMT_UNINT, get_lan_ethernet_interface_number, NULL, NULL, NULL},
+{"LANWLANConfigurationNumberOfEntries", &DMREAD, DMT_UNINT, get_lan_wlan_configuration_number, NULL, NULL, NULL},
+{0}
+};
+
+DMOBJ tLANInterfacesObj[] = {
+{"LANEthernetInterfaceConfig", &DMREAD, NULL, NULL, NULL, browselaninterface_lanInst, NULL, NULL, NULL, tlaninterface_lanParam, NULL},
+{"WLANConfiguration", &DMREAD, NULL, NULL, NULL, browselaninterface_wlanInst, NULL, NULL, NULL, tlaninterface_wlanParam, NULL},
+{0}
+};
+
+inline int browselaninterface_lanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *ei, *ei_last = NULL;
 	int i = 0;
 	struct linterfargs *args = &cur_linterfargs;
-	ctx->args = (void *)args;
+	dmctx->args = (void *)args;
 	struct uci_section *s = NULL;
 
 	laninterface_lookup(args->eths, &(args->eths_size));
 	update_section_list("dmmap","lan_port", NULL, args->eths_size, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "lan_port", s) {
 		init_lan_interface_args(args->eths[i++], s);
-		ei =  handle_update_instance(1, ctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
-		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
+		ei =  handle_update_instance(1, dmctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ei);
 	}
 	return 0;
 }
 
-inline int entry_laninterface_wlan(struct dmctx *ctx)
+inline int browselaninterface_wlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *s = NULL;
 	char *wi, *wi_last = NULL;
 	uci_foreach_sections("wireless", "wifi-iface", s) {
 		init_wifi_iface_args(s);
-		wi =  handle_update_instance(1, ctx, &wi_last, update_instance_alias, 3, s, "wifaceinstance", "wifacealias");
-		SUBENTRY(entry_laninterface_wlan_instance, ctx, wi);
+		wi =  handle_update_instance(1, dmctx, &wi_last, update_instance_alias, 3, s, "wifaceinstance", "wifacealias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wi);
 	}
-	return 0;
-}
-////////////////////////////////////////
-int entry_method_root_InternetGatewayDevice_LANInterfaces(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"LANInterfaces.") {
-		init_laninterface_lan(ctx);
-		DMOBJECT(DMROOT"LANInterfaces.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("LANEthernetInterfaceNumberOfEntries", ctx, "0", get_lan_ethernet_interface_number, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("LANWLANConfigurationNumberOfEntries", ctx, "0", get_lan_wlan_configuration_number, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.", ctx, "0", 1, NULL, NULL, NULL);
-		SUBENTRY(entry_laninterface_lan, ctx);
-		SUBENTRY(entry_laninterface_wlan, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_laninterface_lan_instance(struct dmctx *ctx, char *li)
-{
-	DMOBJECT(DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%s.", ctx, "0", 1, NULL, NULL, NULL, li);
-	DMPARAM("Alias", ctx, "1", get_lan_eth_int_alias, set_lan_eth_int_alias, NULL, 0, 1, UNDEF, NULL);
-	DMPARAM("X_INTENO_COM_EthName", ctx, "0", get_eth_name, NULL, NULL, 0, 1, UNDEF, NULL);
-	return 0;
-}
-
-inline int entry_laninterface_wlan_instance(struct dmctx *ctx, char  *wli)
-{
-	DMOBJECT(DMROOT"LANInterfaces.WLANConfiguration.%s.", ctx, "0", 1, NULL, NULL, NULL, wli);
-	DMPARAM("Alias", ctx, "1", get_wlan_conf_alias, set_wlan_conf_alias, NULL, 0, 1, UNDEF, NULL);
 	return 0;
 }

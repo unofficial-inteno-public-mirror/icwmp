@@ -14,6 +14,11 @@ struct wifaceargs
 	struct uci_section *wiface_sec;
 };
 
-int entry_method_root_InternetGatewayDevice_LANInterfaces(struct dmctx *ctx);
+bool check_laninterfaces(struct dmctx *dmctx, void *data);
+extern DMLEAF tlaninterface_lanParam[];
+extern DMLEAF tlaninterface_wlanParam[];
+extern DMLEAF tLANInterfacesParam[];
+extern DMOBJ tLANInterfacesObj[];
+#endif
 
 #endif

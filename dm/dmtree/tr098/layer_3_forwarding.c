@@ -25,7 +25,8 @@ enum enum_route_type {
 
 struct routefwdargs cur_routefwdargs = {0};
 
-inline int entry_layer3_forwarding_instance(struct dmctx *ctx, char *iroute, char *permission);
+inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+char *get_forwording_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 inline int init_args_rentry(struct dmctx *ctx, struct uci_section *s, char *permission, struct proc_route *proute, int type)
 {
 	struct routefwdargs *args = &cur_routefwdargs;
@@ -624,7 +625,43 @@ int set_layer3_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 /////////////SUB ENTRIES///////////////
-inline int entry_layer3_forwarding(struct dmctx *ctx)
+struct dm_permession_s DMForwarding_perm = {"0", &get_forwording_perm};
+
+char *get_forwording_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance)
+{
+	return cur_routefwdargs.permission;
+}
+
+DMLEAF tForwardingParam[] = {
+{"DefaultConnectionService", &DMWRITE, DMT_STRING, get_layer3_def_conn_serv, set_layer3_def_conn_serv, NULL, NULL},
+{"ForwardNumberOfEntries", &DMREAD, DMT_UNINT, get_layer3_nbr_entry, NULL, NULL, NULL},
+{0}
+};
+
+DMLEAF tForwardingInstParam[] = {
+{"Enable", &DMForwarding_perm, DMT_BOOL, get_layer3_enable, set_layer3_enable, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_layer3_status, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_layer3_alias, set_layer3_alias, NULL, NULL},
+{"Type", &DMREAD, DMT_STRING, get_layer3_type, NULL, NULL, NULL},
+{"DestIPAddress", &DMForwarding_perm, DMT_STRING, get_layer3_destip, set_layer3_destip, NULL, NULL},
+{"DestSubnetMask", &DMForwarding_perm, DMT_STRING, get_layer3_destmask,  set_layer3_destmask, NULL, NULL},
+{"SourceIPAddress", &DMREAD, DMT_STRING, get_layer3_src_address, NULL, NULL, NULL},
+{"SourceSubnetMask", &DMREAD, DMT_STRING, get_layer3_src_mask, NULL, NULL, NULL},
+{"GatewayIPAddress", &DMForwarding_perm, DMT_STRING, get_layer3_gatewayip, set_layer3_gatewayip, NULL, NULL},
+{"Interface", &DMForwarding_perm, DMT_STRING, get_layer3_interface_linker_parameter, set_layer3_interface_linker_parameter, NULL, NULL},
+{"ForwardingMetric", &DMForwarding_perm, DMT_STRING, get_layer3_metric, set_layer3_metric, NULL, NULL},
+{"MTU", &DMForwarding_perm, DMT_STRING, get_layer3_mtu, set_layer3_mtu, NULL, NULL},
+{0}
+};
+
+DMOBJ tLayer3ForwardingObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Forwarding", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tForwardingParam, NULL},
+{"Forwarding", &DMREAD, NULL, NULL, NULL, browseForwardingInst, NULL, NULL, NULL, tForwardingInstParam, NULL},
+{0}
+};
+
+inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *iroute = NULL, *iroute_last = NULL;
 	char *permission = "1";
@@ -634,14 +671,14 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 	struct proc_route proute;
 	bool find_max = true;
 	uci_foreach_sections("network", "route", s) {
-		init_args_rentry(ctx, s, "1", NULL, ROUTE_STATIC);
-		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
+		init_args_rentry(dmctx, s, "1", NULL, ROUTE_STATIC);
+		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
-		init_args_rentry(ctx, s, "1", NULL, ROUTE_DISABLED);
-		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, permission);
+		init_args_rentry(dmctx, s, "1", NULL, ROUTE_DISABLED);
+		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 	}
 	fp = fopen(ROUTE_FILE, "r");
 	if ( fp != NULL)
@@ -655,46 +692,11 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 			if (is_proute_static(&proute))
 				continue;
 			ss = update_route_dynamic_section(&proute);
-			init_args_rentry(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
-			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
-			SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, "0");
+			init_args_rentry(dmctx, ss, "0", &proute, ROUTE_DYNAMIC);
+			iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
+			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 		}
 		fclose(fp) ;
 	}
 	return 0;
-}
-//////////////////////////////////////
-
-int entry_method_root_layer3_forwarding(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"Layer3Forwarding.") {
-		DMOBJECT(DMROOT"Layer3Forwarding.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("DefaultConnectionService", ctx, "1", get_layer3_def_conn_serv, set_layer3_def_conn_serv, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ForwardNumberOfEntries", ctx, "0", get_layer3_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		SUBENTRY(entry_layer3_forwarding, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_layer3_forwarding_instance(struct dmctx *ctx, char *iroute, char *permission)
-{	
-	IF_MATCH(ctx, DMROOT"Layer3Forwarding.Forwarding.%s.", iroute) {
-		DMOBJECT(DMROOT"Layer3Forwarding.Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, iroute);
-		DMPARAM("Enable", ctx, permission, get_layer3_enable, set_layer3_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Status", ctx, "0", get_layer3_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Alias", ctx, "1", get_layer3_alias, set_layer3_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Type", ctx, "0", get_layer3_type, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DestIPAddress", ctx, permission, get_layer3_destip, set_layer3_destip, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DestSubnetMask", ctx, permission, get_layer3_destmask, set_layer3_destmask, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceIPAddress", ctx, "0", get_layer3_src_address, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceSubnetMask", ctx, "0", get_layer3_src_mask, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("GatewayIPAddress", ctx, permission, get_layer3_gatewayip, set_layer3_gatewayip, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Interface", ctx, permission, get_layer3_interface_linker_parameter, set_layer3_interface_linker_parameter, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ForwardingMetric", ctx, permission, get_layer3_metric, set_layer3_metric, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("MTU", ctx, permission, get_layer3_mtu, set_layer3_mtu, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
 }

@@ -228,23 +228,18 @@ int get_ipping_max_response_time(char *refparam, struct dmctx *ctx, char **value
 	return 0;
 }
 
-int entry_method_root_IPPingDiagnostics(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"IPPingDiagnostics.") {
-		DMOBJECT(DMROOT"IPPingDiagnostics.", ctx, "0", 0, NULL, NULL, NULL);
-		DMPARAM("DiagnosticsState", ctx, "1", get_ipping_diagnostics_state, set_ipping_diagnostics_state, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Interface", ctx, "1", get_ipping_interface, set_ipping_interface, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Host", ctx, "1", get_ipping_host, set_ipping_host, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("NumberOfRepetitions", ctx, "1", get_ipping_repetition_number, set_ipping_repetition_number, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("Timeout", ctx, "1", get_ipping_timeout, set_ipping_timeout, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("DataBlockSize", ctx, "1", get_ipping_block_size, set_ipping_block_size, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		//DMPARAM("DSCP", ctx, "1", get_ipping_dscp, set_ipping_dscp, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("SuccessCount", ctx, "0", get_ipping_success_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("FailureCount", ctx, "0", get_ipping_failure_count, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("AverageResponseTime", ctx, "0", get_ipping_average_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("MinimumResponseTime", ctx, "0", get_ipping_min_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("MaximumResponseTime", ctx, "0", get_ipping_max_response_time, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
+DMLEAF tIPPingDiagnosticsParam[] = {
+{"DiagnosticsState", &DMWRITE, DMT_STRING, get_ipping_diagnostics_state, NULL, NULL, NULL},
+{"Interface", &DMWRITE, DMT_STRING, get_ipping_interface, set_ipping_interface, NULL, NULL},
+{"Host", &DMWRITE, DMT_STRING, set_ipping_host, set_ipping_host, NULL, NULL},
+{"NumberOfRepetitions", &DMWRITE, DMT_UNINT, get_ipping_repetition_number, set_ipping_repetition_number, NULL, NULL},
+{"Timeout", &DMWRITE, DMT_UNINT, get_ipping_timeout, set_ipping_timeout, NULL, NULL},
+{"DataBlockSize", &DMWRITE, DMT_UNINT, get_ipping_block_size, set_ipping_block_size, NULL, NULL},
+//{"DSCP", &DMWRITE, DMT_UNINT, get_ipping_dscp, set_ipping_dscp, NULL, NULL},
+{"SuccessCount", &DMREAD, DMT_UNINT, get_ipping_success_count, NULL, NULL, NULL},
+{"FailureCount", &DMREAD, DMT_UNINT, get_ipping_failure_count, NULL, NULL, NULL},
+{"AverageResponseTime", &DMREAD, DMT_UNINT, get_ipping_average_response_time, NULL, NULL, NULL},
+{"MinimumResponseTime", &DMREAD, DMT_UNINT, get_ipping_min_response_time, NULL, NULL, NULL},
+{"MaximumResponseTime", &DMREAD, DMT_UNINT, get_ipping_max_response_time, NULL, NULL, NULL},
+{0}
+};

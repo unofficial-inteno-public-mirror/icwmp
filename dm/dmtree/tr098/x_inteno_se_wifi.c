@@ -20,7 +20,7 @@
 
 struct sewifiargs cur_wifiargs = {0};
 
-inline int entry_sewifi_radio(struct dmctx *ctx);
+inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
 {
 	struct sewifiargs *args = &cur_wifiargs;
@@ -126,39 +126,29 @@ int set_radio_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 /////////////SUB ENTRIES///////////////
-inline int entry_sewifi_radio(struct dmctx *ctx)
+DMLEAF tsewifiradioParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_radio_alias, set_radio_alias, NULL, NULL},
+{"Frequency", &DMREAD, DMT_STRING, get_wifi_frequency, NULL, NULL, NULL},
+{"MaxAssociations", &DMWRITE, DMT_STRING, get_wifi_maxassoc, set_wifi_maxassoc, NULL, NULL},
+{"DFSEnable", &DMWRITE, DMT_BOOL, get_wifi_dfsenable, set_wifi_dfsenable, NULL, NULL},
+{0}
+};
+
+DMOBJ tsewifiObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Radio", &DMREAD, NULL, NULL, NULL, browsesewifiradioInst, NULL, NULL, NULL, tsewifiradioParam, NULL},
+{0}
+};
+
+inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *wnum = NULL, *wnum_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_sections("wireless", "wifi-device", s) {
-		init_se_wifi(ctx, s);
-		wnum =  handle_update_instance(1, ctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
-		SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
+		init_se_wifi(dmctx, s);
+		wnum =  handle_update_instance(1, dmctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
+		//SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
 	}
 	return 0;
-}
-//////////////////////////////////////
-
-int entry_method_root_SE_Wifi(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_Wifi.") {
-		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.", ctx, "0", 1, NULL, NULL, NULL);
-		SUBENTRY(entry_sewifi_radio, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_sewifi_radio_instance(struct dmctx *ctx, char *wnum)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_Wifi.Radio.%s.", wnum) {
-		DMOBJECT(DMROOT"X_INTENO_SE_Wifi.Radio.%s.", ctx, "0", 1, NULL, NULL, NULL, wnum);
-		DMPARAM("Alias", ctx, "1", get_radio_alias, set_radio_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Frequency", ctx, "0", get_wifi_frequency, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("MaxAssociations", ctx, "1", get_wifi_maxassoc, set_wifi_maxassoc, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DFSEnable", ctx, "1", get_wifi_dfsenable, set_wifi_dfsenable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
 }

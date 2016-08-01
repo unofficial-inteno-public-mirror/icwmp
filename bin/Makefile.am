@@ -38,6 +38,14 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/x_inteno_syslog.c			\
 	../dm/dmtree/common/root.c						\
+if DATAMODEL_TR098
+icwmpd_SOURCES += \	
+	../dm/dmtree/tr098/ippingdiagnostics.c		\
+	../dm/dmtree/tr098/lan_interfaces.c			\
+	../dm/dmtree/tr098/layer_3_forwarding.c		\
+	../dm/dmtree/tr098/x_inteno_se_wifi.c		\
+	../dm/dmtree/tr098/layer_2_bridging.c
+endif
 if DATAMODEL_TR181
 icwmpd_SOURCES +=								\
 	../dm/dmtree/tr181/ip.c						\

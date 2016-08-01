@@ -31,6 +31,6 @@ char *get_deviceid_productclass();
 char *get_deviceid_serialnumber();
 char *get_softwareversion();
 int lookup_vcf_name(char *instance, char **value);
-int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 #endif

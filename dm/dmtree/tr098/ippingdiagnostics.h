@@ -10,7 +10,6 @@
 #ifndef __IPPING_DIAGNOSTIC_H
 #define __IPPING_DIAGNOSTIC_H
 
-extern struct ip_ping_diagnostic ipping_diagnostic; 
-int entry_method_root_IPPingDiagnostics(struct dmctx *ctx);
+extern DMLEAF tIPPingDiagnosticsParam[];
 
 #endif

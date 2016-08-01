@@ -66,6 +66,13 @@ DMOBJ tRootObj[] = {
 {"X_INTENO_SE_LoginCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_LoginCfgParam, NULL},
 {"X_INTENO_SE_PowerManagement", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_PowerManagementParam, NULL},
 {"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
+#ifdef DATAMODEL_TR098
+{"LANInterfaces", &DMREAD, NULL, NULL, check_laninterfaces, NULL, &DMFINFRM, &DMNONE,tLANInterfacesObj, tLANInterfacesParam, NULL},
+{"IPPingDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tIPPingDiagnosticsParam, NULL},
+{"Layer3Forwarding", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tLayer3ForwardingObj, NULL, NULL},
+{"X_INTENO_SE_Wifi", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tsewifiObj, NULL, NULL},
+{"Layer2Bridging", &DMREAD, NULL, NULL, check_init_layer2, NULL, &DMFINFRM, &DMNONE,tLayer2BridgingObj, NULL, NULL},
+#endif
 #ifdef DATAMODEL_TR181
 {"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
 {"WiFi",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tWifiObj, NULL, NULL},

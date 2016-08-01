@@ -26,5 +26,7 @@ struct routefwdargs
 	int type;
 };
 
-int entry_method_root_layer3_forwarding(struct dmctx *ctx);
+extern DMLEAF tForwardingParam[];
+extern DMLEAF tForwardingInstParam[];
+extern DMOBJ tLayer3ForwardingObj[];
 #endif
