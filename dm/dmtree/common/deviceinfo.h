@@ -20,6 +20,10 @@ extern DMLEAF tDeviceInfoParams[];
 extern DMLEAF tCatTvParams[];
 extern DMLEAF tVcfParams[];
 extern DMOBJ tDeviceInfoObj[];
+struct dev_vcf
+{
+	struct uci_section *vcf_sec;
+};
 
 char *get_deviceid_manufacturer();
 char *get_deviceid_manufactureroui();
@@ -27,10 +31,6 @@ char *get_deviceid_productclass();
 char *get_deviceid_serialnumber();
 char *get_softwareversion();
 int lookup_vcf_name(char *instance, char **value);
-int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 
-struct dev_vcf
-{
-	struct uci_section *vcf_sec;
-};
 #endif

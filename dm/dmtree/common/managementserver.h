@@ -10,6 +10,6 @@
  */
 #ifndef __MANAGEMENT_SERVER_H
 #define __MANAGEMENT_SERVER_H
-
-int entry_method_root_ManagementServer(struct dmctx *ctx);
+#include "dmcwmp.h"
+extern DMLEAF tManagementServerParams[];
 #endif
