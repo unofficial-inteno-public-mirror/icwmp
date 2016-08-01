@@ -17,6 +17,8 @@ struct host_args
 	char *key;
 };
 
-int entry_method_root_hosts(struct dmctx *ctx);
+extern DMLEAF thostsParam[];
+extern DMLEAF thostParam[];
+extern DMOBJ thostsObj[];
 
 #endif

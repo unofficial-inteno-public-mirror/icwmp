@@ -31,5 +31,9 @@ struct router_args
 	struct uci_section *router_section;
 };
 
-int entry_method_root_routing(struct dmctx *ctx);
+extern DMLEAF tRouterInstParam[];
+extern DMLEAF tIPv4ForwardingParam[];
+extern DMOBJ tRoutingObj[];
+extern DMLEAF tRouterParam[];
+extern DMOBJ tRouterObj[];
 #endif

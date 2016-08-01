@@ -31,6 +31,10 @@
 #include "wifi.h"
 #include "wan.h"
 #include "dhcp.h"
+#include "hosts.h"
+#include "nat.h"
+#include "ppp.h"
+#include "routing.h"
 #endif
 #ifdef DATAMODEL_TR098
 #include "landevice.h"
@@ -82,6 +86,10 @@ DMOBJ tRootObj[] = {
 {"ATM",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tAtmObj, NULL, NULL},
 {"PTM", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tPtmObj, NULL, NULL},
 {"DHCPv4", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tDhcpServerObj, NULL, NULL},
+{"Hosts", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, thostsObj, thostsParam, NULL},
+{"NAT", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tnatObj, NULL, NULL},
+{"PPP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tpppObj, NULL, NULL},
+{"Routing", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tRoutingObj, NULL, NULL},
 #endif*/
 {0}
 };

@@ -11,6 +11,7 @@
 #ifndef __NAT_H
 #define __NAT_H
 
-int entry_method_root_nat(struct dmctx *ctx);
+extern DMLEAF tInterfaceSettingParam[];
+extern DMOBJ tnatObj[];
 
 #endif

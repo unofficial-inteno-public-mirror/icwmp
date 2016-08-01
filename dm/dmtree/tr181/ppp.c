@@ -19,6 +19,7 @@
 #include "ppp.h"
 
 struct ppp_args cur_ppp_args = {0};
+inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 /*************************************************************
  * INIT
@@ -201,21 +202,52 @@ int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, int action, char *val
 	}
 	return 0;
 }
+/**************************************************************************
+* LINKER
+***************************************************************************/
+char *get_linker_ppp_interface(struct dmctx *dmctx) {
+	char *linker;
+	if(cur_ppp_args.ppp_sec) {
+		dmasprintf(&linker,"%s", section_name(cur_ppp_args.ppp_sec));
+		return linker;
+	}
+	return "";
+}
+
+DMLEAF tpppInterfaceParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_ppp_alias, set_ppp_alias, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_ppp_enable, set_ppp_enable, NULL, NULL},
+{"Name", &DMREAD, DMT_STRING, get_ppp_name, NULL, NULL, NULL},
+{"LowerLayers", &DMWRITE, DMT_STRING, get_ppp_lower_layer, set_ppp_lower_layer, NULL, NULL},
+{"ConnectionStatus", &DMREAD, DMT_STRING, get_ppp_status, NULL, NULL, NULL},
+{"Username", &DMWRITE, DMT_STRING, get_ppp_username, set_ppp_username, NULL, NULL},
+{"Password", &DMWRITE, DMT_STRING, get_empty, set_ppp_password, NULL, NULL},
+{0}
+};
+
+DMLEAF tStatsParam[] = {
+{"EthernetBytesReceived", &DMREAD, DMT_UNINT, get_ppp_eth_bytes_received, NULL, NULL, NULL},
+{"EthernetBytesSent", &DMWRITE, DMT_UNINT, get_ppp_eth_bytes_sent, NULL, NULL, NULL},
+{"EthernetPacketsReceived", &DMREAD, DMT_UNINT, get_ppp_eth_pack_received, NULL, NULL, NULL},
+{"EthernetPacketsSent", &DMREAD, DMT_UNINT, get_ppp_eth_pack_sent, NULL, NULL, NULL},
+{0}
+};
+
+DMOBJ tpppInterfaceObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tStatsParam, NULL},
+{0}
+};
+
+DMOBJ tpppObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Interface", &DMREAD, NULL, NULL, NULL, browseInterfaceInst, NULL, NULL, tpppInterfaceObj, tpppInterfaceParam, get_linker_ppp_interface},
+{0}
+};
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
-int entry_method_root_ppp(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"PPP.") {
-		DMOBJECT(DMROOT"PPP.", ctx, "0", 0, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"PPP.Interface.", ctx, "0", 1, NULL, NULL, NULL);
-		SUBENTRY(entry_ppp_interface, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-inline int entry_ppp_interface(struct dmctx *ctx)
+inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *net_sec = NULL;
 	char *ppp_int = NULL, *ppp_int_last = NULL;
@@ -225,32 +257,11 @@ inline int entry_ppp_interface(struct dmctx *ctx)
 		dmuci_get_value_by_section_string(net_sec, "proto", &proto);
 		if (!strstr(proto, "ppp"))
 			continue;
-		init_ppp_args(ctx, net_sec);
-		ppp_int = handle_update_instance(1, ctx, &ppp_int_last, update_instance_alias, 3, net_sec, "ppp_int_instance", "ppp_int_alias");
-		SUBENTRY(entry_ppp_interface_instance, ctx, ppp_int);
+		init_ppp_args(dmctx, net_sec);
+		ppp_int = handle_update_instance(1, dmctx, &ppp_int_last, update_instance_alias, 3, net_sec, "ppp_int_instance", "ppp_int_alias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ppp_int);
 	}
 	return 0;
 }
 
-inline int entry_ppp_interface_instance(struct dmctx *ctx, char *int_num)
-{
-	IF_MATCH(ctx, DMROOT"PPP.Interface.%s.", int_num) {
-		char linker[32] = "";
-		strcat(linker, section_name(cur_ppp_args.ppp_sec));
-		DMOBJECT(DMROOT"PPP.Interface.%s.", ctx, "0", 1, NULL, NULL, linker, int_num);
-		DMPARAM("Alias", ctx, "1", get_ppp_alias, set_ppp_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Enable", ctx, "1", get_ppp_enable, set_ppp_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Name", ctx, "0", get_ppp_name, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("LowerLayers", ctx, "1", get_ppp_lower_layer, set_ppp_lower_layer, NULL, 0, 1, UNDEF, NULL);//TODO
-		DMPARAM("ConnectionStatus", ctx, "0", get_ppp_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Username", ctx, "1", get_ppp_username, set_ppp_username, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Password", ctx, "1", get_empty, set_ppp_password, NULL, 0, 1, UNDEF, NULL);
-		DMOBJECT(DMROOT"PPP.Interface.%s.Stats.", ctx, "0", 1, NULL, NULL, NULL, int_num);
-		DMPARAM("EthernetBytesReceived", ctx, "0", get_ppp_eth_bytes_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("EthernetBytesSent", ctx, "0", get_ppp_eth_bytes_sent, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("EthernetPacketsReceived", ctx, "0", get_ppp_eth_pack_received, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("EthernetPacketsSent", ctx, "0", get_ppp_eth_pack_sent,NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
+

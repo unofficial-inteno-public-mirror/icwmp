@@ -16,6 +16,9 @@ struct ppp_args
 	struct uci_section *ppp_sec;
 };
 
-int entry_method_root_ppp(struct dmctx *ctx);
+extern DMLEAF tpppInterfaceParam[];
+extern DMLEAF tStatsParam[];
+extern DMOBJ tpppInterfaceObj[];
+extern DMOBJ tpppObj[];
 
 #endif

@@ -26,7 +26,8 @@ enum enum_route_type {
 struct routingfwdargs cur_routefwdargs = {0};
 struct router_args cur_router_args = {0};
 
-inline int entry_router_ipv4forwarding_instance(struct dmctx *ctx, char *irouter, char *iroute, char *permission);
+inline int browseRouterInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+inline int browseIPv4ForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int init_args_ipv4forward(struct dmctx *ctx, struct uci_section *s, char *permission, struct proc_routing *proute, int type)
 {
 	struct routingfwdargs *args = &cur_routefwdargs;
@@ -567,11 +568,54 @@ int set_router_ipv4forwarding_alias(char *refparam, struct dmctx *ctx, int actio
 	return 0;
 }
 
+char *get_routing_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance)
+{
+	return cur_routefwdargs.permission;
+}
+
+struct dm_permession_s DMRouting = {"0", &get_routing_perm};
+
+DMLEAF tRouterInstParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_router_alias, set_router_alias, NULL, NULL},
+{0}
+};
+
+DMLEAF tIPv4ForwardingParam[] = {
+{"Enable", &DMRouting, DMT_BOOL, get_router_ipv4forwarding_enable, set_router_ipv4forwarding_enable, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_router_ipv4forwarding_status, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_router_ipv4forwarding_alias, set_router_ipv4forwarding_alias, NULL, NULL},
+{"DestIPAddress", &DMRouting, DMT_STRING, get_router_ipv4forwarding_destip, set_router_ipv4forwarding_destip, NULL, NULL},
+{"DestSubnetMask", &DMRouting, DMT_STRING, get_router_ipv4forwarding_destmask, set_router_ipv4forwarding_destmask, NULL, NULL},
+{"SourceIPAddress", &DMREAD, DMT_STRING, get_router_ipv4forwarding_src_address, NULL, NULL, NULL},
+{"SourceSubnetMask", &DMREAD, DMT_STRING, get_router_ipv4forwarding_src_mask, NULL, NULL, NULL},
+{"GatewayIPAddress", &DMRouting, DMT_STRING, get_router_ipv4forwarding_gatewayip, set_router_ipv4forwarding_gatewayip, NULL, NULL},
+{"Interface", &DMRouting, DMT_STRING, get_router_ipv4forwarding_interface_linker_parameter, set_router_ipv4forwarding_interface_linker_parameter, NULL, NULL},
+{"ForwardingMetric", &DMRouting, DMT_STRING, get_router_ipv4forwarding_metric, set_router_ipv4forwarding_metric, NULL, NULL},
+{0}
+};
+
+DMOBJ tRoutingObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Router", &DMREAD, NULL, NULL, NULL, browseRouterInst, NULL, NULL, tRouterObj, tRouterInstParam, NULL},
+{"Router", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tRouterParam, NULL},
+{0}
+};
+
+DMLEAF tRouterParam[] = {
+{"RouterNumberOfEntries", &DMREAD, DMT_UNINT, get_router_nbr_entry, NULL, NULL, NULL},
+{0}
+};
+
+DMOBJ tRouterObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"IPv4Forwarding", &DMREAD, NULL, NULL, NULL, browseIPv4ForwardingInst, NULL, NULL, NULL, tIPv4ForwardingParam, NULL},
+{0}
+};
 /*************************************************************
  * SUB ENTRIES
 /*************************************************************/
 
-inline int entry_router_ipv4forwarding(struct dmctx *ctx, char *irouter)
+inline int browseIPv4ForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *iroute = NULL, *iroute_last = NULL;
 	char *permission = "1";
@@ -581,14 +625,14 @@ inline int entry_router_ipv4forwarding(struct dmctx *ctx, char *irouter)
 	struct proc_routing proute = {0};
 	bool find_max = true;
 	uci_foreach_sections("network", "route", s) {
-		init_args_ipv4forward(ctx, s, "1", NULL, ROUTE_STATIC);
-		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		SUBENTRY(entry_router_ipv4forwarding_instance, ctx, irouter, iroute, permission);
+		init_args_ipv4forward(dmctx, s, "1", NULL, ROUTE_STATIC);
+		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
-		init_args_ipv4forward(ctx, s, "1", NULL, ROUTE_DISABLED);
-		iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		SUBENTRY(entry_router_ipv4forwarding_instance, ctx, irouter, iroute, permission);
+		init_args_ipv4forward(dmctx, s, "1", NULL, ROUTE_DISABLED);
+		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 	}
 	fp = fopen(ROUTING_FILE, "r");
 	if ( fp != NULL)
@@ -602,71 +646,30 @@ inline int entry_router_ipv4forwarding(struct dmctx *ctx, char *irouter)
 			if (is_proute_static(&proute))
 				continue;
 			ss = update_route_dynamic_section(&proute);
-			init_args_ipv4forward(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
-			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
-			SUBENTRY(entry_router_ipv4forwarding_instance, ctx, irouter, iroute, "0");
+			init_args_ipv4forward(dmctx, ss, "0", &proute, ROUTE_DYNAMIC);
+			iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
+			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute);
 		}
 		fclose(fp) ;
 	}
 	return 0;
 }
 
-inline int entry_method_router(struct dmctx *ctx)
+inline int browseRouterInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *s = NULL;
 	char *r = NULL, *r_last = NULL;
 	
 	update_section_list("dmmap","router", NULL, 1, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "router", s) {
-		init_router_args(ctx, s);
-		r = handle_update_instance(1, ctx, &r_last, update_instance_alias, 3, s, "router_instance", "router_alias");
-		SUBENTRY(entry_method_root_router_sub, ctx, r);
+		init_router_args(dmctx, s);
+		r = handle_update_instance(1, dmctx, &r_last, update_instance_alias, 3, s, "router_instance", "router_alias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, r);
 		return 0;
 	}
-	return FAULT_9005;
+	return FAULT_9005; //TO CHECK
 }
 
-inline int entry_router_ipv4forwarding_instance(struct dmctx *ctx, char *irouter, char *iroute, char *permission)
-{	
-	IF_MATCH(ctx, DMROOT"Routing.Router.%s.IPv4Forwarding.%s.", irouter, iroute) {
-		DMOBJECT(DMROOT"Routing.Router.%s.IPv4Forwarding.%s.", ctx, "0", 1, NULL, NULL, NULL, irouter, iroute);
-		DMPARAM("Enable", ctx, permission, get_router_ipv4forwarding_enable, set_router_ipv4forwarding_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Status", ctx, "0", get_router_ipv4forwarding_status, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Alias", ctx, "1", get_router_ipv4forwarding_alias, set_router_ipv4forwarding_alias, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DestIPAddress", ctx, permission, get_router_ipv4forwarding_destip, set_router_ipv4forwarding_destip, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("DestSubnetMask", ctx, permission, get_router_ipv4forwarding_destmask, set_router_ipv4forwarding_destmask, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceIPAddress", ctx, "0", get_router_ipv4forwarding_src_address, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("SourceSubnetMask", ctx, "0", get_router_ipv4forwarding_src_mask, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("GatewayIPAddress", ctx, permission, get_router_ipv4forwarding_gatewayip, set_router_ipv4forwarding_gatewayip, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Interface", ctx, permission, get_router_ipv4forwarding_interface_linker_parameter, set_router_ipv4forwarding_interface_linker_parameter, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ForwardingMetric", ctx, permission, get_router_ipv4forwarding_metric, set_router_ipv4forwarding_metric, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-int entry_method_root_routing(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"Routing.") {
-		DMOBJECT(DMROOT"Routing.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Routing.Router.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("RouterNumberOfEntries", ctx, "0", get_router_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		SUBENTRY(entry_method_router, ctx);
-		return 0;
-	}
-	return FAULT_9005;
-}
-
-int entry_method_root_router_sub(struct dmctx *ctx, char *irouter)
-{
-	IF_MATCH(ctx, DMROOT"Routing.Router.%s.", irouter) {
-		DMOBJECT(DMROOT"Routing.Router.%s.", ctx, "0", 1, NULL, NULL, NULL, irouter);
-		DMPARAM("Alias", ctx, "1", get_router_alias, set_router_alias, NULL, 0, 1, UNDEF, NULL); //TODO
-		DMOBJECT(DMROOT"Routing.Router.%s.IPv4Forwarding.", ctx, "0", 1, NULL, NULL, NULL, irouter);
-		SUBENTRY(entry_router_ipv4forwarding, ctx, irouter);
-	}
-	return 0;
-}
 
 
 
