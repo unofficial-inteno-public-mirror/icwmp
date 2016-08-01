@@ -289,13 +289,13 @@ int get_eth_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **valu
 
 DMOBJ tEthernetObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, linker*/
-{"Interface", &DMREAD, NULL, NULL, browseEthIfaceInst, NULL, NULL, tEthernetStatObj, tEthernetParams, get_linker_val},
+{"Interface", &DMREAD, NULL, NULL, NULL, browseEthIfaceInst, NULL, NULL, tEthernetStatObj, tEthernetParams, get_linker_val},
 {0}
 };
 
 DMOBJ tEthernetStatObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, linker*/
-{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tEthernetStatParams, NULL},
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tEthernetStatParams, NULL},
 {0}
 };
 

@@ -1076,15 +1076,15 @@ int set_vlan_port_port_ref(char *refparam, struct dmctx *ctx, int action, char *
 
 DMOBJ tBridgObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Bridge", &DMWRITE, add_bridge, delete_bridge, browseBridgeInst, NULL, NULL, tBridgPortObj, tBridgeParams, NULL},
+{"Bridge", &DMWRITE, add_bridge, delete_bridge, NULL, browseBridgeInst, NULL, NULL, tBridgPortObj, tBridgeParams, NULL},
 {0}
 };
 
 DMOBJ tBridgPortObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"VLAN", &DMWRITE, add_br_vlan, delete_br_vlan, browseBridgeVlanInst, NULL, NULL, NULL, tBridgeVlanParams, get_linker_br_vlan},
-{"Port", &DMWRITE, add_br_port, delete_br_port, browseBridgePortInst, NULL, NULL, tBridgePortStatObj, tBridgePortParams, get_linker_br_port},
-{"VLANPort", &DMWRITE, NULL, NULL, browseBridgeVlanPortInst, NULL, NULL, NULL, tBridgeVlanPortParams, NULL},
+{"VLAN", &DMWRITE, add_br_vlan, delete_br_vlan, NULL, browseBridgeVlanInst, NULL, NULL, NULL, tBridgeVlanParams, get_linker_br_vlan},
+{"Port", &DMWRITE, add_br_port, delete_br_port, NULL, browseBridgePortInst, NULL, NULL, tBridgePortStatObj, tBridgePortParams, get_linker_br_port},
+{"VLANPort", &DMWRITE, NULL, NULL, NULL, browseBridgeVlanPortInst, NULL, NULL, NULL, tBridgeVlanPortParams, NULL},
 {0}
 };
 
@@ -1129,7 +1129,7 @@ DMLEAF tBridgeVlanPortParams[] = {
 
 DMOBJ tBridgePortStatObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Stats", &DMWRITE, NULL, NULL, NULL, NULL, NULL, NULL, tBridgePortStatParams, NULL},
+{"Stats", &DMWRITE, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tBridgePortStatParams, NULL},
 {0}
 };
 

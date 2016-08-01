@@ -166,6 +166,7 @@ typedef struct dm_obj_s {
 	struct dm_permession_s *permission;
 	int (*addobj)(struct dmctx *dmctx, char **instance);
 	int (*delobj)(struct dmctx *dmctx, unsigned char del_action);
+	bool (*checkobj)(struct dmctx *dmctx, void *data);
 	int (*browseinstobj)(struct dmctx *dmctx, struct dmnode *node, void *data, char *instance);
 	struct dm_forced_inform_s *forced_inform;
 	struct dm_notif_s *notification;

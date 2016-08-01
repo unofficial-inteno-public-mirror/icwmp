@@ -850,20 +850,20 @@ int set_ptm_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 
 DMOBJ tDslObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Line", &DMREAD, NULL, NULL, browseDslLineInst, NULL, NULL, NULL, tDslLineParams, NULL},
-{"Channel", &DMREAD, NULL, NULL, browseDslChannelInst, NULL, NULL, NULL, tDslChanelParams, NULL},
+{"Line", &DMREAD, NULL, NULL, NULL, browseDslLineInst, NULL, NULL, NULL, tDslLineParams, NULL},
+{"Channel", &DMREAD, NULL, NULL, NULL, browseDslChannelInst, NULL, NULL, NULL, tDslChanelParams, NULL},
 {0}
 };
 
 DMOBJ tAtmObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Link", &DMWRITE, add_atm_link, delete_atm_link, browseAtmLinkInst, NULL, NULL, tAtmLinkStatsObj, tAtmLineParams, get_atm_linker},
+{"Link", &DMWRITE, add_atm_link, delete_atm_link, NULL, browseAtmLinkInst, NULL, NULL, tAtmLinkStatsObj, tAtmLineParams, get_atm_linker},
 {0}
 };
 
 DMOBJ tPtmObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Link", &DMWRITE, add_ptm_link, delete_ptm_link, browsePtmLinkInst, NULL, NULL, tPtmLinkStatsObj, tPtmLineParams, get_ptm_linker},
+{"Link", &DMWRITE, add_ptm_link, delete_ptm_link, NULL, browsePtmLinkInst, NULL, NULL, tPtmLinkStatsObj, tPtmLineParams, get_ptm_linker},
 {0}
 };
 
@@ -915,7 +915,7 @@ DMLEAF tAtmLineParams[] = {
 
 DMOBJ tAtmLinkStatsObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tAtmLinkStatsParams, NULL},
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tAtmLinkStatsParams, NULL},
 {0}
 };
 
@@ -930,7 +930,7 @@ DMLEAF tAtmLinkStatsParams[] = {
 
 DMOBJ tPtmLinkStatsObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tPtmLinkStatsParams, NULL},
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tPtmLinkStatsParams, NULL},
 {0}
 };
 

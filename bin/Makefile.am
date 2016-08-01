@@ -26,15 +26,18 @@ icwmpd_SOURCES =			\
 	../dm/dmcommon.c		\
 	../dm/wepkey.c			\
 	../dm/dmtree/common/deviceinfo.c				\
+	../dm/dmtree/common/managementserver.c			\
 	../dm/dmtree/common/softwaremodules.c			\
-	../dm/dmtree/tr181/root.c					\
+	../dm/dmtree/common/root.c						\
+if DATAMODEL_TR181
+icwmpd_SOURCES +=								\
 	../dm/dmtree/tr181/ip.c						\
 	../dm/dmtree/tr181/ethernet.c				\
 	../dm/dmtree/tr181/bridging.c				\
 	../dm/dmtree/tr181/wifi.c					\
 	../dm/dmtree/tr181/wan.c					\
 	../dm/dmtree/tr181/dhcp.c				
-	
+endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
 	$(LIBUCI_CFLAGS)	\

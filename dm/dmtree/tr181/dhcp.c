@@ -841,21 +841,21 @@ int get_dhcp_client_chaddr(char *refparam, struct dmctx *ctx, char **value)
 
 DMOBJ tDhcpServerObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Server", &DMREAD, NULL, NULL, NULL, NULL, NULL, tDhcpServerPoolObj, NULL, NULL},
+{"Server", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tDhcpServerPoolObj, NULL, NULL},
 {0}
 };
 
 DMOBJ tDhcpServerPoolObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"Pool", &DMWRITE, add_dhcp_server, delete_dhcp_server, browseDhcpInst, NULL, NULL, tDhcpServerPoolAddressObj, tDhcpServerPoolParams, NULL},
+{"Pool", &DMWRITE, add_dhcp_server, delete_dhcp_server, NULL, browseDhcpInst, NULL, NULL, tDhcpServerPoolAddressObj, tDhcpServerPoolParams, NULL},
 {0}
 };
 
 
 DMOBJ tDhcpServerPoolAddressObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf, linker*/
-{"StaticAddress", &DMWRITE, add_dhcp_staticaddress, delete_dhcp_staticaddress, browseDhcpStaticInst, NULL, NULL, NULL, tDhcpServerPoolAddressParams, NULL},
-{"Client", &DMREAD, NULL, NULL, browseDhcpClientInst, NULL, NULL, NULL, tDhcpServerPoolClientParams, get_dhcp_client_linker},
+{"StaticAddress", &DMWRITE, add_dhcp_staticaddress, delete_dhcp_staticaddress, NULL, browseDhcpStaticInst, NULL, NULL, NULL, tDhcpServerPoolAddressParams, NULL},
+{"Client", &DMREAD, NULL, NULL, NULL, browseDhcpClientInst, NULL, NULL, NULL, tDhcpServerPoolClientParams, get_dhcp_client_linker},
 {0}
 };
 

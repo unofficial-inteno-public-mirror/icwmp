@@ -247,6 +247,9 @@ int dm_browse(struct dmctx *dmctx, DMNODE *parent_node, DMOBJ *entryobj, void *d
 		err = dmctx->method_obj(dmctx, &node, entryobj->permission, entryobj->addobj, entryobj->delobj, entryobj->forced_inform, entryobj->notification, entryobj->get_linker, data, instance);
 		if (dmctx->stop)
 			return err;
+		if (entryobj->checkobj && ((entryobj->checkobj)(dmctx, data) == false) ){
+			continue;
+		}
 		if (entryobj->browseinstobj) {
 			entryobj->browseinstobj(dmctx, &node, data, instance);
 			err = dmctx->faultcode;

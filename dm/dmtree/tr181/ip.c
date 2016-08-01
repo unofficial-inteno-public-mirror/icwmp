@@ -708,8 +708,8 @@ int delete_ipv6(struct dmctx *ctx, unsigned char del_action)
 /* *** Device.IP. *** */
 DMOBJ tIPObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"Interface", &DMWRITE, add_ip_interface, delete_ip_interface, browseIPIfaceInst, NULL, NULL, tInterfaceObj, tIPintParams, NULL},
-{"Diagnostics", &DMREAD, NULL, NULL, NULL, NULL, NULL, tDiagnosticObj, NULL, NULL},
+{"Interface", &DMWRITE, add_ip_interface, delete_ip_interface, NULL, browseIPIfaceInst, NULL, NULL, tInterfaceObj, tIPintParams, get_linker_ip_interface},
+{"Diagnostics", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tDiagnosticObj, NULL, NULL},
 {0}
 };
 
@@ -723,14 +723,14 @@ DMLEAF tIPintParams[] = {
 /* *** Device.IP.Interface. *** */
 DMOBJ tInterfaceObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-{"IPv4Address", &DMREAD, add_ipv4, delete_ipv4, browseIfaceIPv4Inst, NULL, NULL, NULL, tIPv4Params, NULL},
-{"IPv6Address", &DMREAD, add_ipv6, delete_ipv6, browseIfaceIPv6Inst, NULL, NULL, NULL, tIPv6Params, NULL},
+{"IPv4Address", &DMREAD, add_ipv4, delete_ipv4, NULL, browseIfaceIPv4Inst, NULL, NULL, NULL, tIPv4Params, NULL},
+{"IPv6Address", &DMREAD, add_ipv6, delete_ipv6, NULL, browseIfaceIPv6Inst, NULL, NULL, NULL, tIPv6Params, NULL},
 {0}
 };
 
 DMOBJ tDiagnosticObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, nextobj, leaf*/
-{"IPPingDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tIpPingDiagParams, NULL},
+{"IPPingDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tIpPingDiagParams, NULL},
 {0}
 };
 /* *** Device.IP.Interface.{i}.IPv4Address. *** */
