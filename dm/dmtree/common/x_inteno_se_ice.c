@@ -70,13 +70,8 @@ int set_ice_cloud_server(char *refparam, struct dmctx *ctx, int action, char *va
 	return 0;
 }
 
-int entry_method_root_X_INTENO_SE_Ice(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"X_INTENO_SE_ICE.") {
-		DMOBJECT(DMROOT"X_INTENO_SE_ICE.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("Enable", ctx, "1", get_ice_cloud_enable, set_ice_cloud_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("Server", ctx, "1", get_ice_cloud_server, set_ice_cloud_server, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
+DMLEAF tSe_IceParam[] = {
+	{"Enable", &DMWRITE, DMT_BOOL, get_ice_cloud_enable, set_ice_cloud_enable, NULL, NULL},
+	{"Server", &DMWRITE, DMT_STRING, get_ice_cloud_server, set_ice_cloud_server, NULL, NULL},
+	{0}
+};

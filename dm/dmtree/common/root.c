@@ -16,6 +16,9 @@
 #include "root.h"
 #include "deviceinfo.h"
 #include "managementserver.h"
+#include "times.h"
+#include "upnp.h"
+#include "x_inteno_se_ice.h"
 #ifdef DATAMODEL_TR181
 #include "ip.h"
 #include "ethernet.h"
@@ -50,6 +53,9 @@ DMOBJ tRootObj[] = {
 /* OBJ permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, notification, linker*/
 {"DeviceInfo", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tDeviceInfoObj, tDeviceInfoParams, NULL},
 {"ManagementServer", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tManagementServerParams, NULL},
+{"Time", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tTimeParams, NULL},
+{"UPnP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tUPnPObj, NULL, NULL},
+{"X_INTENO_SE_ICE", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IceParam, NULL},
 #ifdef DATAMODEL_TR181
 {"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
 {"WiFi",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tWifiObj, NULL, NULL},

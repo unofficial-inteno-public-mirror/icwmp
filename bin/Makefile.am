@@ -28,6 +28,9 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/deviceinfo.c				\
 	../dm/dmtree/common/managementserver.c			\
 	../dm/dmtree/common/softwaremodules.c			\
+	../dm/dmtree/common/times.c						\
+	../dm/dmtree/common/upnp.c						\
+	../dm/dmtree/common/x_inteno_se_ice.c 			\
 	../dm/dmtree/common/root.c						\
 if DATAMODEL_TR181
 icwmpd_SOURCES +=								\

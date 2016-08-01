@@ -176,17 +176,13 @@ int set_time_ntpserver5(char *refparam, struct dmctx *ctx, int action, char *val
 	return set_time_ntpserver(refparam, ctx, action, value, 5);
 }
 
-int entry_method_root_Time(struct dmctx *ctx)
-{
-	IF_MATCH(ctx, DMROOT"Time.") {
-		DMOBJECT(DMROOT"Time.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("Enable", ctx, "1", get_time_enable, set_time_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer1", ctx, "1", get_time_ntpserver1, set_time_ntpserver1, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer2", ctx, "1", get_time_ntpserver2, set_time_ntpserver2, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer3", ctx, "1", get_time_ntpserver3, set_time_ntpserver3, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer4", ctx, "1", get_time_ntpserver4, set_time_ntpserver4, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("NTPServer5", ctx, "1", get_time_ntpserver5, set_time_ntpserver5, NULL, 0, 1, UNDEF, NULL);
-		return 0;
-	}
-	return FAULT_9005;
-}
+DMLEAF tTimeParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification, linker*/
+{"Enable", &DMWRITE, DMT_BOOL, get_time_enable, set_time_enable, NULL, NULL, NULL},
+{"NTPServer1", &DMWRITE, DMT_STRING, get_time_ntpserver1, set_time_ntpserver1, NULL, NULL, NULL},
+{"NTPServer2", &DMWRITE, DMT_STRING, get_time_ntpserver2, set_time_ntpserver2, NULL, NULL, NULL},
+{"NTPServer3", &DMWRITE, DMT_STRING, get_time_ntpserver3, set_time_ntpserver3, NULL, NULL, NULL},
+{"NTPServer4", &DMWRITE, DMT_STRING, get_time_ntpserver4, set_time_ntpserver4, NULL, NULL, NULL},
+{"NTPServer5", &DMWRITE, DMT_STRING, get_time_ntpserver5, set_time_ntpserver5, NULL, NULL, NULL},
+{0}
+};
