@@ -15,6 +15,24 @@
 #include <json-c/json.h>
 #define NVRAM_FILE "/proc/nvram/WpaKey"
 
+extern DMLEAF tLanhost_Config_ManagementParam[];
+extern DMLEAF tDHCPStaticAddressParam[];
+extern DMLEAF tIPInterfaceParam[];
+extern DMLEAF tlanethernetinterfaceconfigParam[];
+extern DMOBJ tLanhost_Config_ManagementObj[];
+extern DMLEAF tWlanConfigurationParam[];
+extern DMLEAF tWPSParam[];
+extern DMLEAF tWepKeyParam[];
+extern DMLEAF tpresharedkeyParam[];
+extern DMLEAF tassociateddeviceParam[];
+extern DMOBJ tWlanConfigurationObj[];
+extern DMOBJ tLANDeviceinstObj[];
+extern DMOBJ tLANDeviceObj[];
+extern DMOBJ tlanethernetinterfaceconfigObj[];
+extern DMLEAF tlanethernetinterfaceStatsParam[];
+extern DMLEAF tLANDeviceParam[];
+extern DMLEAF tlandevice_hostParam[];
+extern DMOBJ tlandevice_hostObj[];
 struct wl_clientargs
 {
 	char *mac;
@@ -77,5 +95,5 @@ typedef struct dhcp_param
 	char *state_sec;
 }dhcp_param;
 
-int entry_method_root_LANDevice(struct dmctx *ctx);
+inline int browselandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

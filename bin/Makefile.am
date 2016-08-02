@@ -40,6 +40,7 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/root.c						\
 if DATAMODEL_TR098
 icwmpd_SOURCES += \	
+	../dm/dmtree/tr098/landevice.c 				\
 	../dm/dmtree/tr098/ippingdiagnostics.c		\
 	../dm/dmtree/tr098/lan_interfaces.c			\
 	../dm/dmtree/tr098/layer_3_forwarding.c		\
