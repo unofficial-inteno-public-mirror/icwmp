@@ -18,6 +18,7 @@
 #include "managementserver.h"
 #include "times.h"
 #include "upnp.h"
+#include "voice_services.h"
 #include "x_inteno_se_ice.h"
 #include "x_inteno_se_igmp.h"
 #include "x_inteno_se_ipacccfg.h"
@@ -64,6 +65,7 @@ DMOBJ tRootObj[] = {
 {"ManagementServer", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tManagementServerParams, NULL},
 {"Time", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tTimeParams, NULL},
 {"UPnP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tUPnPObj, NULL, NULL},
+{"Services", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tServiceObj, NULL, NULL},
 {"X_INTENO_SE_ICE", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IceParam, NULL},
 {"X_INTENO_SE_IGMP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IgmpParam, NULL},
 {"X_INTENO_SE_IpAccCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tSe_IpAccObj, NULL, NULL},

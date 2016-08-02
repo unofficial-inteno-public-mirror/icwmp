@@ -13,6 +13,28 @@
 #ifndef __VOICE_H
 #define __VOICE_H
 
+extern DMOBJ tServiceObj[];
+extern DMOBJ tVoiceServiceObj[];
+extern DMLEAF tCapabilitiesParams[];
+extern DMOBJ tCapabilitiesObj[];
+extern DMLEAF tSIPParams[];
+extern DMLEAF tCodecsParams[] ;
+extern DMOBJ tProfileObj[] ;
+extern DMLEAF tProfileSIPParams[];
+extern DMLEAF tServiceProviderInfoParams[];
+extern DMLEAF tProfileParam[];
+extern DMOBJ tLineObj[];
+extern DMOBJ tLineCodecObj[];
+extern DMLEAF tLineCodecListParams[];
+extern DMLEAF tLineSIPParams[];
+extern DMLEAF tCallingFeaturesParams[];
+extern DMLEAF tLineParams[];
+extern DMLEAF tRTPParams[];
+extern DMOBJ tRTPObj[];
+extern DMLEAF tSRTPParam[];
+extern DMLEAF tRTCPParams[];
+extern DMLEAF tFaxT38Params[];
+
 /*Args of get_voice_service_capabilities_codecs_generic*/
 struct codec_args
 {
@@ -112,6 +134,5 @@ enum enum_cap_sip_codecs {
 	SIP_CODEC_TESTLAW
 };
 
-int entry_method_root_Service(struct dmctx *ctx);
 bool dm_service_enable_set(void);
 #endif
