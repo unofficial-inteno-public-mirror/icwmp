@@ -61,6 +61,11 @@ icwmpd_SOURCES +=								\
 	../dm/dmtree/tr181/ppp.c					\
 	../dm/dmtree/tr181/routing.c
 endif
+if XMPP_ENABLE
+icwmpd_SOURCES += 									\
+	../dm/dmtree/common/xmpp.c						\
+	../xmpp_cr.c					
+endif
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
 	$(LIBUCI_CFLAGS)	\

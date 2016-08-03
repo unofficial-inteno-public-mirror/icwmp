@@ -18,7 +18,7 @@
 #include "xmpp.h"
 
 struct connectionargs cur_connectionargs = {0};
-inline int entry_xmpp_connection_instance(struct dmctx *ctx, char *iconnection);
+inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 inline int init_args_connection_entry(struct dmctx *ctx, struct uci_section *s)
 {
@@ -158,29 +158,30 @@ int add_xmpp_connection(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_xmpp_connection_all()
+int delete_xmpp_connection(struct dmctx *ctx, unsigned char del_action)
 {
 	int found = 0;
 	struct uci_section *s, *ss = NULL;
+	struct connectionargs *connargs;
 	
-	uci_foreach_sections("cwmp", "xmpp_connection", s) {
-		if (found != 0) {
-			dmuci_delete_by_section(ss, NULL, NULL);
-		}
-		ss = s;
-		found++;
+	switch (del_action) {
+		case DEL_INST:
+			connargs = (struct connectionargs *)ctx->args;
+			dmuci_delete_by_section(connargs->connsection, NULL, NULL);
+			return 0;
+		case DEL_ALL:
+			uci_foreach_sections("cwmp", "xmpp_connection", s) {
+					if (found != 0) {
+					dmuci_delete_by_section(ss, NULL, NULL);
+				}
+				ss = s;
+				found++;
+			}
+			if (ss != NULL) {
+				dmuci_delete_by_section(ss, NULL, NULL);
+			}
+			return 0;
 	}
-	if (ss != NULL) {
-		dmuci_delete_by_section(ss, NULL, NULL);
-	}		
-	return 0;
-}
-
-int delete_xmpp_connection(struct dmctx *ctx)
-{
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
-	
-	dmuci_delete_by_section(connargs->connsection, NULL, NULL);
 	return 0;
 }
 
@@ -194,18 +195,6 @@ int get_xmpp_connection_nbr_entry(char *refparam, struct dmctx *ctx, char **valu
 	}
 	dmasprintf(value, "%d", cnt); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
-}
-
-inline int entry_xmpp_connection(struct dmctx *ctx)
-{
-	char *iconnection = NULL, *iconnection_last = NULL;;
-	struct uci_section *s = NULL;
-
-	uci_foreach_sections("cwmp", "xmpp_connection", s) {
-		init_args_connection_entry(ctx, s);
-		iconnection = handle_update_instance(1, ctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
-		SUBENTRY(entry_xmpp_connection_instance, ctx, iconnection);
-	}
 }
 
 int get_connection_enable(char *refparam, struct dmctx *ctx, char **value)
@@ -465,42 +454,64 @@ int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int act
 	return 0;
 }
 
-inline int entry_xmpp_connection_instance(struct dmctx *ctx, char *iconnection)
-{
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
-	char linker[32] = "xmppc:";
+/**************************************************************************
+* LINKER
+***************************************************************************/
+char *get_xmpp_connection_linker(struct dmctx *dmctx) {
+	char *linker;
 	char *conn_instance;
+	struct connectionargs *connargs = (struct connectionargs *)dmctx->args;
+
+	if (connargs->connsection)
+{
 	dmuci_get_value_by_section_string(connargs->connsection, "connection_instance", &conn_instance);
-	strcat(linker, conn_instance);
-	
-	IF_MATCH(ctx, DMROOT"XMPP.Connection.%s.", iconnection) {
-		DMOBJECT(DMROOT"XMPP.Connection.%s.", ctx, "0", 1, NULL, delete_xmpp_connection, linker, iconnection);
-		DMPARAM("Enable", ctx, "1", get_connection_enable, set_connection_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
-		//DMPARAM("Username", ctx, "1", get_xmpp_connection_username, set_xmpp_connection_username, NULL, 0, 1, UNDEF, NULL); //TO CHECK
-		DMPARAM("Password", ctx, "1", get_xmpp_connection_password, set_xmpp_connection_password, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Domain", ctx, "1", get_xmpp_connection_domain, set_xmpp_connection_domain, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Resource", ctx, "1", get_xmpp_connection_resource, set_xmpp_connection_resource, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ServerConnectAlgorithm", ctx, "1", get_xmpp_connection_server_connect_algorithm, set_xmpp_connection_server_connect_algorithm, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("KeepAliveInterval", ctx, "1", get_xmpp_connection_keepalive_interval, set_xmpp_connection_keepalive_interval, "xsd:long", 0, 1, UNDEF, NULL);
-		DMPARAM("ServerConnectAttempts", ctx, "1", get_xmpp_connection_server_attempts, set_xmpp_connection_server_attempts, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("ServerRetryInitialInterval", ctx, "1", get_xmpp_connection_retry_initial_interval, set_xmpp_connection_retry_initial_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("ServerRetryIntervalMultiplier", ctx, "1", get_xmpp_connection_retry_interval_multiplier, set_xmpp_connection_retry_interval_multiplier, "xsd:unsignedInt", 0, 1, UNDEF, NULL);		
-		DMPARAM("ServerRetryMaxInterval", ctx, "1", get_xmpp_connection_retry_max_interval, set_xmpp_connection_retry_max_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMPARAM("UseTLS", ctx, "1", get_xmpp_connection_server_usetls, set_xmpp_connection_server_usetls, "xsd:boolean", 0, 1, UNDEF, NULL); //TO CHECK
-		//SUBENTRY(entry_xmpp_connection_server, ctx, iconnection);
-		return 0;
+		dmasprintf(&linker,"xmppc:%s", conn_instance);
+		return linker;
 	}
-	return FAULT_9005;
+	else
+		return "";
 }
 
-int entry_method_root_xmpp(struct dmctx *ctx)
+/*************************************************************
+ * ENTRY METHOD
+/*************************************************************/
+DMOBJ tXMPPObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Connection", &DMWRITE, add_xmpp_connection, delete_xmpp_connection, NULL, browsexmpp_connectionInst, NULL, NULL, NULL, tConnectionParams, get_xmpp_connection_linker},
+{0}
+};
+
+DMLEAF tXMPPParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
+{"ConnectionNumberOfEntries", &DMREAD, DMT_UNINT, get_xmpp_connection_nbr_entry, NULL, NULL, NULL},
+{0}
+};
+
+DMLEAF tConnectionParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
+{"Enable", &DMWRITE, DMT_BOOL, get_connection_enable, set_connection_enable, NULL, NULL},
+//{"Username", &DMWRITE, DMT_STRING, get_xmpp_connection_username, set_xmpp_connection_username, NULL, NULL},
+{"Password", &DMWRITE, DMT_STRING, get_xmpp_connection_password, set_xmpp_connection_password, NULL, NULL},
+{"Domain", &DMWRITE, DMT_STRING, get_xmpp_connection_domain, set_xmpp_connection_domain, NULL, NULL},
+{"Resource", &DMWRITE, DMT_STRING, get_xmpp_connection_resource, set_xmpp_connection_resource, NULL, NULL},
+{"ServerConnectAlgorithm", &DMWRITE, DMT_STRING, get_xmpp_connection_server_connect_algorithm, set_xmpp_connection_server_connect_algorithm, NULL, NULL},
+{"KeepAliveInterval", &DMWRITE, DMT_LONG, get_xmpp_connection_keepalive_interval, set_xmpp_connection_keepalive_interval, NULL, NULL},
+{"ServerConnectAttempts", &DMWRITE, DMT_UNINT, get_xmpp_connection_server_attempts, set_xmpp_connection_server_attempts, NULL, NULL},
+{"ServerRetryInitialInterval", &DMWRITE, DMT_UNINT, get_xmpp_connection_retry_initial_interval, set_xmpp_connection_retry_initial_interval, NULL, NULL},
+{"ServerRetryIntervalMultiplier", &DMWRITE, DMT_UNINT, get_xmpp_connection_retry_interval_multiplier, set_xmpp_connection_retry_interval_multiplier, NULL, NULL},
+{"ServerRetryMaxInterval", &DMWRITE, DMT_UNINT, get_xmpp_connection_retry_max_interval, set_xmpp_connection_retry_max_interval, NULL, NULL},
+{"UseTLS", &DMWRITE, DMT_BOOL, get_xmpp_connection_server_usetls, set_xmpp_connection_server_usetls, NULL, NULL},
+{0}
+};
+
+inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
-	IF_MATCH(ctx, DMROOT"XMPP.") {
-		DMOBJECT(DMROOT"XMPP.", ctx, "0", 1, NULL, NULL, NULL);
-		DMPARAM("ConnectionNumberOfEntries", ctx, "0", get_xmpp_connection_nbr_entry, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
-		DMOBJECT(DMROOT"XMPP.Connection.", ctx, "0", 1, add_xmpp_connection, delete_xmpp_connection_all, NULL);
-		SUBENTRY(entry_xmpp_connection, ctx);
-		return 0;
+	char *iconnection = NULL, *iconnection_last = NULL;;
+	struct uci_section *s = NULL;
+
+	uci_foreach_sections("cwmp", "xmpp_connection", s) {
+		init_args_connection_entry(dmctx, s);
+		iconnection = handle_update_instance(1, dmctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconnection);
 	}
-	return FAULT_9005;
 }

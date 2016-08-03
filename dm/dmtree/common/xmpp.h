@@ -16,5 +16,7 @@ char *get_xmpp_connect_attempts(char *instance);
 char *get_xmpp_connect_initial_retry_interval(char *instance);
 char *get_xmpp_connect_retry_interval_multiplier(char *instance);
 char *get_xmpp_connect_retry_max_interval(char *instance);
-int entry_method_root_xmpp(struct dmctx *ctx);
+extern DMOBJ tXMPPObj[];
+extern DMLEAF tXMPPParams[];
+extern DMLEAF tConnectionParams[];
 #endif

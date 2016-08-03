@@ -22,6 +22,7 @@
 #include "softwaremodules.h"
 
 struct software_module cur_software_module = {0};
+inline int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 inline int init_args_du_entry(struct dmctx *ctx, struct uci_section *s)
 {
@@ -221,44 +222,40 @@ char *get_softwaremodules_version(char *uuid)
 	return "";
 }
 
-inline int entry_softwaremodules_deploymentunit(struct dmctx *ctx)
+/*************************************************************
+ * ENTRY METHOD
+/*************************************************************/
+DMOBJ tSoftwareModulesObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"DeploymentUnit", &DMREAD, NULL, NULL, NULL, browsesoftwaremodules_deploymentunitInst, NULL, NULL, NULL, tDeploymentUnitParams, NULL},
+{0}
+};
+
+DMLEAF tDeploymentUnitParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
+{"UUID", &DMREAD, DMT_STRING, get_deploymentunit_uuid, NULL, NULL, NULL},
+{"Name", &DMREAD, DMT_STRING, get_deploymentunit_name, NULL, NULL, NULL},
+{"Resolved", &DMREAD, DMT_BOOL, get_deploymentunit_resolved, NULL, NULL, NULL},
+{"URL", &DMREAD, DMT_STRING, get_deploymentunit_url, NULL, NULL, NULL},
+{"Vendor", &DMREAD, DMT_STRING, get_deploymentunit_vendor, NULL, NULL, NULL},
+{"Version", &DMREAD, DMT_STRING, get_deploymentunit_version, NULL, NULL, NULL},
+{"ExecutionEnvRef", &DMREAD, DMT_STRING, get_deploymentunit_execution_env_ref, NULL, NULL, NULL},
+{0}
+};
+
+
+inline int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *idu = NULL, *idu_last = NULL;
 	char *permission = "1";
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("dmmap", "deploymentunit", s) {
-		init_args_du_entry(ctx, s);
-		idu = handle_update_instance(1, ctx, &idu_last, update_instance_alias, 3, s, "duinstance", "duinstance_alias");
-		SUBENTRY(entry_softwaremodules_deploymentunit_instance, ctx, idu);
+		init_args_du_entry(dmctx, s);
+		idu = handle_update_instance(1, dmctx, &idu_last, update_instance_alias, 3, s, "duinstance", "duinstance_alias");
+		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idu);
 	}
 	return 0;
 }
 
-inline int entry_softwaremodules_deploymentunit_instance(struct dmctx *ctx, char *idu)
-{	
-	/*IF_MATCH(ctx, DMROOT"SoftwareModules.DeploymentUnit.%s.", idu) {
-		DMOBJECT(DMROOT"SoftwareModules.DeploymentUnit.%s.", ctx, "0", 1, NULL, NULL, NULL, idu);
-		DMPARAM("UUID", ctx, "0", get_deploymentunit_uuid, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Name", ctx, "0", get_deploymentunit_name, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Resolved", ctx, "0", get_deploymentunit_resolved, NULL, "xsd:boolean", 0, 1, UNDEF, NULL);
-		DMPARAM("URL", ctx, "0", get_deploymentunit_url, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Vendor", ctx, "0", get_deploymentunit_vendor, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("Version", ctx, "0", get_deploymentunit_version, NULL, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ExecutionEnvRef", ctx, "0", get_deploymentunit_execution_env_ref, NULL, NULL, 0, 1, UNDEF, NULL);			  
-		return 0;
-	}*/
-	return FAULT_9005;
-}
-
-int entry_method_root_software_modules(struct dmctx *ctx)
-{
-	/*IF_MATCH(ctx, DMROOT"SoftwareModules.") {
-		DMOBJECT(DMROOT"SoftwareModules.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"SoftwareModules.DeploymentUnit.", ctx, "0", 1, NULL, NULL, NULL);
-		SUBENTRY(entry_softwaremodules_deploymentunit, ctx);
-		return 0;
-	}*/
-	return FAULT_9005;
-}
 

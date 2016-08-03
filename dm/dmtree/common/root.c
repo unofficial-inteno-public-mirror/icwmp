@@ -25,6 +25,8 @@
 #include "x_inteno_se_logincfg.h"
 #include "x_inteno_se_power_mgmt.h"
 #include "x_inteno_syslog.h"
+#include "softwaremodules.h"
+#include "xmpp.h"
 #ifdef DATAMODEL_TR181
 #include "ip.h"
 #include "ethernet.h"
@@ -63,15 +65,16 @@ DMOBJ tRootObj[] = {
 /* OBJ permission, addobj, delobj, browseinstobj, finform, nextobj, leaf, notification, linker*/
 {"DeviceInfo", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tDeviceInfoObj, tDeviceInfoParams, NULL},
 {"ManagementServer", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tManagementServerParams, NULL},
-{"Time", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tTimeParams, NULL},
-{"UPnP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tUPnPObj, NULL, NULL},
-{"Services", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tServiceObj, NULL, NULL},
-{"X_INTENO_SE_ICE", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IceParam, NULL},
-{"X_INTENO_SE_IGMP", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_IgmpParam, NULL},
-{"X_INTENO_SE_IpAccCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tSe_IpAccObj, NULL, NULL},
-{"X_INTENO_SE_LoginCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_LoginCfgParam, NULL},
-{"X_INTENO_SE_PowerManagement", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_PowerManagementParam, NULL},
-{"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
+{"Time", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tTimeParams, NULL},
+{"UPnP", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tUPnPObj, NULL, NULL},
+{"Services", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tServiceObj, NULL, NULL},
+{"X_INTENO_SE_ICE", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_IceParam, NULL},
+{"X_INTENO_SE_IGMP", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_IgmpParam, NULL},
+{"X_INTENO_SE_IpAccCfg", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tSe_IpAccObj, NULL, NULL},
+{"X_INTENO_SE_LoginCfg", &DMREAD, NULL, NULL, NULL, NULL,NULL, &DMNONE,NULL, tSe_LoginCfgParam, NULL},
+{"X_INTENO_SE_PowerManagement", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_PowerManagementParam, NULL},
+{"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
+{"SoftwareModules", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tSoftwareModulesObj, NULL, NULL},
 #ifdef DATAMODEL_TR098
 {"LANDevice", &DMREAD, NULL, NULL, NULL, browselandeviceInst, &DMFINFRM, &DMNONE,tLANDeviceObj, tLANDeviceParam, NULL},
 {"LANInterfaces", &DMREAD, NULL, NULL, check_laninterfaces, NULL, &DMFINFRM, &DMNONE,tLANInterfacesObj, tLANInterfacesParam, NULL},
@@ -79,6 +82,9 @@ DMOBJ tRootObj[] = {
 {"Layer3Forwarding", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tLayer3ForwardingObj, NULL, NULL},
 {"X_INTENO_SE_Wifi", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tsewifiObj, NULL, NULL},
 {"Layer2Bridging", &DMREAD, NULL, NULL, check_init_layer2, NULL, &DMFINFRM, &DMNONE,tLayer2BridgingObj, NULL, NULL},
+#endif
+#ifdef XMPP_ENABLE
+{"XMPP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL,tXMPPObj, tXMPPParams, NULL},
 #endif
 #ifdef DATAMODEL_TR181
 {"Bridging",&DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tBridgObj, NULL, NULL},
@@ -93,6 +99,6 @@ DMOBJ tRootObj[] = {
 {"NAT", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tnatObj, NULL, NULL},
 {"PPP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tpppObj, NULL, NULL},
 {"Routing", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tRoutingObj, NULL, NULL},
-#endif*/
+#endif
 {0}
 };
