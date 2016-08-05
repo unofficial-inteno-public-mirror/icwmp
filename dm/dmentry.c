@@ -16,6 +16,7 @@
 #include "dmuci.h"
 #include "dmentry.h"
 #include "cwmp.h"
+#include "log.h"
 
 LIST_HEAD(head_package_change);
 
@@ -119,12 +120,14 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
+			CWMP_LOG(DEBUG,"Get Value Param : %s\n",ctx->in_param);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_value(ctx);
 			break;
 		case CMD_GET_NAME:
+			CWMP_LOG(DEBUG,"Get Name Param : %s Level %s\n",ctx->in_param, arg1);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
@@ -134,6 +137,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_GET_NOTIFICATION:
+			CWMP_LOG(DEBUG,"Get Notification Param : %s \n",ctx->in_param);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
@@ -142,6 +146,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 		case CMD_SET_VALUE:
 			ctx->in_value = arg1 ? arg1 : "";
 			ctx->setaction = VALUECHECK;
+			CWMP_LOG(DEBUG,"Set Value Param: %s Value: %s\n",ctx->in_param, ctx->in_value);
 			fault = dm_entry_set_value(ctx);
 			if (fault)
 				add_list_fault_param(ctx, ctx->in_param, fault);
@@ -168,6 +173,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			dm_entry_inform(ctx);
 			break;
 		case CMD_ADD_OBJECT:
+			CWMP_LOG(DEBUG,"Object To Add: %s \n",ctx->in_param);
 			fault = dm_entry_add_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
@@ -175,6 +181,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_DEL_OBJECT:
+			CWMP_LOG(DEBUG,"Object To Del: %s \n",ctx->in_param);
 			fault = dm_entry_delete_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
