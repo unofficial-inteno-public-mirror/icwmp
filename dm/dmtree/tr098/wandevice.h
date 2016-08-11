@@ -36,5 +36,12 @@ struct wanargs
 	int instance;
 	char *fdev;
 };
-int entry_method_root_WANDevice(struct dmctx *ctx);
+extern struct dm_notif_s DMWANConnectionDevicenotif;
+extern DMLEAF tWANDeviceParam[];
+extern DMOBJ tWANDeviceObj[];
+extern DMOBJ tWANConnectionObj[];
+extern DMLEAF tWANConnection_VLANParam[];
+extern DMLEAF tWANConnectionStatsParam[];
+inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+unsigned char get_wan_protocol_connection_forced_inform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 #endif

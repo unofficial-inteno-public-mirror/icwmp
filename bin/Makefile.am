@@ -46,6 +46,7 @@ icwmpd_SOURCES += \
 	../dm/dmtree/tr098/lan_interfaces.c			\
 	../dm/dmtree/tr098/layer_3_forwarding.c		\
 	../dm/dmtree/tr098/x_inteno_se_wifi.c		\
+	../dm/dmtree/tr098/wandevice.c 				\
 	../dm/dmtree/tr098/layer_2_bridging.c
 endif
 if DATAMODEL_TR181
