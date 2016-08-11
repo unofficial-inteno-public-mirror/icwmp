@@ -93,6 +93,7 @@ enum dmt_type_enum {
 	DMT_STRING,
 	DMT_UNINT,
 	DMT_INT,
+	DMT_LONG,
 	DMT_BOOL,
 	DMT_TIME,
 };

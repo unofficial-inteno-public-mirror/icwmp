@@ -465,7 +465,7 @@ void update_section_option_list(char *config, char *section, char *option, char 
 
 void update_section_list(char *config, char *section, char *option, int number, char *filter, char *option1, char *val1,  char *option2, char *val2)
 {
-	char *add_value;
+	char *add_value = NULL;
 	struct uci_section *s = NULL;
 	int i = 0;
 

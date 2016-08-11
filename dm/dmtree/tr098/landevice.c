@@ -2998,10 +2998,9 @@ int set_lan_eth_alias(char *refparam, struct dmctx *ctx, int action, char *value
 
 char *get_linker_lanhost_interface(struct dmctx *dmctx) {
 	char *linker;
-	struct ldipargs *ipargs = (struct ldipargs *)(dmctx->args);
-
-	if(ipargs->ldipsection) {
-		dmasprintf(&linker,"linker_interface:%s", section_name(ipargs->ldipsection));
+	
+	if(cur_ipargs.ldipsection) {
+		dmasprintf(&linker,"linker_interface:%s", section_name(cur_ipargs.ldipsection));
 		return linker;
 	}
 	return "";
@@ -3050,7 +3049,7 @@ DMLEAF tlanethernetinterfaceconfigParam[] = {
 
 DMOBJ tLanhost_Config_ManagementObj[] = {
 {"IPInterface", &DMREAD, NULL, NULL, NULL, browseIPInterfaceInst, NULL, NULL, NULL, tIPInterfaceParam, get_linker_lanhost_interface},
-{"DHCPStaticAddress", &DMREAD, add_landevice_dhcpstaticaddress, delete_landevice_dhcpstaticaddress, NULL, browseDhcp_static_addressInst, NULL, NULL, NULL, tDHCPStaticAddressParam, NULL},
+{"DHCPStaticAddress", &DMWRITE, add_landevice_dhcpstaticaddress, delete_landevice_dhcpstaticaddress, NULL, browseDhcp_static_addressInst, NULL, NULL, NULL, tDHCPStaticAddressParam, NULL},
 {0}
 };
 
@@ -3143,7 +3142,7 @@ DMOBJ tlanethernetinterfaceconfigObj[] = {
 };
 
 DMLEAF tLANDeviceParam[] = {
-{"Alias", &DMREAD, DMT_UNINT, get_lan_dev_alias, set_lan_dev_alias, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_lan_dev_alias, set_lan_dev_alias, NULL, NULL},
 {0}
 };
 
@@ -3160,14 +3159,19 @@ DMLEAF tlandevice_hostParam[] = {
 
 DMOBJ tlandevice_hostObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"Host", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tlandevice_hostParam, NULL},
+{"Host", &DMREAD, NULL, NULL, NULL, browselandevice_hostInst, NULL, NULL, NULL, tlandevice_hostParam, NULL},
+{0}
+};
+
+DMLEAF tlandevice_hostsParam[] = {
+{"HostNumberOfEntries", &DMREAD, DMT_UNINT, get_lan_host_nbr_entries, NULL, NULL, &DMNONE},
 {0}
 };
 
 DMOBJ tLANDeviceObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
 {"LANHostConfigManagement", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tLanhost_Config_ManagementObj, tLanhost_Config_ManagementParam, NULL},
-{"Hosts", &DMREAD, NULL, NULL, NULL, browselandevice_hostInst, NULL, NULL, tlandevice_hostObj, NULL, NULL},
+{"Hosts", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tlandevice_hostObj, tlandevice_hostsParam, NULL},
 {"LANEthernetInterfaceConfig", &DMREAD, NULL, NULL, NULL, browselanethernetinterfaceconfigInst, NULL, NULL, tlanethernetinterfaceconfigObj, tlanethernetinterfaceconfigParam, NULL},
 {"WLANConfiguration", &DMWRITE, add_landevice_wlanconfiguration, delete_landevice_wlanconfiguration, NULL, browseWlanConfigurationInst, NULL, NULL, tWlanConfigurationObj, tWlanConfigurationParam, NULL},
 {0}

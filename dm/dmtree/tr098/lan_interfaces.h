@@ -20,5 +20,3 @@ extern DMLEAF tlaninterface_wlanParam[];
 extern DMLEAF tLANInterfacesParam[];
 extern DMOBJ tLANInterfacesObj[];
 #endif
-
-#endif

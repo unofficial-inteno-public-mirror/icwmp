@@ -701,6 +701,18 @@ int delete_ipv6(struct dmctx *ctx, unsigned char del_action)
 	return 0;
 }
 
+/**************************************************************************
+* LINKER
+***************************************************************************/
+char *get_linker_ip_interface(struct dmctx *dmctx) {
+	char *linker;
+
+	if(cur_ip_args.ip_sec) {
+		dmasprintf(&linker,"%s", section_name(cur_ip_args.ip_sec));
+		return linker;
+	}
+	return "";
+}
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/

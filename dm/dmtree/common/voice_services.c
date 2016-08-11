@@ -2028,7 +2028,7 @@ DMLEAF tProfileSIPParams[] = {
 {"RegistrationPeriod", &DMWRITE, DMT_UNINT, get_sip_registration_period, set_sip_registration_period, NULL, NULL},
 {"ReInviteExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
 {"RegisterExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
-{"RegisterRetryInterval", &DMREAD, DMT_UNINT, get_capabilities_sip_codec, NULL, NULL, NULL},
+{"RegisterRetryInterval", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
 {"X_002207_CallLines", &DMWRITE, DMT_STRING, get_sip_x_002207_call_lines, set_sip_x_002207_call_lines, NULL, NULL},
 {0}
 };
@@ -2103,7 +2103,7 @@ DMLEAF tLineCodecListParams[] = {
 {"PacketizationPeriod", &DMWRITE, DMT_STRING, get_capabilities_sip_codecs_pperiod, set_line_codec_list_packetization, NULL, NULL},
 {"SilenceSuppression", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
 {"Enable", &DMWRITE, DMT_BOOL, get_line_codec_list_enable, set_line_codec_list_enable, NULL, NULL},
-{"Priority", &DMREAD, DMT_UNINT, get_line_codec_list_priority, set_line_codec_list_priority, NULL, NULL},
+{"Priority", &DMWRITE, DMT_UNINT, get_line_codec_list_priority, set_line_codec_list_priority, NULL, NULL},
 {0}
 };
 

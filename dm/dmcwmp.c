@@ -101,6 +101,7 @@ char *DMT_TYPE[] = {
 [DMT_STRING] = "xsd:string",
 [DMT_UNINT] = "xsd:unsignedInt",
 [DMT_INT] = "xsd:int",
+[DMT_LONG] = "xsd:long",
 [DMT_BOOL] = "xsd:boolean",
 [DMT_TIME] = "xsd:dateTime",
 };

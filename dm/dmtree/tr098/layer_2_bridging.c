@@ -1162,7 +1162,7 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 	for (i=0; i<3; i++) {
 		uci_foreach_sections(wan_interface_tab[i].package, wan_interface_tab[i].section, wan_s) {
 			waninstance = update_instance(wan_s, waninstance, "waninstance");
-			dmasprintf(&oface, DMROOT"WANDevice.%s.WANConnectionDevice.%s.", wan_interface_tab[i].instance, waninstance); // MEM WILL BE FREED IN DMMEMCLEAN
+			dmasprintf(&oface, DMROOT".WANDevice.%s.WANConnectionDevice.%s.", wan_interface_tab[i].instance, waninstance); // MEM WILL BE FREED IN DMMEMCLEAN
 			dmuci_get_value_by_section_string(wan_s, "baseifname", &base_ifname);
 			ai_s = update_availableinterface_list(dmctx, base_ifname, &available_inst, &instance_last);
 			init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "WANInterface", oface);
@@ -1174,7 +1174,7 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 	i = 0;
 	while (ch_ptr != NULL)
 	{
-		dmasprintf(&oface, DMROOT"LANInterfaces.LANEthernetInterfaceConfig.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
+		dmasprintf(&oface, DMROOT".LANInterfaces.LANEthernetInterfaceConfig.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
 		ai_s = update_availableinterface_list(dmctx, ch_ptr, &available_inst, &instance_last);
 		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
 		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst);
@@ -1182,7 +1182,7 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 	}
 	i = 0;
 	uci_foreach_sections("wireless", "wifi-iface", wifi_s) {
-		dmasprintf(&oface, DMROOT"LANInterfaces.WLANConfiguration.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
+		dmasprintf(&oface, DMROOT".LANInterfaces.WLANConfiguration.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
 		ai_s = update_availableinterface_list(dmctx, section_name(wifi_s), &available_inst, &instance_last);
 		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
 		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst);

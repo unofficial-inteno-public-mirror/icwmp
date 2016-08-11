@@ -33,6 +33,7 @@ extern DMLEAF tlanethernetinterfaceStatsParam[];
 extern DMLEAF tLANDeviceParam[];
 extern DMLEAF tlandevice_hostParam[];
 extern DMOBJ tlandevice_hostObj[];
+extern DMLEAF tlandevice_hostsParam[];
 struct wl_clientargs
 {
 	char *mac;
