@@ -68,7 +68,7 @@ DMOBJ tUPnPObj[] = {
 
 DMLEAF tUPnPDeviceParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
-{"Enable", &DMWRITE, DMT_BOOL, get_upnp_enable, set_upnp_enable, NULL, NULL, NULL},
-{"X_INTENO_SE_Status", &DMREAD, DMT_STRING, get_upnp_status, NULL, NULL, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_upnp_enable, set_upnp_enable, NULL, NULL},
+{"X_INTENO_SE_Status", &DMREAD, DMT_STRING, get_upnp_status, NULL, NULL, NULL},
 {0}
 };

@@ -66,8 +66,8 @@ static int mparam_add_object(DMPARAM_ARGS);
 static int mobj_add_object(DMOBJECT_ARGS);
 static int delete_object_obj(DMOBJECT_ARGS);
 static int delete_object_param(DMPARAM_ARGS);
-static int mobj_set_value( MOBJ_ARGS);
-static int mparam_set_value( MPARAM_ARGS);
+static int mobj_set_value(DMOBJECT_ARGS);
+static int mparam_set_value(DMPARAM_ARGS);
 static int mobj_get_notification_in_param(DMOBJECT_ARGS);
 static int mobj_get_notification(DMOBJECT_ARGS);
 static int mparam_get_notification(DMPARAM_ARGS);
@@ -76,12 +76,12 @@ static int mparam_set_notification_in_obj(DMPARAM_ARGS);
 static int mobj_set_notification_in_param(DMOBJECT_ARGS);
 static int mparam_set_notification_in_param(DMPARAM_ARGS);
 static int mobj_set_notification_in_obj(DMOBJECT_ARGS);
-static int enabled_notify_check_obj(DMOBJECT_API_ARGS);
-static int enabled_notify_check_param(DMPARAM_API_ARGS);
-static int get_linker_check_obj(DMOBJECT_API_ARGS);
-static int get_linker_check_param(DMPARAM_API_ARGS);
-static int get_linker_value_check_obj(DMOBJECT_API_ARGS);
-static int get_linker_value_check_param(DMPARAM_API_ARGS);
+static int enabled_notify_check_obj(DMOBJECT_ARGS);
+static int enabled_notify_check_param(DMPARAM_ARGS);
+static int get_linker_check_obj(DMOBJECT_ARGS);
+static int get_linker_check_param(DMPARAM_ARGS);
+static int get_linker_value_check_obj(DMOBJECT_ARGS);
+static int get_linker_value_check_param(DMPARAM_ARGS);
 static int check_leaf_skip_params(DMPARAM_ARGS);
 
 LIST_HEAD( list_enabled_notify);
@@ -1324,7 +1324,7 @@ int dm_entry_set_value(struct dmctx *dmctx)
 		return FAULT_9005;
 }
 
-static int mobj_set_value( MOBJ_ARGS)
+static int mobj_set_value(DMOBJECT_ARGS)
 {
 	return FAULT_9005;
 }

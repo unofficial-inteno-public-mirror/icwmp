@@ -29,15 +29,15 @@ struct wifi_acp_args
 };
 
 extern DMOBJ tWifiObj[];
-DMOBJ tWifiRadioStatsObj[];
-DMOBJ tAcessPointSecurityObj[];
-DMOBJ tWifiSsidStatsObj[];
-DMLEAF tWifiAcessPointParams[];
-DMLEAF tWifiSsidParams[];
-DMLEAF tWifiRadioParams[];
-DMLEAF tWifiAcessPointSecurityParams[];
-DMLEAF tWifiRadioStatsParams[];
-DMLEAF tWifiSsidStatsParams[];
+extern DMOBJ tWifiRadioStatsObj[];
+extern DMOBJ tAcessPointSecurityObj[];
+extern DMOBJ tWifiSsidStatsObj[];
+extern DMLEAF tWifiAcessPointParams[];
+extern DMLEAF tWifiSsidParams[];
+extern DMLEAF tWifiRadioParams[];
+extern DMLEAF tWifiAcessPointSecurityParams[];
+extern DMLEAF tWifiRadioStatsParams[];
+extern DMLEAF tWifiSsidStatsParams[];
 inline int browseWifiSsidInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int browseWifiAccessPointInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int browseWifiRadioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);

@@ -105,7 +105,7 @@ enum dmt_type_enum {
 	struct dm_permession_s *permission, \
 	int type, \
 	int (*get_cmd)(char *refparam, struct dmctx *dmctx, char **value), \
-	int (*set_cmd)(char *refparam, struct dmctx *dmctx, char *value, int action), \
+	int (*set_cmd)(char *refparam, struct dmctx *dmctx, int action, char *value), \
 	struct dm_forced_inform_s *forced_inform, \
 	struct dm_notif_s *notification, \
 	char *(*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
@@ -156,7 +156,7 @@ typedef struct dm_leaf_s {
 	struct dm_permession_s *permission;
 	int type;
 	int (*getvalue)(char *refparam, struct dmctx *dmctx, char **value);
-	int (*setvalue)(char *refparam, struct dmctx *dmctx, char *value, int action);
+	int (*setvalue)(char *refparam, struct dmctx *dmctx, int action, char *value);
 	struct dm_forced_inform_s *forced_inform;
 	struct dm_notif_s *notification;
 } DMLEAF;

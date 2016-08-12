@@ -393,19 +393,19 @@ int check_file_dir(char *name)
 
 DMLEAF tDeviceInfoParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification, linker*/
-{"Manufacturer", &DMREAD, DMT_STRING, get_device_manufacturer, NULL, &DMFINFRM, NULL, NULL},
-{"ManufacturerOUI", &DMREAD, DMT_STRING, get_device_manufactureroui, NULL, &DMFINFRM, NULL, NULL},
-{"ModelName", &DMREAD, DMT_STRING, get_device_routermodel, NULL, &DMFINFRM, NULL, NULL},
-{"ProductClass", &DMREAD, DMT_STRING, get_device_productclass, NULL, &DMFINFRM, NULL, NULL},
-{"SerialNumber", &DMREAD, DMT_STRING, get_device_serialnumber, NULL,  &DMFINFRM, NULL, NULL},
-{"HardwareVersion", &DMREAD, DMT_STRING, get_device_hardwareversion, NULL, &DMFINFRM, NULL, NULL},
-{"SoftwareVersion", &DMREAD, DMT_STRING, get_device_softwareversion, NULL, &DMFINFRM, &DMACTIVE, NULL},
-{"UpTime", &DMREAD, DMT_UNINT, get_device_info_uptime, NULL, NULL, NULL, NULL},
-{"DeviceLog", &DMREAD, DMT_STRING, get_device_devicelog, NULL, NULL, NULL, NULL},
-{"SpecVersion", &DMREAD, DMT_STRING, get_device_specversion, NULL,  &DMFINFRM, NULL, NULL},
-{"ProvisioningCode", &DMWRITE, DMT_STRING, get_device_provisioningcode, set_device_provisioningcode, &DMFINFRM, &DMACTIVE, NULL},
-{"X_INTENO_SE_BaseMacAddr", &DMREAD, DMT_STRING, get_base_mac_addr, NULL, NULL, NULL, NULL},
-{"X_INTENO_SE_CATVEnabled", &DMWRITE, DMT_STRING, get_catv_enabled, set_device_catvenabled, NULL, NULL, NULL},
+{"Manufacturer", &DMREAD, DMT_STRING, get_device_manufacturer, NULL, &DMFINFRM, NULL},
+{"ManufacturerOUI", &DMREAD, DMT_STRING, get_device_manufactureroui, NULL, &DMFINFRM, NULL},
+{"ModelName", &DMREAD, DMT_STRING, get_device_routermodel, NULL, &DMFINFRM, NULL},
+{"ProductClass", &DMREAD, DMT_STRING, get_device_productclass, NULL, &DMFINFRM, NULL},
+{"SerialNumber", &DMREAD, DMT_STRING, get_device_serialnumber, NULL,  &DMFINFRM, NULL},
+{"HardwareVersion", &DMREAD, DMT_STRING, get_device_hardwareversion, NULL, &DMFINFRM, NULL},
+{"SoftwareVersion", &DMREAD, DMT_STRING, get_device_softwareversion, NULL, &DMFINFRM, &DMACTIVE},
+{"UpTime", &DMREAD, DMT_UNINT, get_device_info_uptime, NULL, NULL, NULL},
+{"DeviceLog", &DMREAD, DMT_STRING, get_device_devicelog, NULL, NULL, NULL},
+{"SpecVersion", &DMREAD, DMT_STRING, get_device_specversion, NULL,  &DMFINFRM, NULL},
+{"ProvisioningCode", &DMWRITE, DMT_STRING, get_device_provisioningcode, set_device_provisioningcode, &DMFINFRM, &DMACTIVE},
+{"X_INTENO_SE_BaseMacAddr", &DMREAD, DMT_STRING, get_base_mac_addr, NULL, NULL, NULL},
+{"X_INTENO_SE_CATVEnabled", &DMWRITE, DMT_STRING, get_catv_enabled, set_device_catvenabled, NULL, NULL},
 {0}
 };
 
@@ -418,22 +418,22 @@ DMOBJ tDeviceInfoObj[] = {
 
 DMLEAF tCatTvParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification*/
-{"Enabled", &DMWRITE, DMT_STRING, get_catv_enabled, set_device_catvenabled, NULL, NULL, NULL},
-{"OpticalInputLevel", &DMREAD, DMT_STRING, get_catv_optical_input_level, NULL, NULL, NULL, NULL},
-{"RFOutputLevel", &DMREAD, DMT_STRING, get_catv_rf_output_level, NULL, NULL, NULL, NULL},
-{"Temperature", &DMREAD, DMT_STRING, get_catv_temperature, NULL, NULL, NULL, NULL},
-{"Voltage", &DMREAD, DMT_STRING, get_catv_voltage, NULL, NULL, NULL, NULL},
+{"Enabled", &DMWRITE, DMT_STRING, get_catv_enabled, set_device_catvenabled, NULL, NULL},
+{"OpticalInputLevel", &DMREAD, DMT_STRING, get_catv_optical_input_level, NULL, NULL, NULL},
+{"RFOutputLevel", &DMREAD, DMT_STRING, get_catv_rf_output_level, NULL, NULL, NULL},
+{"Temperature", &DMREAD, DMT_STRING, get_catv_temperature, NULL, NULL, NULL},
+{"Voltage", &DMREAD, DMT_STRING, get_catv_voltage, NULL, NULL, NULL},
 {0}
 };
 
 DMLEAF tVcfParams[] = {
 /* PARAM, permission, type, getvalue, setvalue, forced_inform, notification*/
-{"Alias", &DMWRITE, DMT_STRING, get_vcf_alias, set_vcf_alias, NULL, NULL, NULL},
-{"Name", &DMREAD, DMT_STRING, get_vcf_name, NULL, NULL, NULL, NULL},
-{"Version", &DMREAD, DMT_STRING, get_vcf_version, NULL, NULL, NULL, NULL},
-{"Date", &DMREAD, DMT_TIME, get_vcf_date, NULL, NULL, NULL, NULL},
-{"Description", &DMREAD, DMT_STRING, get_vcf_desc, NULL, NULL, NULL, NULL},
-{"UseForBackupRestore", &DMREAD, DMT_BOOL, get_vcf_backup_restore, NULL, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_vcf_alias, set_vcf_alias, NULL, NULL},
+{"Name", &DMREAD, DMT_STRING, get_vcf_name, NULL, NULL, NULL},
+{"Version", &DMREAD, DMT_STRING, get_vcf_version, NULL, NULL, NULL},
+{"Date", &DMREAD, DMT_TIME, get_vcf_date, NULL, NULL, NULL},
+{"Description", &DMREAD, DMT_STRING, get_vcf_desc, NULL, NULL, NULL},
+{"UseForBackupRestore", &DMREAD, DMT_BOOL, get_vcf_backup_restore, NULL, NULL, NULL},
 {0}
 };
 

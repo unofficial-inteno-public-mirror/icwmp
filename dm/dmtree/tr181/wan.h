@@ -37,14 +37,14 @@ struct ptm_args
 extern DMOBJ tDslObj[];
 extern DMOBJ tAtmObj[];
 extern DMOBJ tPtmObj[];
-DMOBJ tAtmLinkStatsObj[];
-DMOBJ tPtmLinkStatsObj[];
-DMLEAF tDslLineParams[];
-DMLEAF tDslChanelParams[] ;
-DMLEAF tAtmLineParams[];
-DMLEAF tAtmLinkStatsParams[] ;
-DMLEAF tPtmLinkStatsParams[];
-DMLEAF tPtmLineParams[];
+extern DMOBJ tAtmLinkStatsObj[];
+extern DMOBJ tPtmLinkStatsObj[];
+extern DMLEAF tDslLineParams[];
+extern DMLEAF tDslChanelParams[] ;
+extern DMLEAF tAtmLineParams[];
+extern DMLEAF tAtmLinkStatsParams[] ;
+extern DMLEAF tPtmLinkStatsParams[];
+extern DMLEAF tPtmLineParams[];
 
 inline int browseDslLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int browseDslChannelInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);

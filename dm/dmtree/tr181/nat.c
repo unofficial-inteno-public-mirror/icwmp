@@ -42,14 +42,14 @@ int get_nat_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int get_nat_alias(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct nat_args *natargs = (struct nat *)ctx->args;
+	struct nat_args *natargs = (struct nat_args *)ctx->args;
 	dmuci_get_value_by_section_string(natargs->int_sec, "natalias", value);
 	return 0;
 }
 
 int set_nat_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct nat_args *natargs = (struct nat *)ctx->args;
+	struct nat_args *natargs = (struct nat_args *)ctx->args;
 	switch (action) {
 		case VALUECHECK:
 			return 0;

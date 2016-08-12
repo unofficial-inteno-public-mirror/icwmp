@@ -37,12 +37,12 @@ struct bridging_vlan_args
 
 #define BUF_SIZE 7
 extern DMOBJ tBridgObj[];
-DMOBJ tBridgPortObj[];
-DMLEAF tBridgeParams[];
-DMLEAF tBridgeVlanParams[];
-DMLEAF tBridgePortParams[];
-DMLEAF tBridgeVlanPortParams[];
-DMOBJ tBridgePortStatObj[];
-DMLEAF tBridgePortStatParams[];
+extern DMOBJ tBridgPortObj[];
+extern DMLEAF tBridgeParams[];
+extern DMLEAF tBridgeVlanParams[];
+extern DMLEAF tBridgePortParams[];
+extern DMLEAF tBridgeVlanPortParams[];
+extern DMOBJ tBridgePortStatObj[];
+extern DMLEAF tBridgePortStatParams[];
 
 #endif

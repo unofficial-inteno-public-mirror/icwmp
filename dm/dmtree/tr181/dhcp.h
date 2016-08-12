@@ -31,12 +31,12 @@ struct client_args
 };
 
 
-extern DMOBJ tDhcpServerObj[] ;
-DMOBJ tDhcpServerPoolObj[];
-DMOBJ tDhcpServerPoolAddressObj[];
-DMLEAF tDhcpServerPoolParams[];
-DMLEAF tDhcpServerPoolAddressParams[];
-DMLEAF tDhcpServerPoolClientParams[];
+extern DMOBJ tDhcpServerObj[];
+extern DMOBJ tDhcpServerPoolObj[];
+extern DMOBJ tDhcpServerPoolAddressObj[];
+extern DMLEAF tDhcpServerPoolParams[];
+extern DMLEAF tDhcpServerPoolAddressParams[];
+extern DMLEAF tDhcpServerPoolClientParams[];
 
 inline int browseDhcpInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 inline int browseDhcpStaticInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);

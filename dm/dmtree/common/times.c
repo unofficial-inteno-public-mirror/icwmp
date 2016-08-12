@@ -178,11 +178,11 @@ int set_time_ntpserver5(char *refparam, struct dmctx *ctx, int action, char *val
 
 DMLEAF tTimeParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification, linker*/
-{"Enable", &DMWRITE, DMT_BOOL, get_time_enable, set_time_enable, NULL, NULL, NULL},
-{"NTPServer1", &DMWRITE, DMT_STRING, get_time_ntpserver1, set_time_ntpserver1, NULL, NULL, NULL},
-{"NTPServer2", &DMWRITE, DMT_STRING, get_time_ntpserver2, set_time_ntpserver2, NULL, NULL, NULL},
-{"NTPServer3", &DMWRITE, DMT_STRING, get_time_ntpserver3, set_time_ntpserver3, NULL, NULL, NULL},
-{"NTPServer4", &DMWRITE, DMT_STRING, get_time_ntpserver4, set_time_ntpserver4, NULL, NULL, NULL},
-{"NTPServer5", &DMWRITE, DMT_STRING, get_time_ntpserver5, set_time_ntpserver5, NULL, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_time_enable, set_time_enable, NULL, NULL},
+{"NTPServer1", &DMWRITE, DMT_STRING, get_time_ntpserver1, set_time_ntpserver1, NULL, NULL},
+{"NTPServer2", &DMWRITE, DMT_STRING, get_time_ntpserver2, set_time_ntpserver2, NULL, NULL},
+{"NTPServer3", &DMWRITE, DMT_STRING, get_time_ntpserver3, set_time_ntpserver3, NULL, NULL},
+{"NTPServer4", &DMWRITE, DMT_STRING, get_time_ntpserver4, set_time_ntpserver4, NULL, NULL},
+{"NTPServer5", &DMWRITE, DMT_STRING, get_time_ntpserver5, set_time_ntpserver5, NULL, NULL},
 {0}
 };

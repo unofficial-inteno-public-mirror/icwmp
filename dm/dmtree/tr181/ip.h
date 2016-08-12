@@ -24,12 +24,12 @@ struct ipv4_args
 	char *ip_6address;
 };
 extern DMOBJ tIPObj[];
-DMOBJ tInterfaceObj[];
-DMLEAF tIPv4Params[];
-DMLEAF tIPv6Params[];
-DMLEAF tIPintParams[];
-DMLEAF tIpPingDiagParams[];
-DMOBJ tDiagnosticObj[];
+extern DMOBJ tInterfaceObj[];
+extern DMLEAF tIPv4Params[];
+extern DMLEAF tIPv6Params[];
+extern DMLEAF tIPintParams[];
+extern DMLEAF tIpPingDiagParams[];
+extern DMOBJ tDiagnosticObj[];
 unsigned char get_ipv4_finform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 unsigned char get_ipv6_finform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 int browseIPIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
