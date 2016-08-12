@@ -691,80 +691,64 @@ int add_ptm_link(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_atm_link_all(struct dmctx *ctx)
-{
-	struct uci_section *s = NULL;
-	struct uci_section *ss = NULL;
-
-	uci_foreach_sections("layer2_interface_adsl", "atm_bridge", s) {
-		if (ss)
-			dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-
-	ss = NULL;
-	uci_foreach_option_cont("network", "interface", "ifname", cur_atm_args.ifname, s) {
-		if (ss)
-			wan_remove_dev_interface(ss, cur_atm_args.ifname);
-		ss = s;
-	}
-	if (ss != NULL)
-		wan_remove_dev_interface(ss,cur_atm_args.ifname);
-	return 0;
-}
-
 int delete_atm_link(struct dmctx *ctx, unsigned char del_action)
 {
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
 
+	struct uci_section *ns = NULL;
+	struct uci_section *nss = NULL;
+	char *ifname;
 	switch (del_action) {
-	case DEL_INST:
-		dmuci_delete_by_section(cur_atm_args.atm_sec, NULL, NULL);
-		uci_foreach_option_cont("network", "interface", "ifname", cur_atm_args.ifname, s) {
-			if (ss)
+		case DEL_INST:
+			dmuci_delete_by_section(cur_atm_args.atm_sec, NULL, NULL);
+			uci_foreach_option_cont("network", "interface", "ifname", cur_atm_args.ifname, s) {
+				if (ss)
+					wan_remove_dev_interface(ss, cur_atm_args.ifname);
+				ss = s;
+			}
+			if (ss != NULL)
 				wan_remove_dev_interface(ss, cur_atm_args.ifname);
-			ss = s;
-		}
-		if (ss != NULL)
-			wan_remove_dev_interface(ss, cur_atm_args.ifname);
-		break;
-	case DEL_ALL:
-		return FAULT_9005;
+			break;
+		case DEL_ALL:
+			uci_foreach_sections("layer2_interface_adsl", "atm_bridge", s) {
+				if (ss){
+					dmuci_get_value_by_section_string(ss, "ifname", &ifname);
+					dmuci_delete_by_section(ss, NULL, NULL);
+					uci_foreach_option_cont("network", "interface", "ifname", ifname, ns) {
+						if (nss)
+							wan_remove_dev_interface(nss, ifname);
+						nss = ns;
+					}
+					if (nss != NULL)
+						wan_remove_dev_interface(nss, ifname);
+				}
+				ss = s;
+			}
+			if (ss != NULL) {
+				dmuci_get_value_by_section_string(ss, "ifname", &ifname);
+				dmuci_delete_by_section(ss, NULL, NULL);
+				uci_foreach_option_cont("network", "interface", "ifname", ifname, ns) {
+					if (nss)
+						wan_remove_dev_interface(nss, ifname);
+					nss = ns;
+				}
+				if (nss != NULL)
+					wan_remove_dev_interface(nss, ifname);
+			}
+			break;
 	}
-	return 0;
-}
-
-int delete_ptm_link_all(struct dmctx *ctx)
-{
-	struct uci_section *s = NULL;
-	struct uci_section *ss = NULL;
-
-	uci_foreach_sections("layer2_interface_vdsl", "vdsl_interface", s) {
-		if (ss)
-			dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-
-	ss = NULL;
-	uci_foreach_option_cont("network", "interface", "ifname", cur_ptm_args.ifname, s) {
-		if (ss)
-			wan_remove_dev_interface(ss, cur_ptm_args.ifname);
-		ss = s;
-	}
-	if (ss != NULL)
-		wan_remove_dev_interface(ss,cur_ptm_args.ifname);
 	return 0;
 }
 
 int delete_ptm_link(struct dmctx *ctx, unsigned char del_action)
 {
+	char *ifname;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
+
+	struct uci_section *ns = NULL;
+	struct uci_section *nss = NULL;
 
 	switch (del_action) {
 	case DEL_INST:
@@ -778,7 +762,32 @@ int delete_ptm_link(struct dmctx *ctx, unsigned char del_action)
 			wan_remove_dev_interface(ss, cur_ptm_args.ifname);
 		break;
 	case DEL_ALL:
-		return FAULT_9005;
+		uci_foreach_sections("layer2_interface_vdsl", "vdsl_interface", s) {
+			if (ss){
+				dmuci_get_value_by_section_string(ss, "ifname", &ifname);
+				dmuci_delete_by_section(ss, NULL, NULL);
+				uci_foreach_option_cont("network", "interface", "ifname", ifname, ns) {
+					if (nss)
+						wan_remove_dev_interface(nss, ifname);
+					nss = ns;
+				}
+				if (nss != NULL)
+					wan_remove_dev_interface(nss, ifname);
+			}
+			ss = s;
+		}
+		if (ss != NULL) {
+			dmuci_get_value_by_section_string(ss, "ifname", &ifname);
+			dmuci_delete_by_section(ss, NULL, NULL);
+			uci_foreach_option_cont("network", "interface", "ifname", ifname, ns) {
+				if (nss)
+					wan_remove_dev_interface(nss, ifname);
+				nss = ns;
+			}
+			if (nss != NULL)
+				wan_remove_dev_interface(nss, ifname);
+		}
+		break;
 	}
 	return 0;
 }

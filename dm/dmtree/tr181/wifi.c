@@ -1019,32 +1019,26 @@ int add_wifi_ssid(struct dmctx *ctx, char **new_instance)
 	return 0;
 }
 
-int delete_wifi_ssid_all(struct dmctx *ctx)
+int delete_wifi_ssid(struct dmctx *ctx, unsigned char del_action)
 {
 	int found = 0;
 	char *lan_name;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-
-	uci_foreach_sections("wireless", "wifi-iface", s) {
-		if (found != 0)
-				dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-		found++;
-	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-	return 0;
-}
-
-int delete_wifi_ssid(struct dmctx *ctx, unsigned char del_action)
-{
 	switch (del_action) {
 		case DEL_INST:
 			dmuci_delete_by_section(cur_wifi_ssid_args.wifi_ssid_sec, NULL, NULL);
 			break;
 		case DEL_ALL:
-			return FAULT_9005;
+			uci_foreach_sections("wireless", "wifi-iface", s) {
+				if (found != 0)
+						dmuci_delete_by_section(ss, NULL, NULL);
+				ss = s;
+				found++;
+			}
+			if (ss != NULL)
+				dmuci_delete_by_section(ss, NULL, NULL);
+			return 0;
 	}
 	return 0;
 }
