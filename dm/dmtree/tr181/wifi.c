@@ -963,7 +963,7 @@ int add_wifi_ssid(struct dmctx *ctx, char **new_instance)
 	char *instance;
 	struct uci_section *s = NULL;
 
-	instance = get_last_instance("wireless", "wifi-iface", "lwlaninstance");
+	instance = get_last_instance("wireless", "wifi-iface", "ssidinstance");
 	sprintf(ssid, "Inteno_%d", instance ? (atoi(instance)+1) : 1);
 	dmuci_add_section("wireless", "wifi-iface", &s, &value);
 	dmuci_set_value_by_section(s, "device", "wl0");
@@ -971,7 +971,7 @@ int add_wifi_ssid(struct dmctx *ctx, char **new_instance)
 	dmuci_set_value_by_section(s, "macfilter", "0");
 	dmuci_set_value_by_section(s, "mode", "ap");
 	dmuci_set_value_by_section(s, "ssid", ssid);
-	*new_instance = update_instance(s, instance, "lwlaninstance");
+	*new_instance = update_instance(s, instance, "ssidinstance");
 	return 0;
 }
 
