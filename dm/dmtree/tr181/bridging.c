@@ -669,43 +669,48 @@ int add_bridge(struct dmctx *ctx, char **instance)
 	return 0;
 }
 
-int delete_bridge(struct dmctx *ctx)
+int delete_bridge(struct dmctx *ctx, unsigned char del_action)
 {
 	struct uci_section *s = NULL, *prev_s = NULL;
-
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "type", "");
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "bridge_instance", "");
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ip_int_instance", "");
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ipv4_instance", "");
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
-		if (prev_s)
-			dmuci_delete_by_section(prev_s, NULL, NULL);
-		prev_s = s;
-	}
-	if (prev_s)
-		dmuci_delete_by_section(prev_s, NULL, NULL);
-	reset_br_port( cur_bridging_args.br_key);
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", "");
-	return 0;
-}
-
-int delete_bridge_all(struct dmctx *ctx)
-{
-	struct uci_section *bridge_s, *vlan_s, *prev_s = NULL;
+	struct uci_section *bridge_s, *vlan_s;
 	char *bridgekey = NULL;
 
-	uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
-		dmuci_set_value_by_section(bridge_s, "type", "");
-		dmuci_set_value_by_section(bridge_s, "bridge_instance", "");
+	switch (del_action) {
+		case DEL_INST:
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "type", "");
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "bridge_instance", "");
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ip_int_instance", "");
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ipv4_instance", "");
+			uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
+				if (prev_s)
+					dmuci_delete_by_section(prev_s, NULL, NULL);
+				prev_s = s;
+			}
+			if (prev_s)
+				dmuci_delete_by_section(prev_s, NULL, NULL);
+			reset_br_port( cur_bridging_args.br_key);
+			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", "");
+			break;
+		case DEL_ALL:
+			uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
+				dmuci_set_value_by_section(bridge_s, "type", "");
+				dmuci_set_value_by_section(bridge_s, "bridge_instance", "");
+				dmuci_set_value_by_section(bridge_s, "ip_int_instance", "");
+				dmuci_set_value_by_section(bridge_s, "ipv4_instance", "");
+				dmuci_get_value_by_section_string(bridge_s, "bridge_instance", &bridgekey);
+				uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", bridgekey, s) {
+					if (prev_s)
+						dmuci_delete_by_section(prev_s, NULL, NULL);
+					prev_s = s;
+				}
+				if (prev_s)
+					dmuci_delete_by_section(prev_s, NULL, NULL);
+				reset_br_port(bridgekey);
+				dmuci_set_value_by_section(bridge_s, "ifname", "");
+			}
+
+			break;
 	}
-	uci_foreach_sections("layer2_interface_vlan", "vlan_interface", vlan_s) {
-		if(prev_s != NULL && bridgekey[0] != '\0')
-			dmuci_delete_by_section(prev_s, NULL, NULL);
-		prev_s = vlan_s;
-		dmuci_get_value_by_section_string(vlan_s, "bridge_key", &bridgekey);
-	}
-	if(prev_s != NULL && bridgekey[0] != '\0')
-		dmuci_delete_by_section(prev_s, NULL, NULL);
 	return 0;
 }
 
@@ -734,6 +739,7 @@ int delete_br_vlan(struct dmctx *ctx, unsigned char del_action)
 {
 	char *vid, *ifname;
 	char new_ifname[128];
+	struct uci_section *vlan_s, *prev_s = NULL ;
 
 	switch (del_action) {
 	case DEL_INST:
@@ -746,30 +752,21 @@ int delete_br_vlan(struct dmctx *ctx, unsigned char del_action)
 		dmuci_delete_by_section(cur_bridging_vlan_args.bridge_vlan_sec, NULL, NULL);
 		break;
 	case DEL_ALL:
-		return FAULT_9005;
-	}
-	return 0;
-}
-
-int delete_br_vlan_all(struct dmctx *ctx)
-{
-	char *vid, *ifname;
-	struct uci_section *vlan_s, *prev_s = NULL ;
-	char new_ifname[128];
-
-	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "bridge_key", cur_bridging_args.br_key, vlan_s) {
-		dmuci_get_value_by_section_string(vlan_s, "vlan8021q", &vid);
-		dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
-		if(ifname[0] != '\0' && vid[0] != '\0'){
-			remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
-			dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
+		uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "bridge_key", cur_bridging_args.br_key, vlan_s) {
+			dmuci_get_value_by_section_string(vlan_s, "vlan8021q", &vid);
+			dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", &ifname);
+			if(ifname[0] != '\0' && vid[0] != '\0'){
+				remove_vid_interfaces_from_ifname(vid, ifname, new_ifname);
+				dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", new_ifname);
+			}
+			if (prev_s != NULL)
+				dmuci_delete_by_section(prev_s, NULL, NULL);
+			prev_s = vlan_s;
 		}
 		if (prev_s != NULL)
 			dmuci_delete_by_section(prev_s, NULL, NULL);
-		prev_s = vlan_s;
+		break;
 	}
-	if (prev_s != NULL)
-		dmuci_delete_by_section(prev_s, NULL, NULL);
 	return 0;
 }
 
@@ -793,6 +790,7 @@ int delete_br_port(struct dmctx *ctx, unsigned char del_action)
 	char *iface, *ifname, *linker;
 	char new_ifname[128];
 	struct uci_section *vlan_s;
+	struct uci_section *s = NULL, *prev_s = NULL;
 
 	switch (del_action) {
 	case DEL_INST:
@@ -814,26 +812,19 @@ int delete_br_port(struct dmctx *ctx, unsigned char del_action)
 		dmfree(linker);
 		break;
 	case DEL_ALL:
-		return FAULT_9005;
-	}
-	return 0;
-}
-
-int delete_br_port_all(struct dmctx *ctx)
-{
-	struct uci_section *s = NULL, *prev_s = NULL;
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
+		uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
+			if (prev_s)
+				dmuci_delete_by_section(prev_s, NULL, NULL);
+			prev_s = s;
+		}
 		if (prev_s)
 			dmuci_delete_by_section(prev_s, NULL, NULL);
-		prev_s = s;
+		reset_br_port(cur_bridging_args.br_key);
+		dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", ""); // TO CHECK
+		break;
 	}
-	if (prev_s)
-		dmuci_delete_by_section(prev_s, NULL, NULL);
-	reset_br_port(cur_bridging_args.br_key);
-	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", ""); // TO CHECK
 	return 0;
 }
-
 /*************************************************************
  * LOWER LAYER
 /*************************************************************/

@@ -79,32 +79,27 @@ int add_dhcp_server(struct dmctx *ctx, char **instancepara)
 
 int delete_dhcp_server(struct dmctx *ctx, unsigned char del_action)
 {
-	switch (del_action) {
-	case DEL_INST:
-		dmuci_delete_by_section(cur_dhcp_args.dhcp_sec, NULL, NULL);
-		break;
-	case DEL_ALL:
-		return FAULT_9005;
-	}
-	return 0;
-}
-
-int delete_dhcp_server_all(struct dmctx *ctx)
-{
 	int found = 0;
 	char *lan_name;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
 
-	uci_foreach_sections("dhcp", "dhcp", s) {
-		if (found != 0)
+	switch (del_action) {
+	case DEL_INST:
+		dmuci_delete_by_section(cur_dhcp_args.dhcp_sec, NULL, NULL);
+		break;
+	case DEL_ALL:
+		uci_foreach_sections("dhcp", "dhcp", s) {
+			if (found != 0)
+				dmuci_delete_by_section(ss, NULL, NULL);
+			ss = s;
+			found++;
+		}
+		if (ss != NULL)
 			dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-		found++;
+		break;
 	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-	return 0;	
+	return 0;
 }
 
 int add_dhcp_staticaddress(struct dmctx *ctx, char **instancepara)
@@ -121,33 +116,28 @@ int add_dhcp_staticaddress(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_dhcp_staticaddress_all(struct dmctx *ctx)
+int delete_dhcp_staticaddress(struct dmctx *ctx, unsigned char del_action)
 {
 	int found = 0;
 	char *lan_name;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-
-	uci_foreach_option_eq("dhcp", "host", "interface", cur_dhcp_args.interface, s) {
-		if (found != 0)
-			dmuci_delete_by_section(ss, NULL, NULL);
-		ss = s;
-		found++;
-	}
-	if (ss != NULL)
-		dmuci_delete_by_section(ss, NULL, NULL);
-	return 0;	
-}
-
-int delete_dhcp_staticaddress(struct dmctx *ctx, unsigned char del_action)
-{
 	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
 	
 	switch (del_action) {
-	case DEL_INST:
-		dmuci_delete_by_section(dhcpargs->dhcpsection, NULL, NULL);
-	case DEL_ALL:
-		return FAULT_9005;
+		case DEL_INST:
+			dmuci_delete_by_section(dhcpargs->dhcpsection, NULL, NULL);
+			break;
+		case DEL_ALL:
+			uci_foreach_option_eq("dhcp", "host", "interface", cur_dhcp_args.interface, s) {
+				if (found != 0)
+					dmuci_delete_by_section(ss, NULL, NULL);
+				ss = s;
+				found++;
+			}
+			if (ss != NULL)
+				dmuci_delete_by_section(ss, NULL, NULL);
+			break;
 	}
 	return 0;
 }
