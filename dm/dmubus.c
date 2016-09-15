@@ -95,8 +95,12 @@ int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_arg
 		sprintf(p, "{");
 		for (i = 0; i < u_args_size; i++) {
 			p += strlen(p);
-			if (i == 0)
+			if (i == 0 && u_args[i].type == 1)
+				sprintf(p, "\"%s\": %s", u_args[i].key, u_args[i].val);
+			else if (i == 0 && u_args[i].type == 0)
 				sprintf(p, "\"%s\": \"%s\"", u_args[i].key, u_args[i].val);
+			else if (i != 0 && u_args[i].type == 1)
+				sprintf(p, ", \"%s\": %s", u_args[i].key, u_args[i].val);
 			else
 				sprintf(p, ", \"%s\": \"%s\"", u_args[i].key, u_args[i].val);
 		}

@@ -216,10 +216,31 @@ int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
 	
 	dmubus_call("router", "info", UBUS_ARGS{{}}, 0, &res);
 	DM_ASSERT(res, *value = "");
-	json_select(res, "system", 0, "basemac", value, NULL);		
+	json_select(res, "system", 0, "basemac", value, NULL);
 	return 0;
 }
 
+int get_device_memory_bank(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+
+	dmubus_call("router", "memory_bank", UBUS_ARGS{{}}, 0, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "code", 0, NULL, value, NULL);
+	return 0;
+}
+
+int set_device_memory_bank(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmubus_call_set("router", "memory_bank", UBUS_ARGS{{"bank", value, Integer}}, 1);
+			return 0;
+	}
+	return 0;
+}
 int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *catv;
@@ -380,6 +401,7 @@ int entry_method_root_DeviceInfo(struct dmctx *ctx)
 		DMPARAM("SpecVersion", ctx, "0", get_device_specversion, NULL, NULL, 1, 1, UNDEF, NULL);
 		DMPARAM("ProvisioningCode", ctx, "1", get_device_provisioningcode, set_device_provisioningcode, NULL, 1, 0, 2, NULL);
 		DMPARAM("X_INTENO_SE_BaseMacAddr", ctx, "0", get_base_mac_addr, NULL, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_SE_MemoryBank", ctx, "1", get_device_memory_bank, set_device_memory_bank, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("X_INTENO_SE_CATVEnabled", ctx, "1", get_catv_enabled, set_device_catvenabled, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"DeviceInfo.X_INTENO_SE_CATV.", ctx, "0", 0, NULL, NULL, NULL);
 		DMPARAM("Enabled", ctx, "1", get_catv_enabled, set_device_catvenabled, NULL, 0, 1, UNDEF, NULL);
