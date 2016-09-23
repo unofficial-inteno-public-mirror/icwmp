@@ -15,6 +15,7 @@
 #include <string.h>
 #include <limits.h>
 #include <errno.h>
+#include <time.h>
 #include "md5.h"
 #include "digestauth.h"
 #include "log.h"
