@@ -27,7 +27,7 @@ void external_uploadFaultResp (char *fault_code);
 void external_fetch_uploadFaultResp (char **fault_code);
 void external_uninstallFaultResp (char *fault_code);
 void external_fetch_uninstallFaultResp (char **fault);
-int external_simple(char *command, char *arg);
+int external_simple(char *command, char *arg, int c);
 int external_download(char *url, char *size, char *type, char *user, char *pass,time_t c);
 int external_upload(char *url, char *type, char *user, char *pass, char *name);
 int external_apply(char *action, char *arg,time_t c);

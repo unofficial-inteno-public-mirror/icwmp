@@ -180,6 +180,7 @@ typedef struct config {
     char                                *cpe_passwd;
     char                                *dhcp_url_path;
     char								*ip;
+    char								*ipv6;
     char								*interface;
     char                                *ubus_socket;
     int                                 connection_request_port;
@@ -228,6 +229,11 @@ enum enum_session_status {
     SESSION_RUNNING,
     SESSION_FAILURE,
     SESSION_SUCCESS
+};
+
+enum enum_ip_version {
+    IPv4 = 4,
+    IPv6 = 6
 };
 
 struct deviceid {
@@ -310,6 +316,7 @@ typedef struct execute_end_session {
 	void (*function)(int, void*);
 } execute_end_session;
 
+extern int ip_version;
 #define ARRAYSIZEOF(a)  (sizeof(a) / sizeof((a)[0]))
 #define FREE(x) do { free(x); x = NULL; } while (0)
 
@@ -335,7 +342,7 @@ int netlink_init(void);
 char * mix_get_time(void);
 char * mix_get_time_of(time_t t_time);
 void *thread_exit_program (void *v);
-void connection_request_ip_value_change(struct cwmp *cwmp);
+void connection_request_ip_value_change(struct cwmp *cwmp, int version);
 void connection_request_port_value_change(struct cwmp *cwmp, int port);
 void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *param_data, char *param_type);
 void cwmp_set_end_session (unsigned int end_session_flag);

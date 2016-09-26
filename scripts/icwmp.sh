@@ -120,6 +120,7 @@ case "$1" in
 	allow_cr_ip)
 		action="allow_cr_ip"
 		__arg1="$2"
+		__arg2="$3"
 		;;
 	json_continuous_input)
 		action="json_continuous_input"
@@ -361,7 +362,11 @@ handle_action() {
 		local zone_name=`$UCI_GET firewall.$zone.name`
 		[ "$zone_name" = "" ] && return
 		# update iptables rule
-		sed -i "s,^.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp
+		if [ "$__arg2" != "1" ]; then 
+			sed -i "s,^.*iptables.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp			
+		else
+			sed -i "s,^.*iptables.*Open ACS port.*,ip6tables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp			
+		fi		
 		fw3 reload
 	fi
 	
@@ -470,6 +475,7 @@ handle_action() {
 				allow_cr_ip)
 					action="allow_cr_ip"
 					json_get_var __arg1 arg
+					json_get_var __arg2 ipv6
 					;;
 				end)
 					echo "$CWMP_PROMPT"

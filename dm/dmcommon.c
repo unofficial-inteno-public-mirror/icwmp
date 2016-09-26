@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <uci.h>
+#include <cwmp.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
@@ -378,10 +379,21 @@ int ipcalc_rev_end(char *ip_str, char *mask_str, char *start_str, char *ipend_st
 int network_get_ipaddr(char **value, char *iface)
 {
 	json_object *res;
+	char *ipv6_value = "";
 	
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "ipv4-address", 0, "address", value, NULL);
+	json_select(res, "ipv6-address", 0, "address", &ipv6_value, NULL);
+
+	if((*value)[0] == '\0' || ipv6_value[0] == '\0') {
+		if ((*value)[0] == '\0')
+			*value = ipv6_value;
+	}
+	else if (ip_version == 6) {
+		*value = ipv6_value;
+		return 0;
+	}
 	return 0;
 }
 
