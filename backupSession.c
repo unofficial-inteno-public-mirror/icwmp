@@ -2013,6 +2013,14 @@ int cwmp_load_saved_session(struct cwmp *cwmp, char **ret, enum backup_loading l
 				break;
 			}
 		}
+		if(load == CR_IPv6)
+		{
+			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
+			{
+				*ret = load_child_value(b, "ipv6");
+				break;
+			}
+		}
 		if(load == CR_PORT)
 		{
 			if(b->type == MXML_ELEMENT && strcmp(b->value.element.name, "connection_request") == 0)
