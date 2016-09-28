@@ -234,15 +234,23 @@ handle_action() {
 	if [ "$action" = "download" ]; then
 		local fault_code="9000"
 		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
-			wget -O /tmp/icwmp_download "$__arg1" 2> /dev/null
+			if [ "$__arg7" != ""];then
+				wget -O /tmp/icwmp_download --ca-directory=$__arg7 "$__arg1" 2> /dev/null
+			else
+				wget -O /tmp/icwmp_download "$__arg1" 2> /dev/null	
+			fi
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
 				return 1
 			fi
 		else
-			local url="http://$__arg4:$__arg5@`echo $__arg1|sed 's/http:\/\///g'`"
+			local url=`echo "$__arg1" | sed -e "s@://@://$__arg4:$__arg5\@@g"`
+			if [ "$__arg7" == ""];then
 			wget -O /tmp/icwmp_download "$url" 2> /dev/null
+			else
+				wget -O /tmp/icwmp_download --ca-directory=$__arg7 "$url" 2> /dev/null
+			fi
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
 				icwmp_fault_output "" "$fault_code"
@@ -419,6 +427,7 @@ handle_action() {
 					json_get_var __arg4 user
 					json_get_var __arg5 pass
 					json_get_var __arg6 ids
+					json_get_var __arg7 cert_path
 					action="download"
 					;;
 				du_download)

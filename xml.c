@@ -4148,6 +4148,7 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 		error = FAULT_CPE_INVALID_ARGUMENTS;
 	}
 	else if(strncmp(download->url,DOWNLOAD_PROTOCOL_HTTP,strlen(DOWNLOAD_PROTOCOL_HTTP))!=0 &&
+			strncmp(download->url,DOWNLOAD_PROTOCOL_HTTPS,strlen(DOWNLOAD_PROTOCOL_HTTPS))!=0 &&
 			strncmp(download->url,DOWNLOAD_PROTOCOL_FTP,strlen(DOWNLOAD_PROTOCOL_FTP))!=0)
 	{
 		error = FAULT_CPE_FILE_TRANSFER_UNSUPPORTED_PROTOCOL;
