@@ -109,14 +109,16 @@ http_client_init(struct cwmp *cwmp)
 		return -1;
 #endif /* HTTP_ZSTREAM */
 
-char *ip = NULL;
-curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
-curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
-curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
-curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
-curl_easy_perform(curl);
-int tmp = inet_pton(AF_INET, ip, buf);
-ip_version = (tmp == 1) ? 4 : 6;
+if (cwmp->conf.ipv6_enable) {
+	char *ip = NULL;
+	curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
+	curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+	curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+	curl_easy_perform(curl);
+	int tmp = inet_pton(AF_INET, ip, buf);
+	ip_version = (tmp == 1) ? 4 : 6;
+}
 	return 0;
 }
 
@@ -167,6 +169,7 @@ int
 http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_in)
 {
 	 unsigned char buf[sizeof(struct in6_addr)];
+	 int tmp = 0;
 #ifdef HTTP_CURL
 	CURLcode res;
 	long http_code = 0;
@@ -251,11 +254,13 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
         if (!ip_acs || strcmp(ip_acs, ip) != 0) {
             FREE(ip_acs);
             ip_acs = strdup(ip);
-            int tmp = inet_pton(AF_INET, ip, buf);
-            if (tmp == 1)
-            	tmp = 0;
-            else
-            	tmp = inet_pton(AF_INET6, ip, buf);
+            if (cwmp->conf.ipv6_enable) {
+				tmp = inet_pton(AF_INET, ip, buf);
+		        if (tmp == 1)
+		        	tmp = 0;
+		        else
+		        	tmp = inet_pton(AF_INET6, ip, buf);
+            }
             external_init();
             external_simple("allow_cr_ip", ip_acs, tmp);
             external_exit();

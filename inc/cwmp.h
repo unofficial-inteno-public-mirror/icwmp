@@ -53,6 +53,7 @@
 #define UCI_ACS_SSL_CAPATH					"cwmp.acs.ssl_capath"
 #define UCI_HTTPS_SSL_CAPATH				"cwmp.acs.https_ssl_capath"
 #define UCI_ACS_INSECURE_ENABLE				"cwmp.acs.insecure_enable"
+#define UCI_ACS_IPV6_ENABLE					"cwmp.acs.ipv6_enable"
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
 #define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
 #define UCI_ACS_RETRY_MIN_WAIT_INTERVAL		"cwmp.acs.retry_min_wait_interval"
@@ -191,6 +192,7 @@ typedef struct config {
     time_t                              time;
     bool                                periodic_enable;
     bool                                insecure_enable;
+    bool								ipv6_enable;
 	int 								retry_min_wait_interval;
     int 								retry_interval_multiplier;
 	bool                                lw_notification_enable;
