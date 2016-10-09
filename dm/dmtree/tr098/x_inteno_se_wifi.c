@@ -36,7 +36,7 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	char *wlan_name = section_name(wifiargs->sewifisection);
 	
-	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
 	dmastrcat(value, freq, "GHz");  // MEM WILL BE FREED IN DMMEMCLEAN

@@ -144,7 +144,7 @@ char *get_interface_type(char *mac, char *ndev)
 				else {
 					p = wunit;
 				}
-				dmubus_call("router", "sta", UBUS_ARGS{{"vif", p}}, 1, &res);
+				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p}}, 1, &res);
 				if(res) {
 					json_object_object_foreach(res, key, val) {
 						json_select(val, "macaddr", 0, NULL, &value, NULL);
@@ -174,7 +174,7 @@ int get_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
 	int entries = 0;
 	json_object *res;
 
-	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, client_obj) {
 		entries++;
@@ -202,7 +202,7 @@ inline int entry_host(struct dmctx *ctx)
 	json_object *res, *client_obj;
 	char *idx, *idx_last = NULL;
 	int id = 0;
-	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
 		json_object_object_foreach(res, key, client_obj) {
 			init_host_args(ctx, client_obj, key);

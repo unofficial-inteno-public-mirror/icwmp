@@ -896,7 +896,7 @@ inline int entry_dhcp_client(struct dmctx *ctx, char *interface, char *idev )
 	json_object *res = NULL, *client_obj = NULL;
 	char *dhcp, *network;
 	int id = 0;
-	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
 		json_object_object_foreach(res, key, client_obj) {
 			json_select(client_obj, "dhcp", 0, NULL, &dhcp, NULL);

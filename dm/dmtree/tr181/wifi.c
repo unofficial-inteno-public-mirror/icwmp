@@ -105,7 +105,7 @@ int get_wlan_bssid(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res;
 
 	wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "bssid", 0, NULL, value, NULL);
 	return 0;
@@ -174,7 +174,7 @@ int get_radio_frequency(char *refparam, struct dmctx *ctx, char **value)
 	char *freq;
 	json_object *res;
 	char *wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
 	if(strcmp(freq, "2") == 0 ) {
@@ -194,7 +194,7 @@ int get_radio_operating_channel_bandwidth(char *refparam, struct dmctx *ctx, cha
 	if (value[0] == '\0')
 	{
 		wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-		dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+		dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "bandwidth", 0, NULL, &bandwith, NULL);
 		dmastrcat(value, bandwith, "MHz"); // MEM WILL BE FREED IN DMMEMCLEAN
@@ -276,7 +276,7 @@ int get_radio_supported_standard(char *refparam, struct dmctx *ctx, char **value
 	char *freq, *wlan_name;
 	json_object *res;
 	wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-	dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "b, g, n");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
 	if (strcmp(freq, "5") == 0)
@@ -311,7 +311,7 @@ int set_radio_operating_standard(char *refparam, struct dmctx *ctx, int action, 
 				return 0;
 			case VALUESET:
 				wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-				dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+				dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 				json_select(res, "frequency", 0, NULL, &freq, NULL);
 				if (strcmp(freq, "5") == 0) {
 					 if (strcmp(value, "n") == 0)
@@ -342,7 +342,7 @@ int get_radio_channel(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_value_by_section_string(cur_wifi_radio_args.wifi_radio_sec, "channel", value);
 	if (strcmp(*value, "auto") == 0 || (*value)[0] == '\0') {
 		wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-		dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+		dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "channel", 0, NULL, value, NULL);
 	}
@@ -387,7 +387,7 @@ int set_radio_auto_channel_enable(char *refparam, struct dmctx *ctx, int action,
 				value = "auto";
 			else {
 				wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
-				dmubus_call("router", "wl", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+				dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 				if(res == NULL)
 					return 0;
 				else
@@ -548,7 +548,7 @@ int get_access_point_total_associations(char *refparam, struct dmctx *ctx, char 
 	int i = 0;
 	json_object *res;
 	char *wunit, buf[8];
-	dmubus_call("router", "sta", UBUS_ARGS{{"vif", cur_wifi_ssid_args.ifname}}, 1, &res);
+	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", cur_wifi_ssid_args.ifname}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
 		if (strstr(key, "sta-"))
