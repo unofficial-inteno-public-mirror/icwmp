@@ -62,7 +62,7 @@ ipping_launch() {
 	[ $success_count -gt 0 ] && avg_time=$((avg_time_sum/success_count)) || avg_time=0
 	min_time=$min
 	max_time=$max
-	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticsState=Complete
+	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticState=Complete
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].SuccessCount=$success_count
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].FailureCount=$failure_count
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].AverageResponseTime=$avg_time
@@ -85,7 +85,7 @@ ipping_stop_diagnostic() {
 	local pids=`ps | grep ipping_launch | grep -v grep | awk '{print $1}'`
 	if [ -n "$pids" ]; then
 		kill -9 $pids &>/dev/null
-		$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticsState=None
+		$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticState=None
 	fi
 }
 
