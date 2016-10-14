@@ -60,8 +60,9 @@ ipping_launch() {
 	done
 	failure_count=$((cnt-success_count))
 	[ $success_count -gt 0 ] && avg_time=$((avg_time_sum/success_count)) || avg_time=0
-	min_time=$min
-	max_time=$max
+	avg_time=$(awk "BEGIN{print $avg_time / 1000}")
+	min_time=$(awk "BEGIN{print $min / 1000}")
+	max_time=$(awk "BEGIN{print $max / 1000}")
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].DiagnosticState=Complete
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].SuccessCount=$success_count
 	$UCI_SET_VARSTATE cwmp.@ippingdiagnostic[0].FailureCount=$failure_count
