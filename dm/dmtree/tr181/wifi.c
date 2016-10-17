@@ -335,6 +335,19 @@ int set_radio_operating_standard(char *refparam, struct dmctx *ctx, int action, 
 		return 0;
 }
 
+int get_radio_possible_channels(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *wlan_name;
+	
+	*value = "";
+	wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
+	dmubus_call("router.wireless", "radios", UBUS_ARGS{}, 0, &res);
+	if(res)
+		json_select(res, wlan_name, -1, "channels", value, NULL);
+	return 0;
+}
+
 int get_radio_channel(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
@@ -1063,6 +1076,7 @@ inline int entry_wifi_radio_instance(struct dmctx *ctx, char *wnum)
 		DMPARAM("X_INTENO_SE_DFSEnable", ctx, "1", get_radio_dfsenable, set_radio_dfsenable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("SupportedStandards", ctx, "0", get_radio_supported_standard, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("OperatingStandards", ctx, "1", get_radio_operating_standard, set_radio_operating_standard, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("PossibleChannels", ctx, "0", get_radio_possible_channels, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("ChannelsInUse", ctx, "0", get_radio_channel, NULL, NULL, 0, 1, UNDEF, NULL); /// TO CHECK
 		DMPARAM("Channel", ctx, "1", get_radio_channel, set_radio_channel, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("AutoChannelEnable", ctx, "1", get_radio_auto_channel_enable, set_radio_auto_channel_enable, "xsd:boolean", 0, 1, UNDEF, NULL);

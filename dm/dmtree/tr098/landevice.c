@@ -1881,6 +1881,18 @@ int set_wlan_standard(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
+int get_wlan_possible_channels(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+
+	*value = "";
+	dmubus_call("router.wireless", "radios", UBUS_ARGS{}, 0, &res);
+	if(res)
+		json_select(res, wlanargs->wunit, -1, "channels", value, NULL);
+	return 0;
+}
+
 int get_wlan_wep_key_index(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
@@ -3243,6 +3255,7 @@ inline int entry_landevice_wlanconfiguration_instance(struct dmctx *ctx, char *i
 		DMPARAM("SSID", ctx, "1", get_wlan_ssid, set_wlan_ssid, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("BeaconType", ctx, "1", get_wlan_beacon_type, set_wlan_beacon_type, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("MACAddressControlEnabled", ctx, "1", get_wlan_mac_control_enable, set_wlan_mac_control_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("PossibleChannels", ctx, "0", get_wlan_possible_channels, NULL, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Standard", ctx, "1", get_wlan_standard, set_wlan_standard, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("WEPKeyIndex", ctx, "1", get_wlan_wep_key_index, set_wlan_wep_key_index, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("KeyPassphrase", ctx, "1", get_empty, set_wlan_key_passphrase, NULL, 0, 1, UNDEF, NULL);
