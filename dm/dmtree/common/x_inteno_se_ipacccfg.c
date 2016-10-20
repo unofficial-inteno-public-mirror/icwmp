@@ -176,9 +176,6 @@ int get_port_forwarding_enable(char *refparam, struct dmctx *ctx, char **value)
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "enabled", value);
-	if((*value)[0] == '\0') {
-		*value = "1";
-	}
 	return 0;
 }
 
@@ -196,7 +193,7 @@ int set_port_forwarding_enable(char *refparam, struct dmctx *ctx, int action, ch
 		case VALUESET:
 			string_to_bool(value, &b);
 			if(b)
-				dmuci_set_value_by_section(forwardargs->forwardsection, "enabled", "");
+				dmuci_set_value_by_section(forwardargs->forwardsection, "enabled", "1");
 			else 
 				dmuci_set_value_by_section(forwardargs->forwardsection, "enabled", "0");
 			return 0;
@@ -286,7 +283,7 @@ int get_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, char **
 {
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
-	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dst", value);
+	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dest", value);
 	return 0;
 }
 
@@ -299,7 +296,7 @@ int set_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, int act
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(forwardargs->forwardsection, "dst", value);
+			dmuci_set_value_by_section(forwardargs->forwardsection, "dest", value);
 			return 0;
 	}
 	return 0;
@@ -390,7 +387,7 @@ int get_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, ch
 {
 	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
 
-	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src_ip", value);
+	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dest_ip", value);
 	return 0;
 }
 
@@ -403,7 +400,7 @@ int set_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, in
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(forwardargs->forwardsection, "src_ip", value);
+			dmuci_set_value_by_section(forwardargs->forwardsection, "dest_ip", value);
 			return 0;
 	}
 	return 0;
@@ -467,7 +464,7 @@ int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int 
 			return 0;
 		case VALUESET:
 			if (strcasecmp(value, "any") == 0) {
-				dmuci_delete_by_section(forwardargs->forwardsection, "src_ip", "");;				
+				dmuci_delete_by_section(forwardargs->forwardsection, "src_ip", "");
 			}
 			else {
 				dmuci_delete_by_section(forwardargs->forwardsection, "src_ip", "");
