@@ -16,6 +16,7 @@
 
 #define BASE_MAC_ADDR "/proc/nvram/BaseMacAddr"
 #define UPTIME "/proc/uptime"
+#define DEFAULT_CONFIG_DIR "/etc/config/"
 
 char *get_deviceid_manufacturer();
 char *get_deviceid_manufactureroui();
