@@ -45,6 +45,7 @@
 #include "routing.h"
 #include "nat.h"
 #include "xmpp.h"
+#include "x_inteno_se_owsd.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -124,6 +125,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
 	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
 	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
+	{ DMROOT"X_INTENO_SE_Owsd.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_OWSD },
 #ifdef XMPP_ENABLE
 	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
 #endif
