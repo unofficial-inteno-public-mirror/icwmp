@@ -606,6 +606,15 @@ int get_global_config(struct config *conf)
     {
         FREE(conf->https_ssl_capath);
     }
+    if((error = uci_get_value(HTTP_DISABLE_100CONTINUE,&value)) == CWMP_OK)
+	{
+		if(value != NULL)
+		{
+			if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
+				conf->http_disable_100continue = true;
+			value = NULL;
+		}
+	}
     if((error = uci_get_value(UCI_ACS_INSECURE_ENABLE,&value)) == CWMP_OK)
     {
         if(value != NULL)
