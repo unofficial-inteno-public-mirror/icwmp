@@ -57,6 +57,7 @@
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
 #define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
 #define UCI_ACS_RETRY_MIN_WAIT_INTERVAL		"cwmp.acs.retry_min_wait_interval"
+#define HTTP_DISABLE_100CONTINUE			"cwmp.acs.http_disable_100continue"
 #define UCI_ACS_RETRY_INTERVAL_MULTIPLIER	"cwmp.acs.retry_interval_multiplier"
 #define UCI_LOG_SEVERITY_PATH				"cwmp.cpe.log_severity"
 #define UCI_CPE_USERID_PATH					"cwmp.cpe.userid"
@@ -205,6 +206,7 @@ typedef struct config {
 	bool								xmpp_enable;
 	int									xmpp_connection_id;
 	char								*xmpp_allowed_jid;
+	bool								http_disable_100continue;
 } config;
 
 typedef struct env {
