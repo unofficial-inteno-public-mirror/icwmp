@@ -46,6 +46,8 @@
 #include "nat.h"
 #include "xmpp.h"
 #include "x_inteno_se_owsd.h"
+#include "downloaddiagnostic.h"
+#include "uploaddiagnostic.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -114,6 +116,8 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
 	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
 	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
+	{ DMROOT"DownloadDiagnostics.", 1, NULL, 0, &entry_method_root_Download_Diagnostics },
+	{ DMROOT"UploadDiagnostics.", 1, NULL, 0, &entry_method_root_Upload_Diagnostics },
 #endif
 	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
 	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },

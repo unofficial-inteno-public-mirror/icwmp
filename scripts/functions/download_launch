@@ -1,0 +1,57 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: IMEN Bhiri <imen.bhiri@pivasoftware.com>
+
+
+UCI_CONFIG_DIR="/etc/config/"
+UCI_GET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get -q "
+UCI_SET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set -q "
+CAPTURE_FILE="/tmp/download_dump"
+DOWNLOAD_DIAGNOSTIC_FILE="/tmp/icwmp_download_diagnostic"
+
+download_launch() {
+	url=$1
+	interface=$2
+	tcpdump -i $interface tcp -w ${CAPTURE_FILE} > /dev/null 2>&1 &
+	PID=$!
+	sleep 1
+	if [ ${url:0:7} = http:// -o ${url:0:6} = ftp:// ]; then
+		res=$(wget -O ${DOWNLOAD_DIAGNOSTIC_FILE} $url 2>&1)
+		ba=`echo "$res" | grep "bad address"`
+		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_InitConnectionFailed; kill $PID 2> /dev/null; return; }
+		stc=`echo "$res" | grep "404 Not Found"`
+		[ -n "$stc" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_NoResponse; kill $PID 2> /dev/null; return; }
+		stc=`echo "$res" | grep "100%"`
+		[ -z "$stc" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_TransferFaile; kill $PID 2> /dev/null; return; }
+	fi
+	$UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Complete
+	rm ${DOWNLOAD_DIAGNOSTIC_FILE} 2>/dev/null
+	sleep 1
+	local pids=`ps | grep $PID`
+	kill $PID &>/dev/null
+}
+
+download_stop_diagnostic() {
+	local pids=`ps | grep download_launch.*run | grep -v grep | awk '{print $1}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids &>/dev/null
+		$UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=None
+	fi
+	local pids=`ps | grep upload_launch.*run | grep -v grep | awk '{print $1}'`                               
+    if [ -n "$pids" ]; then
+    	kids=$(grep -l "PPid.*$pids" /proc/*/task/*/status | grep -o "[0-9]*")                    
+		for kid in $kids; do                                                  
+	    	kill -9 $kid &>/dev/null                                                   
+	    done
+	    kill -9 $pids &>/dev/null                                                               
+	    $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=None      
+    fi 
+}
+
+if [ "$1" == "run" ] ; then
+	download_launch $2 $3 
+elif [ "$1" == "stop" ]; then
+	download_stop_diagnostic
+else
+	return
+fi

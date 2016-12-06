@@ -13,7 +13,7 @@
 #include <uci.h>
 #include <stdio.h>
 #include "cwmp.h"
-#include "ipping.h" 
+#include "diagnostic.h" 
 #include "ubus.h"
 #include "dmcwmp.h"
 #include "dmuci.h"

@@ -1,0 +1,75 @@
+#!/bin/sh
+# Copyright (C) 2015 PIVA Software <www.pivasoftware.com>
+# 	Author: IMEN Bhiri <imen.bhiri@pivasoftware.com>
+
+
+UCI_CONFIG_DIR="/etc/config/"
+UCI_GET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state get -q "
+UCI_SET_VARSTATE="/sbin/uci ${UCI_CONFIG_DIR:+-c $UCI_CONFIG_DIR} -P /var/state set -q "
+CAPTURE_FILE="/tmp/upload_dump"
+UPLOAD_DIAGNOSTIC_FILE="/tmp/icwmp_upload_diagnostic"
+CONNECTION_TIMEOUT=20
+
+upload_launch() {
+	url=$1
+	interface=$2
+	size=$3
+	tcpdump -i $interface tcp -w ${CAPTURE_FILE} > /dev/null 2>&1 &
+	PID=$!
+	sleep 1
+	dd if=/dev/zero of=${UPLOAD_DIAGNOSTIC_FILE} bs=${size} count=1 2>/dev/null
+	if [ ${url:0:7} = http:// ]; then
+		res=$(curl --fail --connect-timeout ${CONNECTION_TIMEOUT} -T ${UPLOAD_DIAGNOSTIC_FILE} $url 2>&1)
+		ba=`echo "$res" | grep "bad address"`
+		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_InitConnectionFailed; kill $PID &> /dev/null; return; }
+		stc=`echo "$res" | grep "404 Not Found"`
+		[ -n "$stc" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_NoResponse; kill $PID &> /dev/null; return; }
+		stc=`echo "$res" |sed -n 3p|awk '{print $13}'`
+		[ "$stc" != "100" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_TransferFailed; kill $PID &> /dev/null; return; }
+	elif [ ${url:0:6} = ftp:// ]; then 
+		#add user and pass if they exist
+		substr="@"
+		if [ -z "${url##*$substr*}" ] ;then
+			url=`echo $url |sed -e "s/ftp:\/\/\([^:]*\):\([^:]*\)@\(.*\)/-u \1:\2 ftp:\/\/\3/"`
+		fi
+		res=$(curl --fail --connect-timeout ${CONNECTION_TIMEOUT} -T ${UPLOAD_DIAGNOSTIC_FILE} $url 2>&1)		
+		ba=`echo "$res" | grep "Couldn't resolve host"`
+		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_InitConnectionFailed; kill $PID 2> /dev/null; return; }
+		stc=`echo "$res" | grep "Access denied"`
+		[ -n "$stc" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_LoginFailed; kill $PID 2> /dev/null; return; }
+		stc=`echo "$res" | grep "Failed FTP upload"`
+		[ -n "$stc" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_NoResponse; kill $PID 2> /dev/null; return; }
+		stc=`echo "$res" |tail -n 1 |awk '{print $(NF-11)}'`
+		[ "$stc" != "100" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_TransferFailed; kill $PID 2> /dev/null; return; }
+	fi
+	$UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Complete
+	rm ${UPLOAD_DIAGNOSTIC_FILE} &>/dev/null
+	sleep 3 
+	local pids=`ps | grep $PID`
+	kill $PID &>/dev/null	
+}
+
+upload_stop_diagnostic() {
+	local pids=`ps | grep upload_launch.*run | grep -v grep | awk '{print $1}'`
+	if [ -n "$pids" ]; then
+		kill -9 $pids &>/dev/null
+		$UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=None
+	fi
+	local pids=`ps | grep upload_launch.*run | grep -v grep | awk '{print $1}'`                               
+    if [ -n "$pids" ]; then
+    	kids=$(grep -l "PPid.*$pids" /proc/*/task/*/status | grep -o "[0-9]*")                    
+		for kid in $kids; do                                                  
+	    	kill -9 $kid &>/dev/null                                                   
+	    done
+	    kill -9 $pids &>/dev/null                                                               
+	    $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=None      
+    fi 
+}
+
+if [ "$1" == "run" ] ; then
+	upload_launch $2 $3 $4
+elif [ "$1" == "stop" ]; then
+	upload_stop_diagnostic
+else
+	return
+fi

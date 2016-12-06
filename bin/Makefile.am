@@ -5,7 +5,7 @@ icwmpd_SOURCES =			\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
-	../ipping.c				\
+	../diagnostic.c			\
 	../digestauth.c			\
 	../event.c				\
 	../external.c			\
@@ -53,7 +53,9 @@ icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
 	../dm/dmtree/tr098/wandevice.c					\
 	../dm/dmtree/tr098/x_inteno_se_wifi.c			\
-	../dm/dmtree/tr098/ippingdiagnostics.c			\	
+	../dm/dmtree/tr098/ippingdiagnostics.c			\
+	../dm/dmtree/tr098/downloaddiagnostic.c			\
+	../dm/dmtree/tr098/uploaddiagnostic.c			\
 	../dm/dmtree/tr098/layer_3_forwarding.c	
 endif
 if DATAMODEL_TR181
@@ -94,6 +96,7 @@ icwmpd_LDADD =			\
 	$(LIBUBUS_LIBS)		\
 	$(MICROXML_LIBS)	\
 	$(LIBCURL_LIBS)		\
+	$(LIBTRACE_LIBS)	\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)	\
 	$(LCRYPTO_LIBS)		\
