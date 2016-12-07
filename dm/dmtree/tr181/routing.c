@@ -62,7 +62,11 @@ void hex_to_ip(char *address, char *ret) //TODO Move to the common.c
 	int i;
 	int ip[4] = {0};
 	sscanf(address, "%2x%2x%2x%2x", &(ip[0]), &(ip[1]), &(ip[2]), &(ip[3]));
-	sprintf(ret, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	if (htonl(13) == 13) {
+		sprintf(ret, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	} else {
+		sprintf(ret, "%d.%d.%d.%d", ip[3], ip[2], ip[1], ip[0]);
+	}
 }
 
 void parse_proc_route_line(char *line, struct proc_routing *proute)
