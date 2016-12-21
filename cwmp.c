@@ -187,6 +187,7 @@ void cwmp_schedule_session (struct cwmp *cwmp)
     static struct timespec              time_to_wait = {0, 0};
     bool                                retry = false;
 
+    cwmp->cwmp_cr_event = 0;
     while (1)
     {
     	pthread_mutex_lock (&(cwmp->mutex_session_send));
@@ -219,7 +220,7 @@ void cwmp_schedule_session (struct cwmp *cwmp)
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");
         run_session_end_func(session);
-        if (session->error == CWMP_RETRY_SESSION)
+        if (session->error == CWMP_RETRY_SESSION && (!list_empty(&(session->head_event_container)) || (list_empty(&(session->head_event_container)) && cwmp->cwmp_cr_event == 0)) )
         {
             error = cwmp_move_session_to_session_queue (cwmp, session);
             CWMP_LOG(INFO,"Retry session, retry count = %d, retry in %ds",cwmp->retry_count_session,cwmp_get_retry_interval(cwmp));
@@ -353,7 +354,7 @@ success:
 retry:
 	CWMP_LOG (INFO,"Failed");
 	session->error = CWMP_RETRY_SESSION;
-	event_remove_noretry_event_container(session);
+	event_remove_noretry_event_container(session, cwmp);
 
 end:
 	MXML_DELETE(session->tree_in);
