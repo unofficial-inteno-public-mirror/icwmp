@@ -271,6 +271,7 @@ typedef struct cwmp {
     struct list_head	head_session_queue;
     pthread_mutex_t		mutex_session_queue;
     struct session		*session_send;
+    bool				cwmp_cr_event;
     pthread_mutex_t		mutex_session_send;
     pthread_cond_t		threshold_session_send;
     pthread_mutex_t		mutex_periodic;
@@ -338,7 +339,7 @@ struct session *cwmp_add_queue_session (struct cwmp *cwmp);
 struct rpc *cwmp_add_session_rpc_acs (struct session *session, int type);
 struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_idx, char *command_key);
 int event_remove_all_event_container(struct session *session, int rem_from);
-int event_remove_noretry_event_container(struct session *session);
+int event_remove_noretry_event_container(struct session *session, struct cwmp *cwmp);
 void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_container);
 void *thread_event_periodic (void *v);
 void cwmp_add_notification(void);
