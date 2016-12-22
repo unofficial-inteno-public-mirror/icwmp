@@ -79,19 +79,6 @@ int get_management_server_key(char *refparam, struct dmctx *ctx, char **value)
 	return 0;	
 }
 
-int set_management_server_key(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	switch (action) {
-		case VALUECHECK:			
-			return 0;
-		case VALUESET:
-			dmuci_set_value("cwmp", "acs", "ParameterKey", value);
-			cwmp_set_end_session(END_SESSION_RELOAD);
-			return 0;
-	}
-	return 0;	
-}
-
 int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_enable", value);
@@ -416,7 +403,7 @@ int entry_method_root_ManagementServer(struct dmctx *ctx)
 		DMPARAM("URL", ctx, "1", get_management_server_url, set_management_server_url, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Username", ctx, "1", get_management_server_username, set_management_server_username, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Password", ctx, "1", get_empty, set_management_server_passwd, NULL, 0, 1, UNDEF, NULL);
-		DMPARAM("ParameterKey", ctx, "1", get_management_server_key, set_management_server_key, NULL, 1, 0, 0, NULL);
+		DMPARAM("ParameterKey", ctx, "0", get_management_server_key, NULL, NULL, 1, 0, 0, NULL);
 		DMPARAM("PeriodicInformEnable", ctx, "1", get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("PeriodicInformInterval", ctx, "1", get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMPARAM("PeriodicInformTime", ctx, "1", get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, "xsd:dateTime", 0, 1, UNDEF, NULL);
