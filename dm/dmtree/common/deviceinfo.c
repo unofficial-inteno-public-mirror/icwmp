@@ -39,22 +39,22 @@ char *get_deviceid_manufacturer()
 
 char *get_deviceid_manufactureroui()
 {
-	FILE* f = NULL;
 	char *v;
 	char str[16];
-	f = fopen(BASE_MAC_ADDR, "r");
-	if (f != NULL)
+	char *mac = NULL;	
+	json_object *res;
+
+	
+	dmubus_call("router.system", "info", UBUS_ARGS{{}}, 0, &res);
+	if(!(res)) goto not_found;
+	json_select(res, "system", 0, "basemac", &mac, NULL);
+	if(mac)
 	{
-		fgets(str, 16, f);
-		size_t ln = strlen(str);
-		if (ln<9) goto not_found;
-		str[2] = str[3];
-		str[3] = str[4];
-		str[4] = str[6];
-		str[5] = str[7];
+		size_t ln = strlen(mac);
+		if (ln<17) goto not_found;
+		sscanf (mac,"%2c:%2c:%2c",str,str+2,str+4);
 		str[6] = '\0';
 		v = dmstrdup(str); // MEM WILL BE FREED IN DMMEMCLEAN
-		fclose(f);
 		return v;
 	}
 not_found:
@@ -100,7 +100,9 @@ int get_device_manufacturer(char *refparam, struct dmctx *ctx, char **value)
 
 int get_device_manufactureroui(char *refparam, struct dmctx *ctx, char **value)
 {
-	*value = get_deviceid_manufactureroui();
+	dmuci_get_option_value_string("cwmp", "cpe", "override_oui", value);
+	if (*value[0] == '\0')
+		*value = get_deviceid_manufactureroui();
 	return 0;
 }
 
