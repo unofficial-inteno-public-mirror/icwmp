@@ -30,6 +30,8 @@ struct uci_section *dmuci_walk_state_section (char *package, char *stype, void *
 	char *pch, *spch;
 	struct uci_list *list_value, *list_section;
 	struct uci_ptr ptr = {0};
+	uci_add_delta_path(uci_varstate_ctx, uci_varstate_ctx->savedir);
+	uci_set_savedir(uci_varstate_ctx, VARSTATE_CONFIG);
 	if (walk == GET_FIRST_SECTION) {
 		if (dmuci_lookup_ptr(uci_varstate_ctx, &ptr, package, NULL, NULL, NULL) != UCI_OK) {
 			goto end;

@@ -22,9 +22,9 @@ download_launch() {
 		stc=`echo "$res" | grep "404 Not Found"`
 		[ -n "$stc" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_NoResponse; kill $PID 2> /dev/null; return; }
 		stc=`echo "$res" | grep "100%"`
-		[ -z "$stc" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_TransferFaile; kill $PID 2> /dev/null; return; }
+		[ -z "$stc" ] && { $UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Error_TransferFailed; kill $PID 2> /dev/null; return; }
 	fi
-	$UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Complete
+	$UCI_SET_VARSTATE cwmp.@downloaddiagnostic[0].DiagnosticState=Completed
 	rm ${DOWNLOAD_DIAGNOSTIC_FILE} 2>/dev/null
 	sleep 1
 	local pids=`ps | grep $PID`

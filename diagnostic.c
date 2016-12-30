@@ -680,7 +680,7 @@ int cwmp_start_diagnostic(int diagnostic_type)
 	{
 		dmcmd("/bin/sh", 4, DOWNLOAD_DIAGNOSTIC_PATH, "run", url, interface);
 		uci_get_state_value("cwmp.@downloaddiagnostic[0].DiagnosticState", &status);
-		if (status && strcmp(status, "Complete") == 0)
+		if (status && strcmp(status, "Completed") == 0)
 		{
 			init_download_stats();
 			CWMP_LOG(INFO,"Extract download stats");
@@ -698,7 +698,7 @@ int cwmp_start_diagnostic(int diagnostic_type)
 	{
 		dmcmd("/bin/sh", 5, UPLOAD_DIAGNOSTIC_PATH, "run", url, interface, size);
 		uci_get_state_value("cwmp.@uploaddiagnostic[0].DiagnosticState", &status);
-		if (status && strcmp(status, "Complete") == 0)
+		if (status && strcmp(status, "Completed") == 0)
 		{
 			init_upload_stats();
 			CWMP_LOG(INFO,"Extract upload stats");

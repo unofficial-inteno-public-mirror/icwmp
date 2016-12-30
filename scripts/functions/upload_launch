@@ -32,7 +32,7 @@ upload_launch() {
 		if [ -z "${url##*$substr*}" ] ;then
 			url=`echo $url |sed -e "s/ftp:\/\/\([^:]*\):\([^:]*\)@\(.*\)/-u \1:\2 ftp:\/\/\3/"`
 		fi
-		res=$(curl --fail --connect-timeout ${CONNECTION_TIMEOUT} -T ${UPLOAD_DIAGNOSTIC_FILE} $url 2>&1)		
+		res=$(curl --fail --disable-epsv --ftp-pasv --connect-timeout ${CONNECTION_TIMEOUT} -T ${UPLOAD_DIAGNOSTIC_FILE} $url 2>&1)		
 		ba=`echo "$res" | grep "Couldn't resolve host"`
 		[ -n "$ba" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_InitConnectionFailed; kill $PID 2> /dev/null; return; }
 		stc=`echo "$res" | grep "Access denied"`
@@ -42,7 +42,7 @@ upload_launch() {
 		stc=`echo "$res" |tail -n 1 |awk '{print $(NF-11)}'`
 		[ "$stc" != "100" ] && { $UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Error_TransferFailed; kill $PID 2> /dev/null; return; }
 	fi
-	$UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Complete
+	$UCI_SET_VARSTATE cwmp.@uploaddiagnostic[0].DiagnosticState=Completed
 	rm ${UPLOAD_DIAGNOSTIC_FILE} &>/dev/null
 	sleep 3 
 	local pids=`ps | grep $PID`
