@@ -390,6 +390,14 @@ int delete_wan_wanipconnectiondevice(struct dmctx *ctx)
 	return 0;
 }
 
+int delete_wan_wanpppconnectiondevice(struct dmctx *ctx)
+{
+	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
+
+	dmuci_delete_by_section(wandcdevargs->wandevsection, NULL, NULL);
+	return 0;
+}
+
 int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 {
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
@@ -2212,7 +2220,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 	dmastrcat(&linker, "linker_interface:", section_name(wandcprotoargs->wancprotosection));
 	if (proto == WAN_PROTO_IP) {
 		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", idev, iwan, iconp) {
-			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANIPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanipconnectiondevice, linker, idev, iwan, iconp);
 			DMPARAM("Alias", ctx, "1", get_wan_ip_con_alias, set_wan_ip_con_alias, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Enable", ctx, "1", get_interface_enable_wanproto, set_interface_enable_wanproto, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_mng_status, NULL, NULL, 0, 1, UNDEF, NULL);
@@ -2240,7 +2248,7 @@ inline int entry_wandevice_wanprotocolconnection_instance(struct dmctx *ctx, cha
 	}
 	else if (proto == WAN_PROTO_PPP) {
 		IF_MATCH(ctx, DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", idev, iwan, iconp) {
-			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanconnectiondevice, linker, idev, iwan, iconp);
+			DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.%s.WANPPPConnection.%s.", ctx, "1", notif_permission, NULL, delete_wan_wanpppconnectiondevice, linker, idev, iwan, iconp);
 			DMPARAM("Alias", ctx, "1", get_wan_ppp_con_alias, set_wan_ppp_con_alias, NULL, 0, 1, UNDEF, NULL);
 			DMPARAM("Enable", ctx, "1", get_interface_enable_wanproto, set_interface_enable_wanproto, "xsd:boolean", 0, 1, UNDEF, NULL);
 			DMPARAM("ConnectionStatus", ctx, "0", get_wan_device_ppp_status, NULL, NULL, 0, 1, UNDEF, NULL);
