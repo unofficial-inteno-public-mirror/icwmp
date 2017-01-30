@@ -49,6 +49,7 @@
 #include "downloaddiagnostic.h"
 #include "uploaddiagnostic.h"
 #include "x_inteno_se_dropbear.h"
+#include "x_inteno_se_buttons.h"
 
 static char *get_parameter_notification (struct dmctx *ctx, char *param);
 static int remove_parameter_notification(char *param);
@@ -132,6 +133,7 @@ struct prefix_method prefix_methods[] = {
 	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
 	{ DMROOT"X_INTENO_SE_Owsd.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_OWSD },
 	{ DMROOT"X_INTENO_SE_Dropbear.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_DROPBEAR },
+	{ DMROOT"X_INTENO_SE_Buttons.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_BUTTONS },
 #ifdef XMPP_ENABLE
 	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
 #endif

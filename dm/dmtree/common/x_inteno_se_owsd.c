@@ -146,7 +146,6 @@ int set_x_inteno_owsd_listenobj_interface(char *refparam, struct dmctx *ctx, int
 
 int get_x_inteno_owsd_listenobj_ipv6_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_owsd_listenargs.owsd_listensection, "ipv6", value);
 	if ((*value)[0] != '\0' && (*value)[0] == 'o' && (*value)[1] == 'n' ) {
