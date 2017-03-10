@@ -25,7 +25,9 @@
 #include "ubus.h"
 #include "ipping.h"
 #include "xmpp_cr.h"
+#ifdef XMPP_ENABLE
 #include <strophe.h>
+#endif
 #include <unistd.h>
  
 struct cwmp         	cwmp_main = {0};
