@@ -1257,6 +1257,7 @@ int get_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, char **v
 	struct uci_section *s;
 	
 	*value = "";
+	
 	uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
 		dmuci_get_value_by_section_string(s, "speed", value);
 	}
@@ -1317,7 +1318,7 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 
 int get_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, char **value)
 {
-	char *tmp;
+	char *tmp = "";
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 	struct uci_section *s;
 
