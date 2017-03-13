@@ -157,7 +157,7 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 	*value = "";
 	int i = 0, nbrlines = 4;
 	char buff[512], *msg = NULL;
-	int len = klogctl(3 , buff, 512); /* read ring buffer */
+	int len = klogctl(3 , buff, sizeof(buff) - 1); /* read ring buffer */
 	if (len <= 0)
 		return 0;
 	buff[len] = '\0';
