@@ -653,7 +653,7 @@ int set_dhcp_leasetime(char *refparam, struct dmctx *ctx, int action, char *valu
 		case VALUESET:
 			uci_foreach_option_eq("dhcp", "dhcp", "interface", cur_dhcp_args.interface, s) {
 				int val = atoi(value);
-				sprintf(buf, "%dm%ds", val/60, val%60);
+				sprintf(buf, "%ds", val);
 				dmuci_set_value_by_section(s, "leasetime",  buf);
 				break;
 			}
@@ -666,7 +666,7 @@ int get_dhcp_interface(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
 	linker = dmstrdup(cur_dhcp_args.interface);
-	adm_entry_get_linker_param(DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(DMROOT"IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	dmfree(linker);
