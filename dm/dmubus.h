@@ -50,6 +50,12 @@ struct ubus_msg {
 struct ubus_arg{
 	char *key;
 	char *val;
+	int type;
+};
+
+enum ubus_args_enum {
+	String,
+	Integer,
 };
 
 extern struct dmubus_ctx dmubus_ctx;

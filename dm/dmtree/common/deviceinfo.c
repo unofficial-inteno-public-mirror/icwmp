@@ -220,6 +220,27 @@ int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
+int get_device_memory_bank(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+
+	dmubus_call("router", "memory_bank", UBUS_ARGS{{}}, 0, &res);
+	DM_ASSERT(res, *value = "");
+	json_select(res, "code", 0, NULL, value, NULL);
+	return 0;
+}
+
+int set_device_memory_bank(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmubus_call_set("router", "memory_bank", UBUS_ARGS{{"bank", value, Integer}}, 1);
+			return 0;
+	}
+	return 0;
+}
 int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *catv;
@@ -409,6 +430,7 @@ DMLEAF tDeviceInfoParams[] = {
 {"ProvisioningCode", &DMWRITE, DMT_STRING, get_device_provisioningcode, set_device_provisioningcode, &DMFINFRM, &DMACTIVE},
 {"X_INTENO_SE_BaseMacAddr", &DMREAD, DMT_STRING, get_base_mac_addr, NULL, NULL, NULL},
 {"X_INTENO_SE_CATVEnabled", &DMWRITE, DMT_STRING, get_catv_enabled, set_device_catvenabled, NULL, NULL},
+{"X_INTENO_SE_MemoryBank", &DMWRITE, DMT_STRING, get_device_memory_bank, set_device_memory_bank, NULL, NULL},
 {0}
 };
 
