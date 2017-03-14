@@ -309,9 +309,7 @@ int get_br_enable(char *refparam, struct dmctx *ctx, char **value)
 int get_br_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	char *br_name;
-	dmastrcat(&br_name, "br-", section_name(cur_bridging_args.bridge_sec));
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", br_name}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1, &res);
 	DM_ASSERT(res, *value = "Disabled");
 	json_select(res, "up", 0, NULL, value, NULL);
 	if(strcmp(*value,"true") == 0)
@@ -322,7 +320,6 @@ int get_br_status(char *refparam, struct dmctx *ctx, char **value)
 int set_br_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	char *br_name;
 	int error = string_to_bool(value, &b);
 	switch (action) {
 		case VALUECHECK:
@@ -330,12 +327,11 @@ int set_br_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			dmastrcat(&br_name, "br-", section_name(cur_bridging_args.bridge_sec));
 			if (b) {
-				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", br_name}}, 1);
+				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1);
 			}
 			else {
-				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", br_name}}, 1);
+				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1);
 			}
 			return 0;
 	}
