@@ -26,6 +26,7 @@ void bkp_session_save()
 	fp = fopen(CWMP_BKP_FILE, "w");
 	mxmlSaveFile(bkp_tree, fp, MXML_NO_CALLBACK);
 	fclose(fp);
+	sync();
 	pthread_mutex_unlock (&mutex_backup_session);
 }
 
