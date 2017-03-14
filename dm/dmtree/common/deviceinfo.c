@@ -331,8 +331,8 @@ int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
 				*value = dmstrdup(date);
 			}
 		}
-	}
 	closedir (dir);
+	}
 	return 0;
 }
 
@@ -381,9 +381,12 @@ int check_file_dir(char *name)
 	struct dirent *d_file;
 	if ((dir = opendir ("/etc/config/")) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
-			if(strcmp(name, d_file->d_name) == 0)
+			if(strcmp(name, d_file->d_name) == 0) {
+				closedir(dir);
 				return 1;
+			}
 		}
+	closedir(dir);
 	}
 	return 0;
 }
@@ -450,8 +453,8 @@ int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, cha
 				continue;
 			update_section_list("dmmap","vcf", "name", 1, d_file->d_name, NULL, NULL, "backup_restore", "1");
 		}
+		closedir (dir);
 	}
-	closedir (dir);
 	uci_foreach_sections("dmmap", "vcf", s) {
 		dmuci_get_value_by_section_string(s, "name", &name);
 		if(del_sec) {
