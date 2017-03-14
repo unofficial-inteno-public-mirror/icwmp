@@ -1597,12 +1597,13 @@ int set_wlan_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 
 int get_wlan_status (char *refparam, struct dmctx *ctx, char **value)
 {
+	char *tmp;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 
-	dmuci_get_value_by_section_string(wlanargs->lwlansection, "disabled", value);
-	if ((*value)[0] == '\0' || (*value)[0] == '0')
+	dmuci_get_value_by_section_string(wlanargs->device_section, "disabled", &tmp);
+	if (tmp[0] == '0' || tmp[0] == '\0')
 		*value = "Up";
-	else
+	else if (tmp[0] == '1')
 		*value = "Disabled";		
 	return 0;
 }
