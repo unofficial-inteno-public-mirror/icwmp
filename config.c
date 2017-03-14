@@ -17,6 +17,9 @@
 #include <uci.h>
 #include <unistd.h>
 #include <sys/file.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "cwmp.h"
 #include "backupSession.h"
 #include "xml.h"
