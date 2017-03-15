@@ -53,6 +53,7 @@ http_client_init(struct cwmp *cwmp)
 {
 	char *dhcp_dis;
 	char *acs_var_stat;
+	unsigned char buf[sizeof(struct in6_addr)];
 	uci_get_value(UCI_DHCP_DISCOVERY_PATH, &dhcp_dis);
 #ifdef HTTP_CURL
 	if (dhcp_dis && cwmp->retry_count_session > 0 && strcmp(dhcp_dis, "enable") == 0) {
@@ -108,6 +109,14 @@ http_client_init(struct cwmp *cwmp)
 		return -1;
 #endif /* HTTP_ZSTREAM */
 
+char *ip = NULL;
+curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
+curl_easy_setopt(curl, CURLOPT_TIMEOUT, HTTP_TIMEOUT);
+curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ip);
+curl_easy_perform(curl);
+int tmp = inet_pton(AF_INET, ip, buf);
+ip_version = (tmp == 1) ? 4 : 6;
 	return 0;
 }
 
@@ -157,6 +166,7 @@ http_get_response(void *buffer, size_t size, size_t rxed, char **msg_in)
 int
 http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_in)
 {
+	 unsigned char buf[sizeof(struct in6_addr)];
 #ifdef HTTP_CURL
 	CURLcode res;
 	long http_code = 0;
@@ -181,6 +191,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, HTTP_TIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 
+	curl_easy_setopt(curl, CURLOPT_NOBODY, 0);
 	switch (cwmp->conf.compression) {
 		case COMP_NONE:
 			break;
@@ -240,8 +251,13 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
         if (!ip_acs || strcmp(ip_acs, ip) != 0) {
             FREE(ip_acs);
             ip_acs = strdup(ip);
+            int tmp = inet_pton(AF_INET, ip, buf);
+            if (tmp == 1)
+            	tmp = 0;
+            else
+            	tmp = inet_pton(AF_INET6, ip, buf);
             external_init();
-            external_simple("allow_cr_ip", ip_acs);
+            external_simple("allow_cr_ip", ip_acs, tmp);
             external_exit();
         }
     }
@@ -390,14 +406,14 @@ http_done:
 
 void http_server_init(void)
 {
-    struct sockaddr_in server = {0};
+    struct sockaddr_in6 server = {0};
     unsigned short cr_port;
 
     for(;;) {
         cr_port =  (unsigned short) (cwmp_main.conf.connection_request_port);
         unsigned short i = (DEFAULT_CONNECTION_REQUEST_PORT == cr_port)? 1 : 0;
         //Create socket
-        cwmp_main.cr_socket_desc = socket(AF_INET , SOCK_STREAM , 0);
+        cwmp_main.cr_socket_desc = socket(AF_INET6 , SOCK_STREAM , 0);
         if (cwmp_main.cr_socket_desc == -1)
         {
             CWMP_LOG (ERROR,"Could not open server socket for Connection Requests, Error no is : %d, Error description is : %s", errno, strerror(errno));
@@ -414,11 +430,11 @@ void http_server_init(void)
         }
 
         //Prepare the sockaddr_in structure
-        server.sin_family = AF_INET;
-        server.sin_addr.s_addr = INADDR_ANY;
+      	server.sin6_family = AF_INET6;
+        server.sin6_addr=in6addr_any;
 		
         for(;;i++) {
-            server.sin_port = htons(cr_port);
+            server.sin6_port = htons(cr_port);
             //Bind
             if( bind(cwmp_main.cr_socket_desc,(struct sockaddr *)&server , sizeof(server)) < 0)
             {
@@ -446,7 +462,7 @@ void http_server_listen(void)
     static time_t restrict_start_time = 0;
     time_t current_time;
     bool service_available;
-    struct sockaddr_in client;
+    struct sockaddr_in6 client;
 
     //Listen
     listen(cwmp_main.cr_socket_desc , 3);

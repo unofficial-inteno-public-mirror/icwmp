@@ -231,7 +231,7 @@ int external_handle_action(int (*external_handler)(char *msg))
 	return 0;
 }
 
-int external_simple(char *command, char *arg)
+int external_simple(char *command, char *arg, int c)
 {
 	DD(INFO,"executing %s request", command);
 
@@ -243,6 +243,7 @@ int external_simple(char *command, char *arg)
 	json_obj_out_add(json_obj_out, "command", command);
 	if (arg) json_obj_out_add(json_obj_out, "arg", arg);
 
+	if (c)  json_obj_out_add(json_obj_out, "ipv6", "1");
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);

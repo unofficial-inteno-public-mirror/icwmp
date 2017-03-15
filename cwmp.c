@@ -32,6 +32,7 @@
  
 struct cwmp         	cwmp_main = {0};
 
+int ip_version = 4;
 LIST_HEAD(list_execute_end_session);
 
 int dm_add_end_session(void(*function)(int a, void *d), int action, void *data)
@@ -533,7 +534,7 @@ int run_session_end_func (struct session *session)
 	{
 		CWMP_LOG (INFO,"Executing external commands: end session request");
 		external_init();
-		external_simple("end_session", NULL);
+		external_simple("end_session", NULL, 0);
 		external_exit();
 	}
 
@@ -541,7 +542,7 @@ int run_session_end_func (struct session *session)
 	{
 		CWMP_LOG (INFO,"Executing factory reset: end session request");
 		external_init();
-		external_simple("factory_reset", NULL);
+		external_simple("factory_reset", NULL, 0);
 		external_exit();
 		exit(EXIT_SUCCESS);
 	}
@@ -556,7 +557,7 @@ int run_session_end_func (struct session *session)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");
 		external_init();
-		external_simple("reboot", NULL);
+		external_simple("reboot", NULL, 0);
 		external_exit();
 		exit(EXIT_SUCCESS);
 	}

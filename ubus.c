@@ -329,6 +329,9 @@ ubus_init(struct cwmp *cwmp)
 		CWMP_LOG(ERROR,"netlink initialization failed");
 	}
 
+	if (netlink_init_v6()) {
+		CWMP_LOG(ERROR,"netlink initialization failed");
+	}
 	ctx = ubus_connect(cwmp->conf.ubus_socket);
 	if (!ctx) return -1;
 
