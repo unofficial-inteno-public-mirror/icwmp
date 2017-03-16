@@ -593,6 +593,22 @@ int get_global_config(struct config *conf)
     {
         FREE(conf->acs_ssl_capath);
     }
+    if((error = uci_get_value(UCI_HTTPS_SSL_CAPATH,&value)) == CWMP_OK)
+    {
+        if(value != NULL)
+        {
+            if (conf->https_ssl_capath != NULL)
+            {
+                free(conf->https_ssl_capath);
+            }
+            conf->https_ssl_capath = value;
+            value = NULL;
+        }
+    }
+    else
+    {
+        FREE(conf->https_ssl_capath);
+    }
     if((error = uci_get_value(UCI_ACS_INSECURE_ENABLE,&value)) == CWMP_OK)
     {
         if(value != NULL)

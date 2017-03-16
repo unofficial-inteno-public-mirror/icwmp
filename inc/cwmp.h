@@ -51,6 +51,7 @@
 #define UCI_ACS_PASSWD_PATH					"cwmp.acs.passwd"
 #define UCI_ACS_PARAMETERKEY_PATH			"cwmp.acs.ParameterKey"
 #define UCI_ACS_SSL_CAPATH					"cwmp.acs.ssl_capath"
+#define UCI_HTTPS_SSL_CAPATH				"cwmp.acs.https_ssl_capath"
 #define UCI_ACS_INSECURE_ENABLE				"cwmp.acs.insecure_enable" 
 #define UCI_ACS_SSL_VERSION			 		"cwmp.acs.ssl_version"
 #define UCI_ACS_COMPRESSION                 "cwmp.acs.compression"
@@ -176,6 +177,7 @@ typedef struct config {
     char                                *acs_passwd;
 	char								*acs_ssl_capath;
     char 								*acs_ssl_version;
+	char								*https_ssl_capath;
     char                                *cpe_userid;
     char                                *cpe_passwd;
     char                                *dhcp_url_path;

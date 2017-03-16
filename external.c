@@ -29,6 +29,7 @@
 
 #include "external.h"
 #include "cwmp.h"
+#include "xml.h"
 #include "log.h"
 
 #include <stdarg.h>
@@ -254,10 +255,13 @@ int external_simple(char *command, char *arg, int c)
 int external_download(char *url, char *size, char *type, char *user, char *pass, time_t c)
 {
 	DD(INFO,"executing download url '%s'", url);
-
-	json_object *json_obj_out;
 	char *id = NULL;
+	char *cert_path = NULL;
+	struct config *conf;
+	json_object *json_obj_out;
+	struct cwmp   *cwmp = &cwmp_main;
 
+	conf = &(cwmp->conf);
 	if (c) asprintf(&id, "%ld", c);
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
@@ -269,6 +273,7 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	if(user) json_obj_out_add(json_obj_out, "user", user);
 	if(pass) json_obj_out_add(json_obj_out, "pass", pass);
 	if(id) json_obj_out_add(json_obj_out, "ids", id);
+	if(cert_path) json_obj_out_add(json_obj_out, "cert_path", cert_path);
 	external_write_pipe_output(json_object_to_json_string(json_obj_out));
 
 	json_object_put(json_obj_out);
