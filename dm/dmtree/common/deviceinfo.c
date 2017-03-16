@@ -214,7 +214,7 @@ int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
 {	
 	json_object *res;
 	
-	dmubus_call("router", "info", UBUS_ARGS{{}}, 0, &res);
+	dmubus_call("router.system", "info", UBUS_ARGS{{}}, 0, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "system", 0, "basemac", value, NULL);		
 	return 0;
@@ -224,7 +224,7 @@ int get_device_memory_bank(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
 
-	dmubus_call("router", "memory_bank", UBUS_ARGS{{}}, 0, &res);
+	dmubus_call("router.system", "memory_bank", UBUS_ARGS{{}}, 0, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "code", 0, NULL, value, NULL);
 	return 0;
@@ -236,7 +236,7 @@ int set_device_memory_bank(char *refparam, struct dmctx *ctx, int action, char *
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmubus_call_set("router", "memory_bank", UBUS_ARGS{{"bank", value, Integer}}, 1);
+			dmubus_call_set("router.system", "memory_bank", UBUS_ARGS{{"bank", value, Integer}}, 1);
 			return 0;
 	}
 	return 0;

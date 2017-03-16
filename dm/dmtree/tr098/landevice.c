@@ -939,7 +939,7 @@ int get_lan_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
-	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
 		json_select(val, "network", 0, NULL, &network, NULL);
@@ -1450,7 +1450,7 @@ char *get_interface_type(char *mac, char *ndev)
 				else {
 					p = wunit;
 				}
-				dmubus_call("router", "sta", UBUS_ARGS{{"vif", p}}, 1, &res);
+				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p}}, 1, &res);
 				if(res) {
 					json_object_object_foreach(res, key, val) {
 						json_select(val, "assoc_mac", 0, NULL, &value, NULL);
@@ -2382,7 +2382,7 @@ int get_wlan_total_associations(char *refparam, struct dmctx *ctx, char **value)
 	char *wunit, buf[8];
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
 		if (strstr(key, "sta-"))
@@ -2731,7 +2731,7 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strstr(encryption, "psk")) {
 		sprintf(sta_pki, "sta-%d", wlanargs->pki);
-		dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+		dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, sta_pki, -1, "macaddr", value, NULL);
 		return 0;
@@ -2808,7 +2808,7 @@ int set_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, int action, cha
 			else if (value[0] == '5' || value[0] == '2')
 			{
 				uci_foreach_sections("wireless", "wifi-device", s) {
-					dmubus_call("router", "wl", UBUS_ARGS{{"vif", section_name(s)}}, 1, &res);
+					dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", section_name(s)}}, 1, &res);
 					if(res)
 					{
 						json_select(res, "frequency", 0, NULL, &freq, NULL);
@@ -3277,7 +3277,7 @@ inline int browseWlanConfigurationInst(struct dmctx *dmctx, DMNODE *parent_node,
 				sprintf(buf, "%s.%d", wiface, wlctl_num);
 				wiface = buf;
 			}
-			dmubus_call("router", "wl", UBUS_ARGS{{"vif", wiface}}, 1, &res);
+			dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wiface}}, 1, &res);
 			init_ldargs_wlan(dmctx, sss, wlctl_num, ss, section_name(ss), wiface, res, 0);
 			wlctl_num++;
 			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwlan);
@@ -3330,7 +3330,7 @@ inline int browseassociateddeviceInst(struct dmctx *dmctx, DMNODE *parent_node, 
 	char *idx, *idx_last = NULL;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)dmctx->args;
 
-	dmubus_call("router", "sta", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 	if (res) {
 		char *value;
 		json_object_object_foreach(res, key, wl_client_obj) {
@@ -3349,7 +3349,7 @@ inline int browselandevice_hostInst(struct dmctx *dmctx, DMNODE *parent_node, vo
 	char *network;
 	char *idx, *idx_last = NULL;
 	int id = 0;
-	dmubus_call("router", "clients", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
 		json_object_object_foreach(res, key, client_obj) {
 			json_select(client_obj, "network", 0, NULL, &network, NULL);

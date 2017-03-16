@@ -91,7 +91,7 @@ int get_dsl_status(char *refparam, struct dmctx *ctx, char **value)
 
 	*value = "Down";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "status", &status, NULL);
 		if (strcmp(status, "Showtime") == 0)
@@ -109,7 +109,7 @@ int get_dsl_link_status(char *refparam, struct dmctx *ctx, char **value)
 
 	*value = "NoSignal";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "status", &status, NULL);
 		if (strcmp(status, "Showtime") == 0)
@@ -138,7 +138,7 @@ int get_dsl_link_standard_inuse(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res = NULL;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "mode", &mode, NULL);
 		if (strcmp(mode, "G.Dmt") == 0)
@@ -163,7 +163,7 @@ int check_dsl_link_type()
 {
 	char *mode, *status, *trafic;
 	json_object *res = NULL;
-	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 	DM_ASSERT(res, status = "");
 	json_select(res, "dslstats", -1, "status", &status, NULL);
 	json_select(res, "dslstats", -1, "traffic", &trafic, NULL);
@@ -183,7 +183,7 @@ int get_vdsl_link_profile_inuse(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res = NULL;
 	*value = "";
 	if (strcmp(cur_dsl_line_args.type, "vdsl") == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "mode", &mode, NULL);
 		*value = mode;
@@ -198,7 +198,7 @@ int get_dsl_link_downstreammaxrate(char *refparam, struct dmctx *ctx, char **val
 	json_object *sub_obj = NULL;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);
 		if (sub_obj)
@@ -218,7 +218,7 @@ int get_dsl_link_downstreamattenuation(char *refparam, struct dmctx *ctx, char *
 	json_object *res = NULL;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_down_x100", &attn_down_x100, NULL);
 		if (attn_down_x100) {
@@ -235,7 +235,7 @@ int get_dsl_link_downstreamnoisemargin(char *refparam, struct dmctx *ctx, char *
 	json_object *res;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_down_x100", &snr_down_x100, NULL);
 		if (snr_down_x100) {
@@ -253,7 +253,7 @@ int get_dsl_link_upstreammaxrate(char *refparam, struct dmctx *ctx, char **value
 	json_object *sub_obj = NULL;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);
 		if (sub_obj)
@@ -271,7 +271,7 @@ int get_dsl_link_upstreamattenuation(char *refparam, struct dmctx *ctx, char **v
 	json_object *res = NULL;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_up_x100", &attn_up_x100, NULL);
 		if (attn_up_x100) {
@@ -288,7 +288,7 @@ int get_dsl_link_upstreamnoisemargin(char *refparam, struct dmctx *ctx, char **v
 	json_object *res;
 	*value = "";
 	if(strcmp(cur_dsl_line_args.type, "adsl") == 0 && check_dsl_link_type() == 1 || strcmp(cur_dsl_line_args.type, "vdsl") == 0 && check_dsl_link_type() == 0) {
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_up_x100", &snr_up_x100, NULL);
 		if (snr_up_x100) {
@@ -304,7 +304,7 @@ int get_dsl_link_upstreamnoisemargin(char *refparam, struct dmctx *ctx, char **v
 
 int get_channel_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
-	adm_entry_get_linker_param(DMROOT".DSL.Line.", cur_dsl_line_args.type, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(DMROOT"DSL.Line.", cur_dsl_line_args.type, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -316,7 +316,7 @@ int get_dsl_channel_downstreamcurrrate(char *refparam, struct dmctx *ctx, char *
 	json_object *res = NULL;
 	json_object *sub_obj= NULL;
 
-	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);
 	if (sub_obj)
@@ -335,7 +335,7 @@ int get_dsl_channel_upstreamcurrrate(char *refparam, struct dmctx *ctx, char **v
 	json_object *res = NULL;
 	json_object *sub_obj = NULL;
 
-	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);
 	if (sub_obj)
@@ -533,7 +533,7 @@ int set_atm_link_type(char *refparam, struct dmctx *ctx, int action, char *value
 int get_atm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker = "adsl";
-	adm_entry_get_linker_param(DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(DMROOT"DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -542,7 +542,7 @@ int get_atm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 int get_ptm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker = "vdsl";
-	adm_entry_get_linker_param(DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(DMROOT"DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;

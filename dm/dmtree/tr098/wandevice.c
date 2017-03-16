@@ -470,7 +470,7 @@ int get_wan_device_wan_dsl_traffic()
 	int dsl = WAN_DSL_NODSL;
 	char *str;
 
-	dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+	dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 	if (!res) 
 		return dsl;
 	json_select(res, "dslstats", -1, "traffic", &str, NULL);
@@ -522,7 +522,7 @@ int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx 
 			return 0;
 		}
 
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "status", &status, NULL);
 		if (strcmp(status, "Showtime") == 0)
@@ -557,7 +557,7 @@ int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, stru
 			*value = "";
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "dslstats", -1, "mode", &mode, NULL);
 		if (strcmp(mode, "G.Dmt") == 0)
@@ -640,7 +640,7 @@ int get_wan_device_dsl_downstreamcurrrate(char *refparam, struct dmctx *ctx, cha
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);	
 		if (sub_obj)
@@ -670,7 +670,7 @@ int get_wan_device_dsl_downstreammaxrate(char *refparam, struct dmctx *ctx, char
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);	
 		if (sub_obj)
@@ -699,7 +699,7 @@ int get_wan_device_dsl_downstreamattenuation(char *refparam, struct dmctx *ctx, 
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_down_x100", &attn_down_x100, NULL);
 		if (attn_down_x100) {
@@ -725,7 +725,7 @@ int get_wan_device_dsl_downstreamnoisemargin(char *refparam, struct dmctx *ctx, 
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_down_x100", &snr_down_x100, NULL);
 		if (snr_down_x100) {
@@ -752,7 +752,7 @@ int get_wan_device_dsl_upstreamcurrrate(char *refparam, struct dmctx *ctx, char 
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);	
 		if (sub_obj)
@@ -780,7 +780,7 @@ int get_wan_device_dsl_upstreammaxrate(char *refparam, struct dmctx *ctx, char *
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, NULL, NULL, &sub_obj);
 		if (sub_obj)
@@ -807,7 +807,7 @@ int get_wan_device_dsl_upstreamattenuation(char *refparam, struct dmctx *ctx, ch
 			!(wandargs->instance == WAN_INST_PTM && dsl == WAN_DSL_VDSL) ) {
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "attn_up_x100", &attn_up_x100, NULL);
 		if (attn_up_x100) {
@@ -835,7 +835,7 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 			*value = "0";
 			return 0;
 		}
-		dmubus_call("router", "dslstats", UBUS_ARGS{}, 0, &res);
+		dmubus_call("router.dsl", "stats", UBUS_ARGS{}, 0, &res);
 		DM_ASSERT(res, *value = "0");
 		json_select(res, "dslstats", -1, "snr_up_x100", &snr_up_x100, NULL);
 		if (snr_up_x100) {
