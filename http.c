@@ -237,7 +237,7 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);		
 	}
-		
+	curl_easy_setopt(curl, CURLOPT_INTERFACE, cwmp->conf.interface);
 	*msg_in = (char *) calloc (1, sizeof(char));
 
 	res = curl_easy_perform(curl);
