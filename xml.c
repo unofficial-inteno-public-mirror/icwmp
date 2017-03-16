@@ -3126,7 +3126,6 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									res->complete_time = strdup(operation_endTime);
 									res->fault = error;								
 								}
-								external_exit();
 								break;
 							case DU_UNINSTALL:
 								dm_ctx_init(&dmctx);
@@ -3181,7 +3180,6 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									res->fault = error;
 									dm_ctx_clean(&dmctx);							
 								}
-								external_exit();
 								break;
 							case DU_UPDATE:
 								if ((p->url)[0] != '\0' && (p->uuid)[0] != '\0') {
@@ -3289,11 +3287,11 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 								res->resolved = 1; //TO CHECK
 								operation_endTime = mix_get_time();
 								res->complete_time = strdup(operation_endTime);
-								res->fault = error;									
-								external_exit();
+								res->fault = error;
 								break;
 						}												
 					}
+					external_exit();
 					bkp_session_delete_change_du_state(pchange_du_state);
 					bkp_session_save();
 					bkp_session_insert_du_state_change_complete(pdu_state_change_complete);
