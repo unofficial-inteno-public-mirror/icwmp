@@ -15,6 +15,7 @@ config 'cwmp' 'acs'
 	#­ possible configs interval :[1000:65535]
 	option retry_interval_multiplier '2000'
 	option https_ssl_capath ''
+	option ipv6_enable '0'
 config 'cwmp' 'cpe'
 	option 'interface' 'eth0.1'
 	option 'default_wan_interface' 'wan'

@@ -620,6 +620,17 @@ int get_global_config(struct config *conf)
             value = NULL;
         }
     }
+    if((error = uci_get_value(UCI_ACS_IPV6_ENABLE,&value)) == CWMP_OK)
+	{
+		if(value != NULL)
+		{
+			if ((strcasecmp(value,"true")==0) || (strcmp(value,"1")==0))
+			{
+				conf->ipv6_enable = true;
+			}
+			value = NULL;
+		}
+	}
     if((error = uci_get_value(UCI_ACS_SSL_VERSION,&value)) == CWMP_OK)
     {
         if(value != NULL)
