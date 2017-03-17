@@ -368,6 +368,19 @@ int set_radio_operating_standard(char *refparam, struct dmctx *ctx, int action, 
 		return 0;
 }
 
+int get_radio_possible_channels(char *refparam, struct dmctx *ctx, char **value)
+{
+	json_object *res;
+	char *wlan_name;
+	
+	*value = "";
+	wlan_name = section_name(cur_wifi_radio_args.wifi_radio_sec);
+	dmubus_call("router.wireless", "radios", UBUS_ARGS{}, 0, &res);
+	if(res)
+		json_select(res, wlan_name, -1, "channels", value, NULL);
+	return 0;
+}
+
 int get_radio_channel(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
@@ -1069,6 +1082,7 @@ DMLEAF tWifiRadioParams[] = {
 {"ChannelsInUse", &DMREAD, DMT_STRING, get_radio_channel, NULL, NULL, NULL},
 {"Channel", &DMWRITE, DMT_UNINT, get_radio_channel, set_radio_channel, NULL, NULL},
 {"AutoChannelEnable", &DMWRITE, DMT_BOOL, get_radio_auto_channel_enable, set_radio_auto_channel_enable, NULL, NULL},
+{"PossibleChannels", &DMREAD, DMT_STRING, get_radio_possible_channels, NULL, NULL, NULL},
 {0}
 };
 
