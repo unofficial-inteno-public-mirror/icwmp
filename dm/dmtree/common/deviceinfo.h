@@ -16,6 +16,7 @@
 
 #define BASE_MAC_ADDR "/proc/nvram/BaseMacAddr"
 #define UPTIME "/proc/uptime"
+#define DEFAULT_CONFIG_DIR "/etc/config/"
 extern DMLEAF tDeviceInfoParams[];
 extern DMLEAF tCatTvParams[];
 extern DMLEAF tVcfParams[];

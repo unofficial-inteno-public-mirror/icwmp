@@ -343,10 +343,10 @@ int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
 	char date[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
 	*value = "";
 	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "name", value);
-	if ((dir = opendir ("/etc/config/")) != NULL) {
+	if ((dir = opendir (DEFAULT_CONFIG_DIR)) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(strcmp(*value, d_file->d_name) == 0) {
-				sprintf(path, "/etc/config/%s", d_file->d_name);
+				sprintf(path, "DEFAULT_CONFIG_DIR%s", d_file->d_name);
 				stat(path, &attr);
 				strftime(date, sizeof date, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&attr.st_mtime));
 				*value = dmstrdup(date);
@@ -400,7 +400,7 @@ int check_file_dir(char *name)
 {
 	DIR *dir;
 	struct dirent *d_file;
-	if ((dir = opendir ("/etc/config/")) != NULL) {
+	if ((dir = opendir (DEFAULT_CONFIG_DIR)) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(strcmp(name, d_file->d_name) == 0) {
 				closedir(dir);
@@ -469,7 +469,7 @@ int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, cha
 	DIR *dir;
 	struct dirent *d_file;
 
-	if ((dir = opendir ("/etc/config/")) != NULL) {
+	if ((dir = opendir (DEFAULT_CONFIG_DIR)) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(d_file->d_name[0] == '.')
 				continue;
