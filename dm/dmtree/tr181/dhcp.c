@@ -666,7 +666,7 @@ int get_dhcp_interface(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
 	linker = dmstrdup(cur_dhcp_args.interface);
-	adm_entry_get_linker_param(DMROOT"IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	dmfree(linker);

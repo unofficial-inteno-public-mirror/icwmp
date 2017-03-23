@@ -37,6 +37,7 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
 	../dm/dmtree/common/softwaremodules.c			\
+	../dm/dmtree/common/x_inteno_se_owsd.c			\
 	../dm/dmtree/common/x_inteno_syslog.c			
 
 if XMPP_ENABLE

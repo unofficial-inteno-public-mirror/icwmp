@@ -27,6 +27,7 @@
 #include "x_inteno_syslog.h"
 #include "softwaremodules.h"
 #include "xmpp.h"
+#include "x_inteno_se_owsd.h"
 #ifdef DATAMODEL_TR181
 #include "ip.h"
 #include "ethernet.h"
@@ -75,6 +76,8 @@ DMOBJ tRootObj[] = {
 {"X_INTENO_SE_PowerManagement", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_PowerManagementParam, NULL},
 {"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
 {"SoftwareModules", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tSoftwareModulesObj, NULL, NULL},
+{"X_INTENO_SE_Owsd", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,XIntenoSeOwsdObj, XIntenoSeOwsdParams, NULL},
+
 #ifdef DATAMODEL_TR098
 {"LANDevice", &DMREAD, NULL, NULL, NULL, browselandeviceInst, &DMFINFRM, &DMNONE,tLANDeviceObj, tLANDeviceParam, NULL},
 {"WANDevice", &DMREAD, NULL, NULL, NULL, browsewandeviceInst, &DMFINFRM, &DMWANConnectionDevicenotif,tWANDeviceObj, tWANDeviceParam, NULL},
