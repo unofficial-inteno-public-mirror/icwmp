@@ -1786,7 +1786,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 			}
 			else if(strcmp(value, "11i") == 0) {
 				value = "psk2";
-				if (!strstr(encryption, "psk")){
+				if (!strstr(encryption, "psk2")){
 					reset_wlan(wlanargs->lwlansection);
 					char *gnw = get_nvram_wpakey();
 					dmuci_set_value_by_section(wlanargs->lwlansection, "key", gnw);
@@ -1799,7 +1799,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 			}
 			else if(strcmp(value, "WPAand11i") == 0) {
 				value = "mixed-psk";
-				if (!strstr(encryption, "psk")){
+				if (!strstr(encryption, "mixed-psk")){
 					reset_wlan(wlanargs->lwlansection);
 					char *gnw = get_nvram_wpakey();
 					dmuci_set_value_by_section(wlanargs->lwlansection, "key", gnw);
