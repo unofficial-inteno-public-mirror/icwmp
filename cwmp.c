@@ -23,7 +23,7 @@
 #include "external.h"
 #include "dmentry.h"
 #include "ubus.h"
-#include "ipping.h"
+#include "diagnostic.h"
 #include "xmpp_cr.h"
 #ifdef XMPP_ENABLE
 #include <strophe.h>
@@ -553,6 +553,17 @@ int run_session_end_func (struct session *session)
 		cwmp_ip_ping_diagnostic();        		
 	}
 	
+	if (session->end_session & END_SESSION_DOWNLOAD_DIAGNOSTIC)
+	{
+		CWMP_LOG (INFO,"Executing download diagnostic: end session request");
+		cwmp_start_diagnostic(DOWNLOAD_DIAGNOSTIC);
+	}
+
+	if (session->end_session & END_SESSION_UPLOAD_DIAGNOSTIC)
+	{
+		CWMP_LOG (INFO,"Executing upload diagnostic: end session request");
+		cwmp_start_diagnostic(UPLOAD_DIAGNOSTIC);
+	}
 	if (session->end_session & END_SESSION_REBOOT)
 	{
 		CWMP_LOG (INFO,"Executing Reboot: end session request");

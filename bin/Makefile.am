@@ -5,7 +5,7 @@ icwmpd_SOURCES =			\
 	../backupSession.c		\
 	../config.c				\
 	../cwmp.c				\
-	../ipping.c				\
+	../diagnostic.c			\
 	../digestauth.c			\
 	../event.c				\
 	../external.c			\
@@ -30,9 +30,9 @@ icwmpd_SOURCES =			\
 	../dm/dmtree/common/root.c						\
 	../dm/dmtree/common/times.c						\
 	../dm/dmtree/common/upnp.c						\
-	../dm/dmtree/common/voice_services.c 			\
-	../dm/dmtree/common/x_inteno_se_ice.c 			\
-	../dm/dmtree/common/x_inteno_se_igmp.c 			\
+	../dm/dmtree/common/voice_services.c			\
+	../dm/dmtree/common/x_inteno_se_ice.c			\
+	../dm/dmtree/common/x_inteno_se_igmp.c			\
 	../dm/dmtree/common/x_inteno_se_ipacccfg.c		\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
@@ -47,25 +47,27 @@ icwmpd_SOURCES += 									\
 endif
 
 if DATAMODEL_TR098
-icwmpd_SOURCES += 						\	
-	../dm/dmtree/tr098/lan_interfaces.c			\
+icwmpd_SOURCES += 									\
+	../dm/dmtree/tr098/lan_interfaces.c				\
 	../dm/dmtree/tr098/landevice.c					\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
-	../dm/dmtree/tr098/wandevice.c 				\
+	../dm/dmtree/tr098/wandevice.c					\
 	../dm/dmtree/tr098/x_inteno_se_wifi.c			\
-	../dm/dmtree/tr098/ippingdiagnostics.c			\	
+	../dm/dmtree/tr098/ippingdiagnostics.c			\
+	../dm/dmtree/tr098/downloaddiagnostic.c			\
+	../dm/dmtree/tr098/uploaddiagnostic.c			\
 	../dm/dmtree/tr098/layer_3_forwarding.c	
 endif
 if DATAMODEL_TR181
-icwmpd_SOURCES +=								\
-	../dm/dmtree/tr181/wifi.c					\
+icwmpd_SOURCES +=									\
+	../dm/dmtree/tr181/wifi.c						\
 	../dm/dmtree/tr181/ethernet.c					\
-	../dm/dmtree/tr181/wan.c					\
+	../dm/dmtree/tr181/wan.c						\
 	../dm/dmtree/tr181/bridging.c					\
-	../dm/dmtree/tr181/hosts.c					\
+	../dm/dmtree/tr181/hosts.c						\
 	../dm/dmtree/tr181/dhcp.c						\
 	../dm/dmtree/tr181/ip.c							\
-	../dm/dmtree/tr181/ppp.c					\
+	../dm/dmtree/tr181/ppp.c						\
 	../dm/dmtree/tr181/nat.c						\
 	../dm/dmtree/tr181/routing.c
 endif
@@ -94,6 +96,7 @@ icwmpd_LDADD =			\
 	$(LIBUBUS_LIBS)		\
 	$(MICROXML_LIBS)	\
 	$(LIBCURL_LIBS)		\
+	$(LIBTRACE_LIBS)	\
 	$(LIBZSTREAM_LIBS)	\
 	$(LIBPTHREAD_LIBS)	\
 	$(LCRYPTO_LIBS)		\

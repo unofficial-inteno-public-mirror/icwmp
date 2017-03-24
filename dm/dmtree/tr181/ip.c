@@ -18,7 +18,7 @@
 #include "dmcwmp.h"
 #include "dmcommon.h"
 #include "ip.h"
-#include "ipping.h"
+#include "diagnostic.h"
 
 struct ip_args cur_ip_args = {0};
 struct ipv4_args cur_ipv4_args = {0};

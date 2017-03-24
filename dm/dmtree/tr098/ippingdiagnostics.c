@@ -13,14 +13,13 @@
 #include <uci.h>
 #include <stdio.h>
 #include "cwmp.h"
-#include "ipping.h" 
+#include "diagnostic.h"
 #include "ubus.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "ippingdiagnostics.h"
-#include "ipping.h"
 
 static inline char *ipping_get(char *option, char *def)
 {
@@ -47,7 +46,7 @@ int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, 
 		case VALUESET:
 			if (strcmp(value, "Requested") == 0) {
 				IPPING_STOP
-				curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+				curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 				if(!curr_section)
 				{
 					dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
@@ -75,7 +74,7 @@ int set_ipping_interface(char *refparam, struct dmctx *ctx, int action, char *va
 			return 0;
 		case VALUESET:
 			//IPPING_STOP
-			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
@@ -102,7 +101,7 @@ int set_ipping_host(char *refparam, struct dmctx *ctx, int action, char *value)
 			return 0;
 		case VALUESET:
 			IPPING_STOP
-			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
@@ -129,7 +128,7 @@ int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, int action, 
 			return 0;
 		case VALUESET:			
 			IPPING_STOP
-			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
@@ -157,7 +156,7 @@ int set_ipping_timeout(char *refparam, struct dmctx *ctx, int action, char *valu
 			return 0;
 		case VALUESET:
 			IPPING_STOP
-			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
@@ -184,7 +183,7 @@ int set_ipping_block_size(char *refparam, struct dmctx *ctx, int action, char *v
 			return 0;
 		case VALUESET:
 			IPPING_STOP
-			curr_section = dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "ippingdiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", "ippingdiagnostic", &curr_section, &tmp);
