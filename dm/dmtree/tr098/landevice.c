@@ -171,7 +171,7 @@ end:
 void update_dhcp_conf_end(int i, void *data)
 {
 		json_object *res;
-		char *ipaddr, *mask, *start, *dhcp_name, *limit, buf[16];
+		char *ipaddr, *mask, *start, *dhcp_name, *limit, buf[16], buf_start[16] = "";
 		struct dhcp_param *dhcp_param = (struct dhcp_param *)(data);
 		struct dmctx dmctx = {0};
 
@@ -201,12 +201,17 @@ void update_dhcp_conf_end(int i, void *data)
 		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "start", &start);
 		if (!start || start[0] == '\0')
 			dmuci_get_option_value_string("dhcp", dhcp_name, "start", &start);
+		else
+			ipcalc_rev_start(ipaddr, mask, start, buf_start);
 		if (!start || start[0] == '\0')
 			goto end;
 		dmuci_get_varstate_string("cwmp", dhcp_param->state_sec, "limit", &limit);
-		dmuci_set_varstate_value("cwmp", dhcp_param->state_sec, "limit", "");
+		if (buf_start[0] != '\0')
+			ipcalc_rev_end(ipaddr, mask, buf_start, limit, buf);
+		else
 		ipcalc_rev_end(ipaddr, mask, start, limit, buf);
 		dmuci_set_value("dhcp", dhcp_name, "limit", buf);
+		dmuci_set_varstate_value("cwmp", dhcp_param->state_sec, "limit", "");
 		dmuci_commit();
 		dm_ctx_clean(&dmctx);
 end:
