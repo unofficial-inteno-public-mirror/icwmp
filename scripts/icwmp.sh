@@ -234,10 +234,12 @@ handle_action() {
 	if [ "$action" = "download" ]; then
 		local fault_code="9000"
 		if [ "$__arg4" = "" -o "$__arg5" = "" ];then
-			if [ "$__arg7" != ""];then
-				wget -O /tmp/icwmp_download --ca-directory=$__arg7 "$__arg1" 2> /dev/null
+			if [ "$__arg7" != "" ];then
+				curl --fail --capath $__arg7 -o /tmp/icwmp_download $__arg1 2> /dev/null				
+			elif [ ${__arg1:0:8} = https:// ];then
+				wget -O /tmp/icwmp_download --no-check-certificate "$__arg1" 2> /dev/null				
 			else
-			wget -O /tmp/icwmp_download "$__arg1" 2> /dev/null
+				wget -O /tmp/icwmp_download "$__arg1" 2> /dev/null	
 			fi
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE
@@ -246,10 +248,12 @@ handle_action() {
 			fi
 		else
 			local url=`echo "$__arg1" | sed -e "s@://@://$__arg4:$__arg5\@@g"`
-			if [ "$__arg7" == ""];then
-			wget -O /tmp/icwmp_download "$url" 2> /dev/null
+			if [ "$__arg7" != "" ];then
+				curl --fail --capath $__arg7 -u $__arg4:$__arg5 -o /tmp/icwmp_download $__arg1 2> /dev/null
+			elif [ ${__arg1:0:8} = https:// ];then
+				wget -O /tmp/icwmp_download --no-check-certificate "$url" 2> /dev/null
 			else
-				wget -O /tmp/icwmp_download --ca-directory=$__arg7 "$url" 2> /dev/null
+				wget -O /tmp/icwmp_download "$url" 2> /dev/null
 			fi
 			if [ "$?" != "0" ];then
 				let fault_code=$fault_code+$FAULT_CPE_DOWNLOAD_FAILURE

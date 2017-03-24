@@ -260,8 +260,17 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 	struct config *conf;
 	json_object *json_obj_out;
 	struct cwmp   *cwmp = &cwmp_main;
-
+	
 	conf = &(cwmp->conf);
+	if (strncmp(url,DOWNLOAD_PROTOCOL_HTTPS,strlen(DOWNLOAD_PROTOCOL_HTTPS)) == 0)
+	{
+		if(conf->https_ssl_capath)
+			cert_path = strdup(conf->https_ssl_capath);
+		else
+			cert_path = NULL;
+	}
+	if(cert_path)
+		CWMP_LOG(DEBUG,"https certif path %s", cert_path);
 	if (c) asprintf(&id, "%ld", c);
 	/* send data to the script */
 	json_obj_out = json_object_new_object();
@@ -278,6 +287,10 @@ int external_download(char *url, char *size, char *type, char *user, char *pass,
 
 	json_object_put(json_obj_out);
 
+	if(cert_path)
+		free(cert_path);
+	if(id)
+		free(id);
 	return 0;
 }
 
