@@ -230,7 +230,7 @@ int get_ipping_max_response_time(char *refparam, struct dmctx *ctx, char **value
 DMLEAF tIPPingDiagnosticsParam[] = {
 {"DiagnosticsState", &DMWRITE, DMT_STRING, get_ipping_diagnostics_state, NULL, NULL, NULL},
 {"Interface", &DMWRITE, DMT_STRING, get_ipping_interface, set_ipping_interface, NULL, NULL},
-{"Host", &DMWRITE, DMT_STRING, set_ipping_host, set_ipping_host, NULL, NULL},
+{"Host", &DMWRITE, DMT_STRING, get_ipping_host, set_ipping_host, NULL, NULL},
 {"NumberOfRepetitions", &DMWRITE, DMT_UNINT, get_ipping_repetition_number, set_ipping_repetition_number, NULL, NULL},
 {"Timeout", &DMWRITE, DMT_UNINT, get_ipping_timeout, set_ipping_timeout, NULL, NULL},
 {"DataBlockSize", &DMWRITE, DMT_UNINT, get_ipping_block_size, set_ipping_block_size, NULL, NULL},

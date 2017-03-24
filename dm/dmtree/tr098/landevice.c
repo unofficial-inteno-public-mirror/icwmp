@@ -571,7 +571,7 @@ int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, ch
 			}
 			if (!s) return 0;
 			dmasprintf(&s_name, "@%s[0]", lan_name);
-			curr_section = dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", lan_name, &curr_section, &tmp);
@@ -612,7 +612,7 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 			if (!s) return 0;
 
 			dmasprintf(&s_name, "@%s[0]", lan_name);
-			curr_section = dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+			curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", lan_name, NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 			if(!curr_section)
 			{
 				dmuci_add_state_section("cwmp", lan_name, &curr_section, &tmp);
