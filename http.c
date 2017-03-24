@@ -186,6 +186,12 @@ http_send_message(struct cwmp *cwmp, char *msg_out, int msg_out_len,char **msg_i
 	http_c.header_list = curl_slist_append(http_c.header_list, expect_header);
 	if (!http_c.header_list) return -1;
 # endif /* ACS_FUSION */
+	if (cwmp->conf.http_disable_100continue)
+	{
+		char *expect_header = "Expect:";
+		http_c.header_list = curl_slist_append(http_c.header_list, expect_header);
+		if (!http_c.header_list) return -1;
+	}
 	curl_easy_setopt(curl, CURLOPT_URL, http_c.url);
 	curl_easy_setopt(curl, CURLOPT_USERNAME, cwmp->conf.acs_userid);
 	curl_easy_setopt(curl, CURLOPT_PASSWORD, cwmp->conf.acs_passwd);
