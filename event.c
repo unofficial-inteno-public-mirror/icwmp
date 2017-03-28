@@ -130,6 +130,11 @@ void add_dm_parameter_tolist(struct list_head *head, char *param_name, char *par
 		dm_parameter = list_entry(ilist, struct dm_parameter, list);
 		cmp = strcmp(dm_parameter->name, param_name);
 		if (cmp == 0) {
+			if (param_data && strcmp(dm_parameter->data, param_data) != 0)
+			{
+				free(dm_parameter->data);
+				dm_parameter->data = strdup(param_data);
+			}
 			return;
 		} else if (cmp > 0) {
 			break;
