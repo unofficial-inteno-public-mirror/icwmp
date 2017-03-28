@@ -406,7 +406,7 @@ int event_remove_all_event_container(struct session *session, int rem_from)
     return CWMP_OK;
 }
 
-int event_remove_noretry_event_container(struct session *session)
+int event_remove_noretry_event_container(struct session *session, struct cwmp *cwmp)
 {
 	struct event_container              *event_container;
 	struct dm_parameter                 *dm_parameter;
@@ -420,7 +420,11 @@ int event_remove_noretry_event_container(struct session *session)
 			free_dm_parameter_all_fromlist(&(event_container->head_dm_parameter));
 			list_del(&(event_container->list));
 			free (event_container);
-		}        
+		}
+		if (EVENT_CONST[event_container->code].CODE[0] == '6')
+		{
+			cwmp->cwmp_cr_event = 1;
+		}
 	}
 	return CWMP_OK;
 }
