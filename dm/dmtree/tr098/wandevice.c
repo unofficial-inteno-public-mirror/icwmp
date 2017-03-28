@@ -359,22 +359,18 @@ int delete_wan_wanconnectiondevice(struct dmctx *ctx, unsigned char del_action)
 
 int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 {
-	struct uci_section *s;
-	char *value;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
-	int found = 0;
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
+	
 	instance = get_last_instance_proto("network", "interface", "conipinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_IP);
-	if (!instance)
-		instance = "1";
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, instance );
+	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1); //MEM WILL BE FREED IN DMMEMCLEAN
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, *instancepara);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "dhcp");
-	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1); //MEM WILL BE FREED IN DMMEMCLEAN
 	dmuci_set_value("network", sname, "conipinstance", *instancepara);
 	return 0;
 }
@@ -409,23 +405,18 @@ int delete_wan_wanipconnectiondevice(struct dmctx *ctx, unsigned char del_action
 
 int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 {
-	struct uci_section *s;
-	char *value;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
-	int found = 0;
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
 
 	instance = get_last_instance_proto("network", "interface", "conpppinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_PPP);
-	if (!instance)
-		instance = "0";
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, instance);
+	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, *instancepara);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
 	dmuci_set_value("network", sname, "proto", "pppoe");
-	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1);
 	dmuci_set_value("network", sname, "conpppinstance", *instancepara); //MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
