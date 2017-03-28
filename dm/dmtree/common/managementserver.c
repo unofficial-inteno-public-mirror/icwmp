@@ -79,19 +79,6 @@ int get_management_server_key(char *refparam, struct dmctx *ctx, char **value)
 	return 0;	
 }
 
-int set_management_server_key(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	switch (action) {
-		case VALUECHECK:			
-			return 0;
-		case VALUESET:
-			dmuci_set_value("cwmp", "acs", "ParameterKey", value);
-			cwmp_set_end_session(END_SESSION_RELOAD);
-			return 0;
-	}
-	return 0;	
-}
-
 int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_enable", value);
@@ -414,7 +401,7 @@ DMLEAF tManagementServerParams[] = {
 {"URL", &DMWRITE, DMT_STRING, get_management_server_url, set_management_server_url, NULL, NULL},
 {"Username", &DMWRITE, DMT_STRING, get_management_server_username, set_management_server_username, NULL, NULL},
 {"Password", &DMWRITE, DMT_STRING, get_empty, set_management_server_passwd, NULL, NULL},
-{"ParameterKey", &DMWRITE, DMT_STRING, get_management_server_key, set_management_server_key, &DMFINFRM, &DMNONE},
+{"ParameterKey", &DMREAD, DMT_STRING, get_management_server_key, NULL, &DMFINFRM, &DMNONE},
 {"PeriodicInformEnable", &DMWRITE, DMT_BOOL, get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable,  NULL, NULL},
 {"PeriodicInformInterval", &DMWRITE, DMT_UNINT, get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, NULL, NULL},
 {"PeriodicInformTime", &DMWRITE, DMT_TIME, get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, NULL, NULL},
