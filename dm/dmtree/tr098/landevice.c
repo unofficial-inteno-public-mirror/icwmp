@@ -2782,9 +2782,9 @@ int get_wmm_enabled(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_value_by_section_string(wlanargs->device_section, "wmm", value);
 	string_to_bool(*value, &b);
 		if (b)
-			*value = "Enabled";
+			*value = "1";
 		else
-			*value = "Disabled";
+			*value = "0";
 
 	return 0;
 }
