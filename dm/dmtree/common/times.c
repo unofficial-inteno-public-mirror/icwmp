@@ -122,6 +122,7 @@ int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *valu
 	struct uci_list *v;
 	struct uci_element *e;
 	int count = 0;
+	int i = 0;
 	char *ntp[5] = {0};
 	
 	switch (action) {
@@ -131,20 +132,29 @@ int set_time_ntpserver(char *refparam, struct dmctx *ctx, int action, char *valu
 			dmuci_get_option_value_list("system", "ntp", "server", &v);
 			if (v) {
 				uci_foreach_element(v, e) {
+					if ((count+1) == index) {
+						ntp[count] = dmstrdup(value);
+					}
+					else {
 					ntp[count] = dmstrdup(e->name);
-					count++;					
+				}
+					count++;
+					if (count > 4)
+						break;
 				}
 			}
+			if (index > count) {
+				ntp[index-1] = dmstrdup(value);
+				count = index;
+				}
+			for (i = 0; i < 5; i++) {
+				if (ntp[i] && (*ntp[i]) != '\0')
+					count = i+1;
+			}
 			dmuci_delete("system", "ntp", "server", NULL);
-			for (count = 0; count < 5; count++) {
-				if ((count + 1) == index) {
-					dmuci_add_list_value("system", "ntp", "server", value);
-					dmfree(ntp[count]);
-				}
-				else {
-					dmuci_add_list_value("system", "ntp", "server", ntp[count] ? ntp[count] : "none");
-					dmfree(ntp[count]);
-				}
+			for (i = 0; i < count; i++) {
+				dmuci_add_list_value("system", "ntp", "server", ntp[i] ? ntp[i] : "");
+				dmfree(ntp[i]);
 			}
 			return 0;
 	}
