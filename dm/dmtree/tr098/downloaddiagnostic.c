@@ -6,7 +6,7 @@
  *
  *	Copyright (C) 2012-2016 PIVA SOFTWARE (www.pivasoftware.com)
  *		Author: Imen Bhiri <imen.bhiri@pivasoftware.com>
- *		Author: Anis Ellouze <anis.ellouze@pivasoftware.com>
+ *		Author: Feten Besbes <feten.besbes@pivasoftware.com>
  */
 
 #include <ctype.h>
@@ -63,7 +63,7 @@ int set_download_diagnostics_state(char *refparam, struct dmctx *ctx, int action
 		case VALUESET:
 			if (strcmp(value, "Requested") == 0) {
 				DOWNLOAD_DIAGNOSTIC_STOP
-				curr_section = (struct uci_section *)dmuci_walk_state_section("cwmp", "downloaddiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
+				curr_section = dmuci_walk_state_section("cwmp", "downloaddiagnostic", NULL, NULL, CMP_SECTION, NULL, NULL, GET_FIRST_SECTION);
 				if(!curr_section)
 				{
 					dmuci_add_state_section("cwmp", "downloaddiagnostic", &curr_section, &tmp);
