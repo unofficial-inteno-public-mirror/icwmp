@@ -379,7 +379,7 @@ int get_vcf_alias(char *refparam, struct dmctx *ctx, char **value)
 
 int lookup_vcf_name(char *instance, char **value) {
 	struct uci_section *s = NULL;
-	uci_foreach_option_eq("dmmap", "vcf", "vcf_instance", instance, s) {
+	uci_path_foreach_option_eq(icwmpd, DMMAP, "vcf", "vcf_instance", instance, s) {
 		dmuci_get_value_by_section_string(s, "name", value);
 	}
 	return 0;
@@ -445,14 +445,14 @@ inline int entry_method_device_info_vcf(struct dmctx *ctx)
 		while ((d_file = readdir (dir)) != NULL) {
 			if(d_file->d_name[0] == '.')
 				continue;
-			update_section_list("dmmap","vcf", "name", 1, d_file->d_name, NULL, NULL, "backup_restore", "1");
+			update_section_list(DMMAP,"vcf", "name", 1, d_file->d_name, NULL, NULL, "backup_restore", "1");
 		}
 		closedir (dir);
 	}
-	uci_foreach_sections("dmmap", "vcf", s) {
+	uci_path_foreach_sections(icwmpd, DMMAP, "vcf", s) {
 		dmuci_get_value_by_section_string(s, "name", &name);
 		if(del_sec) {
-			dmuci_delete_by_section(del_sec, NULL, NULL);
+			DMUCI_DELETE_BY_SECTION(icwmpd, del_sec, NULL, NULL);
 			del_sec = NULL;
 		}
 		if (check_file_dir(name) == 0) {
@@ -460,12 +460,11 @@ inline int entry_method_device_info_vcf(struct dmctx *ctx)
 			continue;
 		}
 		init_args_vcf(ctx, s);
-		vcf = handle_update_instance(1, ctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
+		vcf = handle_update_instance(1, ctx, &vcf_last, update_instance_alias_icwmpd, 3, s, "vcf_instance", "vcf_alias");
 		SUBENTRY(entry_method_device_info_vcf_instance, ctx, vcf);
 	}
 	if(del_sec)
-		dmuci_delete_by_section(del_sec, NULL, NULL);
-
+		DMUCI_DELETE_BY_SECTION(icwmpd, del_sec, NULL, NULL);
 	return 0;
 }
 

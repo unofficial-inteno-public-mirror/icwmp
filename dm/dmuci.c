@@ -23,6 +23,7 @@
 struct uci_context *uci_ctx;
 struct uci_context *uci_varstate_ctx;
 
+NEW_UCI_PATH(icwmpd, ICWMPD_CONFIG)
 struct uci_section *dmuci_walk_state_section (char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk) {
 	struct uci_section *s = NULL;
 	struct uci_element *e, *m;
@@ -415,6 +416,7 @@ char *dmuci_set_value(char *package, char *section, char *option, char *value)
 	if (uci_set(uci_ctx, &ptr) != UCI_OK) {
 		return "";
 	}
+	uci_save(uci_ctx, ptr.p);
 	if (ptr.o) {
 		return dmstrdup(ptr.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
@@ -453,6 +455,7 @@ int dmuci_add_list_value(char *package, char *section, char *option, char *value
 	if (uci_add_list(uci_ctx, &ptr) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, ptr.p);
 	return 0;
 }
 
@@ -467,6 +470,7 @@ int dmuci_del_list_value(char *package, char *section, char *option, char *value
 	if (uci_del_list(uci_ctx, &ptr) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, ptr.p);
 	return 0;
 }
 
@@ -485,6 +489,7 @@ int dmuci_add_section(char *package, char *stype, struct uci_section **s, char *
 		return -1;
 	}
 
+	uci_save(uci_ctx, ptr.p);
 	*value = dmstrdup((*s)->e.name); // MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
@@ -517,6 +522,7 @@ int dmuci_delete(char *package, char *section, char *option, char *value)
 	if (uci_delete(uci_ctx, &ptr) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, ptr.p);
 	return 0;
 }
 
@@ -634,6 +640,7 @@ char *dmuci_set_value_by_section(struct uci_section *s, char *option, char *valu
 		return "";
 
 	if (up.o) {
+		uci_save(uci_ctx, up.p);
 		return dmstrdup(up.o->v.string); // MEM WILL BE FREED IN DMMEMCLEAN
 	}
 	return "";
@@ -650,6 +657,7 @@ int dmuci_delete_by_section(struct uci_section *s, char *option, char *value)
 	if (uci_delete(uci_ctx, &up) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, up.p);
 	return 0;
 }
 

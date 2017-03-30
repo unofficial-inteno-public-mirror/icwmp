@@ -206,7 +206,50 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt)
 	argv[1]= inst_opt;
 	argv[2]= "";
 
+	instance = update_instance_alias_icwmpd(0, &last_inst, argv);
+	return instance;
+}
+
+char *update_instance_icwmpd(struct uci_section *s, char *last_inst, char *inst_opt)
+{
+	char *instance;
+	void *argv[3];
+
+	argv[0]= s;
+	argv[1]= inst_opt;
+	argv[2]= "";
 	instance = update_instance_alias(0, &last_inst, argv);
+	return instance;
+}
+
+char *update_instance_alias_icwmpd(int action, char **last_inst , void *argv[])
+{
+	char *instance;
+	char *alias;
+	char buf[64] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+
+	dmuci_get_value_by_section_string(s, inst_opt, &instance);
+	if (instance[0] == '\0') {
+		if (*last_inst == NULL)
+			sprintf(buf, "%d", 1);
+		else
+			sprintf(buf, "%d", atoi(*last_inst)+1);
+		instance = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	}
 	return instance;
 }
 
@@ -262,8 +305,17 @@ char *get_last_instance(char *package, char *section, char *opt_inst)
 {
 	struct uci_section *s;
 	char *inst = NULL;
-	uci_foreach_sections(package, section, s) {
-		inst = update_instance(s, inst, opt_inst);
+	if (package == DMMAP)
+	{
+		uci_path_foreach_sections(icwmpd, package, section, s) {
+			inst = update_instance_icwmpd(s, inst, opt_inst);
+		}
+	}
+	else
+	{
+		uci_foreach_sections(package, section, s) {
+			inst = update_instance(s, inst, opt_inst);
+		}
 	}
 	return inst;
 }

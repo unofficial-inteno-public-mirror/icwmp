@@ -230,6 +230,8 @@ extern struct list_head list_enabled_notify;
 extern struct list_head list_enabled_lw_notify;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
+char *update_instance_icwmpd(struct uci_section *s, char *last_inst, char *inst_opt);
+char *update_instance_alias_icwmpd(int action, char **last_inst , void *argv[]);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
 char *update_instance_without_section(int action, char **last_inst, void *argv[]);
 int get_empty(char *refparam, struct dmctx *args, char **value);
@@ -259,6 +261,7 @@ void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
 char *get_last_instance(char *package, char *section, char *opt_inst);
+char *get_last_instance_icwmpd(char *package, char *section, char *opt_inst);
 char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
 char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_inst, char * (*up_instance)(int action, char **last_inst, void *argv[]), int argc, ...);
 

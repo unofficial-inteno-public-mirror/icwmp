@@ -139,10 +139,10 @@ inline int entry_laninterface_lan(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 
 	laninterface_lookup(args->eths, &(args->eths_size));
-	update_section_list("dmmap","lan_port", NULL, args->eths_size, NULL, NULL, NULL, NULL, NULL);
-	uci_foreach_sections("dmmap", "lan_port", s) {
+	update_section_list(DMMAP,"lan_port", NULL, args->eths_size, NULL, NULL, NULL, NULL, NULL);
+	uci_path_foreach_sections(icwmpd, "dmmap", "lan_port", s) {
 		init_lan_interface_args(args->eths[i++], s);
-		ei =  handle_update_instance(1, ctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
+		ei =  handle_update_instance(1, ctx, &ei_last, update_instance_alias_icwmpd, 3, s, "lanportinstance", "lanportalias");
 		SUBENTRY(entry_laninterface_lan_instance, ctx, ei);
 	}
 	return 0;

@@ -80,7 +80,7 @@ int get_br_port_last_inst(char *br_key)
 	struct uci_section *s;
 	int buf[BUF_SIZE] = {0};
 
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", br_key, s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "bridge_port", "bridge_key", br_key, s) {
 		dmuci_get_value_by_section_string(s, "bridge_port_instance", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -124,6 +124,45 @@ int get_br_port_last_inst(char *br_key)
 	}
 	max =  max_array(buf, BUF_SIZE);
 	return max;
+}
+
+char *br_port_update_instance_alias_icwmpd(int action, char **last_inst, void *argv[])
+{
+	char *instance, *alias;
+	char buf[8] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+	bool *find_max = (bool *) argv[3];
+	char *br_key = (char *) argv[4];
+
+	dmuci_get_value_by_section_string(s, inst_opt, &instance);
+	if (instance[0] == '\0') {
+		if (*find_max) {
+			int m = get_br_port_last_inst(br_key);
+			sprintf(buf, "%d", m+1);
+			*find_max = false;
+		}
+		else if (last_inst == NULL) {
+			sprintf(buf, "%d", 1);
+		}
+		else {
+			sprintf(buf, "%d", atoi(*last_inst)+1);
+		}
+		instance = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	}
+	return instance;
 }
 
 char *br_port_update_instance_alias(int action, char **last_inst, void *argv[])
@@ -636,7 +675,7 @@ int add_bridge(struct dmctx *ctx, char **instance)
 	dmuci_set_value("network", bridge_name, "type", "bridge");
 	dmuci_set_value("network", bridge_name, "proto", "dhcp");
 	*instance = dmuci_set_value("network", bridge_name, "bridge_instance", ib);
-	update_section_list("dmmap","bridge_port", "bridge_key", 1, ib, "mg_port", "true", "bridge_port_instance", "1");
+	update_section_list(DMMAP,"bridge_port", "bridge_key", 1, ib, "mg_port", "true", "bridge_port_instance", "1");
 	return 0;
 }
 
@@ -648,13 +687,13 @@ int delete_bridge(struct dmctx *ctx)
 	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "bridge_instance", "");
 	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ip_int_instance", "");
 	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ipv4_instance", "");
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
 		if (prev_s)
-			dmuci_delete_by_section(prev_s, NULL, NULL);
+			DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
 		prev_s = s;
 	}
 	if (prev_s)
-		dmuci_delete_by_section(prev_s, NULL, NULL);
+		DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
 	reset_br_port( cur_bridging_args.br_key);
 	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", "");
 	return 0;
@@ -773,7 +812,7 @@ int delete_br_port(struct dmctx *ctx)
 	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "br_port_linker", linker, vlan_s) {
 		dmuci_set_value_by_section(vlan_s, "br_port_linker", "");
 	}
-	dmuci_delete_by_section(cur_bridging_port_args.bridge_port_sec, NULL, NULL);//del port from dmmap
+	DMUCI_DELETE_BY_SECTION(icwmpd, cur_bridging_port_args.bridge_port_sec, NULL, NULL);//del port from dmmap
 	dmfree(linker);
 	return 0;
 }
@@ -782,13 +821,13 @@ int delete_br_port(struct dmctx *ctx)
 int delete_br_port_all(struct dmctx *ctx)
 {
 	struct uci_section *s = NULL, *prev_s = NULL;
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "bridge_port", "bridge_key", cur_bridging_args.br_key, s) {
 		if (prev_s)
-			dmuci_delete_by_section(prev_s, NULL, NULL);
+			DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
 		prev_s = s;
 	}
 	if (prev_s)
-		dmuci_delete_by_section(prev_s, NULL, NULL);
+		DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
 	reset_br_port(cur_bridging_args.br_key);
 	dmuci_set_value_by_section(cur_bridging_args.bridge_sec, "ifname", ""); // TO CHECK
 	return 0;
@@ -941,7 +980,7 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 				//remove old br_port param to the new one
 				update_port_parameters(linker, br_key, br_pt_inst, mg_port);
 				if(cur_bridging_port_args.ifname[0] == '\0')
-					dmuci_delete_by_section(cur_bridging_port_args.bridge_port_sec, NULL, NULL);// delete dmmap section after remove br_port_instance to adequate config
+					DMUCI_DELETE_BY_SECTION(icwmpd, cur_bridging_port_args.bridge_port_sec, NULL, NULL);// delete dmmap section after remove br_port_instance to adequate config
 			}
 		return 0;
 	}
@@ -1084,10 +1123,10 @@ inline int entry_bridge_port_sub(struct dmctx *ctx, char *ifname, char *idev, ch
 	char *ifname_dup, *pch, *spch, *vid;
 	bool find_max = true;
 
-	update_section_list("dmmap","bridge_port", "bridge_key", 1, last_br_inst, "mg_port", "true", "bridge_port_instance", "1");
-	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", last_br_inst, new_port) {
+	update_section_list(DMMAP,"bridge_port", "bridge_key", 1, last_br_inst, "mg_port", "true", "bridge_port_instance", "1");
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "bridge_port", "bridge_key", last_br_inst, new_port) {
 		init_bridging_port_args(ctx, new_port, false, "");
-		port = handle_update_instance(2, ctx, &port_last, br_port_update_instance_alias, 5, new_port, "bridge_port_instance", "bridge_port_alias",  &find_max, last_br_inst);
+		port = handle_update_instance(2, ctx, &port_last, br_port_update_instance_alias_icwmpd, 5, new_port, "bridge_port_instance", "bridge_port_alias",  &find_max, last_br_inst);
 		SUBENTRY(entry_bridge_port_instance, ctx, idev, port);
 	}
 	if (ifname[0] == '\0')

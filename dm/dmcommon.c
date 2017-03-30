@@ -444,27 +444,55 @@ void update_section_option_list(char *config, char *section, char *option, char 
 	if (name[0] == '\0') {
 		add_sec = false;
 	}
-	uci_foreach_option_eq(config, section, option_2, val_2, s) {
-		dmuci_get_value_by_section_string(s, option, &baseifname);
-		if (!strstr(name, baseifname))
-		{
-			//delete section if baseifname  does not belong to ifname
-			if (prev_s) {
-				dmuci_delete_by_section(prev_s, NULL, NULL);
+		if (config == DMMAP)
+	{
+		uci_path_foreach_option_eq(icwmpd, config, section, option_2, val_2, s) {
+			dmuci_get_value_by_section_string(s, option, &baseifname);
+			if (!strstr(name, baseifname))
+			{
+				//delete section if baseifname  does not belong to ifname
+				if (prev_s) {
+					DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
+				}
+				prev_s = s;
+			} else if (strstr(name, baseifname) && (strcmp(baseifname,val) ==0)) {
+				//do not add baseifname if exist
+				add_sec = false;
 			}
-			prev_s = s;
-		} else if (strstr(name, baseifname) && (strcmp(baseifname,val) ==0)) {
-			//do not add baseifname if exist
-			add_sec = false;
+		}
+		if (prev_s) {
+			DMUCI_DELETE_BY_SECTION(icwmpd, prev_s, NULL, NULL);
+		}
+		if (add_sec) {
+			DMUCI_ADD_SECTION(icwmpd, config, section, &s, &add_value);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, option, val);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, option_2, val_2);
 		}
 	}
-	if (prev_s) {
-		dmuci_delete_by_section(prev_s, NULL, NULL);
-	}
-	if (add_sec) {
-		dmuci_add_section(config, section, &s, &add_value);
-		dmuci_set_value_by_section(s, option, val);
-		dmuci_set_value_by_section(s, option_2, val_2);
+	else
+	{
+		uci_foreach_option_eq(config, section, option_2, val_2, s) {
+			dmuci_get_value_by_section_string(s, option, &baseifname);
+			if (!strstr(name, baseifname))
+			{
+				//delete section if baseifname  does not belong to ifname
+				if (prev_s) {
+					dmuci_delete_by_section(prev_s, NULL, NULL);
+				}
+				prev_s = s;
+			} else if (strstr(name, baseifname) && (strcmp(baseifname,val) ==0)) {
+				//do not add baseifname if exist
+				add_sec = false;
+			}
+		}
+		if (prev_s) {
+			dmuci_delete_by_section(prev_s, NULL, NULL);
+		}
+		if (add_sec) {
+			dmuci_add_section(config, section, &s, &add_value);
+			dmuci_set_value_by_section(s, option, val);
+			dmuci_set_value_by_section(s, option_2, val_2);
+		}
 	}
 }
 
@@ -475,21 +503,44 @@ void update_section_list(char *config, char *section, char *option, int number, 
 	struct uci_section *s = NULL;
 	int i = 0;
 
-	if (option) {
-		uci_foreach_option_eq(config, section, option, filter, s) {
-			return;
+	if (config == DMMAP)
+	{
+		printf("update_section_list dmmap config %s section %s\n", config, section);
+		if (option) {
+			uci_path_foreach_option_eq(icwmpd, config, section, option, filter, s) {
+				return;
+			}
+		} else {
+			uci_path_foreach_sections(icwmpd, config, section, s) {
+				return;
+			}
 		}
-	} else {
-		uci_foreach_sections(config, section, s) {
-			return;
+		while (i < number) {
+			DMUCI_ADD_SECTION(icwmpd, config, section, &s, &add_value);
+			if (option)DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, option, filter);
+			if (option1)DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, option1, val1);
+			if (option2)DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, option2, val2);
+			i++;
 		}
 	}
-	while (i < number) {
-		dmuci_add_section(config, section, &s, &add_value);
-		if (option)dmuci_set_value_by_section(s, option, filter);
-		if (option1)dmuci_set_value_by_section(s, option1, val1);
-		if (option2)dmuci_set_value_by_section(s, option2, val2);
-		i++;
+	else
+	{
+		if (option) {
+			uci_foreach_option_eq(config, section, option, filter, s) {
+				return;
+			}
+		} else {
+			uci_foreach_sections(config, section, s) {
+				return;
+			}
+		}
+		while (i < number) {
+			dmuci_add_section(config, section, &s, &add_value);
+			if (option)dmuci_set_value_by_section(s, option, filter);
+			if (option1)dmuci_set_value_by_section(s, option1, val1);
+			if (option2)dmuci_set_value_by_section(s, option2, val2);
+			i++;
+		}
 	}
 }
 

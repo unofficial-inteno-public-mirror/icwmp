@@ -158,7 +158,7 @@ int get_forwarding_last_inst()
 			break;
 		dsinst = tmp;
 	}
-	uci_foreach_sections("dmmap", "route_dynamic", s) {
+	uci_path_foreach_sections(icwmpd, "dmmap", "route_dynamic", s) {
 		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -213,16 +213,16 @@ struct uci_section *update_route_dynamic_section(struct proc_routing *proute)
 {
 	struct uci_section *s = NULL;
 	char *name, *mask;
-	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
+	uci_foreach_option_eq_icwmpd("dmmap", "route_dynamic", "target", proute->destination, s) {
 		dmuci_get_value_by_section_string(s, "netmask", &mask);
 		if (strcmp(proute->mask, mask) == 0){
 			return s;
 		}
 	}
 	if (!s) {
-		dmuci_add_section("dmmap", "route_dynamic", &s, &name);
-		dmuci_set_value_by_section(s, "target", proute->destination);
-		dmuci_set_value_by_section(s, "netmask", proute->mask);
+		DMUCI_ADD_SECTION(icwmpd, "dmmap", "route_dynamic", &s, &name);
+		DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "target", proute->destination);
+		DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "netmask", proute->mask);
 	}
 	return s;
 }
@@ -620,10 +620,10 @@ inline int entry_method_router(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 	char *r = NULL, *r_last = NULL;
 	
-	update_section_list("dmmap","router", NULL, 1, NULL, NULL, NULL, NULL, NULL);
-	uci_foreach_sections("dmmap", "router", s) {
+	update_section_list(DMMAP,"router", NULL, 1, NULL, NULL, NULL, NULL, NULL);
+	uci_path_foreach_sections(icwmpd, "dmmap", "router", s) {
 		init_router_args(ctx, s);
-		r = handle_update_instance(1, ctx, &r_last, update_instance_alias, 3, s, "router_instance", "router_alias");
+		r = handle_update_instance(1, ctx, &r_last, update_instance_alias_icwmpd, 3, s, "router_instance", "router_alias");
 		SUBENTRY(entry_method_root_router_sub, ctx, r);
 		return 0;
 	}

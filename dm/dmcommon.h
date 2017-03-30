@@ -18,6 +18,7 @@
 #define NVRAM_FILE "/proc/nvram/WpaKey"
 #define MAX_DHCP_LEASES 256
 #define ARP_FILE "/proc/net/arp"
+#define DMMAP "dmmap"
 #define DHCPSTATICADDRESS_DISABLED_CHADDR "00:00:00:00:00:01"
 #define DM_ASSERT(X, Y) \
 do { \

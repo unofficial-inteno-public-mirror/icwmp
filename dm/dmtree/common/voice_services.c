@@ -1831,19 +1831,19 @@ void codec_update_id()
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
 	for (i = 0; i < available_sip_codecs; i++) {
-		update_section_list("dmmap","codec_id", "id", 1, allowed_sip_codecs[i].id, NULL, NULL, NULL, NULL);
+		update_section_list(DMMAP,"codec_id", "id", 1, allowed_sip_codecs[i].id, NULL, NULL, NULL, NULL);
 	}
 	if(i == 0)
 	{
-		uci_foreach_sections("dmmap", "codec_id", s) {
+		uci_path_foreach_sections(icwmpd, "dmmap", "codec_id", s) {
 			if (found != 0) {
-				dmuci_delete_by_section(ss, NULL, NULL);
+				DMUCI_DELETE_BY_SECTION(icwmpd, ss, NULL, NULL);
 			}
 			ss = s;
 			found++;
 		}
 		if (ss != NULL) {
-			dmuci_delete_by_section(ss, NULL, NULL);
+			DMUCI_DELETE_BY_SECTION(icwmpd, ss, NULL, NULL);
 		}
 	}
 }
@@ -1956,10 +1956,10 @@ inline int entry_method_Service(struct dmctx *ctx)
 	struct uci_section *s = NULL;
 	char *vs = NULL, *vs_last = NULL;
 
-	update_section_list("dmmap","voice_service", NULL, 1, NULL, NULL, NULL, NULL, NULL);
-	uci_foreach_sections("dmmap", "voice_service", s) {
+	update_section_list(DMMAP,"voice_service", NULL, 1, NULL, NULL, NULL, NULL, NULL);
+	uci_path_foreach_sections(icwmpd, "dmmap", "voice_service", s) {
 		init_service_args(ctx, s);
-		vs = handle_update_instance(1, ctx, &vs_last, update_instance_alias, 3, s, "vsinstance", "vsalias");
+		vs = handle_update_instance(1, ctx, &vs_last, update_instance_alias_icwmpd, 3, s, "vsinstance", "vsalias");
 		SUBENTRY(entry_method_root_Service_sub, ctx, vs);
 	}
 	return 0;
@@ -1973,9 +1973,9 @@ inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoi
 
 	init_allowed_sip_codecs();
 	codec_update_id();
-	uci_foreach_sections("dmmap", "codec_id", code_sec) {
+	uci_path_foreach_sections(icwmpd, "dmmap", "codec_id", code_sec) {
 		init_codec_args(ctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, allowed_sip_codecs[i].enumid, code_sec);
-		id = handle_update_instance(2, ctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
+		id = handle_update_instance(2, ctx, &id_last, update_instance_alias_icwmpd, 3, code_sec, "codecinstance", "codecalias");
 		SUBENTRY(entry_voice_service_capabilities_codecs_instance, ctx, ivoice, id);
 	}
 	return 0;
@@ -2023,9 +2023,9 @@ inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char 
 
 	codec_update_id();
 	codec_priority_update(brcmargs->sip_section);
-	uci_foreach_sections("dmmap", "codec_id", code_sec) {
+	uci_path_foreach_sections(icwmpd, "dmmap", "codec_id", code_sec) {
 		init_line_code_args(ctx, i, brcmargs->sip_section, code_sec);
-		id = handle_update_instance(4, ctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
+		id = handle_update_instance(4, ctx, &id_last, update_instance_alias_icwmpd, 3, code_sec, "codecinstance", "codecalias");
 		SUBENTRY(entry_services_voice_service_line_codec_list_instance, ctx, ivoice, profile_num, line_num, id);
 		i++;
 	}

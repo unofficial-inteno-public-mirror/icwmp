@@ -2701,14 +2701,14 @@ void *thread_cwmp_rpc_cpe_schedule_download (void *v)
 				    pthread_mutex_unlock(&(cwmp->mutex_session_send));
 				    pthread_cond_signal(&(cwmp->threshold_session_send));
 				}
-				else 
+				else
 				{
 					cwmp_add_apply_schedule_download(current_download, ptransfer_complete->start_time);
 				}
 			}
 			pthread_mutex_lock (&mutex_schedule_download);
 			bkp_session_delete_schedule_download(current_download);
-			bkp_session_save();			
+			bkp_session_save();
 			list_del(&(current_download->list));
 			cwmp_free_schedule_download_request(current_download);
 			pthread_mutex_unlock (&mutex_schedule_download);

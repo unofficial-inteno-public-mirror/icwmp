@@ -1682,7 +1682,7 @@ int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, char **val
 	*value = "0";
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("dmmap", wan_name, ss)
+		uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "vid", value);
 		}
@@ -1723,11 +1723,11 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					if (wifname[0] == '\0')
 						return 0;
 					remove_vid_interfaces_from_ifname(vid, wifname, r_new_wifname);
-					sprintf(&r1_new_wifname, "%s", r_new_wifname);
+					sprintf(r1_new_wifname, "%s", r_new_wifname);
 					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
 					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
 					{
-						sprintf(&v1_baseifname, "%s.1", baseifname);
+						sprintf(v1_baseifname, "%s.1", baseifname);
 						remove_interface_from_ifname(v1_baseifname, r1_new_wifname, r_new_wifname);
 					}
 					p = a_new_wifname;
@@ -1745,25 +1745,25 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmuci_set_value_by_section(ss, "ifname", v_ifname);
 					dmuci_set_value_by_section(ss, "vlan8021q", value);
 					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
-					dmuci_set_value("dmmap", wan_name, "vid", value);
+					DMUCI_SET_VALUE(icwmpd, "dmmap", wan_name, "vid", value);
 				}
 				return 0;
 			}
-			uci_foreach_sections("dmmap", wan_name, ss)
+			uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 			{
-				dmuci_set_value_by_section(ss, "vid", value);
+				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "vid", value);
 				dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
 				dmuci_get_value_by_section_string(ss, "priority", &prio);
 				if (strstr(baseifname, "atm") ||  strstr(baseifname, "ptm") || strstr(baseifname, eth_wan)) {
 					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
 					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
 					{
-						sprintf(&v1_baseifname, "%s.1", baseifname);
+						sprintf(v1_baseifname, "%s.1", baseifname);
 						remove_interface_from_ifname(v1_baseifname, wifname, r_new_wifname);
 					}
 					else
 					{
-						sprintf(&r_new_wifname, "%s",wifname);
+						sprintf(r_new_wifname, "%s",wifname);
 					}
 					p = a_new_wifname;
 					q = v_ifname;
@@ -1778,13 +1778,13 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmstrappendend(p);
 					add_wvlan(baseifname, v_ifname, value, (prio) ? prio : "0", wan_name);
 					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
-					dmuci_set_value_by_section(ss, "vid", value);
+					DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "vid", value);
 					return 0;
 				}
 				return 0;
 			}
-			dmuci_set_value("dmmap", wan_name, NULL, wan_name);
-			dmuci_set_value("dmmap", wan_name, "vid", value);
+			DMUCI_SET_VALUE(icwmpd, "dmmap", wan_name, NULL, wan_name);
+			DMUCI_SET_VALUE(icwmpd, "dmmap", wan_name, "vid", value);
 		return 0;
 	}
 	return 0;
@@ -1799,7 +1799,7 @@ int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, char
 
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("dmmap", wan_name, ss)
+		uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "priority", value);
 		}
@@ -1825,9 +1825,9 @@ int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, int 
 		case VALUESET:
 			get_layer2_interface(wan_name, &ifname);
 			if (ifname[0] == '\0') {
-				uci_foreach_sections("dmmap", wan_name, ss)
+				uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 				{
-					dmuci_set_value_by_section(ss, "priority", value);
+					DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "priority", value);
 				}
 				return 0;
 			}
@@ -1850,7 +1850,7 @@ int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 	*value = "";
 	get_layer2_interface(wan_name, &ifname);
 	if (ifname[0] == '\0') {
-		uci_foreach_sections("dmmap", wan_name, ss)
+		uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 		{
 			dmuci_get_value_by_section_string(ss, "baseifname", value);
 		}
@@ -1907,9 +1907,9 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 				}
 				return 0;
 			}
-			uci_foreach_sections("dmmap", wan_name, ss)
+			uci_path_foreach_sections(icwmpd, "dmmap", wan_name, ss)
 			{
-				dmuci_set_value_by_section(ss, "baseifname", value);
+				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "baseifname", value);
 				dmuci_get_value_by_section_string(ss, "vid", &vid);
 				dmuci_get_value_by_section_string(ss, "priority", &prio);
 				if (atoi(vid) >= 1) {
@@ -1931,8 +1931,8 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 				}
 				return 0;
 			}
-			dmuci_set_value("dmmap", wan_name, NULL, wan_name);
-			dmuci_set_value("dmmap", wan_name, "baseifname", value);
+			DMUCI_SET_VALUE(icwmpd, "dmmap", wan_name, NULL, wan_name);
+			DMUCI_SET_VALUE(icwmpd, "dmmap", wan_name, "baseifname", value);
 		return 0;
 	}
 	return 0;
@@ -2076,8 +2076,8 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 		default_wan_proto = WAN_PROTO_IP;
 	else
 		default_wan_proto = WAN_PROTO_NIL;
-	update_section_list("dmmap","wan_dev", NULL, 3, NULL, NULL, NULL, NULL, NULL);
-	uci_foreach_sections("dmmap", "wan_dev", s) {
+	update_section_list(DMMAP,"wan_dev", NULL, 3, NULL, NULL, NULL, NULL, NULL);
+	uci_path_foreach_sections(icwmpd, "dmmap", "wan_dev", s) {
 		init_wanargs(ctx, i+1, wan_devices[i].fdev, s);
 
 		if (strstr(default_wan_ifname, wan_devices[i].fdev))
@@ -2089,7 +2089,7 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 			cwritable = "0";
 		else
 			cwritable = "1";
-		dev = handle_update_instance(1, ctx, &dev_last, update_instance_alias, 3, s, "wan_dev_instance", "wan_dev_alias");
+		dev = handle_update_instance(1, ctx, &dev_last, update_instance_alias_icwmpd, 3, s, "wan_dev_instance", "wan_dev_alias");
 		SUBENTRY(entry_wandevice_sub_instance, ctx, dev, i++, cwritable, notif_permission);
 	}
 	return 0;

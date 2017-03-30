@@ -150,7 +150,7 @@ int get_forwarding_last_inst()
 			break;
 		dsinst = tmp;
 	}
-	uci_foreach_sections("dmmap", "route_dynamic", s) {
+	uci_path_foreach_sections(icwmpd, "dmmap", "route_dynamic", s) {
 		dmuci_get_value_by_section_string(s, "routeinstance", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -201,19 +201,57 @@ char *forwarding_update_instance_alias(int action, char **last_inst, void *argv[
 	return instance;
 }
 
+char *forwarding_update_instance_alias_icwmpd(int action, char **last_inst, void *argv[])
+{
+	char *instance, *alias;
+	char buf[8] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+	bool *find_max = (bool *) argv[3];
+
+	dmuci_get_value_by_section_string(s, inst_opt, &instance);
+	if (instance[0] == '\0') {
+		if (*find_max) {
+			int m = get_forwarding_last_inst();
+			sprintf(buf, "%d", m+1);
+			*find_max = false;
+		}
+		else if (last_inst == NULL) {
+			sprintf(buf, "%d", 1);
+		}
+		else {
+			sprintf(buf, "%d", atoi(*last_inst)+1);
+		}
+		instance = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	}
+	return instance;
+}
+
 struct uci_section *update_route_dynamic_section(struct proc_route *proute)
 {
 	struct uci_section *s = NULL;
 	char *name, *mask;
-	uci_foreach_option_eq("dmmap", "route_dynamic", "target", proute->destination, s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "route_dynamic", "target", proute->destination, s) {
 			dmuci_get_value_by_section_string(s, "netmask", &mask);
 			if (strcmp(proute->mask, mask) == 0)
 				return s;
 		}
 		if (!s) {
-			dmuci_add_section("dmmap", "route_dynamic", &s, &name);
-			dmuci_set_value_by_section(s, "target", proute->destination);
-			dmuci_set_value_by_section(s, "netmask", proute->mask);
+			DMUCI_ADD_SECTION(icwmpd, "dmmap", "route_dynamic", &s, &name);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "target", proute->destination);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "netmask", proute->mask);
 		}
 		return s;
 }
@@ -660,7 +698,7 @@ inline int entry_layer3_forwarding(struct dmctx *ctx)
 				continue;
 			ss = update_route_dynamic_section(&proute);
 			init_args_rentry(ctx, ss, "0", &proute, ROUTE_DYNAMIC);
-			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
+			iroute =  handle_update_instance(1, ctx, &iroute_last, forwarding_update_instance_alias_icwmpd, 4, ss, "routeinstance", "routealias", &find_max);
 			SUBENTRY(entry_layer3_forwarding_instance, ctx, iroute, "0");
 		}
 		fclose(fp) ;

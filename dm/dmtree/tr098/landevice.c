@@ -2870,7 +2870,7 @@ void lan_eth_update_section_option_list (char *name, char *sec_name, char *wan_e
 	char *pch, *spch, *ifname;
 
 	if (name[0] == '\0') {
-		update_section_option_list("dmmap", "lan_eth", "ifname", "network", "", sec_name, name);
+		update_section_option_list(DMMAP, "lan_eth", "ifname", "network", "", sec_name, name);
 	}
 	ifname = dmstrdup(name);
 	for (pch = strtok_r(ifname, " ,", &spch);
@@ -2878,7 +2878,7 @@ void lan_eth_update_section_option_list (char *name, char *sec_name, char *wan_e
 		pch = strtok_r(NULL, " ,", &spch)) {
 		if (strncmp(pch, "eth", 3) != 0 || strncmp(pch, wan_eth, 4) == 0)
 			continue;
-		update_section_option_list("dmmap", "lan_eth", "ifname", "network", pch, sec_name, name);
+		update_section_option_list(DMMAP, "lan_eth", "ifname", "network", pch, sec_name, name);
 	}
 	dmfree(ifname);
 }
@@ -3079,12 +3079,12 @@ inline int entry_landevice_wlanconfiguration_wepkey(struct dmctx *ctx, char *ide
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	struct uci_section *s = NULL;
 
-	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
-	uci_foreach_option_eq("dmmap", "wlan-wepkey", "wlan", section_name(wlanargs->lwlansection), s) {
+	update_section_list(DMMAP,"wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "wlan-wepkey", "wlan", section_name(wlanargs->lwlansection), s) {
 		//init_wlan_wep_args(ctx, s);
 		cur_wepargs.wlanwep = s;
 		cur_wepargs.key_index = ++i;
-		iwep =  handle_update_instance(3, ctx, &iwep_last, update_instance_alias, 3, s, "wepinstance", "wepalias");
+		iwep =  handle_update_instance(3, ctx, &iwep_last, update_instance_alias_icwmpd, 3, s, "wepinstance", "wepalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_wepkey_instance, ctx, idev, iwlan, iwep);
 	}
 	return 0;
@@ -3098,12 +3098,12 @@ inline int entry_landevice_wlanconfiguration_presharedkey(struct dmctx *ctx, cha
 
 	wlanargs->pki = 0;
 	//update section list of wlan-psk before update instance
-	update_section_list("dmmap","wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
-	uci_foreach_option_eq("dmmap", "wlan-psk", "wlan", section_name(wlanargs->lwlansection), s) {
+	update_section_list(DMMAP,"wlan-psk", "wlan", 10, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "wlan-psk", "wlan", section_name(wlanargs->lwlansection), s) {
 		wlanargs->pki++;
 		//init_wlan_psk_args(ctx, s);
 		cur_pskargs.wlanpsk = s;
-		ipk =  handle_update_instance(3, ctx, &ipk_last, update_instance_alias, 3, s, "pskinstance", "pskalias");
+		ipk =  handle_update_instance(3, ctx, &ipk_last, update_instance_alias_icwmpd, 3, s, "pskinstance", "pskalias");
 		SUBENTRY(entry_landevice_wlanconfiguration_presharedkey_instance, ctx, idev, iwlan, ipk); //"$wunit" "$wlctl_num" "$uci_num" are not needed
 	}
 	return 0;
@@ -3140,10 +3140,10 @@ inline int entry_landevice_lanethernetinterfaceconfig(struct dmctx *ctx, struct 
 	dmuci_get_option_value_string("layer2_interface_ethernet", "ethernet_interface", "baseifname", &wan_eth);
 	dmuci_get_value_by_section_string(landevice_section, "ifname", &ifname);
 	lan_eth_update_section_option_list(ifname, section_name(landevice_section), wan_eth);
-	uci_foreach_option_eq("dmmap", "lan_eth", "network", section_name(landevice_section), s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "lan_eth", "network", section_name(landevice_section), s) {
 		dmuci_get_value_by_section_string(s, "ifname", &baseifname);
 		init_ldargs_eth_cfg(ctx, baseifname, s);
-		ieth =  handle_update_instance(2, ctx, &ieth_last, update_instance_alias, 3, s, "ethinstance", "ethalias");
+		ieth =  handle_update_instance(2, ctx, &ieth_last, update_instance_alias_icwmpd, 3, s, "ethinstance", "ethalias");
 		SUBENTRY(entry_landevice_lanethernetinterfaceconfig_instance, ctx, idev, ieth);
 	}
 	return 0;

@@ -403,7 +403,7 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "type", &wtype);
 	if (strcmp(wtype, "bridge") == 0) {
 		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "bridge_instance", &br_inst);
-		uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key", br_inst, port) {
+		uci_path_foreach_option_eq(icwmpd, "dmmap", "bridge_port", "bridge_key", br_inst, port) {
 			dmuci_get_value_by_section_string(port, "mg_port", &mg);
 			if (strcmp(mg, "true") == 0)
 				sprintf(linker, "%s+", section_name(port));
@@ -461,7 +461,7 @@ int set_ip_int_lower_layer(char *refparam, struct dmctx *ctx, int action, char *
 			{
 				strncpy(sec, linker, strlen(linker) - 1);
 				sec[strlen(linker) - 1] = '\0';
-				dmuci_get_option_value_string("dmmap", sec, "bridge_key", &b_key);
+				DMUCI_GET_OPTION_VALUE_STRING(icwmpd, "dmmap", sec, "bridge_key", &b_key);
 				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "proto", &proto);
 				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ipaddr", &ipaddr);
 				dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ip_int_instance", &ip_inst);
