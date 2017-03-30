@@ -37,7 +37,7 @@ DMLEAF X_INTENO_SE_ListenObjParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
 {"Alias", &DMWRITE, DMT_STRING, get_x_inteno_owsd_listenobj_alias, set_x_inteno_owsd_listenobj_alias, NULL, NULL},
 {"Port", &DMWRITE, DMT_UNINT, get_x_inteno_owsd_listenobj_port, set_x_inteno_owsd_listenobj_alias, NULL, NULL},
-{"Interface", &DMWRITE, DMT_STRING, get_x_inteno_owsd_listenobj_interface, NULL, NULL, NULL},
+{"Interface", &DMWRITE, DMT_STRING, get_x_inteno_owsd_listenobj_interface, set_x_inteno_owsd_listenobj_interface, NULL, NULL},
 {"Ipv6", &DMWRITE, DMT_BOOL, get_x_inteno_owsd_listenobj_ipv6_enable, set_x_inteno_owsd_listenobj_ipv6_enable, NULL, NULL},
 {"Whitelist_interface", &DMWRITE, DMT_BOOL, get_x_inteno_owsd_listenobj_whitelist_interface, set_x_inteno_owsd_listenobj_whitelist_interface, NULL, NULL},
 {"Whitelist_dhcp", &DMWRITE, DMT_BOOL, get_x_inteno_owsd_listenobj_whitelist_dhcp, set_x_inteno_owsd_listenobj_whitelist_dhcp, NULL, NULL},
