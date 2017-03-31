@@ -117,11 +117,20 @@ inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index,
 	return 0;
 }
 
-inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity) {
+inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity, char *wan_name) {
 	struct uci_section *ss = NULL, *vlan_interface_s;
 	char *add_value;
 
+	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "wan_name", wan_name, ss) {
+		dmuci_set_value_by_section(ss, "wan_name", wan_name);
+		dmuci_set_value_by_section(ss, "baseifname", baseifname);
+		dmuci_set_value_by_section(ss, "ifname", ifname);
+		dmuci_set_value_by_section(ss, "vlan8021q", vid);
+		dmuci_set_value_by_section(ss, "vlan8021p", prioprity);
+		return 0;
+	}
 	dmuci_add_section("layer2_interface_vlan", "vlan_interface", &vlan_interface_s, &add_value);
+	dmuci_set_value_by_section(vlan_interface_s, "wan_name", wan_name);
 	dmuci_set_value_by_section(vlan_interface_s, "baseifname", baseifname);
 	dmuci_set_value_by_section(vlan_interface_s, "ifname", ifname);
 	dmuci_set_value_by_section(vlan_interface_s, "vlan8021q", vid);
@@ -1703,19 +1712,22 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 	char *add_value, *ifname, *vid, *prio;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	bool found = false;
-	char *p, *q, *wifname, *baseifname="";
-	char r_new_wifname[128];
-	char a_new_wifname[128];
+	char *p, *q, *wifname, *baseifname="", *type="";
+	char r_new_wifname[128] = "";
+	char r1_new_wifname[128] = "";
+	char a_new_wifname[128] = "";
 	char v_ifname[16];
+	char v1_baseifname[16];
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
 			get_layer2_interface(wan_name, &ifname);
+			dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "type", &type);
 			if (ifname[0] != '\0')
 			{
-				uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "ifname", ifname, ss) {
+				uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "wan_name", wan_name, ss) {
 					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
 					if (strcmp(vid, value) == 0)
 						return 0;
@@ -1723,7 +1735,13 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					if (wifname[0] == '\0')
 						return 0;
 					remove_vid_interfaces_from_ifname(vid, wifname, r_new_wifname);
+					sprintf(&r1_new_wifname, "%s", r_new_wifname);
 					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
+					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
+					{
+						sprintf(&v1_baseifname, "%s.1", baseifname);
+						remove_interface_from_ifname(v1_baseifname, r1_new_wifname, r_new_wifname);
+					}
 					p = a_new_wifname;
 					q = v_ifname;
 					dmuci_get_value_by_section_string(ss, "vlan8021q", &vid);
@@ -1732,12 +1750,14 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmstrappendstr(q, value);
 					dmstrappendend(q);
 					dmstrappendstr(p, v_ifname);
+					if (r_new_wifname[0] != '\0')
 					dmstrappendchr(p, ' ');
 					dmstrappendstr(p, r_new_wifname);
 					dmstrappendend(p);
 					dmuci_set_value_by_section(ss, "ifname", v_ifname);
 					dmuci_set_value_by_section(ss, "vlan8021q", value);
 					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
+					dmuci_set_value("dmmap", wan_name, "vid", value);
 				}
 				return 0;
 			}
@@ -1746,8 +1766,17 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 				dmuci_set_value_by_section(ss, "vid", value);
 				dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
 				dmuci_get_value_by_section_string(ss, "priority", &prio);
-				if (strstr(baseifname, "atm0") ||  strstr(baseifname, "ptm0") || strstr(baseifname, eth_wan)) {
+				if (strstr(baseifname, "atm") ||  strstr(baseifname, "ptm") || strstr(baseifname, eth_wan)) {
 					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
+					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
+					{
+						sprintf(&v1_baseifname, "%s.1", baseifname);
+						remove_interface_from_ifname(v1_baseifname, wifname, r_new_wifname);
+					}
+					else
+					{
+						sprintf(&r_new_wifname, "%s",wifname);
+					}
 					p = a_new_wifname;
 					q = v_ifname;
 					dmstrappendstr(q, baseifname);
@@ -1755,22 +1784,19 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmstrappendstr	(q, value);
 					dmstrappendend(q);
 					dmstrappendstr(p, v_ifname);
+					if (r_new_wifname[0] != '\0')
 					dmstrappendchr(p, ' ');
-					dmstrappendstr(p, wifname);
+					dmstrappendstr(p, r_new_wifname);
 					dmstrappendend(p);
-					add_wvlan(baseifname, v_ifname, value, (prio) ? prio : "0");
+					add_wvlan(baseifname, v_ifname, value, (prio) ? prio : "0", wan_name);
 					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
-					s_last = ss;
-					goto remove_section;
+					dmuci_set_value_by_section(ss, "vid", value);
+					return 0;
 				}
 				return 0;
 			}
-			dmuci_add_section("dmmap", wan_name, &w_vlan, &add_value);
-			dmuci_set_value_by_section(w_vlan, "vid", value);
-			return 0;
-
-	remove_section:
-		dmuci_delete_by_section(s_last, NULL, NULL);
+			dmuci_set_value("dmmap", wan_name, NULL, wan_name);
+			dmuci_set_value("dmmap", wan_name, "vid", value);
 		return 0;
 	}
 	return 0;
@@ -1898,7 +1924,7 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 				dmuci_set_value_by_section(ss, "baseifname", value);
 				dmuci_get_value_by_section_string(ss, "vid", &vid);
 				dmuci_get_value_by_section_string(ss, "priority", &prio);
-				if (atoi(vid) > 1) {
+				if (atoi(vid) >= 1) {
 					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
 					p = a_new_wifname;
 					q = ifname_buf;
@@ -1907,22 +1933,18 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 					dmstrappendstr(q, vid);
 					dmstrappendend(q);
 					dmstrappendstr(p, ifname_buf);
+					if (wifname[0] != '\0')
 					dmstrappendchr(p, ' ');
 					dmstrappendstr(p, wifname);
 					dmstrappendend(p);
-					add_wvlan(value, ifname_buf, vid, (prio) ? prio : "0");
+					add_wvlan(value, ifname_buf, vid, (prio) ? prio : "0", wan_name);
 					dmuci_set_value_by_section(wandcprotoargs->wancprotosection, "ifname", a_new_wifname);
-					s_last = ss;
-					goto remove_section;
+					return 0;
 				}
 				return 0;
 			}
-			dmuci_add_section("dmmap", wan_name, &w_vlan, &add_value);
-			dmuci_set_value_by_section(w_vlan, "baseifname", value);
-			return 0;
-
-	remove_section:
-		dmuci_delete_by_section(s_last, NULL, NULL);
+			dmuci_set_value("dmmap", wan_name, NULL, wan_name);
+			dmuci_set_value("dmmap", wan_name, "baseifname", value);
 		return 0;
 	}
 	return 0;
