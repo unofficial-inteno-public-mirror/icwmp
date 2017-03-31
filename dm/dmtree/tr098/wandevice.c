@@ -1735,11 +1735,11 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					if (wifname[0] == '\0')
 						return 0;
 					remove_vid_interfaces_from_ifname(vid, wifname, r_new_wifname);
-					sprintf(&r1_new_wifname, "%s", r_new_wifname);
+					sprintf(r1_new_wifname, "%s", r_new_wifname);
 					dmuci_get_value_by_section_string(ss, "baseifname", &baseifname);
 					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
 					{
-						sprintf(&v1_baseifname, "%s.1", baseifname);
+						sprintf(v1_baseifname, "%s.1", baseifname);
 						remove_interface_from_ifname(v1_baseifname, r1_new_wifname, r_new_wifname);
 					}
 					p = a_new_wifname;
@@ -1770,12 +1770,12 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 					dmuci_get_option_value_string("network", wan_name, "ifname", &wifname);
 					if (strcmp(type, "bridge") != 0 || strcmp(value, "1") == 0)
 					{
-						sprintf(&v1_baseifname, "%s.1", baseifname);
+						sprintf(v1_baseifname, "%s.1", baseifname);
 						remove_interface_from_ifname(v1_baseifname, wifname, r_new_wifname);
 					}
 					else
 					{
-						sprintf(&r_new_wifname, "%s",wifname);
+						sprintf(r_new_wifname, "%s",wifname);
 					}
 					p = a_new_wifname;
 					q = v_ifname;
