@@ -18,6 +18,8 @@
 #include "dmcommon.h"
 #include "x_inteno_se_dropbear.h"
 
+struct dropbear_args cur_dropbear_args = {0};
+
 DMLEAF X_INTENO_SE_DropbearParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, NOTIFICATION, linker*/
 {"Alias", &DMWRITE, DMT_STRING, get_x_inteno_dropbear_alias, set_x_inteno_dropbear_alias, NULL, NULL},
@@ -36,7 +38,19 @@ DMLEAF X_INTENO_SE_DropbearParams[] = {
 {0}
 };
 
-struct dropbear_args cur_dropbear_args = {0};
+inline int browseXIntenoDropbear(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+{
+	char *idropbear = NULL, *idropbear_last = NULL;
+	struct uci_section *s = NULL;
+
+		uci_foreach_sections("dropbear", "dropbear", s) {
+			init_args_owsd_listen(dmctx, s);
+			idropbear =  handle_update_instance(1, dmctx, &idropbear_last, update_instance_alias, 3, s, "dropbearinstance", "dropbearalias");
+			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idropbear);
+		}
+		return 0;
+
+}
 
 inline int init_args_dropbear(struct dmctx *ctx, struct uci_section *s)
 {
@@ -419,20 +433,4 @@ int delete_dropbear_instance(struct dmctx *ctx, unsigned char del_action)
 	}
 	return 0;
 }
-
-inline int browseXIntenoDropbear(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
-{
-	char *idropbear = NULL, *idropbear_last = NULL;
-	struct uci_section *s = NULL;
-
-		uci_foreach_sections("dropbear", "dropbear", s) {
-			init_args_owsd_listen(dmctx, s);
-			idropbear =  handle_update_instance(1, ctx, &idropbear_last, update_instance_alias, 3, s, "dropbearinstance", "dropbearalias");
-			handle_update_instance(1, dmctx, &idropbear_last, update_instance_alias, 3, s, "dropbearinstance", "dropbearalias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idropbear);
-		}
-		return 0;
-
-}
-
 

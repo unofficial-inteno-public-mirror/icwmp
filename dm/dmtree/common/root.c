@@ -27,6 +27,7 @@
 #include "xmpp.h"
 #include "x_inteno_se_owsd.h"
 #include "x_inteno_se_dropbear.h"
+#include "x_inteno_se_buttons.h"
 #ifdef DATAMODEL_TR181
 #include "ip.h"
 #include "ethernet.h"
@@ -78,8 +79,8 @@ DMOBJ tRootObj[] = {
 {"X_INTENO_SE_SyslogCfg", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,NULL, tSe_SyslogCfgParam, NULL},
 {"SoftwareModules", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,tSoftwareModulesObj, NULL, NULL},
 {"X_INTENO_SE_Owsd", &DMREAD, NULL, NULL, NULL, NULL, NULL, &DMNONE,XIntenoSeOwsdObj, XIntenoSeOwsdParams, NULL},
-{"X_INTENO_SE_Dropbear", &DMREAD, add_dropbear_instance, delete_dropbear_instance, NULL, browseXIntenoDropbear, NULL, &DMNONE, NULL, X_INTENO_SE_DropbearParams, NULL},
-
+{"X_INTENO_SE_Dropbear", &DMWRITE, add_dropbear_instance, delete_dropbear_instance, NULL, browseXIntenoDropbear, NULL, &DMNONE, NULL, X_INTENO_SE_DropbearParams, NULL},
+{"X_INTENO_SE_Buttons", &DMREAD, NULL, NULL, NULL, browseXIntenoButton, NULL, &DMNONE, NULL, X_INTENO_SE_ButtonParams, NULL},
 #ifdef DATAMODEL_TR098
 {"LANDevice", &DMREAD, NULL, NULL, NULL, browselandeviceInst, &DMFINFRM, &DMNONE,tLANDeviceObj, tLANDeviceParam, NULL},
 {"WANDevice", &DMREAD, NULL, NULL, NULL, browsewandeviceInst, &DMFINFRM, &DMWANConnectionDevicenotif,tWANDeviceObj, tWANDeviceParam, NULL},
