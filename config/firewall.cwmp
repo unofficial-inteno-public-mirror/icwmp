@@ -1,2 +1,21 @@
 #created by the icwmp package 
+zone_name=""
+port=""
+if [ "$zone_name" = "" ]; then
+	exit 0
+elif [ "$zone_name" = "icwmp" ]; then
+	iptables -nL zone_icwmp_input 2> /dev/null
+	if [ $? != 0 ]; then
+		iptables -N zone_icwmp_input
+		iptables -t filter -A INPUT -j zone_icwmp_input
+		iptables -I zone_icwmp_input -p tcp --dport $port -j REJECT
+	else			
+		iptables -F zone_icwmp_input
+		iptables -I zone_icwmp_input -p tcp --dport $port -j REJECT
+	fi			
+else
+	iptables -F zone_icwmp_input 2> /dev/null
+	iptables -t filter -D INPUT -j zone_icwmp_input 2> /dev/null
+	iptables -X zone_icwmp_input 2> /dev/null
+fi
 #iptables -I FW_ZONE -p tcp -s ACS_ADDRESS --dport PORT -j ACCEPT --comment "Open ACS port"

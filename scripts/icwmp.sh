@@ -372,13 +372,17 @@ handle_action() {
 		local if_wan=`$UCI_GET cwmp.cpe.default_wan_interface`
 		local zone=`$UCI_SHOW firewall | grep "firewall\.@zone\[[0-9]\+\]\.network=.*$if_wan" | head -1 | cut -f2 -d.`
 		local zone_name=`$UCI_GET firewall.$zone.name`
-		[ "$zone_name" = "" ] && return
+		if [ "$zone_name" = "" ]; then
+			zone_name=icwmp	
+		fi
+		sed -i "s,^port=.*,port=${port},g" /etc/firewall.cwmp
+		sed -i "s,^zone_name=.*,zone_name=${zone_name},g" /etc/firewall.cwmp	
 		# update iptables rule
 		if [ "$__arg2" != "1" ]; then 
 			sed -i "s,^.*iptables.*Open ACS port.*,iptables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp			
 		else
 			sed -i "s,^.*iptables.*Open ACS port.*,ip6tables -I zone_${zone_name}_input -p tcp -s $__arg1 --dport $port -j ACCEPT -m comment --comment=\"Open ACS port\",g" /etc/firewall.cwmp			
-		fi		
+		fi
 		fw3 reload
 	fi
 	
