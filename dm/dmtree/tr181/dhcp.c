@@ -26,11 +26,14 @@ struct dhcp_static_args cur_dhcp_staticargs = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_dhcp_client_linker(struct dmctx *dmctx) {
-	if (cur_dhcp_client_args.key)
-		return cur_dhcp_client_args.key;
-	else
-		return "";
+int get_dhcp_client_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_dhcp_client_args.key) {
+		*linker = cur_dhcp_client_args.key;
+		return 0;
+	} else {
+		*linker = "";
+		return 0;
+	}
 }
 
 /*************************************************************

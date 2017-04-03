@@ -1797,7 +1797,7 @@ void load_du_state_change_complete (mxml_node_t	*tree,struct cwmp *cwmp)
 							{
 								if(d->value.text.string != NULL)
 								{
-									elem->start_time = atol(d->value.text.string);
+									elem->start_time = strdup(d->value.text.string);
 								}
 							}
 						}
@@ -1810,7 +1810,7 @@ void load_du_state_change_complete (mxml_node_t	*tree,struct cwmp *cwmp)
 							{
 								if(d->value.text.string != NULL)
 								{
-									elem->complete_time = atol(d->value.text.string);
+									elem->complete_time = strdup(d->value.text.string);
 								}
 							}
 						}

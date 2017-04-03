@@ -3015,14 +3015,14 @@ int set_lan_eth_alias(char *refparam, struct dmctx *ctx, int action, char *value
 * LINKER
 ***************************************************************************/
 
-char *get_linker_lanhost_interface(struct dmctx *dmctx) {
-	char *linker;
+int get_linker_lanhost_interface(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	
 	if(cur_ipargs.ldipsection) {
-		dmasprintf(&linker,"linker_interface:%s", section_name(cur_ipargs.ldipsection));
-		return linker;
+		dmasprintf(linker,"linker_interface:%s", section_name(cur_ipargs.ldipsection));
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 
 DMLEAF tLanhost_Config_ManagementParam[] = {

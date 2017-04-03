@@ -75,16 +75,15 @@ struct wancprotoargs cur_wancprotoargs = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_protocol_connection_linker(struct dmctx *dmctx) {
-	char *linker;
+int get_protocol_connection_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 
 	if (cur_wancprotoargs.wancprotosection)
 	{
-		dmasprintf(&linker, "linker_interface:%s", section_name(cur_wancprotoargs.wancprotosection));
-		return linker;
+		dmasprintf(linker, "linker_interface:%s", section_name(cur_wancprotoargs.wancprotosection));
+		return 0;
 	}
-	else
-		return "";
+	*linker = "";
+	return 0;
 }
 
 inline int init_wanargs(struct dmctx *ctx, int wan_instance, char *fdev, struct uci_section *s)

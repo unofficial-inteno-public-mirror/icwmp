@@ -27,22 +27,22 @@ inline int browseBridgeInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_br_port(struct dmctx *dmctx) {
-	char *linker;
+int get_linker_br_port(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_bridging_port_args.bridge_port_sec) {
-		dmasprintf(&linker,"%s+%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
-		return linker;
+		dmasprintf(linker,"%s+%s", section_name(cur_bridging_port_args.bridge_port_sec), cur_bridging_port_args.ifname);
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 
-char *get_linker_br_vlan(struct dmctx *dmctx) {
-	char *linker;
+int get_linker_br_vlan(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_bridging_vlan_args.vlan_port) {
-		dmasprintf(&linker,"vlan%s_%s", cur_bridging_vlan_args.vlan_port, cur_bridging_vlan_args.br_inst);
-		return linker;
+		dmasprintf(linker,"vlan%s_%s", cur_bridging_vlan_args.vlan_port, cur_bridging_vlan_args.br_inst);
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 /**************************************************************************
 * INIT

@@ -24,31 +24,39 @@ struct ptm_args cur_ptm_args = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_atm_linker(struct dmctx *dmctx) {
-	if (cur_atm_args.ifname)
-		return cur_atm_args.ifname;
-	else
-		return "";
+int get_atm_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_atm_args.ifname) {
+		*linker =  cur_atm_args.ifname;
+		return 0;
+	}
+	*linker = "" ;
+	return 0;
 }
 
-char *get_ptm_linker(struct dmctx *dmctx) {
-	if (cur_ptm_args.ifname)
-		return cur_ptm_args.ifname;
-	else
-		return "";
+int get_ptm_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_ptm_args.ifname){
+		*linker =  cur_ptm_args.ifname;
+		return 0;
+	}
+	*linker = "" ;
+	return 0;
 }
-char *get_dsl_line_linker(struct dmctx *dmctx) {
-	if (cur_dsl_line_args.type)
-		return cur_dsl_line_args.type;
-	else
-		return "";
+int get_dsl_line_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_dsl_line_args.type) {
+		*linker = cur_dsl_line_args.type;
+		return 0;
+	}
+	*linker = "" ;
+	return 0;
 }
 
-char *get_dsl_channel_linker(struct dmctx *dmctx) {
-	if (cur_dsl_line_args.type)
-		return cur_dsl_line_args.type;
-	else
-		return "";
+int get_dsl_channel_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_dsl_line_args.type){
+		*linker = cur_dsl_line_args.type;
+		return 0;
+	}
+	*linker = "" ;
+	return 0;
 }
 /**************************************************************************
 * INIT

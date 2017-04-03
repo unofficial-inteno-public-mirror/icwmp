@@ -36,44 +36,6 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
-#define IF_MATCH(ctx, prefix, ...)									\
-	(ctx)->match = (ctx)->tree; 									\
-	if (!(ctx)->tree) {												\
-		sprintf((ctx)->current_obj, prefix, ##__VA_ARGS__);			\
-		if (strstr((ctx)->in_param, (ctx)->current_obj) || 			\
-			(strstr((ctx)->current_obj, (ctx)->in_param) && 		\
-			(ctx)->in_param[strlen((ctx)->in_param)-1] == '.')) {	\
-			(ctx)->match = true; 									\
-		}															\
-	}																\
-	if ((ctx)->match)
-
-#define IF_MATCH_ROOT(ctx)											\
-	(ctx)->match = (ctx)->tree;										\
-	if (!(ctx)->tree) {												\
-		if (strstr((ctx)->in_param, DMROOT) &&						\
-			!strchr(((ctx)->in_param + sizeof(DMROOT) - 1), '.')) {	\
-			(ctx)->match = true;									\
-		}															\
-	}																\
-	if ((ctx)->match)
-
-#define DMOBJECT(name, ctx, permission, notif_permission, addobj, delobj, linker, ...) {	\
-	sprintf((ctx)->current_obj, name, ##__VA_ARGS__);										\
-	int error = ctx->method_obj(ctx, permission, notif_permission, addobj, delobj, linker);	\
-	if ((ctx)->stop) return error;															\
-}
-
-#define DMPARAM(lastname, ctx, permission, get_cmd, set_cmd, type, forced_inform, notif_permission, forced_notify, linker) {					\
-	int error = ctx->method_param(lastname, ctx, permission, get_cmd, set_cmd, type, forced_inform, notif_permission, forced_notify, linker);	\
-	if ((ctx)->stop) return error;																												\
-}
-// TO REMOVE JUST FOR COMPILE
-#define SUBENTRY(f, ctx, ...) {			\
-	int error = f(ctx, ## __VA_ARGS__);	\
-	if ((ctx)->stop) return error;		\
-}
-// new sub entry
 #define DM_LINK_INST_OBJ(dmctx, parent_node, data, instance) \
 	do { \
 		(dmctx)->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance); \
@@ -108,7 +70,6 @@ enum dmt_type_enum {
 	int (*set_cmd)(char *refparam, struct dmctx *dmctx, int action, char *value), \
 	struct dm_forced_inform_s *forced_inform, \
 	struct dm_notif_s *notification, \
-	char *(*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
 	void *data, \
 	char *instance
 
@@ -120,7 +81,7 @@ enum dmt_type_enum {
 	int (*delobj)(struct dmctx *dmctx, unsigned char del_action), \
 	struct dm_forced_inform_s *forced_inform, \
 	struct dm_notif_s *notification, \
-	char *(*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance), \
+	int (*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker), \
 	void *data, \
 	char *instance
 
@@ -173,7 +134,7 @@ typedef struct dm_obj_s {
 	struct dm_notif_s *notification;
 	struct dm_obj_s *nextobj;
 	struct dm_leaf_s *leaf;
-	char *(*get_linker)(struct dmctx *dmctx);
+	int (*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker);
 } DMOBJ;
 
 

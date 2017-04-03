@@ -24,11 +24,14 @@ char *wan_ifname = NULL;
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_val(struct dmctx *dmctx) {
-	if (cur_eth_port_args.ifname)
-		return cur_eth_port_args.ifname;
-	else
-		return "";
+int get_linker_val(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+	if (cur_eth_port_args.ifname) {
+		*linker = cur_eth_port_args.ifname;
+		return 0;
+	} else {
+		*linker = "";
+		return 0;
+	}
 }
 /**************************************************************************
 * INIT

@@ -25,22 +25,22 @@ struct wifi_acp_args cur_wifi_acp_args = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_Wifi_Radio(struct dmctx *dmctx) {
-	char *linker;
+char *get_linker_Wifi_Radio(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_wifi_radio_args.wifi_radio_sec) {
-		linker = section_name(cur_wifi_radio_args.wifi_radio_sec);
-		return linker;
+		*linker = section_name(cur_wifi_radio_args.wifi_radio_sec);
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 
-char *get_linker_Wifi_Ssid(struct dmctx *dmctx) {
-	char *linker;
+char *get_linker_Wifi_Ssid(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_wifi_ssid_args.ifname) {
-		linker = cur_wifi_ssid_args.ifname;
-		return linker;
+		*linker = cur_wifi_ssid_args.ifname;
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 /**************************************************************************
 * INIT

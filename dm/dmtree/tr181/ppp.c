@@ -205,13 +205,14 @@ int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, int action, char *val
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_ppp_interface(struct dmctx *dmctx) {
-	char *linker;
+int get_linker_ppp_interface(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+
 	if(cur_ppp_args.ppp_sec) {
-		dmasprintf(&linker,"%s", section_name(cur_ppp_args.ppp_sec));
-		return linker;
+		dmasprintf(linker,"%s", section_name(cur_ppp_args.ppp_sec));
+		return 0;
 	}
-	return "";
+	*linker = "";
+	return 0;
 }
 
 DMLEAF tpppInterfaceParam[] = {

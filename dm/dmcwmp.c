@@ -220,7 +220,7 @@ int dm_browse_leaf(struct dmctx *dmctx, DMNODE *parent_node, DMLEAF *leaf, void 
 		return 0;
 
 	for (; leaf->parameter; leaf++) {
-		err = dmctx->method_param(dmctx, parent_node, leaf->parameter, leaf->permission, leaf->type, leaf->getvalue, leaf->setvalue, leaf->forced_inform, leaf->notification, NULL, data, instance);
+		err = dmctx->method_param(dmctx, parent_node, leaf->parameter, leaf->permission, leaf->type, leaf->getvalue, leaf->setvalue, leaf->forced_inform, leaf->notification, data, instance);
 		if (dmctx->stop)
 			return err;
 	}
@@ -1557,7 +1557,7 @@ static int get_linker_check_obj(DMOBJECT_ARGS)
 
 	if (!get_linker)
 		return  FAULT_9005;
-	link_val = get_linker(node->current_object, dmctx, NULL, NULL);
+	get_linker(node->current_object, dmctx, NULL, NULL, &link_val);
 	if (dmctx->linker[0] == '\0')
 		return  FAULT_9005;
 	if (strcmp(link_val, dmctx->linker) == 0) {
@@ -1601,7 +1601,7 @@ static int get_linker_value_check_obj(DMOBJECT_ARGS)
 		return FAULT_9005;
 
 	if (strcmp(dmctx->current_obj, dmctx->in_param) == 0) {
-		link_val = get_linker(dmctx->current_obj, dmctx, NULL, NULL);
+		get_linker(dmctx->current_obj, dmctx, NULL, NULL, &link_val);
 		dmctx->linker = dmstrdup(link_val);
 		dmctx->stop = true;
 		return 0;

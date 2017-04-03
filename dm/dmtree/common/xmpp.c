@@ -457,19 +457,20 @@ int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int act
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_xmpp_connection_linker(struct dmctx *dmctx) {
+int  get_xmpp_connection_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	char *linker;
 	char *conn_instance;
 	struct connectionargs *connargs = (struct connectionargs *)dmctx->args;
 
 	if (connargs->connsection)
-{
+	{
 	dmuci_get_value_by_section_string(connargs->connsection, "connection_instance", &conn_instance);
-		dmasprintf(&linker,"xmppc:%s", conn_instance);
-		return linker;
+		dmasprintf(linker,"xmppc:%s", conn_instance);
+		return 0;
 	}
 	else
-		return "";
+		*linker = "";
+		return 0;
 }
 
 /*************************************************************

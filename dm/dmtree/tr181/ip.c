@@ -704,14 +704,15 @@ int delete_ipv6(struct dmctx *ctx, unsigned char del_action)
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_ip_interface(struct dmctx *dmctx) {
-	char *linker;
+int get_linker_ip_interface(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 
 	if(cur_ip_args.ip_sec) {
-		dmasprintf(&linker,"%s", section_name(cur_ip_args.ip_sec));
-		return linker;
+		dmasprintf(linker,"%s", section_name(cur_ip_args.ip_sec));
+		return 0;
+	} else {
+		*linker = "";
+		return 0;
 	}
-	return "";
 }
 /*************************************************************
  * ENTRY METHOD
