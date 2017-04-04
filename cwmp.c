@@ -215,7 +215,6 @@ void cwmp_schedule_session (struct cwmp *cwmp)
         cwmp->session_status.last_start_time = time(NULL);
         cwmp->session_status.last_status = SESSION_RUNNING;
         cwmp->session_status.next_retry = 0;
-        dm_global_init();
         CWMP_LOG (INFO,"Start session");
         error = cwmp_schedule_rpc (cwmp,session);
         CWMP_LOG (INFO,"End session");

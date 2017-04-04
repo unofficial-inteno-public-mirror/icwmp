@@ -102,7 +102,6 @@ cwmp_handle_command(struct ubus_context *ctx, struct ubus_object *obj,
 		}
 		else {
 			pthread_mutex_lock (&(cwmp_main.mutex_session_queue));
-			dm_global_init();
 			cwmp_apply_acs_changes();
 			pthread_mutex_unlock (&(cwmp_main.mutex_session_queue));
 			blobmsg_add_u32(&b, "status", 0);

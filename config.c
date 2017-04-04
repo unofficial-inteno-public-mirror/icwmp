@@ -1188,7 +1188,6 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
     {
         return error;
     }
-	dm_global_init();
     cwmp_get_deviceid(cwmp);
 #ifdef XMPP_ENABLE
 	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)

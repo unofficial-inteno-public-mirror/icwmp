@@ -9,7 +9,6 @@ enum ctx_init_enum {
 	CTX_INIT_SUB
 };
 
-int dm_global_init(void);
 int dm_ctx_init(struct dmctx *ctx);
 int dm_ctx_init_sub(struct dmctx *ctx);
 int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1, char *arg2);

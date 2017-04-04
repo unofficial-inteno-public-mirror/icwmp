@@ -113,59 +113,7 @@ struct dm_notif_s DMNONE = { "0", NULL };
 struct dm_notif_s DMPASSIVE = { "1", NULL };
 struct dm_notif_s DMACTIVE = { "2", NULL };
 
-struct prefix_method prefix_methods[] = {
-//	{ DMROOT, 1, NULL, 1, &entry_method_root },
-//	{ DMROOT"DeviceInfo.", 1, NULL, 1, &entry_method_root_DeviceInfo },
-	/*{ DMROOT"ManagementServer.", 1, NULL, 1, &entry_method_root_ManagementServer },
-#ifdef DATAMODEL_TR098
-	{ DMROOT"LANDevice.", 1, NULL, 0, &entry_method_root_LANDevice },
-	{ DMROOT"LANInterfaces.", 1, NULL, 0, &entry_method_root_InternetGatewayDevice_LANInterfaces },
-	{ DMROOT"WANDevice.", 1, NULL, 1, &entry_method_root_WANDevice },
-	{ DMROOT"Layer2Bridging.", 1, NULL, 0, &entry_method_root_Layer2Bridging },
-	{ DMROOT"X_INTENO_SE_Wifi.", 1, NULL, 0, &entry_method_root_SE_Wifi },
-	{ DMROOT"Layer3Forwarding.", 1, NULL, 0, &entry_method_root_layer3_forwarding },
-	{ DMROOT"IPPingDiagnostics.", 1, NULL, 0, &entry_method_root_IPPingDiagnostics },
-#endif
-	{ DMROOT"Services.", 1, dm_service_enable_set, 0, &entry_method_root_Service },
-	{ DMROOT"UPnP.", 1, NULL, 0, &entry_method_root_upnp },
-	{ DMROOT"Time.", 1, NULL, 0, &entry_method_root_Time },
-	{ DMROOT"X_INTENO_SE_IGMP.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IGMP },
-	{ DMROOT"X_INTENO_SE_ICE.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_Ice },
-	{ DMROOT"X_INTENO_SE_IpAccCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_IpAccCfg },
-	{ DMROOT"X_INTENO_SE_LoginCfg.", 1, NULL, 0, &entry_method_root_X_INTENO_SE_LOGIN_CFG },
-	{ DMROOT"X_INTENO_SE_PowerManagement.", 1, dm_powermgmt_enable_set, 0, &entry_method_root_X_INTENO_SE_PowerManagement },
-	{ DMROOT"X_INTENO_SE_SyslogCfg.", 1, NULL, 0, &entry_method_root_syslog },
-	{ DMROOT"SoftwareModules.", 1, NULL, 0, &entry_method_root_software_modules },
-#ifdef XMPP_ENABLE
-	{ DMROOT"XMPP.", 1, NULL, 0, &entry_method_root_xmpp },
-#endif
-#ifdef DATAMODEL_TR181
-	{ DMROOT"Wifi.", 1, NULL, 0, &entry_method_root_Wifi },
-	{ DMROOT"Ethernet.", 1, NULL, 0, &entry_method_root_Ethernet },
-	{ DMROOT"DSL.", 1, NULL, 0, &entry_method_root_wan_dsl },
-	{ DMROOT"ATM.", 1, NULL, 0, &entry_method_root_wan_atm },
-	{ DMROOT"PTM.", 1, NULL, 0, &entry_method_root_wan_ptm },
-	{ DMROOT"Bridging.", 1, NULL, 0, &entry_method_root_bridging },
-	{ DMROOT"Hosts.", 1, NULL, 0, &entry_method_root_hosts },
-	{ DMROOT"DHCPv4.", 1, NULL, 0, &entry_method_root_dhcp },
-	{ DMROOT"IP.", 1, NULL, 0, &entry_method_root_ip },
-	{ DMROOT"PPP.", 1, NULL, 0, &entry_method_root_ppp },
-	{ DMROOT"Routing.", 1, NULL, 0, &entry_method_root_routing },
-	{ DMROOT"NAT.", 1, NULL, 0, &entry_method_root_nat },
-#endif*/
-};
 
-int dm_entry_set_prefix_methods_enable(void)
-{
-	int i = 0;
-	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
-		if (prefix_methods[i].set_enable) {
-			prefix_methods[i].enable = prefix_methods[i].set_enable();
-		}
-	}
-	return 0;
-}
-//START//
 int plugin_obj_match(DMOBJECT_ARGS)
 {
 	if (node->matched)

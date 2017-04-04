@@ -20,12 +20,6 @@
 
 LIST_HEAD(head_package_change);
 
-int dm_global_init(void)
-{
-	dm_entry_set_prefix_methods_enable();
-	return 0;
-}
-
 static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 {
 	struct cwmp   *cwmp = &cwmp_main;
@@ -380,7 +374,6 @@ void dm_entry_cli(int argc, char** argv)
 	int fault = 0, status = -1;
 	bool set_fault = false;
 
-	dm_global_init();
 	dm_ctx_init(&cli_dmctx);
 
 	if (argc < 4) goto invalid_arguments;
