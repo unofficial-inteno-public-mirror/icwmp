@@ -36,6 +36,12 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
+struct dmctx;
+struct dmnode;
+struct dm_permession_s;
+struct dm_forced_inform_s;
+struct dm_notif_s;
+
 #define DM_LINK_INST_OBJ(dmctx, parent_node, data, instance) \
 	do { \
 		(dmctx)->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance); \
@@ -312,7 +318,6 @@ int dm_entry_add_object(struct dmctx *ctx);
 int dm_entry_delete_object(struct dmctx *ctx);
 int dm_entry_set_value(struct dmctx *ctx);
 int dm_entry_set_notification(struct dmctx *ctx);
-int dm_entry_set_prefix_methods_enable(void);
 int dm_entry_enabled_notify(struct dmctx *ctx);
 int dm_entry_get_linker(struct dmctx *ctx);
 int dm_entry_get_linker_value(struct dmctx *ctx);

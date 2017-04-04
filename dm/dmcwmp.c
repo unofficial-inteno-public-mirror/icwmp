@@ -823,7 +823,7 @@ static int get_value_obj(DMOBJECT_ARGS)
 static int get_value_param(DMPARAM_ARGS)
 {
 	char *full_param;
-	char *value = NULL;
+	char *value = "";
 
 	dmastrcat(&full_param, node->current_object, lastname);
 	(get_cmd)(full_param, dmctx, &value);
@@ -838,7 +838,7 @@ static int mobj_get_value_in_param(DMOBJECT_ARGS)
 static int mparam_get_value_in_param(DMPARAM_ARGS)
 {
 	char *full_param;
-	char *value = NULL;
+	char *value = "";
 
 	dmastrcat(&full_param, node->current_object, lastname);
 	if (strcmp(dmctx->in_param, full_param) != 0) {
@@ -941,8 +941,10 @@ static int mparam_get_name_in_param(DMPARAM_ARGS)
 		return FAULT_9005;
 	}
 	dmctx->stop = 1;
-	if (dmctx->nextlevel == 1)
+	if (dmctx->nextlevel == 1) {
+		dmfree(refparam);
 		return FAULT_9003;
+	}
 	if (permission->get_permission != NULL)
 		perm = permission->get_permission(refparam, dmctx, data, instance);
 
@@ -1111,7 +1113,7 @@ static int inform_check_obj(DMOBJECT_ARGS)
 
 static int inform_check_param(DMPARAM_ARGS)
 {
-	char *value = NULL;
+	char *value = "";
 	char *full_param;
 	unsigned char fi;
 
@@ -1282,7 +1284,7 @@ static int mparam_set_value(DMPARAM_ARGS)
 	int err;
 	char *refparam;
 	char *perm;
-	char *v;
+	char *v = "";
 
 	dmastrcat(&refparam, node->current_object, lastname);
 	if (strcmp(refparam, dmctx->in_param) != 0) {
@@ -1452,7 +1454,7 @@ static int enabled_notify_check_obj(DMOBJECT_ARGS)
 static int enabled_notify_check_param(DMPARAM_ARGS)
 {
 	char *refparam;
-	char *value = NULL;
+	char *value = "";
 	char *notif;
 
 	dmastrcat(&refparam, dmctx->current_obj, lastname);
