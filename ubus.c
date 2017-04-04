@@ -32,8 +32,6 @@ static const char *arr_session_status[] = {
     [SESSION_SUCCESS] = "success",
 };
 
-static const struct blobmsg_policy notify_policy[] = {};
-
 static int
 cwmp_handle_notify(struct ubus_context *ctx, struct ubus_object *obj,
 			struct ubus_request_data *req, const char *method,
@@ -182,9 +180,6 @@ static inline time_t get_session_status_next_time() {
     return ntime;
 }
 
-static const struct blobmsg_policy status_policy[] = {
-};
-
 static int
 cwmp_handle_status(struct ubus_context *ctx, struct ubus_object *obj,
              struct ubus_request_data *req, const char *method,
@@ -303,9 +298,9 @@ cwmp_handle_inform(struct ubus_context *ctx, struct ubus_object *obj,
 }
 
 static const struct ubus_method freecwmp_methods[] = {
-	UBUS_METHOD("notify", cwmp_handle_notify, notify_policy),
+	UBUS_METHOD_NOARG("notify", cwmp_handle_notify),
 	UBUS_METHOD("command", cwmp_handle_command, command_policy),
-	UBUS_METHOD("status", cwmp_handle_status, status_policy),
+	UBUS_METHOD_NOARG("status", cwmp_handle_status),
 	UBUS_METHOD("inform", cwmp_handle_inform, inform_policy),
 };
 
