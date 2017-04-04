@@ -26,7 +26,7 @@
 #define UBUS_BUFFEER_SIZE 1024 * 8
 
 struct dmubus_ctx dmubus_ctx;
-#if 0
+#if DM_USE_LIBUBUS
 struct ubus_context *ubus_ctx;
 
 static int timeout = 1000;
@@ -66,7 +66,7 @@ static inline int ubus_arg_cmp(struct ubus_arg *src_args, int src_size, struct u
 	return 0;
 }
 
-#if 0
+#if DM_USE_LIBUBUS
 static void receive_call_result_data(struct ubus_request *req, int type, struct blob_attr *msg) 
 {
 	if (!msg)
@@ -87,6 +87,7 @@ static void receive_call_result_data(struct ubus_request *req, int type, struct 
 
 int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_args_size)
 {
+#if !DM_USE_LIBUBUS
 	char bufargs[256], *p;
 	int i, r;
 	p = bufargs;
@@ -95,12 +96,8 @@ int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_arg
 		sprintf(p, "{");
 		for (i = 0; i < u_args_size; i++) {
 			p += strlen(p);
-			if (i == 0 && u_args[i].type == 1)
-				sprintf(p, "\"%s\": %s", u_args[i].key, u_args[i].val);
-			else if (i == 0 && u_args[i].type == 0)
+			if (i == 0)
 				sprintf(p, "\"%s\": \"%s\"", u_args[i].key, u_args[i].val);
-			else if (i != 0 && u_args[i].type == 1)
-				sprintf(p, ", \"%s\": %s", u_args[i].key, u_args[i].val);
 			else
 				sprintf(p, ", \"%s\": \"%s\"", u_args[i].key, u_args[i].val);
 		}
@@ -112,10 +109,40 @@ int dmubus_call_set(char *obj, char *method, struct ubus_arg u_args[], int u_arg
 		DMCMD("ubus", 6, "-S", "-t", "1", "call", obj, method); //TODO wait to fix uloop ubus freeze
 	}
 	return 0;
+#else
+	struct blob_buf b = {0};
+	uint32_t id;
+	int ret;
+	json_res = NULL;
+
+	ubus_ctx = ubus_connect(ubus_socket);
+	if (!ubus_ctx)
+		return 0;
+
+	blob_buf_init(&b, 0);
+	int i=0;
+	for (i = 0; i < u_args_size; i++) {
+		if (!dmblobmsg_json_object_from_uargs(&b, u_args[i].key, u_args[i].val))
+			goto end_error;
+	}
+	ret = ubus_lookup_id(ubus_ctx, obj, &id);
+	ubus_invoke(ubus_ctx, id, method, b.head, receive_call_result_data, NULL, timeout);
+	blob_buf_free(&b);
+	if (json_res != NULL) {
+		json_object_put(json_res);
+		json_res = NULL;
+	}
+	return 0;
+
+end_error:
+	blob_buf_free(&b);
+	return NULL;
+#endif
 }
 
 static inline json_object *ubus_call_req(char *obj, char *method, struct ubus_arg u_args[], int u_args_size)
 {
+#if !DM_USE_LIBUBUS
 	json_object *res = NULL;
 	char bufres[UBUS_BUFFEER_SIZE], bufargs[256], *p;
 	int i, pp = 0, r;
@@ -150,7 +177,7 @@ static inline json_object *ubus_call_req(char *obj, char *method, struct ubus_ar
 	}
 	return res;
 
-#if 0
+#else
 	struct blob_buf b = {0};
 	uint32_t id;
 	int ret;
