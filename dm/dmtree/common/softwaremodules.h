@@ -22,6 +22,7 @@ char *get_softwaremodules_instance(char *uuid);
 char *get_softwaremodules_version(char *uuid);
 char *add_softwaremodules_deploymentunit(char *uuid, char*url, char *username, char *password, char *name, char *version);
 char *get_softwaremodules_name(char *uuid);
+char *get_softwaremodules_url(char *uuid);
 extern DMLEAF tDeploymentUnitParams[];
 extern DMOBJ tSoftwareModulesObj[];
 #endif

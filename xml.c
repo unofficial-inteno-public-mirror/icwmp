@@ -3208,7 +3208,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 								}
 								else if ((p->url)[0] == '\0' && (p->uuid)[0] != '\0') {
 									dm_ctx_init(&dmctx);
-									cur_url = strdup((char*)get_softwaremodules_url(p->uuid));
+									cur_url = strdup(get_softwaremodules_url(p->uuid));
 									if (cur_url == NULL || cur_url[0] == '\0')
 									{
 										error = FAULT_CPE_UNKNOWN_DEPLOYMENT_UNIT;
