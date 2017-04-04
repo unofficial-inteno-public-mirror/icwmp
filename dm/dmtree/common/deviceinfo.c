@@ -171,6 +171,7 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 				if(msg == NULL) msg = p;
 				i++;
 				if (i == nbrlines) {
+					*(p-1) = '\0';
 					break;
 				}
 			}

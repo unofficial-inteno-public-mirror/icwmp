@@ -163,6 +163,7 @@ void update_dhcp_conf_start(int i, void *data)
 end:
 		FREE(dhcp_param->state_sec);
 		FREE(dhcp_param->interface);
+		FREE(dhcp_param);
 		return;
 }
 
@@ -215,6 +216,7 @@ void update_dhcp_conf_end(int i, void *data)
 end:
 		FREE(dhcp_param->state_sec);
 		FREE(dhcp_param->interface);
+		FREE(dhcp_param);
 		return;
 }
 /*******************ADD-DEL OBJECT*********************/

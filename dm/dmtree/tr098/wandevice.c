@@ -851,6 +851,7 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *val = "0";
+	*value = "0";
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	
 	if (wandargs->instance == WAN_INST_ATM) {

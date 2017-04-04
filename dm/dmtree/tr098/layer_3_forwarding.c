@@ -443,6 +443,7 @@ char *get_layer3_interface(struct dmctx *ctx)
 int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *iface, *linker;
+	*value = "";
 			
 	iface = get_layer3_interface(ctx);
 	if (iface[0] != '\0') {
