@@ -671,6 +671,7 @@ int dmuci_add_list_value_by_section(struct uci_section *s, char *option, char *v
 	if (uci_add_list(uci_ctx, &up) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, up.p);
 	return 0;
 }
 
@@ -684,6 +685,7 @@ int dmuci_del_list_value_by_section(struct uci_section *s, char *option, char *v
 	if (uci_del_list(uci_ctx, &up) != UCI_OK)
 		return -1;
 
+	uci_save(uci_ctx, up.p);
 	return 0;
 }
 

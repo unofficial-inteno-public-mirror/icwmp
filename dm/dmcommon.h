@@ -85,5 +85,7 @@ int filter_lan_ip_interface(struct uci_section *ss, void *v);
 void remove_interface_from_ifname(char *iface, char *ifname, char *new_ifname);
 int max_array(int a[], int size);
 int check_ifname_is_vlan(char *ifname);
+int set_uci_dhcpserver_option(struct dmctx *ctx, struct uci_section *s, char *option, char *value);
+int update_uci_dhcpserver_option(struct dmctx *ctx, struct uci_section *s, char *option, char * new_option, char *value);
 
 #endif

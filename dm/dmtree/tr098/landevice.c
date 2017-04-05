@@ -32,6 +32,8 @@ inline int entry_landevice_wlanconfiguration_associateddevice_instance(struct dm
 inline int entry_landevice_lanethernetinterfaceconfig_instance(struct dmctx *ctx, char *idev, char *ieth);
 inline int entry_landevice_host_instance(struct dmctx *ctx, char *idev, char *idx);
 
+inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool_instance(struct dmctx *ctx, char * idev, char *icondpool);
+inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool(struct dmctx *ctx, char *idev);
 
 struct ldlanargs cur_lanargs = {0};
 struct ldipargs cur_ipargs = {0};
@@ -42,6 +44,8 @@ struct wlan_psk cur_pskargs = {0};
 struct wlan_wep cur_wepargs = {0};
 struct wl_clientargs cur_wl_clientargs = {0};
 struct clientargs cur_clientargs = {0};
+struct dhcppoolargs cur_dhcppoolargs = {0};
+struct dhcppooloptionargs cur_dhcppooloptionargs = {0};
 
 inline int init_ldargs_lan(struct dmctx *ctx, struct uci_section *s, char *iwan)
 {
@@ -65,6 +69,23 @@ inline int init_ldargs_dhcp(struct dmctx *ctx, struct uci_section *s)
 	struct lddhcpargs *args = &cur_dhcpargs;
 	ctx->args = (void *)args;
 	args->lddhcpsection = s;
+	return 0;
+}
+
+inline int init_args_dhcp_conditional_servingpool_entry(struct dmctx *ctx, struct uci_section *s)
+{
+	struct dhcppoolargs *args = &cur_dhcppoolargs;
+	ctx->args = (void *)args;
+	args->dhcppoolsection = s;
+	return 0;
+}
+
+inline int init_args_pool_option(struct dmctx *ctx, struct uci_section *s, struct uci_section *ss)
+{
+	struct dhcppooloptionargs *args = &cur_dhcppooloptionargs;
+	ctx->args = (void *)args;
+	args->dhcppooloptionsection = s;
+	args->dhcppoolsection = ss;
 	return 0;
 }
 
@@ -219,7 +240,201 @@ end:
 		FREE(dhcp_param->interface);
 		return;
 }
+int get_dhcp_option_last_inst(struct uci_section *ss)
+{
+	char *drinst = NULL, *tmp;
+	int dr = 0;
+	struct uci_section *s;
+
+	uci_path_foreach_sections(icwmpd, "dmmap", section_name(ss), s) {
+		dmuci_get_value_by_section_string(s, "optioninst", &tmp);
+		if (tmp[0] == '\0')
+			break;
+		drinst = tmp;
+	}
+	if (drinst) dr = atoi(drinst);
+	return dr;
+}
+
+char *dhcp_option_update_instance_alias_icwmpd(int action, char **last_inst, void *argv[])
+{
+	char *instance, *alias;
+	char buf[8] = {0};
+
+	struct uci_section *s = (struct uci_section *) argv[0];
+	char *inst_opt = (char *) argv[1];
+	char *alias_opt = (char *) argv[2];
+	bool *find_max = (bool *) argv[3];
+
+	dmuci_get_value_by_section_string(s, inst_opt, &instance);
+	if (instance[0] == '\0') {
+		if (*find_max) {
+			int m = get_dhcp_option_last_inst(s);
+			sprintf(buf, "%d", m+1);
+			*find_max = false;
+		}
+		else if (last_inst == NULL) {
+			sprintf(buf, "%d", 1);
+		}
+		else {
+			sprintf(buf, "%d", atoi(*last_inst)+1);
+		}
+		instance = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, inst_opt, buf);
+	}
+	*last_inst = instance;
+	if (action == INSTANCE_MODE_ALIAS) {
+		dmuci_get_value_by_section_string(s, alias_opt, &alias);
+		if (alias[0] == '\0') {
+			sprintf(buf, "cpe-%s", instance);
+			alias = DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, alias_opt, buf);
+		}
+		sprintf(buf, "[%s]", alias);
+		instance = dmstrdup(buf);
+	}
+	return instance;
+}
 /*******************ADD-DEL OBJECT*********************/
+int add_dhcp_serving_pool_option(struct dmctx *ctx, char **instancepara)
+{
+	char val[64];
+	char *value, *instance, *tmp;
+	struct uci_section *s = NULL;
+	struct dhcppoolargs *poolargs = (struct dhcppoolargs *)ctx->args;
+
+	instance = get_last_instance(DMMAP, section_name(poolargs->dhcppoolsection), "optioninst");
+	DMUCI_ADD_SECTION(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), &s, &value);
+	DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "dhcp_option", "0");
+	*instancepara = update_instance_icwmpd(s, instance, "optioninst");
+	sprintf(val, "vendorclass%s", *instancepara);
+	DMUCI_SET_VALUE_BY_SECTION(icwmpd, s, "value", val);
+	sprintf(val, "0,vendorclass%s", *instancepara);
+	dmuci_add_list_value_by_section( poolargs->dhcppoolsection, "dhcp_option", val);
+	return 0;
+}
+
+int delete_dhcp_serving_pool_option_all(struct dmctx *ctx)
+{
+	struct dhcppoolargs *poolargs = (struct dhcppoolargs *)ctx->args;
+	char *value;
+	char *instance;
+	struct uci_list *val;
+	struct uci_section *dmmap_s = NULL;
+	struct uci_section *dmmap_ss = NULL;
+	struct uci_element *e = NULL, *tmp;
+	int dmmap = 0;
+	uci_path_foreach_sections(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), dmmap_s)
+	{
+		if (dmmap)
+			DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+		dmmap_ss = dmmap_s;
+		dmmap++;
+	}
+	if (dmmap_ss != NULL)
+		DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+	dmuci_get_value_by_section_list(poolargs->dhcppoolsection, "dhcp_option", &val);
+	if (val) {
+		uci_foreach_element_safe(val, e, tmp)
+		{
+			dmuci_del_list_value_by_section(poolargs->dhcppoolsection, "dhcp_option", tmp->name); //TODO test it
+		}
+	}
+	return 0;
+}
+
+int delete_dhcp_serving_pool_option(struct dmctx *ctx)
+{
+	int dmmap = 0;
+	char *value, *tag, *instance,  *bufopt;
+	struct uci_list *val;
+	struct uci_section *dmmap_s = NULL;
+	struct uci_section *dmmap_ss = NULL;
+	struct uci_element *e = NULL, *tmp;
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "dhcp_option", &tag);
+	dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "value", &value);
+	dmasprintf(&bufopt, "%s,%s", tag, value);
+	dmuci_get_value_by_section_list(pooloptionargs->dhcppoolsection, "dhcp_option", &val);
+	if (val) {
+		uci_foreach_element_safe(val, e, tmp)
+		{
+			if (strcmp(tmp->name, bufopt) == 0) {
+				dmuci_del_list_value_by_section(pooloptionargs->dhcppoolsection, "dhcp_option", tmp->name); //TODO test it
+				break;
+			}
+		}
+	}
+	dmfree(bufopt);
+	DMUCI_DELETE_BY_SECTION(icwmpd, pooloptionargs->dhcppooloptionsection, NULL, NULL);
+	return 0;
+}
+
+
+int add_dhcp_conditional_serving_pool(struct dmctx *ctx, char **instancepara)
+{
+	char *value;
+	char *instance;
+	struct uci_section *s = NULL;
+
+	instance = get_last_instance("dhcp", "vendorclass", "poulinstance");
+	dmuci_add_section("dhcp", "vendorclass", &s, &value);
+	dmuci_set_value_by_section(s, "dhcp_option", "");
+	*instancepara = update_instance(s, instance, "poulinstance");
+	return 0;
+}
+
+int delete_dhcp_conditional_serving_pool_all(struct dmctx *ctx)
+{
+	int found = 0;
+	int dmmap = 0;
+	char *lan_name;
+	struct uci_section *s = NULL;
+	struct uci_section *ss = NULL;
+	struct uci_section *dmmap_s = NULL;
+	struct uci_section *dmmap_ss = NULL;
+
+	uci_foreach_sections("dhcp", "vendorclass", s) {
+		if (found != 0)
+		{
+			uci_path_foreach_sections(icwmpd, "dmmap", section_name(ss), dmmap_s)
+			{
+				if (dmmap)
+					DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+				dmmap_ss = dmmap_s;
+				dmmap++;
+			}
+			if (dmmap_ss != NULL)
+				DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+			dmuci_delete_by_section(ss, NULL, NULL);
+		}
+		ss = s;
+		found++;
+	}
+	if (ss != NULL)
+		dmuci_delete_by_section(ss, NULL, NULL);
+	return 0;
+}
+
+int delete_dhcp_conditional_serving_pool(struct dmctx *ctx)
+{
+	struct dhcppoolargs *poolargs = (struct dhcppoolargs *)ctx->args;
+	int dmmap = 0;
+	struct uci_section *dmmap_s = NULL;
+	struct uci_section *dmmap_ss = NULL;
+
+
+	uci_path_foreach_sections(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), dmmap_s)
+		{
+			if (dmmap)
+				DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+			dmmap_ss = dmmap_s;
+			dmmap++;
+		}
+		if (dmmap_ss != NULL)
+			DMUCI_DELETE_BY_SECTION(icwmpd, dmmap_ss, NULL, NULL);
+	dmuci_delete_by_section(poolargs->dhcppoolsection, NULL, NULL);
+	return 0;
+}
 int add_landevice_dhcpstaticaddress(struct dmctx *ctx, char **instancepara)
 {
 	char *value;
@@ -3008,6 +3223,147 @@ int set_lan_eth_alias(char *refparam, struct dmctx *ctx, int action, char *value
 	}
 	return 0;
 }
+int get_dhcp_conditional_servingpool_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcppoolargs.dhcppoolsection, "poulalias", value);
+	return 0;
+}
+
+int set_dhcp_conditional_servingpool_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_dhcppoolargs.dhcppoolsection, "poulalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+
+int get_dhcp_conditional_servingpool_enable(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcppoolargs.dhcppoolsection, "enable", value);
+	return 0;
+}
+
+int set_dhcp_conditionalservingpool_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	bool b;
+
+	switch (action) {
+		case VALUECHECK:
+			if (string_to_bool(value, &b))
+				return FAULT_9007;
+			return 0;
+		case VALUESET:
+			string_to_bool(value, &b);
+			if (b) {
+				dmuci_set_value_by_section(cur_dhcppoolargs.dhcppoolsection, "enable", "");
+			}
+			else {
+				dmuci_set_value_by_section(cur_dhcppoolargs.dhcppoolsection, "enable", "0");
+			}
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_conditional_servingpool_vendorclassid(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcppoolargs.dhcppoolsection, "vendorclass", value);
+	return 0;
+}
+
+int set_dhcp_conditional_servingpool_vendorclassid(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+				return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_dhcppoolargs.dhcppoolsection, "vendorclass", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_servingpool_alias(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "optionalias", value);
+	return 0;
+}
+
+int set_dhcp_servingpool_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	switch (action) {
+		case VALUECHECK:
+				return 0;
+		case VALUESET:
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, pooloptionargs->dhcppooloptionsection, "optionalias", value);
+			return 0;
+	}
+	return 0;
+}
+
+
+int get_dhcp_servingpool_tag(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "dhcp_option", value);
+	return 0;
+}
+
+int set_dhcp_servingpool_tag(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *tmp = NULL;
+	char *option_tmp = NULL;
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	switch (action) {
+		case VALUECHECK:
+				return 0;
+		case VALUESET:
+			dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "value", &tmp);
+			dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "dhcp_option", &option_tmp);
+			update_uci_dhcpserver_option(ctx, pooloptionargs->dhcppoolsection, option_tmp, value, tmp);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, pooloptionargs->dhcppooloptionsection, "dhcp_option", value);
+			return 0;
+	}
+	return 0;
+}
+
+int get_dhcp_servingpool_value(char *refparam, struct dmctx *ctx, char **value)
+{
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "value", value);
+	return 0;
+}
+
+int set_dhcp_servingpool_value(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+
+	char *tmp;
+	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
+
+	switch (action) {
+		case VALUECHECK:
+				return 0;
+		case VALUESET:
+			dmuci_get_value_by_section_string(pooloptionargs->dhcppooloptionsection, "dhcp_option", &tmp);
+			set_uci_dhcpserver_option(ctx, pooloptionargs->dhcppoolsection, tmp, value);
+			DMUCI_SET_VALUE_BY_SECTION(icwmpd, pooloptionargs->dhcppooloptionsection, "value", value);
+
+			return 0;
+	}
+	return 0;
+}
 /////////////SUB ENTRIES///////////////
 inline int entry_landevice_sub(struct dmctx *ctx)
 {
@@ -3170,6 +3526,62 @@ inline int entry_landevice_host(struct dmctx *ctx, struct uci_section *landevice
 	return 0;
 }
 
+inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool(struct dmctx *ctx, char *idev)
+{
+	struct uci_section *s = NULL;
+	char *icondpool = NULL, *icondpool_last = NULL;
+	uci_foreach_sections("dhcp", "vendorclass", s) {
+		init_args_dhcp_conditional_servingpool_entry(ctx, s);
+		icondpool =  handle_update_instance(1, ctx, &icondpool_last, update_instance_alias, 3, s, "poulinstance", "poulalias");
+		SUBENTRY(entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool_instance, ctx, idev, icondpool);
+	}
+	return 0;
+}
+
+inline int entry_landevice_dhcpconditionalservingpool_option(struct dmctx *ctx, char *idev, char *icondpool)
+{
+	int id = 0;
+	char *idx = NULL, *pch, *spch, *name, *value;
+	char *idx_last = NULL;
+	struct uci_list *val;
+	struct uci_element *e = NULL, *tmp;
+	struct uci_section *ss = NULL;
+	struct dhcppoolargs *poolargs = (struct dhcppoolargs *)ctx->args;
+	bool find_max = true;
+	char *tt;
+
+	dmuci_get_value_by_section_list(poolargs->dhcppoolsection, "dhcp_option", &val);
+	if (val) {
+		uci_foreach_element_safe(val, e, tmp)
+		{
+			tt = dmstrdup(tmp->name);
+			pch = strtok_r(tt, ",", &spch);
+			uci_path_foreach_option_eq(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), "dhcp_option", pch, ss)
+			{
+				dmuci_get_value_by_section_string(ss, "value", &value);
+				if (strcmp(spch, value) == 0)
+					dmuci_get_value_by_section_string(ss, "optioninst", &idx);
+				else
+					continue;
+				init_args_pool_option(ctx, ss, poolargs->dhcppoolsection);
+				SUBENTRY(entry_landevice_dhcpconditionalservingpool_option_instance, ctx, idev, icondpool, idx);
+				dmfree(tt);
+				break;
+			}
+			if (!idx)
+			{
+				DMUCI_ADD_SECTION(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), &ss, &name);
+				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "dhcp_option", pch);
+				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "value", spch);
+				init_args_pool_option(ctx, ss, poolargs->dhcppoolsection);
+				idx =  handle_update_instance(1, ctx, &idx_last, dhcp_option_update_instance_alias_icwmpd, 4, ss, "optioninst", "optionalias", &find_max);
+				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "optioninst", idx);
+				SUBENTRY(entry_landevice_dhcpconditionalservingpool_option_instance, ctx, idev, icondpool, idx);
+				dmfree(tt);
+			}
+		}
+	}
+}
 ///////////////////////////////////////
 /*************************************/
 int entry_method_root_LANDevice(struct dmctx *ctx)
@@ -3203,6 +3615,7 @@ inline int entry_landevice_sub_instance(struct dmctx *ctx, struct uci_section *l
 		DMPARAM("HostNumberOfEntries", ctx, "0", get_lan_host_nbr_entries, NULL, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.Hosts.Host.", ctx, "0", 0, NULL, NULL, NULL, idev);
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.IPInterface.", ctx, "0", 1, NULL, NULL, NULL, idev);
+		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.", ctx, "1", 1, add_dhcp_conditional_serving_pool, delete_dhcp_conditional_serving_pool_all, NULL, idev);
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPStaticAddress.", ctx, "1", 1, add_landevice_dhcpstaticaddress, delete_landevice_dhcpstaticaddress_all, NULL, idev);
 		DMOBJECT(DMROOT"LANDevice.%s.WLANConfiguration.", ctx, "1", 0, add_landevice_wlanconfiguration, delete_landevice_wlanconfiguration_all, NULL, idev);
 		DMOBJECT(DMROOT"LANDevice.%s.LANEthernetInterfaceConfig.", ctx, "0", 1, NULL, NULL, NULL, idev);/* TO CHECK */
@@ -3210,6 +3623,34 @@ inline int entry_landevice_sub_instance(struct dmctx *ctx, struct uci_section *l
 		SUBENTRY(entry_landevice_wlanconfiguration, ctx, landevice_section, idev);
 		SUBENTRY(entry_landevice_lanethernetinterfaceconfig, ctx, landevice_section, idev);
 		SUBENTRY(entry_landevice_host, ctx, landevice_section, idev);
+		SUBENTRY(entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool, ctx, idev);
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool_instance(struct dmctx *ctx, char * idev, char *icondpool)
+{
+	IF_MATCH(ctx, DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.", idev, icondpool) {
+		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.", ctx, "1", 1, NULL, delete_dhcp_conditional_serving_pool, NULL, idev, icondpool);
+		DMPARAM("Alias", ctx, "1", get_dhcp_conditional_servingpool_alias, set_dhcp_conditional_servingpool_alias, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Enable", ctx, "1", get_dhcp_conditional_servingpool_enable, set_dhcp_conditionalservingpool_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
+		DMPARAM("VendorClassID", ctx, "1", get_dhcp_conditional_servingpool_vendorclassid, set_dhcp_conditional_servingpool_vendorclassid, NULL, 0, 1, UNDEF, NULL);
+		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.DHCPOption.", ctx, "1", 0, add_dhcp_serving_pool_option, delete_dhcp_serving_pool_option_all, NULL, idev, icondpool);
+		SUBENTRY(entry_landevice_dhcpconditionalservingpool_option, ctx, idev, icondpool);
+
+		return 0;
+	}
+	return FAULT_9005;
+}
+
+inline int entry_landevice_dhcpconditionalservingpool_option_instance(struct dmctx *ctx, char * idev, char *icondpool, char *idx)
+{
+	IF_MATCH(ctx, DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.DHCPOption.%s.", idev, icondpool, idx) {
+		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.DHCPOption.%s.", ctx, "1", 1, NULL, delete_dhcp_serving_pool_option, NULL, idev, icondpool, idx);
+		DMPARAM("Alias", ctx, "1", get_dhcp_servingpool_alias, set_dhcp_servingpool_alias, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("Tag", ctx, "1", get_dhcp_servingpool_tag, set_dhcp_servingpool_tag, "xsd:unsignedInt", 0, 1, UNDEF, NULL);
+		DMPARAM("Value", ctx, "1", get_dhcp_servingpool_value, set_dhcp_servingpool_value, NULL, 0, 1, UNDEF, NULL);
 		return 0;
 	}
 	return FAULT_9005;

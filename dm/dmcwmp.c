@@ -218,7 +218,7 @@ char *update_instance_icwmpd(struct uci_section *s, char *last_inst, char *inst_
 	argv[0]= s;
 	argv[1]= inst_opt;
 	argv[2]= "";
-	instance = update_instance_alias(0, &last_inst, argv);
+	instance = update_instance_alias_icwmpd(0, &last_inst, argv);
 	return instance;
 }
 
@@ -305,10 +305,15 @@ char *get_last_instance(char *package, char *section, char *opt_inst)
 {
 	struct uci_section *s;
 	char *inst = NULL;
+	char *last_inst = NULL;
 	if (package == DMMAP)
 	{
-		uci_path_foreach_sections(icwmpd, package, section, s) {
-			inst = update_instance_icwmpd(s, inst, opt_inst);
+		printf("get_last_instance DMMAP \n");
+		uci_path_foreach_sections(icwmpd, "dmmap", section, s) {
+			inst = update_instance_icwmpd(s, last_inst, opt_inst);
+			if(last_inst)
+				dmfree(last_inst);
+			last_inst = dmstrdup(inst);
 		}
 	}
 	else

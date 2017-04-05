@@ -43,6 +43,17 @@ struct lddhcpargs
 	struct uci_section *lddhcpsection;
 };
 
+struct dhcppoolargs
+{
+	struct uci_section *dhcppoolsection;
+};
+
+struct dhcppooloptionargs
+{
+	struct uci_section *dhcppooloptionsection;
+	struct uci_section *dhcppoolsection;
+};
+
 struct ldwlanargs
 {
 	struct uci_section *lwlansection;
