@@ -10,14 +10,6 @@
 #ifndef __DIAGNOSTIC__H
 #define __DIAGNOSTIC__H
 
-#define FUNCTION_PATH "/usr/share/icwmp/functions/ipping_launch"
-#define DOWNLOAD_DIAGNOSTIC_PATH "/usr/share/icwmp/functions/download_launch"
-#define DOWNLOAD_DUMP_FILE "/tmp/download_dump"
-#define IPPING_STOP DMCMD("/bin/sh", 2, FUNCTION_PATH, "stop");
-#define DOWNLOAD_DIAGNOSTIC_STOP DMCMD("/bin/sh", 2, DOWNLOAD_DIAGNOSTIC_PATH, "stop");
-#define UPLOAD_DIAGNOSTIC_PATH "/usr/share/icwmp/functions/upload_launch"
-#define UPLOAD_DUMP_FILE "/tmp/upload_dump"
-#define UPLOAD_DIAGNOSTIC_STOP DMCMD("/bin/sh", 2, UPLOAD_DIAGNOSTIC_PATH, "stop");
 #define default_date_format "AAAA-MM-JJTHH:MM:SS.000000Z"
 #define default_date_size sizeof(default_date_format) + 1
 #define FTP_SIZE_RESPONSE "213"

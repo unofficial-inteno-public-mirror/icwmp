@@ -12,9 +12,6 @@
 #include <ctype.h>
 #include <uci.h>
 #include <stdio.h>
-#include "cwmp.h"
-#include "diagnostic.h"
-#include "ubus.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"

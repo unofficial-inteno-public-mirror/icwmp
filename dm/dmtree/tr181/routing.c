@@ -439,7 +439,7 @@ int get_router_ipv4forwarding_interface_linker_parameter(char *refparam, struct 
 	iface = get_router_ipv4forwarding_interface(ctx);
 	if (iface[0] != '\0') {
 		dmasprintf(&linker, "%s", iface);
-		adm_entry_get_linker_param(DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL)
 			*value = "";
 		dmfree(linker);
@@ -456,7 +456,7 @@ int set_router_ipv4forwarding_interface_linker_parameter(char *refparam, struct 
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (linker) {
 				dmuci_set_value_by_section(routeargs->routefwdsection, "interface", linker);
 				dmfree(linker);

@@ -11,7 +11,6 @@
 
 #include <ctype.h>
 #include <uci.h>
-#include "cwmp.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
@@ -125,14 +124,14 @@ inline int init_wlan_wep_args(struct dmctx *ctx, struct uci_section *s)
 	return 0;
 }
 
-void update_dhcp_conf_start(int i, void *data)
+void update_dhcp_conf_start(struct execute_end_session *ees)
 {
 		json_object *res;
 		struct dmctx dmctx = {0};
-		struct dhcp_param *dhcp_param = (struct dhcp_param *)(data);
+		struct dhcp_param *dhcp_param = (struct dhcp_param *)(ees->data);
 		char *mask, *start, *dhcp_name, *ipaddr, buf[16];
 		
-		dm_ctx_init(&dmctx);
+		dm_ctx_init(&dmctx, ees->amd_version, ees->instance_mode);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
 			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
@@ -167,14 +166,14 @@ end:
 		return;
 }
 
-void update_dhcp_conf_end(int i, void *data)
+void update_dhcp_conf_end(struct execute_end_session *ees)
 {
 		json_object *res;
 		char *ipaddr, *mask, *start, *dhcp_name, *limit, buf[16], buf_start[16] = "";
-		struct dhcp_param *dhcp_param = (struct dhcp_param *)(data);
+		struct dhcp_param *dhcp_param = (struct dhcp_param *)(ees->data);
 		struct dmctx dmctx = {0};
 
-		dm_ctx_init(&dmctx);
+		dm_ctx_init(&dmctx, ees->amd_version, ees->instance_mode);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
 			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
@@ -589,7 +588,7 @@ int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, ch
 			dhcp_param_1 = calloc(1, sizeof(struct dhcp_param));
 			dhcp_param_1->interface = strdup(lan_name);
 			dhcp_param_1->state_sec = strdup((curr_section)->e.name);
-			dm_add_end_session(&update_dhcp_conf_start, 0, (void*)(dhcp_param_1));
+			dm_add_end_session(ctx, &update_dhcp_conf_start, 0, (void*)(dhcp_param_1));
 			return 0;
 	}
 	return 0;
@@ -630,7 +629,7 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 			dhcp_param = calloc(1, sizeof(struct dhcp_param));
 			dhcp_param->interface = strdup(lan_name);
 			dhcp_param->state_sec = strdup((curr_section)->e.name);
-			dm_add_end_session(&update_dhcp_conf_end, 0, (void*)(dhcp_param));
+			dm_add_end_session(ctx, &update_dhcp_conf_end, 0, (void*)(dhcp_param));
 			return 0;
 	}
 	return 0;

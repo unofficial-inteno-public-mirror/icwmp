@@ -36,11 +36,9 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #endif
 
-struct dmctx;
-struct dmnode;
-struct dm_permession_s;
-struct dm_forced_inform_s;
-struct dm_notif_s;
+#ifndef FREE
+#define FREE(x) do { free(x); x = NULL; } while (0)
+#endif
 
 #define DM_LINK_INST_OBJ(dmctx, parent_node, data, instance) \
 	do { \
@@ -64,6 +62,14 @@ enum dmt_type_enum {
 	DMT_LONG,
 	DMT_BOOL,
 	DMT_TIME,
+};
+
+enum amd_version_enum{
+	AMD_1 = 1,
+	AMD_2,
+	AMD_3,
+	AMD_4,
+	AMD_5,
 };
 
 #define DMPARAM_ARGS \
@@ -226,6 +232,15 @@ struct notification {
 	char *type;
 };
 
+typedef struct execute_end_session {
+	struct list_head list;
+	int action;
+	unsigned int amd_version;
+	unsigned int instance_mode;
+	void *data;
+	void (*function)(struct execute_end_session *);
+} execute_end_session;
+
 enum set_value_action {
 	VALUECHECK,
 	VALUESET
@@ -293,8 +308,21 @@ enum instance_mode {
 	INSTANCE_MODE_ALIAS
 };
 
+enum end_session_enum {
+	END_SESSION_REBOOT = 1,
+	END_SESSION_EXTERNAL_ACTION = 1<<1,
+	END_SESSION_RELOAD = 1<<2,
+	END_SESSION_FACTORY_RESET = 1<<3,
+	END_SESSION_IPPING_DIAGNOSTIC = 1<<4,
+	END_SESSION_DOWNLOAD_DIAGNOSTIC = 1<<5,
+	END_SESSION_UPLOAD_DIAGNOSTIC = 1<<6,
+};
+
 extern struct list_head list_enabled_notify;
 extern struct list_head list_enabled_lw_notify;
+extern struct list_head list_execute_end_session;
+extern int end_session_flag;
+extern int ip_version;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
@@ -327,6 +355,9 @@ void dm_update_enabled_notify_byname(char *name, char *new_value);
 char *get_last_instance(char *package, char *section, char *opt_inst);
 char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
 char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_inst, char * (*up_instance)(int action, char **last_inst, void *argv[]), int argc, ...);
+int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data);
+int apply_end_session();
+void cwmp_set_end_session (unsigned int flag);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

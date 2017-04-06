@@ -1,23 +1,10 @@
-bin_PROGRAMS = icwmpd
-CWMP_VERSION = 3.0
+CWMP_VERSION = 3.0.0
+LIB_DATAMODEL_VERSION = 3:0:0
 
-icwmpd_SOURCES =			\
-	../backupSession.c		\
-	../config.c				\
-	../cwmp.c				\
-	../diagnostic.c			\
-	../digestauth.c			\
-	../event.c				\
-	../external.c			\
-	../http.c				\
-	../jshn.c				\
-	../log.c				\
+lib_LTLIBRARIES = libdatamodel.la
+
+libdatamodel_la_SOURCES =	\
 	../md5.c				\
-	../netlink.c			\
-	../time.c				\
-	../ubus.c				\
-	../xml.c				\
-	../zlib.c				\
 	../dm/dmcwmp.c			\
 	../dm/dmentry.c			\
 	../dm/dmmem.c			\
@@ -27,29 +14,23 @@ icwmpd_SOURCES =			\
 	../dm/wepkey.c			\
 	../dm/dmtree/common/deviceinfo.c				\
 	../dm/dmtree/common/managementserver.c			\
-	../dm/dmtree/common/root.c						\
+	../dm/dmtree/common/softwaremodules.c			\
 	../dm/dmtree/common/times.c						\
 	../dm/dmtree/common/upnp.c						\
-	../dm/dmtree/common/voice_services.c			\
-	../dm/dmtree/common/x_inteno_se_ice.c			\
-	../dm/dmtree/common/x_inteno_se_igmp.c			\
+	../dm/dmtree/common/voice_services.c 			\
+	../dm/dmtree/common/x_inteno_se_ice.c 			\
+	../dm/dmtree/common/x_inteno_se_igmp.c 			\
 	../dm/dmtree/common/x_inteno_se_ipacccfg.c		\
 	../dm/dmtree/common/x_inteno_se_logincfg.c		\
 	../dm/dmtree/common/x_inteno_se_power_mgmt.c	\
-	../dm/dmtree/common/softwaremodules.c			\
-	../dm/dmtree/common/x_inteno_se_owsd.c			\
+	../dm/dmtree/common/x_inteno_syslog.c			\
 	../dm/dmtree/common/x_inteno_se_dropbear.c		\
+	../dm/dmtree/common/x_inteno_se_owsd.c			\
 	../dm/dmtree/common/x_inteno_se_buttons.c		\
-	../dm/dmtree/common/x_inteno_syslog.c			
-
-if XMPP_ENABLE
-icwmpd_SOURCES += 									\
-	../dm/dmtree/common/xmpp.c						\
-	../xmpp_cr.c					
-endif
+	../dm/dmtree/common/root.c
 
 if DATAMODEL_TR098
-icwmpd_SOURCES += 									\
+libdatamodel_la_SOURCES += 							\
 	../dm/dmtree/tr098/lan_interfaces.c				\
 	../dm/dmtree/tr098/landevice.c					\
 	../dm/dmtree/tr098/layer_2_bridging.c			\
@@ -61,7 +42,7 @@ icwmpd_SOURCES += 									\
 	../dm/dmtree/tr098/layer_3_forwarding.c	
 endif
 if DATAMODEL_TR181
-icwmpd_SOURCES +=									\
+libdatamodel_la_SOURCES +=							\
 	../dm/dmtree/tr181/wifi.c						\
 	../dm/dmtree/tr181/ethernet.c					\
 	../dm/dmtree/tr181/wan.c						\
@@ -73,6 +54,65 @@ icwmpd_SOURCES +=									\
 	../dm/dmtree/tr181/nat.c						\
 	../dm/dmtree/tr181/routing.c
 endif
+
+libdatamodel_la_CFLAGS =	\
+	$(AM_CFLAGS)			\
+	$(LIBUCI_CFLAGS)		\
+	$(LIBUBOX_CFLAGS)		\
+	$(LIBUBUS_CFLAGS)
+
+libdatamodel_la_LDFLAGS = 	\
+	$(AM_LDFLAGS)			\
+	$(LIBUCI_LDFLAGS)		\
+	$(LIBUBOX_LDFLAGS)		\
+	$(LIBUBUS_LDFLAGS)		\
+	-share					\
+	-version-info $(LIB_DATAMODEL_VERSION)
+
+libdatamodel_la_LIBADD =	\
+	$(AM_LIBS)				\
+	$(LIBUCI_LIBS)			\
+	$(LIBUBOX_LIBS)			\
+	$(LIBUBUS_LIBS)			\
+	$(LIBJSON_LIBS)			\
+	$(LBLOBMSG_LIBS)
+
+libdatamodel_la_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+libdatamodel_la_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
+
+libdatamodel_la_CFLAGS+=-I../inc/
+libdatamodel_la_CFLAGS+=-I../dm/
+libdatamodel_la_CFLAGS+=-I../dm/dmtree/
+libdatamodel_la_CFLAGS+=-I../dm/dmtree/common
+libdatamodel_la_CFLAGS+=-I../dm/dmtree/tr098
+libdatamodel_la_CFLAGS+=-I../dm/dmtree/tr181
+
+bin_PROGRAMS = icwmpd
+
+icwmpd_SOURCES =			\
+	../backupSession.c		\
+	../config.c				\
+	../cwmp.c				\
+	../digestauth.c			\
+	../event.c				\
+	../external.c			\
+	../http.c				\
+	../jshn.c				\
+	../log.c				\
+	../md5.c				\
+	../netlink.c			\
+	../time.c				\
+	../ubus.c				\
+	../xml.c				\
+	../diagnostic.c			\
+	../zlib.c
+
+if XMPP_ENABLE
+icwmpd_SOURCES += 									\
+	../dm/dmtree/common/xmpp.c						\
+	../xmpp_cr.c					
+endif
+
 icwmpd_CFLAGS =			\
 	$(AM_CFLAGS)		\
 	$(LIBUCI_CFLAGS)	\
@@ -106,7 +146,8 @@ icwmpd_LDADD =			\
 	$(LIBJSON_LIBS)		\
 	$(LBLOBMSG_LIBS)	\
 	$(LIBZ_LIBS)		\
-	$(LIBM_LIBS)
+	$(LIBM_LIBS)		\
+	-ldatamodel
 
 icwmpd_CFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"
 icwmpd_LDFLAGS+=-DCWMP_VERSION=\"$(CWMP_VERSION)\"

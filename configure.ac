@@ -40,6 +40,8 @@ AM_CONDITIONAL([XMPP_ENABLE], [test "x$enable_xmpp" = "xenable" ])
 # checks for programs
 AC_PROG_CC
 AM_PROG_CC_C_O
+LT_INIT
+AC_ENABLE_SHARED
 
 # checks for libraries
 LIBPTHREAD_LIBS='-lpthread'

@@ -8,11 +8,9 @@
  */
 
 #include <uci.h>
-#include "cwmp.h"
 #include "dmuci.h"
 #include "dmcwmp.h"
 #include "dmmem.h"
-#include "xml.h"
 #include "root.h"
 #include "times.h"
 #include "upnp.h"
@@ -86,6 +84,9 @@ static int check_leaf_skip_params(DMPARAM_ARGS);
 
 LIST_HEAD( list_enabled_notify);
 LIST_HEAD( list_enabled_lw_notify);
+LIST_HEAD(list_execute_end_session);
+int end_session_flag = 0;
+int ip_version = 4;
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
@@ -112,7 +113,6 @@ struct dm_forced_inform_s DMFINFRM = {1, NULL};
 struct dm_notif_s DMNONE = { "0", NULL };
 struct dm_notif_s DMPASSIVE = { "1", NULL };
 struct dm_notif_s DMACTIVE = { "2", NULL };
-
 
 int plugin_obj_match(DMOBJECT_ARGS)
 {
@@ -1564,3 +1564,50 @@ static int get_linker_value_check_param(DMPARAM_ARGS)
 	return FAULT_9005;
 }
 
+int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data)
+{
+	struct execute_end_session *execute_end_session;
+
+	execute_end_session = calloc (1,sizeof(struct execute_end_session));
+	if (execute_end_session == NULL)
+	{
+		return -1;
+	}
+	execute_end_session->action = action;
+	execute_end_session->data = data;
+	execute_end_session->function = function;
+	execute_end_session->amd_version = ctx->amd_version;
+	execute_end_session->instance_mode = ctx->instance_mode;
+	list_add_tail (&(execute_end_session->list), &(list_execute_end_session));
+
+	return 0;
+}
+
+int cwmp_free_dm_end_session(struct execute_end_session *execute_end_session)
+{
+	if(execute_end_session != NULL)
+	{
+		if(execute_end_session->data != NULL)
+		{
+			FREE(execute_end_session->data);
+		}
+		FREE(execute_end_session);
+	}
+	return 0;
+}
+
+int apply_end_session()
+{
+	struct execute_end_session *p, *q;
+	list_for_each_entry_safe(p, q, &(list_execute_end_session), list) {
+		p->function(p);
+		list_del(&(p->list));
+		cwmp_free_dm_end_session(p);
+	}
+	return 0;
+}
+
+void cwmp_set_end_session (unsigned int flag)
+{
+	end_session_flag |= flag;
+}

@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <uci.h>
-#include <cwmp.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"

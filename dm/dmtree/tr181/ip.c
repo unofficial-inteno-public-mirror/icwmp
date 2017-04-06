@@ -12,7 +12,6 @@
 #include <uci.h>
 #include <stdio.h>
 #include <ctype.h>
-#include "cwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcwmp.h"
@@ -425,7 +424,7 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			if (strcmp(mg, "true") == 0)
 				sprintf(linker, "%s+", section_name(port));
 
-			adm_entry_get_linker_param(DMROOT".Bridging.Bridge.", linker, value);
+			adm_entry_get_linker_param(ctx, DMROOT".Bridging.Bridge.", linker, value);
 			if (*value == NULL)
 				*value = "";
 			return 0;
@@ -448,15 +447,15 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			sprintf(linker, "%s", section_name(cur_ip_args.ip_sec));
 		}
 	}
-	adm_entry_get_linker_param(DMROOT".ATM.Link.", linker, value);
+	adm_entry_get_linker_param(ctx, DMROOT".ATM.Link.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".PTM.Link.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".PTM.Link.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".Ethernet.Interface.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".Ethernet.Interface.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".WiFi.SSID.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".WiFi.SSID.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".PPP.Interface.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".PPP.Interface.", linker, value);
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -472,7 +471,7 @@ int set_ip_int_lower_layer(char *refparam, struct dmctx *ctx, int action, char *
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			p = strstr(value, ".Port.");
 			if (linker && p && strcmp(p, ".Port.1.") == 0)
 			{

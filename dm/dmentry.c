@@ -15,14 +15,11 @@
 #include "dmubus.h"
 #include "dmuci.h"
 #include "dmentry.h"
-#include "cwmp.h"
-#include "log.h"
 
 LIST_HEAD(head_package_change);
 
-static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
+static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode, int custom)
 {
-	struct cwmp   *cwmp = &cwmp_main;
 	if (custom == CTX_INIT_ALL) {
 		memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
 		INIT_LIST_HEAD(&dmubus_ctx.obj_head);
@@ -32,11 +29,8 @@ static int dm_ctx_init_custom(struct dmctx *ctx, int custom)
 	INIT_LIST_HEAD(&ctx->list_parameter);
 	INIT_LIST_HEAD(&ctx->set_list_tmp);
 	INIT_LIST_HEAD(&ctx->list_fault_param);
-	if(cwmp->conf.supported_amd_version == 0)
-		get_amd_version_config();
-	get_instance_mode_config();
-	ctx->amd_version = cwmp->conf.amd_version;
-	ctx->instance_mode = cwmp->conf.instance_mode;
+	ctx->amd_version = amd_version;
+	ctx->instance_mode = instance_mode;
 	return 0;
 }
 
@@ -57,9 +51,9 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 	return 0;
 }
 
-int dm_ctx_init(struct dmctx *ctx)
+int dm_ctx_init(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode)
 {
-	dm_ctx_init_custom(ctx, CTX_INIT_ALL);
+	dm_ctx_init_custom(ctx, amd_version, instance_mode, CTX_INIT_ALL);
 	return 0;
 }
 
@@ -69,9 +63,9 @@ int dm_ctx_clean(struct dmctx *ctx)
 	return 0;
 }
 
-int dm_ctx_init_sub(struct dmctx *ctx)
+int dm_ctx_init_sub(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode)
 {
-	dm_ctx_init_custom(ctx, CTX_INIT_SUB);
+	dm_ctx_init_custom(ctx, amd_version, instance_mode, CTX_INIT_SUB);
 	return 0;
 }
 
@@ -115,14 +109,12 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
-			CWMP_LOG(DEBUG,"Get Value Param : %s\n",ctx->in_param);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_value(ctx);
 			break;
 		case CMD_GET_NAME:
-			CWMP_LOG(DEBUG,"Get Name Param : %s Level %s\n",ctx->in_param, arg1);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
@@ -132,7 +124,6 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_GET_NOTIFICATION:
-			CWMP_LOG(DEBUG,"Get Notification Param : %s \n",ctx->in_param);
 			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
@@ -141,7 +132,6 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 		case CMD_SET_VALUE:
 			ctx->in_value = arg1 ? arg1 : "";
 			ctx->setaction = VALUECHECK;
-			CWMP_LOG(DEBUG,"Set Value Param: %s Value: %s\n",ctx->in_param, ctx->in_value);
 			fault = dm_entry_set_value(ctx);
 			if (fault)
 				add_list_fault_param(ctx, ctx->in_param, fault);
@@ -169,7 +159,6 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			dm_entry_inform(ctx);
 			break;
 		case CMD_ADD_OBJECT:
-			CWMP_LOG(DEBUG,"Object To Add: %s \n",ctx->in_param);
 			fault = dm_entry_add_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
@@ -177,7 +166,6 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_DEL_OBJECT:
-			CWMP_LOG(DEBUG,"Object To Del: %s \n",ctx->in_param);
 			fault = dm_entry_delete_object(ctx);
 			if (!fault) {
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
@@ -238,11 +226,11 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 	return fault;
 }
 
-int dm_entry_load_enabled_notify()
+int dm_entry_load_enabled_notify(unsigned int amd_version, int instance_mode)
 {
 	struct dmctx dmctx = {0};
 
-	dm_ctx_init(&dmctx);
+	dm_ctx_init(&dmctx, amd_version, instance_mode);
 	dmctx.in_param = "";
 	dmctx.tree = true;
 
@@ -254,11 +242,11 @@ int dm_entry_load_enabled_notify()
 	return 0;
 }
 
-int adm_entry_get_linker_param(char *param, char *linker, char **value)
+int adm_entry_get_linker_param(struct dmctx *ctx, char *param, char *linker, char **value)
 {
 	struct dmctx dmctx = {0};
 
-	dm_ctx_init_sub(&dmctx);
+	dm_ctx_init_sub(&dmctx, ctx->amd_version, ctx->instance_mode);
 	dmctx.in_param = param ? param : "";
 	dmctx.linker = linker;
 
@@ -276,7 +264,7 @@ int adm_entry_get_linker_param(char *param, char *linker, char **value)
 	return 0;
 }
 
-int adm_entry_get_linker_value(char *param, char **value)
+int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value)
 {
 	struct dmctx dmctx = {0};
 	*value = NULL;
@@ -285,7 +273,7 @@ int adm_entry_get_linker_value(char *param, char **value)
 		return 0;
 	}
 
-	dm_ctx_init_sub(&dmctx);
+	dm_ctx_init_sub(&dmctx, ctx->amd_version, ctx->instance_mode);
 	dmctx.in_param = param;
 	dmctx.tree = false;
 
@@ -366,7 +354,7 @@ end:
 	return 0;
 }
 
-void dm_entry_cli(int argc, char** argv)
+void dm_entry_cli(int argc, char** argv, unsigned int amd_version, unsigned int instance_mode)
 {
 	struct dmctx cli_dmctx = {0};
 	int output = 1;
@@ -374,7 +362,7 @@ void dm_entry_cli(int argc, char** argv)
 	int fault = 0, status = -1;
 	bool set_fault = false;
 
-	dm_ctx_init(&cli_dmctx);
+	dm_ctx_init(&cli_dmctx, amd_version, instance_mode);
 
 	if (argc < 4) goto invalid_arguments;
 

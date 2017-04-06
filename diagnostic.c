@@ -18,6 +18,7 @@
 #include "log.h"
 #include "external.h"	
 #include "dmentry.h"
+#include "dmcommon.h"
 #include "ubus.h"
 #include "diagnostic.h"
 #include <netinet/in.h>

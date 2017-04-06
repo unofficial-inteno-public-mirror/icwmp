@@ -877,7 +877,7 @@ int get_port_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 		for (pch = strtok_r(ifname_dup, " ", &spch); pch != NULL; pch = strtok_r(NULL, " ", &spch)) {
 			check_port_with_ifname(pch, &s);
 			sprintf(plinker, "%s+%s", section_name(s), pch);
-			adm_entry_get_linker_param(DMROOT".Bridging.Bridge.", plinker, value);
+			adm_entry_get_linker_param(ctx, DMROOT".Bridging.Bridge.", plinker, value);
 			if (*value == NULL)
 				*value = "";
 			dmstrappendstr(p, *value);
@@ -896,13 +896,13 @@ int get_port_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			linker = buf;
 		}
 	}
-	adm_entry_get_linker_param(DMROOT".Ethernet.Interface.", linker, value);
+	adm_entry_get_linker_param(ctx, DMROOT".Ethernet.Interface.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".WiFi.SSID.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".WiFi.SSID.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".ATM.Link.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".ATM.Link.", linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(DMROOT".PTM.Link.", linker, value);
+		adm_entry_get_linker_param(ctx, DMROOT".PTM.Link.", linker, value);
 
 	if (*value == NULL)
 		*value = "";
@@ -919,12 +919,12 @@ int set_port_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 	switch (action) {
 		case VALUECHECK:
 			dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "mg_port", &mg_port);
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (strcmp(mg_port, "false") && linker && check_ifname_exist_in_br_ifname_list(linker))
 				return FAULT_9001;
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			 //check ifname(linker) doesn't exit in bridges
 			if (linker && !check_ifname_exist_in_br_ifname_list(linker)) {
 				//save param of current port and copy it to new port
@@ -980,7 +980,7 @@ int get_vlan_port_vlan_ref(char *refparam, struct dmctx *ctx, char **value)
 	char *name;
 	dmasprintf(&name,DMROOT".Bridging.Bridge.%s.", cur_bridging_args.br_key);
 	sprintf(linker,"vlan%s_%s", cur_bridging_vlan_args.vlan_port, cur_bridging_args.br_key);
-	adm_entry_get_linker_param(DMROOT".Bridging.Bridge.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".Bridging.Bridge.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -990,7 +990,7 @@ int get_vlan_port_port_ref(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
 	dmuci_get_value_by_section_string(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", &linker);
-	adm_entry_get_linker_param(DMROOT".Bridging.Bridge.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".Bridging.Bridge.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -1005,7 +1005,7 @@ int set_vlan_port_port_ref(char *refparam, struct dmctx *ctx, int action, char *
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (!linker) {
 				dmuci_set_value_by_section(cur_bridging_vlan_args.bridge_vlan_sec, "br_port_linker", "");
 				set_br_vlan_enable(refparam, ctx, action, "false");

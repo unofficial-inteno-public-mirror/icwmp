@@ -12,14 +12,11 @@
 #include <uci.h>
 #include <stdio.h>
 #include <time.h>
-#include "cwmp.h"
-#include "ubus.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "managementserver.h"
-#include "xml.h"
 
 int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
 {

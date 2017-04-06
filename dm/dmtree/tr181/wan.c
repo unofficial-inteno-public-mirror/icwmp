@@ -312,7 +312,7 @@ int get_dsl_link_upstreamnoisemargin(char *refparam, struct dmctx *ctx, char **v
 
 int get_channel_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
-	adm_entry_get_linker_param(DMROOT".DSL.Line.", cur_dsl_line_args.type, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".DSL.Line.", cur_dsl_line_args.type, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -541,7 +541,7 @@ int set_atm_link_type(char *refparam, struct dmctx *ctx, int action, char *value
 int get_atm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker = "adsl";
-	adm_entry_get_linker_param(DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;
@@ -550,7 +550,7 @@ int get_atm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 int get_ptm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker = "vdsl";
-	adm_entry_get_linker_param(DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".DSL.Channel.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;

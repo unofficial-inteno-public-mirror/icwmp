@@ -52,6 +52,15 @@ do { \
 	if (mpp) close (mpp); \
 } while (0)
 
+#define IPPING_STOP DMCMD("/bin/sh", 2, FUNCTION_PATH, "stop");
+#define FUNCTION_PATH "/usr/share/icwmp/functions/ipping_launch"
+#define DOWNLOAD_DIAGNOSTIC_PATH "/usr/share/icwmp/functions/download_launch"
+#define DOWNLOAD_DUMP_FILE "/tmp/download_dump"
+#define DOWNLOAD_DIAGNOSTIC_STOP DMCMD("/bin/sh", 2, DOWNLOAD_DIAGNOSTIC_PATH, "stop");
+#define UPLOAD_DIAGNOSTIC_PATH "/usr/share/icwmp/functions/upload_launch"
+#define UPLOAD_DUMP_FILE "/tmp/upload_dump"
+#define UPLOAD_DIAGNOSTIC_STOP DMCMD("/bin/sh", 2, UPLOAD_DIAGNOSTIC_PATH, "stop");
+
 enum notification_enum {
 	notification_none,
 	notification_passive,

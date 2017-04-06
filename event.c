@@ -295,9 +295,9 @@ void cwmp_add_notification(void)
 	cwmp->count_handle_notify = 0;
 	pthread_mutex_unlock(&(cwmp->mutex_handle_notify));
 
-	dm_ctx_init(&dmctx);
+	cwmp_dm_ctx_init(&cwmp_main, &dmctx);
 	list_for_each_entry(p, &list_enabled_notify, list) {
-		dm_ctx_init_sub(&dmctx);
+		dm_ctx_init_sub(&dmctx,cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
 		initiate = true;
 		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
 		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
@@ -316,7 +316,7 @@ void cwmp_add_notification(void)
 	//dm_ctx_init(&dmctx);
 	list_for_each_entry(p, &list_enabled_lw_notify, list) {
 		if (!initiate || i != 0)		
-			dm_ctx_init_sub(&dmctx);
+			dm_ctx_init_sub(&dmctx, cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
 		i++;
 		if (!conf->lw_notification_enable)
 			break;		
@@ -333,7 +333,7 @@ void cwmp_add_notification(void)
 		}
 		dm_ctx_clean_sub(&dmctx);
 	}
-	dm_ctx_clean(&dmctx);
+	cwmp_dm_ctx_clean(cwmp, &dmctx);
 	if (lw_isactive) {
 		cwmp_lwnotification();
 	}

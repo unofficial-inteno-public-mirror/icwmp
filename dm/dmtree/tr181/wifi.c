@@ -25,7 +25,7 @@ struct wifi_acp_args cur_wifi_acp_args = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
-char *get_linker_Wifi_Radio(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+int get_linker_Wifi_Radio(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_wifi_radio_args.wifi_radio_sec) {
 		*linker = section_name(cur_wifi_radio_args.wifi_radio_sec);
 		return 0;
@@ -34,7 +34,7 @@ char *get_linker_Wifi_Radio(char *refparam, struct dmctx *dmctx, void *data, cha
 	return 0;
 }
 
-char *get_linker_Wifi_Ssid(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
+int get_linker_Wifi_Ssid(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	if(cur_wifi_ssid_args.ifname) {
 		*linker = cur_wifi_ssid_args.ifname;
 		return 0;
@@ -978,7 +978,7 @@ int set_access_point_alias(char *refparam, struct dmctx *ctx, int action, char *
 int get_ssid_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	if (cur_wifi_ssid_args.linker[0] != '\0') {
-		adm_entry_get_linker_param(DMROOT".WiFi.Radio.", cur_wifi_ssid_args.linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, DMROOT".WiFi.Radio.", cur_wifi_ssid_args.linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL)
 			*value = "";
 	}
@@ -992,7 +992,7 @@ int set_ssid_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (linker) {
 				dmuci_set_value_by_section(cur_wifi_ssid_args.wifi_ssid_sec, "device", linker);
 				dmfree(linker);
@@ -1004,7 +1004,7 @@ int set_ssid_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 
 int get_ap_ssid_ref(char *refparam, struct dmctx *ctx, char **value)
 {
-	adm_entry_get_linker_param(DMROOT".WiFi.SSID.", cur_wifi_acp_args.ifname, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".WiFi.SSID.", cur_wifi_acp_args.ifname, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;

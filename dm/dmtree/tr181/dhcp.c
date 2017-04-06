@@ -669,7 +669,7 @@ int get_dhcp_interface(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
 	linker = dmstrdup(cur_dhcp_args.interface);
-	adm_entry_get_linker_param(DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	dmfree(linker);
@@ -684,7 +684,7 @@ int set_dhcp_interface_linker_parameter(char *refparam, struct dmctx *ctx, int a
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (linker) {
 				dmuci_set_value_by_section(cur_dhcp_args.dhcp_sec, "interface", linker);
 				dmfree(linker);

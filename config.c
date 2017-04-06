@@ -1039,7 +1039,7 @@ int global_env_init (int argc, char** argv, struct env *env)
                 env->periodic = CWMP_START_PERIODIC;
                 break;
             case 'm':
-            	dm_entry_cli(argc, argv);
+            	dm_entry_cli(argc, argv, AMD_2, INSTANCE_MODE_NUMBER);
             	exit(EXIT_SUCCESS);
             	break;
             case 'w':
@@ -1088,13 +1088,13 @@ int save_acs_bkp_config(struct cwmp *cwmp)
 
 int cwmp_get_deviceid(struct cwmp *cwmp) {
 	struct dmctx dmctx = {0};
-	dm_ctx_init(&dmctx);
+	cwmp_dm_ctx_init(cwmp, &dmctx);
 	cwmp->deviceid.manufacturer = strdup(get_deviceid_manufacturer()); //TODO free
 	cwmp->deviceid.serialnumber = strdup(get_deviceid_serialnumber());
 	cwmp->deviceid.productclass = strdup(get_deviceid_productclass());
 	cwmp->deviceid.oui = strdup(get_deviceid_manufactureroui());
 	cwmp->deviceid.softwareversion = strdup(get_softwareversion());
-	dm_ctx_clean(&dmctx);
+	cwmp_dm_ctx_clean(cwmp, &dmctx);
 	return CWMP_OK;
 }
 
@@ -1193,7 +1193,7 @@ int cwmp_init(int argc, char** argv,struct cwmp *cwmp)
 	if (conf->xmpp_enable && conf->xmpp_connection_id > 0)
 		cwmp_get_xmpp_param(cwmp);
 #endif
-    dm_entry_load_enabled_notify();
+    dm_entry_load_enabled_notify(cwmp->conf.amd_version, cwmp->conf.instance_mode);
     return CWMP_OK;
 }
 
@@ -1212,6 +1212,6 @@ int cwmp_config_reload(struct cwmp *cwmp)
 	if (conf->xmpp_enable && conf->xmpp_connection_id != 0)
 		cwmp_get_xmpp_param(cwmp);
 #endif
-    dm_entry_load_enabled_notify();
+    dm_entry_load_enabled_notify(cwmp->conf.amd_version, cwmp->conf.instance_mode);
     return CWMP_OK;
 }

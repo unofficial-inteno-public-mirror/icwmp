@@ -141,9 +141,9 @@ int get_x_inteno_owsd_listenobj_interface(char *refparam, struct dmctx *ctx, cha
 #ifdef DATAMODEL_TR098
 	if (iface[0] != '\0') {
 		dmastrcat(&linker, "linker_interface:", iface);
-		adm_entry_get_linker_param(DMROOT".WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, DMROOT".WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL) {
-			adm_entry_get_linker_param(DMROOT".LANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+			adm_entry_get_linker_param(ctx, DMROOT".LANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 			if (*value == NULL)
 				*value = "";
 		}
@@ -152,7 +152,7 @@ int get_x_inteno_owsd_listenobj_interface(char *refparam, struct dmctx *ctx, cha
 #endif
 #ifdef DATAMODEL_TR181
 	if (iface[0] != '\0') {
-		adm_entry_get_linker_param(DMROOT".IP.Interface.", iface, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, DMROOT".IP.Interface.", iface, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL)
 			*value = "";
 	}
@@ -169,7 +169,7 @@ int set_x_inteno_owsd_listenobj_interface(char *refparam, struct dmctx *ctx, int
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			adm_entry_get_linker_value(value, &linker);
+			adm_entry_get_linker_value(ctx, value, &linker);
 			if (linker) {
 #ifdef DATAMODEL_TR098
 				iface = linker + sizeof("linker_interface:") - 1;
