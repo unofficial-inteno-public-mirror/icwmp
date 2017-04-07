@@ -308,7 +308,6 @@ char *get_last_instance(char *package, char *section, char *opt_inst)
 	char *last_inst = NULL;
 	if (package == DMMAP)
 	{
-		printf("get_last_instance DMMAP \n");
 		uci_path_foreach_sections(icwmpd, "dmmap", section, s) {
 			inst = update_instance_icwmpd(s, last_inst, opt_inst);
 			if(last_inst)
