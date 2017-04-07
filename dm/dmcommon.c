@@ -27,6 +27,68 @@
 #include "dmubus.h"
 #include "dmcommon.h"
 
+int set_uci_dhcpserver_option(struct dmctx *ctx, struct uci_section *s, char *option, char *value)
+{
+	struct uci_list *v;
+	struct uci_element *e, *tmp;
+	char *pch, *spch, bufopt[8];
+	int len = 0;
+	if (value == NULL)
+		return -1;
+
+	dmuci_get_value_by_section_list(s, "dhcp_option", &v);
+	if (v != NULL) {
+		uci_foreach_element(v, e) {
+			pch = strchr(e->name, ',');
+			if (pch) {
+				len = pch - e->name;
+				strncpy(bufopt, e->name, len);
+				bufopt[len] = '\0';
+				if (strcmp(bufopt, option) == 0) {
+					dmuci_del_list_value_by_section(s, "dhcp_option", e->name);
+					break;
+				}
+			}
+		}
+	}
+	if (value[0] != '\0') {
+		dmasprintf(&spch, "%s,%s", option, value);
+		dmuci_add_list_value_by_section(s, "dhcp_option", spch);
+	}
+	return 0;
+}
+
+int update_uci_dhcpserver_option(struct dmctx *ctx, struct uci_section *s, char *option, char *new_option, char *value)
+{
+	struct uci_list *v;
+	struct uci_element *e, *tmp;
+	char *pch, *spch, bufopt[8];
+	int len = 0;
+	if (value == NULL)
+		return -1;
+
+	dmuci_get_value_by_section_list(s, "dhcp_option", &v);
+	if (v != NULL) {
+		uci_foreach_element(v, e) {
+			pch = strchr(e->name, ',');
+			if (pch[0] != '\0' && strcmp(++pch, value) == 0) {
+				len = pch - e->name - 1;
+				strncpy(bufopt, e->name, len);
+				bufopt[len] = '\0';
+				if (strcmp(bufopt, option) == 0) {
+					dmuci_del_list_value_by_section(s, "dhcp_option", e->name);
+					break;
+				}
+			}
+		}
+	}
+	if (value[0] != '\0') {
+		dmasprintf(&spch, "%s,%s", new_option, value);
+		dmuci_add_list_value_by_section(s, "dhcp_option", spch);
+	}
+	return 0;
+}
+
 void compress_spaces(char *str)
 {
 	char *dst = str;
