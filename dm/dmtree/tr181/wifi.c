@@ -977,7 +977,7 @@ int set_access_point_alias(char *refparam, struct dmctx *ctx, int action, char *
 int get_ssid_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 {
 	if (cur_wifi_ssid_args.linker[0] != '\0') {
-		adm_entry_get_linker_param(ctx, DMROOT".WiFi.Radio.", cur_wifi_ssid_args.linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cWiFi%cRadio%c", dm_delim, dm_delim, dm_delim), cur_wifi_ssid_args.linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL)
 			*value = "";
 	}
@@ -1003,7 +1003,7 @@ int set_ssid_lower_layer(char *refparam, struct dmctx *ctx, int action, char *va
 
 int get_ap_ssid_ref(char *refparam, struct dmctx *ctx, char **value)
 {
-	adm_entry_get_linker_param(ctx, DMROOT".WiFi.SSID.", cur_wifi_acp_args.ifname, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cWiFi%cSSID%c", dm_delim, dm_delim, dm_delim), cur_wifi_acp_args.ifname, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	return 0;

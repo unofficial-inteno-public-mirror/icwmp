@@ -63,7 +63,7 @@ int get_nat_interface(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *linker;
 	linker = dmstrdup(section_name(cur_nat_args.int_sec));
-	adm_entry_get_linker_param(ctx, DMROOT".IP.Interface.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+	adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cIP%cInterface%c", dm_delim, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
 	dmfree(linker);

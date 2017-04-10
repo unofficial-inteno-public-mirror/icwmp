@@ -7,6 +7,7 @@
  *
  */
 
+#include <stdarg.h>
 #include <uci.h>
 #include "dmuci.h"
 #include "dmcwmp.h"
@@ -87,6 +88,7 @@ LIST_HEAD( list_enabled_lw_notify);
 LIST_HEAD(list_execute_end_session);
 int end_session_flag = 0;
 int ip_version = 4;
+char dm_delim = '.';
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
@@ -187,7 +189,7 @@ int dm_browse(struct dmctx *dmctx, DMNODE *parent_node, DMOBJ *entryobj, void *d
 		node.parent = parent_node;
 		node.instance_level = parent_node->instance_level;
 		node.matched = parent_node->matched;
-		dmasprintf(&(node.current_object), "%s%s.", parent_obj, entryobj->obj);
+		dmasprintf(&(node.current_object), "%s%s%c", parent_obj, entryobj->obj, dm_delim);
 		if (dmctx->checkobj) {
 			err = dmctx->checkobj(dmctx, &node, entryobj->permission, entryobj->addobj, entryobj->delobj, entryobj->forced_inform, entryobj->notification, entryobj->get_linker, data, instance);
 			if (err)
@@ -247,7 +249,7 @@ int dm_link_inst_obj(struct dmctx *dmctx, DMNODE *parent_node, void *data, char 
 	parent_obj = parent_node->current_object;
 	if (instance == NULL)
 		return -1;
-	dmasprintf(&node.current_object, "%s%s.", parent_obj, instance);
+	dmasprintf(&node.current_object, "%s%s%c", parent_obj, instance, dm_delim);
 	if (dmctx->checkobj) {
 		err = dmctx->checkobj(dmctx, &node, prevobj->permission, prevobj->addobj, prevobj->delobj, prevobj->forced_inform, prevobj->notification, prevobj->get_linker, data, instance);
 		if (err)
@@ -282,7 +284,7 @@ int rootcmp(char *inparam, char *rootobj)
 {
 	int cmp = -1;
 	char buf[32];
-	sprintf(buf, "%s.", rootobj);
+	sprintf(buf, "%s%c", rootobj, dm_delim);
 	cmp = strcmp(inparam, buf);
 	return cmp;
 }
@@ -1190,7 +1192,7 @@ static int mobj_add_object(DMOBJECT_ARGS)
 	if (fault)
 		return fault;
 	dmctx->addobj_instance = instance;
-	dmasprintf(&objinst, "%s%s.", dmctx->current_obj, instance);
+	dmasprintf(&objinst, "%s%s%c", dmctx->current_obj, instance, dm_delim);
 	set_parameter_notification(dmctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
@@ -1611,4 +1613,15 @@ int apply_end_session()
 void cwmp_set_end_session (unsigned int flag)
 {
 	end_session_flag |= flag;
+}
+
+char *dm_print_path(char *fpath, ...)
+{
+	static char pathbuf[512] = "";
+	va_list vl;
+
+	va_start(vl, fpath);
+	vsprintf(pathbuf, fpath, vl);
+	va_end(vl);
+	return pathbuf;
 }

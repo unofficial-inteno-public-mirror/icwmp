@@ -101,7 +101,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	if (!inparam) inparam = "";
 	ctx->in_param = inparam;
 	dmentry_instance_lookup_inparam(ctx);
-	if (ctx->in_param[0] == '\0' || strcmp(ctx->in_param, DMROOT) == 0) {
+	if (ctx->in_param[0] == '\0' || rootcmp(ctx->in_param, DMROOT) == 0) {
 		ctx->tree = true;
 	} else {
 		ctx->tree = false;

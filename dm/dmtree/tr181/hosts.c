@@ -115,7 +115,7 @@ int  get_host_dhcp_client(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *iface, *linker;
 		dmastrcat(&linker, "linker_dhcp:", cur_host_args.key);
-		adm_entry_get_linker_param(ctx, DMROOT".DHCPv4.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cDHCPv4%c", dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL) {
 			*value = "";
 		}

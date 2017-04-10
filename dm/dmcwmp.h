@@ -330,6 +330,7 @@ extern struct list_head list_enabled_lw_notify;
 extern struct list_head list_execute_end_session;
 extern int end_session_flag;
 extern int ip_version;
+extern char dm_delim;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
@@ -365,6 +366,7 @@ char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_
 int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data);
 int apply_end_session();
 void cwmp_set_end_session (unsigned int flag);
+char *dm_print_path(char *fpath, ...);
 
 #ifndef TRACE
 #define TRACE_TYPE 0

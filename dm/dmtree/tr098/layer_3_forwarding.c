@@ -447,9 +447,9 @@ int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, cha
 	iface = get_layer3_interface(ctx);
 	if (iface[0] != '\0') {
 		dmastrcat(&linker, "linker_interface:", iface);
-		adm_entry_get_linker_param(ctx, DMROOT".WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cWANDevice%c", dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL) {
-			adm_entry_get_linker_param(ctx, DMROOT".LANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+			adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cLANDevice%c", dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 			if (*value == NULL)
 				*value = "";
 		}
@@ -549,7 +549,7 @@ int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
 	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &iface);
 	if (iface[0] != '\0') {
 		dmasprintf(&linker, "linker_interface:%s", iface);
-		adm_entry_get_linker_param(ctx, DMROOT".WANDevice.", linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cWANDevice%c", dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL) {
 			*value = "";
 		}
