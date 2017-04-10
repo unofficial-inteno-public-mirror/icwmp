@@ -37,7 +37,7 @@ static inline int init_wifi_iface_args(struct uci_section *s)
 
 int get_lan_ethernet_interface_number(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct linterfargs *lifargs = (struct linterfargs *)ctx->args;
+	struct linterfargs *lifargs = &cur_linterfargs;
 	dmasprintf(value, "%d", lifargs->eths_size);// MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
@@ -64,7 +64,7 @@ int get_lan_wlan_configuration_number(char *refparam, struct dmctx *ctx, char **
 
 int get_eth_name(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct linterfargs *lifargs = (struct linterfargs *)ctx->args;
+	struct linterfargs *lifargs = &cur_linterfargs;
 	
 	*value = lifargs->linterf;
 	return 0;
@@ -89,7 +89,6 @@ static inline void laninterface_lookup(char *eths[], int *size)
 inline void init_laninterface_lan(struct dmctx *ctx)
 {
 	struct linterfargs *args = &cur_linterfargs;
-	ctx->args = (void *)args;
 	laninterface_lookup(args->eths, &(args->eths_size));
 }
 
@@ -159,12 +158,11 @@ DMOBJ tLANInterfacesObj[] = {
 {0}
 };
 
-inline int browselaninterface_lanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browselaninterface_lanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *ei, *ei_last = NULL;
 	int i = 0;
 	struct linterfargs *args = &cur_linterfargs;
-	dmctx->args = (void *)args;
 	struct uci_section *s = NULL;
 
 	laninterface_lookup(args->eths, &(args->eths_size));
@@ -172,19 +170,23 @@ inline int browselaninterface_lanInst(struct dmctx *dmctx, DMNODE *parent_node, 
 	uci_foreach_sections("dmmap", "lan_port", s) {
 		init_lan_interface_args(args->eths[i++], s);
 		ei =  handle_update_instance(1, dmctx, &ei_last, update_instance_alias, 3, s, "lanportinstance", "lanportalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ei);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ei) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_linterfargs);
 	return 0;
 }
 
-inline int browselaninterface_wlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browselaninterface_wlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *s = NULL;
 	char *wi, *wi_last = NULL;
 	uci_foreach_sections("wireless", "wifi-iface", s) {
 		init_wifi_iface_args(s);
 		wi =  handle_update_instance(1, dmctx, &wi_last, update_instance_alias, 3, s, "wifaceinstance", "wifacealias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wi);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wi) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wifaceargs);
 	return 0;
 }

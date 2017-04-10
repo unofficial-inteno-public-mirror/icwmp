@@ -42,7 +42,6 @@ int get_dhcp_client_linker(char *refparam, struct dmctx *dmctx, void *data, char
 inline int init_dhcp_args(struct dmctx *ctx, struct uci_section *s, char *interface)
 {
 	struct dhcp_args *args = &cur_dhcp_args;
-	ctx->args = (void *)args;
 	args->interface = interface;
 	args->dhcp_sec = s;
 	return 0;
@@ -50,7 +49,6 @@ inline int init_dhcp_args(struct dmctx *ctx, struct uci_section *s, char *interf
 inline int init_args_dhcp_host(struct dmctx *ctx, struct uci_section *s)
 {
 	struct dhcp_static_args *args = &cur_dhcp_staticargs;
-	ctx->args = (void *)args;
 	args->dhcpsection = s;
 	return 0;
 }
@@ -58,7 +56,6 @@ inline int init_args_dhcp_host(struct dmctx *ctx, struct uci_section *s)
 inline int init_dhcp_client_args(struct dmctx *ctx, json_object *client, char *key)
 {
 	struct client_args *args = &cur_dhcp_client_args;
-	ctx->args = (void *)args;
 	args->client = client;
 	args->key = key;
 	return 0;
@@ -125,7 +122,7 @@ int delete_dhcp_staticaddress(struct dmctx *ctx, unsigned char del_action)
 	char *lan_name;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	struct dhcp_static_args *dhcpargs = &cur_dhcp_staticargs;
 	
 	switch (del_action) {
 		case DEL_INST:
@@ -566,7 +563,6 @@ int get_dhcp_iprouters(char *refparam, struct dmctx *ctx, char **value)
 
 int set_dhcp_iprouters(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 
 	switch (action) {
 		case VALUECHECK:
@@ -770,7 +766,7 @@ int set_dhcp_static_alias(char *refparam, struct dmctx *ctx, int action, char *v
 int get_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *chaddr;
-	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	struct dhcp_static_args *dhcpargs = &cur_dhcp_staticargs;
 	
 	dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "mac", &chaddr);
 	if (strcmp(chaddr, DHCPSTATICADDRESS_DISABLED_CHADDR) == 0)
@@ -783,7 +779,7 @@ int get_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, char **valu
 int set_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, int action, char *value)
 {	
 	char *chaddr;
-	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	struct dhcp_static_args *dhcpargs = &cur_dhcp_staticargs;
 		
 	switch (action) {
 		case VALUECHECK:
@@ -801,7 +797,7 @@ int set_dhcp_staticaddress_chaddr(char *refparam, struct dmctx *ctx, int action,
 
 int get_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	struct dhcp_static_args *dhcpargs = &cur_dhcp_staticargs;
 	
 	dmuci_get_value_by_section_string(dhcpargs->dhcpsection, "ip", value);
 	return 0;
@@ -809,7 +805,7 @@ int get_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, char **valu
 
 int set_dhcp_staticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct dhcp_static_args *dhcpargs = (struct dhcp_static_args *)ctx->args;
+	struct dhcp_static_args *dhcpargs = &cur_dhcp_staticargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -890,9 +886,10 @@ inline int browseDhcpInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_d
 		dmuci_get_value_by_section_string(s, "interface", &interface);
 		init_dhcp_args(dmctx, s, interface);
 		idhcp = handle_update_instance(1, dmctx, &idhcp_last, update_instance_alias, 3, s, "dhcp_instance", "dhcp_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp) == DM_STOP)
+			break;
 	}
-
+	DM_CLEAN_ARGS(cur_dhcp_args);
 	return 0;
 }
 
@@ -903,8 +900,10 @@ inline int browseDhcpStaticInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 	uci_foreach_option_cont("dhcp", "host", "interface", cur_dhcp_args.interface, sss) {
 		idhcp = handle_update_instance(2, dmctx, &idhcp_last, update_instance_alias, 3, sss, "ldhcpinstance", "ldhcpalias");
 		init_args_dhcp_host(dmctx, sss);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_dhcp_staticargs);
 	return 0;
 }
 
@@ -926,11 +925,13 @@ inline int browseDhcpClientInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				{
 					init_dhcp_client_args(dmctx, client_obj, key);
 					idx = handle_update_instance(2, dmctx, &idx_last, update_instance_without_section, 1, ++id);
-					DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx);
+					if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx) == DM_STOP)
+						break;
 				}
 			}
 		}
 	}
+	DM_CLEAN_ARGS(cur_dhcp_client_args);
 	return 0;
 }
 

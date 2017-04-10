@@ -24,7 +24,6 @@ inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void 
 inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
 {
 	struct sewifiargs *args = &cur_wifiargs;
-	ctx->args = (void *)args;
 	args->sewifisection = s;
 	return 0;
 }
@@ -33,7 +32,7 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *freq;
 	json_object *res;
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	struct sewifiargs *wifiargs = &cur_wifiargs;
 	char *wlan_name = section_name(wifiargs->sewifisection);
 	
 	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
@@ -45,7 +44,7 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 
 int get_wifi_maxassoc(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	struct sewifiargs *wifiargs = &cur_wifiargs;
 	
 	dmuci_get_value_by_section_string(wifiargs->sewifisection, "maxassoc", value);
 	return 0;
@@ -53,7 +52,7 @@ int get_wifi_maxassoc(char *refparam, struct dmctx *ctx, char **value)
 
 int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	struct sewifiargs *wifiargs = &cur_wifiargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -68,7 +67,7 @@ int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value
 int get_wifi_dfsenable(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *val;
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	struct sewifiargs *wifiargs = &cur_wifiargs;
 	char *wlan_name = section_name(wifiargs->sewifisection);
 	*value = "";
 	
@@ -85,7 +84,7 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 {	
 	bool b;
 	char *val;
-	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
+	struct sewifiargs *wifiargs = &cur_wifiargs;
 	char *wlan_name = section_name(wifiargs->sewifisection);
 	
 	switch (action) {
@@ -148,7 +147,9 @@ inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void 
 		init_se_wifi(dmctx, s);
 		wnum =  handle_update_instance(1, dmctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
 		//SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wifiargs);
 	return 0;
 }

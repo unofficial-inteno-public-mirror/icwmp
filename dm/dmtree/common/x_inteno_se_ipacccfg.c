@@ -26,7 +26,6 @@ inline int browseAccListInst(struct dmctx *dmctx, DMNODE *parent_node, void *pre
 inline int init_args_ipacc(struct dmctx *ctx, struct uci_section *s)
 {
 	struct ipaccargs *args = &cur_ipaccargs;
-	ctx->args = (void *)args;
 	args->ipaccsection = s;
 	return 0;
 }
@@ -34,7 +33,6 @@ inline int init_args_ipacc(struct dmctx *ctx, struct uci_section *s)
 inline int init_args_pforward(struct dmctx *ctx, struct uci_section *s)
 {
 	struct pforwardrgs *args = &cur_pforwardrgs;
-	ctx->args = (void *)args;
 	args->forwardsection = s;
 	return 0;
 }
@@ -45,7 +43,7 @@ inline int init_args_pforward(struct dmctx *ctx, struct uci_section *s)
 
 int get_x_bcm_com_ip_acc_list_cfgobj_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 		
 	dmuci_get_value_by_section_string(accargs->ipaccsection, "enabled", value);
 	if ((*value)[0] == '\0') {
@@ -58,7 +56,7 @@ int set_x_bcm_com_ip_acc_list_cfgobj_enable(char *refparam, struct dmctx *ctx, i
 {
 	bool b;
 	int check;
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -83,7 +81,7 @@ int get_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, char 
 {
 	struct uci_list *val;
 	struct uci_element *e = NULL;
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 	struct uci_list *list = NULL;
 	
 	dmuci_get_value_by_section_list(accargs->ipaccsection, "src_ip", &val);	
@@ -102,7 +100,7 @@ int get_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, char 
 int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch, *spch, *val;
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -123,7 +121,7 @@ int set_x_inteno_cfgobj_address_netmask(char *refparam, struct dmctx *ctx, int a
 
 int get_x_bcm_com_ip_acc_list_cfgobj_acc_port(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 	
 	dmuci_get_value_by_section_string(accargs->ipaccsection, "dest_port", value);
 	return 0;
@@ -131,7 +129,7 @@ int get_x_bcm_com_ip_acc_list_cfgobj_acc_port(char *refparam, struct dmctx *ctx,
 
 int set_x_bcm_com_ip_acc_list_cfgobj_acc_port(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ipaccargs *accargs = (struct ipaccargs *)ctx->args;
+	struct ipaccargs *accargs = &cur_ipaccargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -151,7 +149,7 @@ int set_x_bcm_com_ip_acc_list_cfgobj_acc_port(char *refparam, struct dmctx *ctx,
 
 int get_port_forwarding_name(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "name", value);
 	return 0;
@@ -159,7 +157,7 @@ int get_port_forwarding_name(char *refparam, struct dmctx *ctx, char **value)
 
 int set_port_forwarding_name(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -173,7 +171,7 @@ int set_port_forwarding_name(char *refparam, struct dmctx *ctx, int action, char
 
 int get_port_forwarding_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "enabled", value);
 	return 0;
@@ -183,7 +181,7 @@ int set_port_forwarding_enable(char *refparam, struct dmctx *ctx, int action, ch
 {
 	bool b;
 	int check;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -203,7 +201,7 @@ int set_port_forwarding_enable(char *refparam, struct dmctx *ctx, int action, ch
 
 int get_port_forwarding_loopback(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 		
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "reflection", value);
 	if((*value)[0] == '\0') {
@@ -215,7 +213,7 @@ int get_port_forwarding_loopback(char *refparam, struct dmctx *ctx, char **value
 int set_port_forwarding_loopback(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -235,7 +233,7 @@ int set_port_forwarding_loopback(char *refparam, struct dmctx *ctx, int action, 
 
 int get_port_forwarding_protocol(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 		
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "proto", value);
 	return 0;
@@ -244,7 +242,7 @@ int get_port_forwarding_protocol(char *refparam, struct dmctx *ctx, char **value
 int set_port_forwarding_protocol(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -258,7 +256,7 @@ int set_port_forwarding_protocol(char *refparam, struct dmctx *ctx, int action, 
 
 int get_port_forwarding_external_zone(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src", value);
 	return 0;
@@ -267,7 +265,7 @@ int get_port_forwarding_external_zone(char *refparam, struct dmctx *ctx, char **
 int set_port_forwarding_external_zone(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -281,7 +279,7 @@ int set_port_forwarding_external_zone(char *refparam, struct dmctx *ctx, int act
 
 int get_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dest", value);
 	return 0;
@@ -290,7 +288,7 @@ int get_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, char **
 int set_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -304,7 +302,7 @@ int set_port_forwarding_internal_zone(char *refparam, struct dmctx *ctx, int act
 
 int get_port_forwarding_external_port(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src_dport", value);
 	return 0;
@@ -313,7 +311,7 @@ int get_port_forwarding_external_port(char *refparam, struct dmctx *ctx, char **
 int set_port_forwarding_external_port(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -327,7 +325,7 @@ int set_port_forwarding_external_port(char *refparam, struct dmctx *ctx, int act
 
 int get_port_forwarding_internal_port(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dest_port", value);
 	if ((*value)[0] == '\0') {
@@ -339,7 +337,7 @@ int get_port_forwarding_internal_port(char *refparam, struct dmctx *ctx, char **
 int set_port_forwarding_internal_port(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -356,7 +354,7 @@ int set_port_forwarding_internal_port(char *refparam, struct dmctx *ctx, int act
 
 int get_port_forwarding_source_port(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src_port", value);
 	if ((*value)[0] == '\0') {
@@ -368,7 +366,7 @@ int get_port_forwarding_source_port(char *refparam, struct dmctx *ctx, char **va
 int set_port_forwarding_source_port(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -385,7 +383,7 @@ int set_port_forwarding_source_port(char *refparam, struct dmctx *ctx, int actio
 
 int get_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "dest_ip", value);
 	return 0;
@@ -394,7 +392,7 @@ int get_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, ch
 int set_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -408,7 +406,7 @@ int set_port_forwarding_internal_ipaddress(char *refparam, struct dmctx *ctx, in
 
 int get_port_forwarding_external_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_string(forwardargs->forwardsection, "src_dip", value);
 	if ((*value)[0] == '\0') {
@@ -420,7 +418,7 @@ int get_port_forwarding_external_ipaddress(char *refparam, struct dmctx *ctx, ch
 int set_port_forwarding_external_ipaddress(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -439,7 +437,7 @@ int get_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, char
 {
 	struct uci_list *val;
 	struct uci_element *e = NULL;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_list(forwardargs->forwardsection, "src_ip", &val);
 	if (val) {
@@ -457,7 +455,7 @@ int get_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, char
 int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch, *val, *spch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -484,7 +482,7 @@ int set_port_forwarding_source_ipaddress(char *refparam, struct dmctx *ctx, int 
 int get_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct uci_list *list = NULL;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	dmuci_get_value_by_section_list(forwardargs->forwardsection, "src_mac", &list);
 	*value = dmuci_list_to_string(list, " ");
@@ -494,7 +492,7 @@ int get_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, char **value)
 int set_port_forwarding_src_mac(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch, *spch;
-	struct pforwardrgs *forwardargs = (struct pforwardrgs *)ctx->args;
+	struct pforwardrgs *forwardargs = &cur_pforwardrgs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -539,7 +537,7 @@ int delete_ipacccfg_port_forwarding(struct dmctx *ctx, unsigned char del_action)
 	
 	switch (del_action) {
 		case DEL_INST:
-			forwardargs = (struct pforwardrgs *)ctx->args;
+			forwardargs = &cur_pforwardrgs;
 			dmuci_delete_by_section(forwardargs->forwardsection, NULL, NULL);
 			break;
 		case DEL_ALL:
@@ -634,8 +632,10 @@ inline int browseAccListInst(struct dmctx *dmctx, DMNODE *parent_node, void *pre
 	uci_foreach_sections("firewall", "rule", s) {
 		init_args_ipacc(dmctx, s);
 		irule =  handle_update_instance(1, dmctx, &irule_last, update_instance_alias, 3, s, "fruleinstance", "frulealias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, irule);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, irule) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_ipaccargs);
 	return 0;
 }
 
@@ -646,8 +646,10 @@ inline int browseport_forwardingInst(struct dmctx *dmctx, DMNODE *parent_node, v
 	uci_foreach_option_eq("firewall", "redirect", "target", "DNAT", s) {
 		init_args_pforward(dmctx, s);
 		iforward =  handle_update_instance(1, dmctx, &iforward_last, update_instance_alias, 3, s, "forwardinstance", "forwardalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iforward);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iforward) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_pforwardrgs);
 	return 0;
 }
 

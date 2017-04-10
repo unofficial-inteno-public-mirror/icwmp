@@ -27,7 +27,6 @@ inline int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_d
 inline int init_host_args(struct dmctx *ctx, json_object *clients, char *key)
 {
 	struct host_args *args = &cur_host_args;
-	ctx->args = (void *)args;
 	args->client = clients;
 	args->key = key;
 	return 0;
@@ -220,9 +219,11 @@ inline int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_d
 		json_object_object_foreach(res, key, client_obj) {
 			init_host_args(dmctx, client_obj, key);
 			idx = handle_update_instance(2, dmctx, &idx_last, update_instance_without_section, 1, ++id);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx) == DM_STOP)
+				break;
 		}
 	}
+	DM_CLEAN_ARGS(cur_host_args);
 	return 0;
 }
 

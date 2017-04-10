@@ -25,7 +25,6 @@ struct dev_vcf cur_dev_vcf = {0};
 inline int init_args_vcf(struct dmctx *ctx, struct uci_section *s)
 {
 	struct dev_vcf *args = &cur_dev_vcf;
-	ctx->args = (void *)args;
 	args->vcf_sec = s;
 	return 0;
 }
@@ -492,10 +491,12 @@ int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, cha
 		}
 		init_args_vcf(dmctx, s);
 		vcf = handle_update_instance(1, dmctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vcf);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vcf) == DM_STOP)
+			break;
 	}
 	if(del_sec)
 		dmuci_delete_by_section(del_sec, NULL, NULL);
 
+	DM_CLEAN_ARGS(cur_dev_vcf);
 	return 0;
 }

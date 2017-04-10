@@ -23,7 +23,6 @@ inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, v
 inline int init_args_connection_entry(struct dmctx *ctx, struct uci_section *s)
 {
 	struct connectionargs *args = &cur_connectionargs;
-	ctx->args = (void *)args;
 	args->connsection = s;
 	return 0;
 }
@@ -166,7 +165,7 @@ int delete_xmpp_connection(struct dmctx *ctx, unsigned char del_action)
 	
 	switch (del_action) {
 		case DEL_INST:
-			connargs = (struct connectionargs *)ctx->args;
+			connargs = &cur_connectionargs;
 			dmuci_delete_by_section(connargs->connsection, NULL, NULL);
 			return 0;
 		case DEL_ALL:
@@ -199,7 +198,7 @@ int get_xmpp_connection_nbr_entry(char *refparam, struct dmctx *ctx, char **valu
 
 int get_connection_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "enable", value);
 	return 0;
@@ -207,7 +206,7 @@ int get_connection_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int set_connection_enable(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -224,7 +223,7 @@ int set_connection_enable(char *refparam, struct dmctx *ctx, int action, char *v
 
 int get_xmpp_connection_password(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "password", value);
 	return 0;
@@ -232,7 +231,7 @@ int get_xmpp_connection_password(char *refparam, struct dmctx *ctx, char **value
 
 int set_xmpp_connection_password(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -247,7 +246,7 @@ int set_xmpp_connection_password(char *refparam, struct dmctx *ctx, int action, 
 
 int get_xmpp_connection_domain(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "password", value);
 	return 0;
@@ -255,7 +254,7 @@ int get_xmpp_connection_domain(char *refparam, struct dmctx *ctx, char **value)
 
 int set_xmpp_connection_domain(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -270,7 +269,7 @@ int set_xmpp_connection_domain(char *refparam, struct dmctx *ctx, int action, ch
 
 int get_xmpp_connection_resource(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "resource", value);
 	return 0;
@@ -278,7 +277,7 @@ int get_xmpp_connection_resource(char *refparam, struct dmctx *ctx, char **value
 
 int set_xmpp_connection_resource(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -293,7 +292,7 @@ int set_xmpp_connection_resource(char *refparam, struct dmctx *ctx, int action, 
 
 int get_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "serveralgorithm", value);
 	return 0;
@@ -301,7 +300,7 @@ int get_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *c
 
 int set_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -316,7 +315,7 @@ int set_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *c
 
 int get_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "interval", value);
 	return 0;
@@ -324,7 +323,7 @@ int get_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, ch
 
 int set_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -339,7 +338,7 @@ int set_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, in
 
 int get_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "attempt", value);
 	return 0;
@@ -347,7 +346,7 @@ int get_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, char 
 
 int set_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -362,7 +361,7 @@ int set_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, int a
 
 int get_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "initial_retry_interval", value);
 	return 0;
@@ -370,7 +369,7 @@ int get_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx
 
 int set_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -385,7 +384,7 @@ int set_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx
 
 int get_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "retry_interval_multiplier", value);
 	return 0;
@@ -393,7 +392,7 @@ int get_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *
 
 int set_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -408,7 +407,7 @@ int set_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *
 
 int get_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "retry_max_interval", value);
 	return 0;
@@ -416,7 +415,7 @@ int get_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, ch
 
 int set_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -431,7 +430,7 @@ int set_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, in
 
 int get_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	dmuci_get_value_by_section_string(connargs->connsection, "usetls", value);
 	return 0;
@@ -439,7 +438,7 @@ int get_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, char **
 
 int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct connectionargs *connargs = (struct connectionargs *)ctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 	bool b;
 
 	switch (action) {
@@ -460,7 +459,7 @@ int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int act
 int  get_xmpp_connection_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	char *linker;
 	char *conn_instance;
-	struct connectionargs *connargs = (struct connectionargs *)dmctx->args;
+	struct connectionargs *connargs = &cur_connectionargs;
 
 	if (connargs->connsection)
 	{
@@ -505,7 +504,7 @@ DMLEAF tConnectionParams[] = {
 {0}
 };
 
-inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *iconnection = NULL, *iconnection_last = NULL;;
 	struct uci_section *s = NULL;
@@ -513,6 +512,9 @@ inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, v
 	uci_foreach_sections("cwmp", "xmpp_connection", s) {
 		init_args_connection_entry(dmctx, s);
 		iconnection = handle_update_instance(1, dmctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconnection);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconnection) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_connectionargs);
+	return 0;
 }

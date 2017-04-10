@@ -40,13 +40,6 @@
 #define FREE(x) do { free(x); x = NULL; } while (0)
 #endif
 
-#define DM_LINK_INST_OBJ(dmctx, parent_node, data, instance) \
-	do { \
-		(dmctx)->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance); \
-		if ((dmctx)->stop) \
-			return (dmctx)->faultcode; \
-	} while(0)
-
 extern struct dm_permession_s DMREAD;
 extern struct dm_permession_s DMWRITE;
 extern struct dm_forced_inform_s DMFINFRM;
@@ -185,7 +178,6 @@ struct dmctx
 	int (*method_obj)(DMOBJECT_ARGS);
 	int (*checkobj)(DMOBJECT_ARGS);
 	int (*checkleaf)(DMOBJECT_ARGS);
-	void *args;
 	struct list_head list_parameter;
 	struct list_head set_list_tmp;
 	struct list_head list_fault_param;
@@ -318,6 +310,21 @@ enum end_session_enum {
 	END_SESSION_UPLOAD_DIAGNOSTIC = 1<<6,
 };
 
+enum dm_browse_enum {
+	DM_ERROR = -1,
+	DM_OK = 0,
+	DM_STOP = 1
+};
+
+#define DM_CLEAN_ARGS(X) memset(&(X), 0, sizeof(X))
+static inline int DM_LINK_INST_OBJ(struct dmctx *dmctx, DMNODE *parent_node, void *data, char *instance)
+{
+	dmctx->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance);
+	if (dmctx->stop)
+		return DM_STOP;
+	return DM_OK;
+}
+
 extern struct list_head list_enabled_notify;
 extern struct list_head list_enabled_lw_notify;
 extern struct list_head list_execute_end_session;
@@ -379,8 +386,6 @@ static inline void trace_empty_func()
 #define TRACE(MESSAGE, ...) trace_empty_func()
 #endif
 #endif
-
-
 
 #ifndef DETECT_CRASH
 #define DETECT_CRASH(MESSAGE,args...) { \

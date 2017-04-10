@@ -50,7 +50,6 @@ int get_linker_br_vlan(char *refparam, struct dmctx *dmctx, void *data, char *in
 inline int init_bridging_args(struct dmctx *ctx, struct uci_section *s, char *last_instance, char *ifname, char *br_instance)
 {
 	struct bridging_args *args = &cur_bridging_args;
-	ctx->args = (void *)args;
 	args->bridge_sec = s;
 	args->br_key = last_instance;
 	args->ifname = ifname;
@@ -61,7 +60,6 @@ inline int init_bridging_args(struct dmctx *ctx, struct uci_section *s, char *la
 inline int init_bridging_port_args(struct dmctx *ctx, struct uci_section *s, bool vlan, char *ifname)
 {
 	struct bridging_port_args *args = &cur_bridging_port_args;
-	ctx->args = (void *)args;
 	args->bridge_port_sec = s;
 	args->vlan = vlan;
 	args->ifname = ifname;
@@ -71,7 +69,6 @@ inline int init_bridging_port_args(struct dmctx *ctx, struct uci_section *s, boo
 inline int init_bridging_vlan_args(struct dmctx *ctx, struct uci_section *s, char *vlan_port, char *br_inst)
 {
 	struct bridging_vlan_args *args = &cur_bridging_vlan_args;
-	ctx->args = (void *)args;
 	args->bridge_vlan_sec = s;
 	args->vlan_port = vlan_port;
 	args->br_inst = br_inst;
@@ -340,7 +337,6 @@ int set_br_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 
 int get_br_associated_interfaces(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
 	dmuci_get_value_by_section_string(cur_bridging_args.bridge_sec, "ifname", value);
 	return 0;
 }
@@ -404,7 +400,6 @@ int get_br_port_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 int get_br_port_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
@@ -416,7 +411,6 @@ int get_br_port_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 int get_br_port_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
@@ -428,7 +422,6 @@ int get_br_port_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value
 int get_br_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
@@ -1139,8 +1132,10 @@ inline int browseBridgeInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev
 		br_inst = handle_update_instance(1, dmctx, &br_inst_last, update_instance_alias, 3, br_s, "bridge_instance", "bridge_alias");
 		dmuci_get_value_by_section_string(br_s, "ifname", &ifname);
 		init_bridging_args(dmctx, br_s, br_inst_last, ifname, br_inst);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, br_inst);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, br_inst) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_bridging_args);
 	return 0;
 }
 
@@ -1148,14 +1143,15 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 {
 	struct uci_section *eth_s = NULL, *atm_s = NULL, *ptm_s = NULL, *wl_s = NULL, *vlan_s = NULL, *w_eth_s = NULL, *m_port = NULL, *new_port = NULL;
 	char *port = NULL, *port_last = NULL, *vlan = NULL, *vlan_last = NULL;
-	char *ifname_dup, *pch, *spch, *vid;
+	char *ifname_dup = NULL, *pch, *spch, *vid;
 	bool find_max = true;
 
 	update_section_list("dmmap","bridge_port", "bridge_key", 1, cur_bridging_args.br_key, "mg_port", "true", "bridge_port_instance", "1");
 	uci_foreach_option_eq("dmmap", "bridge_port", "bridge_key",  cur_bridging_args.br_key, new_port) {
 		init_bridging_port_args(dmctx, new_port, false, "");
 		port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, new_port, "bridge_port_instance", "bridge_port_alias",  &find_max, cur_bridging_args.br_key);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+			goto end;
 	}
 	if (cur_bridging_args.ifname[0] == '\0')
 		return 0;
@@ -1169,7 +1165,8 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(eth_s, "penable", "1");
 				init_bridging_port_args(dmctx, eth_s, false, pch);
 				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				found  = true ;
 				break;
 			}
@@ -1181,7 +1178,8 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(atm_s, "penable", "1");
 				init_bridging_port_args(dmctx, atm_s, false, pch);
 				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, atm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				found  = true ;
 				break;
 			}
@@ -1193,7 +1191,8 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(ptm_s, "penable", "1");
 				init_bridging_port_args(dmctx, ptm_s, false, pch);
 				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, ptm_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				found  = true ;
 				break;
 			}
@@ -1205,7 +1204,8 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(w_eth_s, "penable", "1");
 				init_bridging_port_args(dmctx, w_eth_s, false, pch);
 				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, w_eth_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				found  = true ;
 				break;
 			}
@@ -1217,7 +1217,8 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(wl_s, "penable", "1");
 				init_bridging_port_args(dmctx, wl_s, false, pch);
 				port = handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, wl_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				found  = true ;
 				break;
 			}
@@ -1229,11 +1230,14 @@ inline int browseBridgePortInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 				dmuci_set_value_by_section(vlan_s, "penable", "1");
 				init_bridging_port_args(dmctx, vlan_s, true, pch);
 				port =  handle_update_instance(2, dmctx, &port_last, br_port_update_instance_alias, 5, vlan_s, "bridge_port_instance", "bridge_port_alias", &find_max, cur_bridging_args.br_key);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, port) == DM_STOP)
+					goto end;
 				break;
 			}
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_bridging_port_args);
 	dmfree(ifname_dup);
 	return 0;
 }
@@ -1247,8 +1251,10 @@ inline int browseBridgeVlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "bridge_key", cur_bridging_args.br_key, vlan_s) {
 		vlan =  handle_update_instance(2, dmctx, &vlan_last, update_instance_alias, 3, vlan_s, "bridge_vlan_instance", "bridge_vlan_alias");
 		init_bridging_vlan_args(dmctx, vlan_s, vlan_last,  cur_bridging_args.br_key);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_bridging_vlan_args);
 	return 0;
 }
 
@@ -1261,7 +1267,9 @@ inline int browseBridgeVlanPortInst(struct dmctx *dmctx, DMNODE *parent_node, vo
 	uci_foreach_option_eq("layer2_interface_vlan", "vlan_interface", "bridge_key", cur_bridging_args.br_key, vlan_s) {
 		vlan =  handle_update_instance(2, dmctx, &vlan_last, update_instance_alias, 3, vlan_s, "bridge_vlan_instance", "bridge_vlan_alias");
 		init_bridging_vlan_args(dmctx, vlan_s, vlan_last,  cur_bridging_args.br_key);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_bridging_vlan_args);
 	return 0;
 }

@@ -42,85 +42,66 @@ inline int browselandevice_hostInst(struct dmctx *dmctx, DMNODE *parent_node, vo
 
 inline int init_ldargs_lan(struct dmctx *ctx, struct uci_section *s, char *iwan)
 {
-	struct ldlanargs *args = &cur_lanargs;
-	ctx->args = (void *)args;
-	args->ldlansection = s;
-	args->ldinstance = iwan;
+	cur_lanargs.ldlansection = s;
+	cur_lanargs.ldinstance = iwan;
 	return 0;
 }
 
 inline int init_ldargs_ip(struct dmctx *ctx, struct uci_section *s)
 {
-	struct ldipargs *args = &cur_ipargs;
-	ctx->args = (void *)args;
-	args->ldipsection = s;
+	cur_ipargs.ldipsection = s;
 	return 0;
 }
 
 inline int init_ldargs_dhcp(struct dmctx *ctx, struct uci_section *s)
 {
-	struct lddhcpargs *args = &cur_dhcpargs;
-	ctx->args = (void *)args;
-	args->lddhcpsection = s;
+	cur_dhcpargs.lddhcpsection = s;
 	return 0;
 }
 
 inline int init_ldargs_wlan(struct dmctx *ctx, struct uci_section *wifisection, int wlctl_num,
 						struct uci_section *device_section, char *wunit, char *wiface, json_object *res, int pki)
 {
-	struct ldwlanargs *args = &cur_wlanargs;
-	ctx->args = (void *)args;
-	args->lwlansection = wifisection;
-	args->device_section = device_section;
-	args->res = res;
-	args->wlctl_num = wlctl_num;
-	args->wiface = wiface;
-	args->wunit = wunit;
-	args->pki = pki;
+	cur_wlanargs.lwlansection = wifisection;
+	cur_wlanargs.device_section = device_section;
+	cur_wlanargs.res = res;
+	cur_wlanargs.wlctl_num = wlctl_num;
+	cur_wlanargs.wiface = wiface;
+	cur_wlanargs.wunit = wunit;
+	cur_wlanargs.pki = pki;
 	return 0;
 }
 
 inline int init_ldargs_eth_cfg(struct dmctx *ctx, char *eth, struct uci_section *eth_section)
 {
-	struct ldethargs *args = &cur_ethargs;
-	ctx->args = (void *)args;
-	args->eth = eth;
-	args->lan_ethsection = eth_section;
+	cur_ethargs.eth = eth;
+	cur_ethargs.lan_ethsection = eth_section;
 	return 0;
 }
 
 inline int init_client_args(struct dmctx *ctx, json_object *clients, char *lan_name)
 {
-	struct clientargs *args = &cur_clientargs;
-	ctx->args = (void *)args;
-	args->client = clients;
-	args->lan_name = lan_name;
+	cur_clientargs.client = clients;
+	cur_clientargs.lan_name = lan_name;
 	return 0;
 }
 
 inline int init_wl_client_args(struct dmctx *ctx, char *value, char *wiface)
 {
-	struct wl_clientargs *args = &cur_wl_clientargs;
-	ctx->args = (void *)args;
-	args->mac = value;
-	args->wiface = wiface;
-
+	cur_wl_clientargs.mac = value;
+	cur_wl_clientargs.wiface = wiface;
 	return 0;
 }
 
 inline int init_wlan_psk_args(struct dmctx *ctx, struct uci_section *s)
 {
-	struct wlan_psk *args = &cur_pskargs;
-	ctx->args = (void *)args;
-	args->wlanpsk = s;
+	cur_pskargs.wlanpsk = s;
 	return 0;
 }
 
 inline int init_wlan_wep_args(struct dmctx *ctx, struct uci_section *s)
 {
-	struct wlan_wep *args = &cur_wepargs;
-	ctx->args = (void *)args;
-	args->wlanwep = s;
+	cur_wepargs.wlanwep = s;
 	return 0;
 }
 
@@ -224,7 +205,7 @@ int add_landevice_dhcpstaticaddress(struct dmctx *ctx, char **instancepara)
 	char *value;
 	char *instance;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	instance = get_last_instance_lev2("dhcp", "host", "ldhcpinstance", "interface", lan_name);
@@ -246,11 +227,11 @@ int delete_landevice_dhcpstaticaddress(struct dmctx *ctx, unsigned char del_acti
 	
 	switch (del_action) {
 		case DEL_INST:
-			dhcpargs = (struct lddhcpargs *)ctx->args;
+			dhcpargs = &cur_dhcpargs;
 			dmuci_delete_by_section(dhcpargs->lddhcpsection, NULL, NULL);
 			return 0;
 		case DEL_ALL:
-			lanargs = (struct ldlanargs *)ctx->args;
+			lanargs = &cur_lanargs;
 			lan_name = section_name(lanargs->ldlansection);
 			uci_foreach_option_eq("dhcp", "host", "interface", lan_name, s) {
 				if (found != 0)
@@ -272,7 +253,7 @@ int add_landevice_wlanconfiguration(struct dmctx *ctx, char **instancepara)
 	char ssid[16] = {0};
 	char *instance;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	instance = get_last_instance_lev2("wireless", "wifi-iface", "lwlaninstance", "network", lan_name);
@@ -299,11 +280,11 @@ int delete_landevice_wlanconfiguration(struct dmctx *ctx, unsigned char del_acti
 	
 	switch (del_action) {
 		case DEL_INST:
-			wlanargs = (struct ldwlanargs *)ctx->args;
+			wlanargs = &cur_wlanargs;
 			dmuci_delete_by_section(wlanargs->lwlansection, NULL, NULL);
 			return 0;
 		case DEL_ALL:
-			lanargs = (struct ldlanargs *)ctx->args;
+			lanargs = &cur_lanargs;
 			lan_name = section_name(lanargs->ldlansection);
 			uci_foreach_option_eq("wireless", "wifi-iface", "network", lan_name, s) {
 				if (found != 0)
@@ -326,7 +307,7 @@ int get_lan_dns(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
 	int len;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
@@ -348,7 +329,7 @@ int get_lan_dns(char *refparam, struct dmctx *ctx, char **value)
 
 int set_lan_dns(char *refparam, struct dmctx *ctx, int action, char *value)
 {	
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *dup, *p;
 	
 	switch (action) {
@@ -373,7 +354,7 @@ int set_lan_dns(char *refparam, struct dmctx *ctx, int action, char *value)
 int get_lan_dhcp_server_configurable(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 
 	uci_foreach_option_eq("dhcp", "dhcp", "interface", section_name(lanargs->ldlansection), s) {
 		*value = "1";
@@ -387,7 +368,7 @@ int set_lan_dhcp_server_configurable(char *refparam, struct dmctx *ctx, int acti
 {	
 	bool b;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	switch (action) {
@@ -418,7 +399,7 @@ int set_lan_dhcp_server_configurable(char *refparam, struct dmctx *ctx, int acti
 int get_lan_dhcp_server_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
@@ -437,7 +418,7 @@ int set_lan_dhcp_server_enable(char *refparam, struct dmctx *ctx, int action, ch
 {
 	bool b;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	switch (action) {
@@ -468,7 +449,7 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 {
 	json_object *res;
 	char *ipaddr = "" , *mask = "", *start , *limit;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	struct uci_section *s = NULL;
 	char bufipstart[16], bufipend[16];
@@ -523,7 +504,7 @@ end:
 int get_lan_dhcp_interval_address_start(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *s_name, *tmp;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	dmasprintf(&s_name, "@%s[0]", lan_name);
@@ -541,7 +522,7 @@ int get_lan_dhcp_interval_address_start(char *refparam, struct dmctx *ctx, char 
 int get_lan_dhcp_interval_address_end(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *s_name, *tmp;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	dmasprintf(&s_name, "@%s[0]", lan_name);
@@ -563,7 +544,7 @@ int set_lan_dhcp_address_start(char *refparam, struct dmctx *ctx, int action, ch
 	char *s_name = "", *tmp, *dhcp_name = NULL;
 	struct uci_section *s = NULL;
 	struct uci_section *curr_section = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	struct dhcp_param *dhcp_param_1;
 
@@ -601,7 +582,7 @@ int set_lan_dhcp_address_end(char *refparam, struct dmctx *ctx, int action, char
 	char *ipaddr = "", *mask = "", *start, buf[16], *tmp, *s_name = NULL;
 	struct uci_section *s = NULL;
 	struct uci_section *curr_section = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	char *dhcp_name = NULL;
 	struct dhcp_param *dhcp_param;
@@ -641,7 +622,7 @@ int get_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, char **va
 	struct uci_section *s = NULL;
 	char *min, *max, *ip, *s_n_ip;
 	unsigned int n_min, n_max, n_ip;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	*value = "";
 	
@@ -675,7 +656,7 @@ int set_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, int actio
 	char *min, *max, *ip, *val, *local_value;
 	char *pch, *spch;
 	unsigned int n_min, n_max, n_ip;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	switch (action) {
@@ -718,7 +699,7 @@ int set_lan_dhcp_reserved_addresses(char *refparam, struct dmctx *ctx, int actio
 
 int get_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	char *mask;
 	json_object *res;
@@ -746,7 +727,7 @@ int get_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 int set_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	switch (action) {
@@ -764,7 +745,7 @@ int set_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, int action, char 
 
 int get_lan_dhcp_iprouters(char *refparam, struct dmctx *ctx, char **value) 
 {
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	
 	dmuci_get_value_by_section_string(lanargs->ldlansection, "gateway", value);
 	if ((*value)[0] == '\0') {
@@ -775,7 +756,7 @@ int get_lan_dhcp_iprouters(char *refparam, struct dmctx *ctx, char **value)
 
 int set_lan_dhcp_iprouters(char *refparam, struct dmctx *ctx, int action, char *value) 
 {
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -792,7 +773,7 @@ int get_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, char **value)
 	int len, mtime = 0;
 	char *ltime = "", *pch, *spch, *ltime_ini, *tmp, *tmp_ini;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	uci_foreach_option_eq("dhcp", "dhcp", "interface", lan_name, s) {
@@ -860,7 +841,7 @@ int set_lan_dhcp_leasetime(char *refparam, struct dmctx *ctx, int action, char *
 {
 	struct uci_section *s = NULL;
 	char buf[32];
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 
 	switch (action) {
@@ -884,7 +865,7 @@ int get_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, char **value)
 	struct uci_list *val;
 	struct uci_element *e = NULL;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	*value = "";
 
@@ -910,7 +891,7 @@ int set_lan_dhcp_domainname(char *refparam, struct dmctx *ctx, int action, char 
 	struct uci_section *s = NULL;
 	struct uci_element *e = NULL, *tmp;
 	char *option = "dhcp_option", buf[64];
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 
 	switch (action) {
@@ -942,7 +923,7 @@ int get_lan_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
 	int entries = 0;
 	char *network;
 	json_object *res;
-	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
 	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
@@ -964,28 +945,28 @@ int get_lan_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
 
 int get_interface_enable_ipinterface(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 	return get_interface_enable_ubus(lan_name, refparam, ctx, value);
 }
 
 int set_interface_enable_ipinterface(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 	return set_interface_enable_ubus(lan_name, refparam, ctx, action, value);
 }
 
 int get_interface_firewall_enabled_ipinterface(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 	return get_interface_firewall_enabled(lan_name, refparam, ctx, value);
 }
 
 int set_interface_firewall_enabled_ipinterface(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 	return set_interface_firewall_enabled(lan_name, refparam, ctx, action, value);
 }
@@ -994,7 +975,7 @@ int get_interface_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *proto;
 	json_object *res;
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;//TO CHECK
+	struct ldipargs *ipargs = &cur_ipargs;//TO CHECK
 	char *lan_name = section_name(ipargs->ldipsection);
 	
 	dmuci_get_value_by_section_string(ipargs->ldipsection, "proto", &proto);
@@ -1010,7 +991,7 @@ int get_interface_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 
 int set_interface_ipaddress(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *lan_name = section_name(ipargs->ldipsection);
 
 	switch (action) {
@@ -1027,7 +1008,7 @@ int set_interface_ipaddress(char *refparam, struct dmctx *ctx, int action, char 
 
 int get_interface_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	char *proto;
 	char *val = NULL;
 	json_object *res;
@@ -1049,7 +1030,7 @@ int get_interface_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 
 int set_interface_subnetmask(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1065,7 +1046,7 @@ int set_interface_subnetmask(char *refparam, struct dmctx *ctx, int action, char
 
 int get_interface_addressingtype (char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 	*value = "";
 
 	dmuci_get_value_by_section_string(ipargs->ldipsection, "proto", value);
@@ -1078,7 +1059,7 @@ int get_interface_addressingtype (char *refparam, struct dmctx *ctx, char **valu
 
 int set_interface_addressingtype(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldipargs *ipargs = (struct ldipargs *)ctx->args;
+	struct ldipargs *ipargs = &cur_ipargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1100,7 +1081,7 @@ int set_interface_addressingtype(char *refparam, struct dmctx *ctx, int action, 
 int get_dhcpstaticaddress_enable (char *refparam, struct dmctx *ctx, char **value)
 {
 	char *mac;
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 
 	dmuci_get_value_by_section_string(dhcpargs->lddhcpsection, "mac", &mac);
 	if (strcmp (mac, DHCPSTATICADDRESS_DISABLED_CHADDR) == 0)
@@ -1114,7 +1095,7 @@ int set_dhcpstaticaddress_enable(char *refparam, struct dmctx *ctx, int action, 
 {
 	char *chaddr;
 	bool b;
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1150,7 +1131,7 @@ int set_dhcpstaticaddress_enable(char *refparam, struct dmctx *ctx, int action, 
 int get_dhcpstaticaddress_chaddr(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *chaddr;
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 	
 	dmuci_get_value_by_section_string(dhcpargs->lddhcpsection, "mac", &chaddr);
 	if (strcmp(chaddr, DHCPSTATICADDRESS_DISABLED_CHADDR) == 0)
@@ -1163,7 +1144,7 @@ int get_dhcpstaticaddress_chaddr(char *refparam, struct dmctx *ctx, char **value
 int set_dhcpstaticaddress_chaddr(char *refparam, struct dmctx *ctx, int action, char *value)
 {	
 	char *chaddr;
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 		
 	switch (action) {
 		case VALUECHECK:
@@ -1181,7 +1162,7 @@ int set_dhcpstaticaddress_chaddr(char *refparam, struct dmctx *ctx, int action, 
 
 int get_dhcpstaticaddress_yiaddr(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 	
 	dmuci_get_value_by_section_string(dhcpargs->lddhcpsection, "ip", value);
 	return 0;
@@ -1189,7 +1170,7 @@ int get_dhcpstaticaddress_yiaddr(char *refparam, struct dmctx *ctx, char **value
 
 int set_dhcpstaticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct lddhcpargs *dhcpargs = (struct lddhcpargs *)ctx->args;
+	struct lddhcpargs *dhcpargs = &cur_dhcpargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1210,7 +1191,7 @@ int set_dhcpstaticaddress_yiaddr(char *refparam, struct dmctx *ctx, int action, 
 int get_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 		
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -1221,7 +1202,7 @@ int get_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, char **value
 int set_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1243,7 +1224,7 @@ int set_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, int action, 
 
 int get_lan_eth_iface_cfg_status(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	bool b;
 		
 	get_lan_eth_iface_cfg_enable(refparam, ctx, value);
@@ -1259,7 +1240,7 @@ int get_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, char **v
 {
 	char *pch, *spch, *v;
 	int len;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	struct uci_section *s;
 	
 	*value = "";
@@ -1286,7 +1267,7 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 {
 	char *val = NULL;
 	char *duplex;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	struct uci_section *s, *sec;
 	
 	switch (action) {
@@ -1325,7 +1306,7 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 int get_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *tmp = "";
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	struct uci_section *s;
 
 	uci_foreach_option_eq("ports", "ethport", "ifname", ethargs->eth, s) {
@@ -1351,7 +1332,7 @@ int get_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, char **v
 int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *m, *spch, *rate, *val = NULL;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	struct uci_section *s, *sec;
 
 	switch (action) {
@@ -1393,7 +1374,7 @@ int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int acti
 int get_lan_eth_iface_cfg_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -1404,7 +1385,7 @@ int get_lan_eth_iface_cfg_stats_tx_bytes(char *refparam, struct dmctx *ctx, char
 int get_lan_eth_iface_cfg_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -1415,7 +1396,7 @@ int get_lan_eth_iface_cfg_stats_rx_bytes(char *refparam, struct dmctx *ctx, char
 int get_lan_eth_iface_cfg_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -1426,7 +1407,7 @@ int get_lan_eth_iface_cfg_stats_tx_packets(char *refparam, struct dmctx *ctx, ch
 int get_lan_eth_iface_cfg_stats_rx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
+	struct ldethargs *ethargs = &cur_ethargs;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -1472,28 +1453,28 @@ char *get_interface_type(char *mac, char *ndev)
 }
 
 int get_lan_host_ipaddress(char *refparam, struct dmctx *ctx, char **value) {
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "ipaddr", 0, NULL, value, NULL);
 	return 0;	
 }
 
 int get_lan_host_hostname(char *refparam, struct dmctx *ctx, char **value) {
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "hostname", 0, NULL, value, NULL);
 	return 0;	
 }
 
 int get_lan_host_active(char *refparam, struct dmctx *ctx, char **value) {
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "connected", 0, NULL, value, NULL);
 	return 0;	
 }
 
 int get_lan_host_macaddress(char *refparam, struct dmctx *ctx, char **value) {
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "macaddr", 0, NULL, value, NULL);
 	return 0;	
@@ -1502,7 +1483,7 @@ int get_lan_host_macaddress(char *refparam, struct dmctx *ctx, char **value) {
 int get_lan_host_interfacetype(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *mac;
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "macaddr", 0, NULL, &mac, NULL);
 	*value = get_interface_type(mac, clienlargs->lan_name);
@@ -1511,7 +1492,7 @@ int get_lan_host_interfacetype(char *refparam, struct dmctx *ctx, char **value)
 
 int get_lan_host_addresssource(char *refparam, struct dmctx *ctx, char **value) {
 	char *dhcp;
-	struct clientargs *clienlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clienlargs = &cur_clientargs;
 	
 	json_select(clienlargs->client, "dhcp", 0, NULL, &dhcp, NULL);
 	if (strcasecmp(dhcp, "true") == 0)
@@ -1528,7 +1509,7 @@ int get_lan_host_leasetimeremaining(char *refparam, struct dmctx *ctx, char **va
 	char line[MAX_DHCP_LEASES];
 	struct tm ts;
 	char *leasetime, *mac_f, *mac, *line1;
-	struct clientargs *clientlargs = (struct clientargs *)ctx->args;
+	struct clientargs *clientlargs = &cur_clientargs;
 	char delimiter[] = " \t";
 	
 	json_select(clientlargs->client, "dhcp", 0, NULL, &dhcp, NULL);
@@ -1571,7 +1552,7 @@ int get_wlan_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	int i;
 	char *val;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "disabled", &val);
 
 	if (val[0] == '1')
@@ -1584,7 +1565,7 @@ int get_wlan_enable(char *refparam, struct dmctx *ctx, char **value)
 int set_wlan_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			if (string_to_bool(value, &b))
@@ -1604,7 +1585,7 @@ int set_wlan_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 int get_wlan_status (char *refparam, struct dmctx *ctx, char **value)
 {
 	char *tmp;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	dmuci_get_value_by_section_string(wlanargs->device_section, "disabled", &tmp);
 	if (tmp[0] == '0' || tmp[0] == '\0')
@@ -1616,7 +1597,7 @@ int get_wlan_status (char *refparam, struct dmctx *ctx, char **value)
 
 int get_wlan_bssid(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	DM_ASSERT(wlanargs->res, *value = "");
 	json_select(wlanargs->res, "bssid", 0, NULL, value, NULL);
@@ -1625,14 +1606,14 @@ int get_wlan_bssid(char *refparam, struct dmctx *ctx, char **value)
 
 int get_wlan_max_bit_rate (char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->device_section, "hwmode", value);
 	return 0;
 }
 
 int set_wlan_max_bit_rate(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1645,7 +1626,7 @@ int set_wlan_max_bit_rate(char *refparam, struct dmctx *ctx, int action, char *v
 
 int get_wlan_channel(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	dmuci_get_value_by_section_string(wlanargs->device_section, "channel", value);
 	if (strcmp(*value, "auto") == 0 || (*value)[0] == '\0') {
@@ -1657,7 +1638,7 @@ int get_wlan_channel(char *refparam, struct dmctx *ctx, char **value)
 
 int set_wlan_channel(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1670,7 +1651,7 @@ int set_wlan_channel(char *refparam, struct dmctx *ctx, int action, char *value)
 
 int get_wlan_auto_channel_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->device_section, "channel", value);
 	if (strcmp(*value, "auto") == 0 || (*value)[0] == '\0')
 		*value = "1";
@@ -1682,7 +1663,7 @@ int get_wlan_auto_channel_enable(char *refparam, struct dmctx *ctx, char **value
 int set_wlan_auto_channel_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1707,14 +1688,14 @@ int set_wlan_auto_channel_enable(char *refparam, struct dmctx *ctx, int action, 
 
 int get_wlan_ssid(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "ssid", value);
 	return 0;
 }
 
 int set_wlan_ssid(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1728,7 +1709,7 @@ int set_wlan_ssid(char *refparam, struct dmctx *ctx, int action, char *value)
 
 int get_wlan_beacon_type(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", value);
 	if (strcmp(*value, "none") == 0)
@@ -1746,7 +1727,7 @@ int get_wlan_beacon_type(char *refparam, struct dmctx *ctx, char **value)
 
 int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *) ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	char *encryption, *option;
 	char strk64[4][11];
 
@@ -1823,7 +1804,7 @@ int set_wlan_beacon_type(char *refparam, struct dmctx *ctx, int action, char *va
 
 int get_wlan_mac_control_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	char *macfilter;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "macfilter", &macfilter);
 	if (macfilter[0] != '0')
@@ -1836,7 +1817,7 @@ int get_wlan_mac_control_enable(char *refparam, struct dmctx *ctx, char **value)
 int set_wlan_mac_control_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			if (string_to_bool(value, &b))
@@ -1856,7 +1837,7 @@ int set_wlan_mac_control_enable(char *refparam, struct dmctx *ctx, int action, c
 
 int get_wlan_standard(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->device_section, "hwmode", value);
 	if (strcmp(*value, "11b") == 0)
 		*value = "b";
@@ -1871,7 +1852,7 @@ int get_wlan_standard(char *refparam, struct dmctx *ctx, char **value)
 
 int set_wlan_standard(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1893,7 +1874,7 @@ int set_wlan_standard(char *refparam, struct dmctx *ctx, int action, char *value
 int get_wlan_possible_channels(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	*value = "";
 	dmubus_call("router.wireless", "radios", UBUS_ARGS{}, 0, &res);
@@ -1904,7 +1885,7 @@ int get_wlan_possible_channels(char *refparam, struct dmctx *ctx, char **value)
 
 int get_wlan_wep_key_index(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	char *encryption;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strcmp(encryption, "wep-shared") == 0)
@@ -1918,7 +1899,7 @@ int set_wlan_wep_key_index(char *refparam, struct dmctx *ctx, int action, char *
 {
 	char *option, *encryption;
 	char strk64[4][11];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1948,7 +1929,7 @@ int set_wlan_key_passphrase(char *refparam, struct dmctx *ctx, int action, char 
 {
 	char *option, *encryption;
 	char strk64[4][11];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1981,7 +1962,7 @@ int get_wlan_wep_encryption_level(char *refparam, struct dmctx *ctx, char **valu
 int get_wlan_basic_encryption_modes(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strcmp(encryption, "wep-shared") == 0 || strcmp(encryption, "wep-open") == 0)
@@ -1996,7 +1977,7 @@ int set_wlan_basic_encryption_modes(char *refparam, struct dmctx *ctx, int actio
 	bool b;
 	char *option, *encryption;
 	char strk64[4][11];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2029,7 +2010,7 @@ int set_wlan_basic_encryption_modes(char *refparam, struct dmctx *ctx, int actio
 int get_wlan_basic_authentication_mode(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strcmp(encryption, "wep-shared") == 0)
@@ -2043,7 +2024,7 @@ int set_wlan_basic_authentication_mode(char *refparam, struct dmctx *ctx, int ac
 {
 	char *encryption, *option;
 	char strk64[4][11];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -2075,7 +2056,7 @@ int set_wlan_basic_authentication_mode(char *refparam, struct dmctx *ctx, int ac
 int get_wlan_wpa_encryption_modes(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	*value = "";
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
@@ -2091,7 +2072,7 @@ int get_wlan_wpa_encryption_modes(char *refparam, struct dmctx *ctx, char **valu
 int set_wlan_wpa_encryption_modes(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -2135,7 +2116,7 @@ int set_wlan_wpa_encryption_modes(char *refparam, struct dmctx *ctx, int action,
 int get_wlan_wpa_authentication_mode(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	*value = "";
 	if (strcmp(encryption, "psk") == 0 || strncmp(encryption, "psk+", 4) == 0 || strncmp(encryption, "mixed-psk", 9) == 0)
@@ -2148,7 +2129,7 @@ int get_wlan_wpa_authentication_mode(char *refparam, struct dmctx *ctx, char **v
 int set_wlan_wpa_authentication_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2182,7 +2163,7 @@ int set_wlan_wpa_authentication_mode(char *refparam, struct dmctx *ctx, int acti
 int get_wlan_ieee_11i_encryption_modes(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	*value = "";
@@ -2199,7 +2180,7 @@ int set_wlan_ieee_11i_encryption_modes(char *refparam, struct dmctx *ctx, int ac
 {
 	bool b;
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2247,7 +2228,7 @@ int set_wlan_ieee_11i_encryption_modes(char *refparam, struct dmctx *ctx, int ac
 int get_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	*value = "";
 	if (strcmp(encryption, "psk2") == 0 || strncmp(encryption, "psk2+", 5) == 0 || strncmp(encryption, "mixed-psk", 9) == 0 )
@@ -2260,7 +2241,7 @@ int get_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, cha
 int set_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2295,7 +2276,7 @@ int set_wlan_ieee_11i_authentication_mode(char *refparam, struct dmctx *ctx, int
 int get_wlan_radio_enabled(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *tmp;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->device_section, "disabled", &tmp);	
 	if (tmp[0] == '0' || tmp[0] == '\0')
@@ -2309,7 +2290,7 @@ int set_wlan_radio_enabled(char *refparam, struct dmctx *ctx, int action, char *
 {
 	bool b;
 	char *wunit, buf[8];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			if (string_to_bool(value, &b))
@@ -2328,7 +2309,7 @@ int set_wlan_radio_enabled(char *refparam, struct dmctx *ctx, int action, char *
 
 int get_wlan_device_operation_mode(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "mode", value);
 	if (strcmp(*value, "ap") == 0)
@@ -2340,7 +2321,7 @@ int get_wlan_device_operation_mode(char *refparam, struct dmctx *ctx, char **val
 
 int set_wlan_device_operation_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -2355,7 +2336,7 @@ int set_wlan_device_operation_mode(char *refparam, struct dmctx *ctx, int action
 int get_wlan_authentication_service_mode(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strcmp(encryption, "wpa") == 0 || strcmp(encryption, "wpa2") == 0 || strcmp(encryption, "mixed-wpa") == 0)
@@ -2368,7 +2349,7 @@ int get_wlan_authentication_service_mode(char *refparam, struct dmctx *ctx, char
 int set_wlan_authentication_service_mode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2398,7 +2379,7 @@ int get_wlan_total_associations(char *refparam, struct dmctx *ctx, char **value)
 	int i = 0;
 	json_object *res;
 	char *wunit, buf[8];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
@@ -2412,7 +2393,7 @@ int get_wlan_total_associations(char *refparam, struct dmctx *ctx, char **value)
 
 int get_wlan_devstatus_statistics_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	json_object *res;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wlanargs->wiface}}, 1, &res);
@@ -2424,7 +2405,7 @@ int get_wlan_devstatus_statistics_tx_bytes(char *refparam, struct dmctx *ctx, ch
 int get_wlan_devstatus_statistics_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -2435,7 +2416,7 @@ int get_wlan_devstatus_statistics_rx_bytes(char *refparam, struct dmctx *ctx, ch
 int get_wlan_devstatus_statistics_tx_packets(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -2447,7 +2428,7 @@ int get_wlan_devstatus_statistics_rx_packets(char *refparam, struct dmctx *ctx, 
 {
 	json_object *res;
 	char *val = NULL;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -2458,7 +2439,7 @@ int get_wlan_devstatus_statistics_rx_packets(char *refparam, struct dmctx *ctx, 
 int get_wlan_ssid_advertisement_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *hidden;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "hidden", &hidden);
 	if (hidden[0] == '1' && hidden[1] == '\0')
 		*value = "0";
@@ -2470,7 +2451,7 @@ int get_wlan_ssid_advertisement_enable(char *refparam, struct dmctx *ctx, char *
 int set_wlan_ssid_advertisement_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2492,7 +2473,7 @@ int set_wlan_ssid_advertisement_enable(char *refparam, struct dmctx *ctx, int ac
 int get_wlan_wps_enable(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *wps_pbc;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "wps_pbc", &wps_pbc);
 	if (wps_pbc[0] == '1' && wps_pbc[1] == '\0')
 		*value = "1";
@@ -2504,7 +2485,7 @@ int get_wlan_wps_enable(char *refparam, struct dmctx *ctx, char **value)
 int set_wlan_wps_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2524,7 +2505,7 @@ int set_wlan_wps_enable(char *refparam, struct dmctx *ctx, int action, char *val
 
 int get_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	dmuci_get_value_by_section_string(wlanargs->device_section, "channel", value);
 	if (strcmp(*value, "auto") == 0 || (*value)[0] == '\0')
 		*value = "Auto";
@@ -2536,7 +2517,7 @@ int get_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, char **value)
 int set_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *channel;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2559,7 +2540,7 @@ int set_x_inteno_se_channelmode(char *refparam, struct dmctx *ctx, int action, c
 int get_x_inteno_se_supported_standard(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *freq;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	DM_ASSERT(wlanargs->res, *value = "b, g, n, gst, lrs");
 	json_select(wlanargs->res, "frequency", 0, NULL, &freq, NULL);
@@ -2573,7 +2554,7 @@ int get_x_inteno_se_supported_standard(char *refparam, struct dmctx *ctx, char *
 int get_x_inteno_se_operating_channel_bandwidth(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *bandwith;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	dmuci_get_value_by_section_string(wlanargs->device_section, "bandwidth", value);
 	if (value[0] == '\0')
@@ -2588,7 +2569,7 @@ int get_x_inteno_se_operating_channel_bandwidth(char *refparam, struct dmctx *ct
 int set_x_inteno_se_operating_channel_bandwidth(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *pch, *spch, *dup;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2605,7 +2586,7 @@ int set_x_inteno_se_operating_channel_bandwidth(char *refparam, struct dmctx *ct
 
 int get_x_inteno_se_maxssid(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "bss_max", value);
 	return 0;
@@ -2613,7 +2594,7 @@ int get_x_inteno_se_maxssid(char *refparam, struct dmctx *ctx, char **value)
 
 int set_x_inteno_se_maxssid(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -2630,7 +2611,7 @@ int set_wlan_wep_key(char *refparam, struct dmctx *ctx, int action, char *value,
 {
 	char *encryption, *option;
 	char strk64[4][11];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2665,7 +2646,7 @@ int set_wlan_wep_key1(char *refparam, struct dmctx *ctx, int action, char *value
 /****************************************************************************************/
 
 int get_wlan_associated_macaddress(char *refparam, struct dmctx *ctx, char **value) {
-	struct wl_clientargs *clientwlargs = (struct wl_clientargs *)ctx->args;
+	struct wl_clientargs *clientwlargs = &cur_wl_clientargs;
 	
 	*value = dmstrdup(clientwlargs->mac);
 	return 0;
@@ -2677,7 +2658,7 @@ int get_wlan_associated_ipddress(char *refparam, struct dmctx *ctx, char **value
 	char *ip, *mac, *line1;
 	char delimiter[] = " \t";
 	char line[MAX_PROC_ARP];
-	struct wl_clientargs *clientwlargs = (struct wl_clientargs *)ctx->args;
+	struct wl_clientargs *clientwlargs = &cur_wl_clientargs;
 	
 	fp = fopen(ARP_FILE, "r");
 	if ( fp != NULL)
@@ -2702,7 +2683,7 @@ int get_wlan_associated_ipddress(char *refparam, struct dmctx *ctx, char **value
 }
 
 int get_wlan_associated_authenticationstate(char *refparam, struct dmctx *ctx, char **value) {
-	struct wl_clientargs *clientwlargs = (struct wl_clientargs *)ctx->args;
+	struct wl_clientargs *clientwlargs = &cur_wl_clientargs;
 	char buf[256];
 	int pp, r;
 	*value = "0";
@@ -2722,7 +2703,7 @@ int get_wlan_associated_authenticationstate(char *refparam, struct dmctx *ctx, c
 int set_wlan_pre_shared_key(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -2744,7 +2725,7 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 	json_object *res;
 	char *wunit, *encryption, buf[8];
 	char sta_pki[8];
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strstr(encryption, "psk")) {
@@ -2760,7 +2741,7 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 
 int get_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	*value = "0";
 	dmuci_get_value_by_section_string(wlanargs->device_section, "scantimer", value);
 	return 0;
@@ -2768,7 +2749,7 @@ int get_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, char **value)
 
 int set_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2782,7 +2763,7 @@ int set_x_inteno_se_scantimer(char *refparam, struct dmctx *ctx, int action, cha
 
 int get_wmm_enabled(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	bool b;
 
 	dmuci_get_value_by_section_string(wlanargs->device_section, "wmm", value);
@@ -2798,7 +2779,7 @@ int get_wmm_enabled(char *refparam, struct dmctx *ctx, char **value)
 int get_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *freq;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	DM_ASSERT(wlanargs->res, *value = "");
 	json_select(wlanargs->res, "frequency", 0, NULL, &freq, NULL);
@@ -2811,7 +2792,7 @@ int set_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, int action, cha
 	char *freq = NULL;
 	json_object *res = NULL;
 	struct uci_section *s = NULL;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	switch (action) {
 		case VALUECHECK:
@@ -2845,7 +2826,7 @@ int set_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, int action, cha
 }
 int set_wmm_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	bool b;
 
 	switch (action) {
@@ -3206,8 +3187,10 @@ inline int browselandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 	uci_foreach_filter_func("network", "interface", NULL, &filter_lan_device_interface, s) {
 		idev = handle_update_instance(1, dmctx, &idev_last, update_instance_alias, 3, s, "ldinstance", "ldalias");
 		init_ldargs_lan(dmctx, s, idev);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idev);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idev) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_lanargs);
 	return 0;
 }
 
@@ -3217,20 +3200,22 @@ inline int browseIPInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void 
 	struct uci_section *sss = NULL;
 	char *ilan = NULL, *ilan_last = NULL;
 	char *idhcp = NULL, *idhcp_last = NULL;
-		struct ldlanargs *lanargs = (struct ldlanargs *)dmctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 
-		uci_foreach_filter_func("network", "interface", lanargs->ldlansection, filter_lan_ip_interface, ss) {
-			ilan = handle_update_instance(2, dmctx, &ilan_last, update_instance_alias, 3, ss, "lipinstance", "lipalias");
-			init_ldargs_ip(dmctx, ss);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ilan);
-			/*SUBENTRY(entry_landevice_ipinterface_instance, ctx, idev, ilan);
-		uci_foreach_option_cont("dhcp", "host", "interface", section_name(ss), sss) {
-			idhcp = handle_update_instance(2, ctx, &idhcp_last, update_instance_alias, 3, sss, "ldhcpinstance", "ldhcpalias");
-			init_ldargs_dhcp(ctx, sss);
-			SUBENTRY(entry_landevice_dhcpstaticaddress_instance, ctx, idev, idhcp);
-			}*/
-		}
-		return 0;
+	uci_foreach_filter_func("network", "interface", lanargs->ldlansection, filter_lan_ip_interface, ss) {
+		ilan = handle_update_instance(2, dmctx, &ilan_last, update_instance_alias, 3, ss, "lipinstance", "lipalias");
+		init_ldargs_ip(dmctx, ss);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ilan) == DM_STOP)
+			break;
+		/*SUBENTRY(entry_landevice_ipinterface_instance, ctx, idev, ilan);
+	uci_foreach_option_cont("dhcp", "host", "interface", section_name(ss), sss) {
+		idhcp = handle_update_instance(2, ctx, &idhcp_last, update_instance_alias, 3, sss, "ldhcpinstance", "ldhcpalias");
+		init_ldargs_dhcp(ctx, sss);
+		SUBENTRY(entry_landevice_dhcpstaticaddress_instance, ctx, idev, idhcp);
+		}*/
+	}
+	DM_CLEAN_ARGS(cur_ipargs);
+	return 0;
 }
 
 inline int browseDhcp_static_addressInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
@@ -3239,7 +3224,7 @@ inline int browseDhcp_static_addressInst(struct dmctx *dmctx, DMNODE *parent_nod
 	struct uci_section *sss = NULL;
 	char *ilan = NULL, *ilan_last = NULL;
 	char *idhcp = NULL, *idhcp_last = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)dmctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 
 	uci_foreach_filter_func("network", "interface", lanargs->ldlansection, filter_lan_ip_interface, ss) {
 		ilan = handle_update_instance(2, dmctx, &ilan_last, update_instance_alias, 3, ss, "lipinstance", "lipalias");
@@ -3247,9 +3232,12 @@ inline int browseDhcp_static_addressInst(struct dmctx *dmctx, DMNODE *parent_nod
 		uci_foreach_option_cont("dhcp", "host", "interface", section_name(ss), sss) {
 			idhcp = handle_update_instance(2, dmctx, &idhcp_last, update_instance_alias, 3, sss, "ldhcpinstance", "ldhcpalias");
 			init_ldargs_dhcp(dmctx, sss);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp); //TO CHECK
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idhcp) == DM_STOP)
+				goto end;
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_dhcpargs);
 	return 0;
 }
 
@@ -3260,7 +3248,7 @@ inline int browselanethernetinterfaceconfigInst(struct dmctx *dmctx, DMNODE *par
 	char *ifname, *wan_eth, *baseifname;
 	char *ieth = NULL, *ieth_last = NULL;
 	struct uci_section *s = NULL;
-	struct ldlanargs *lanargs = (struct ldlanargs *)dmctx->args;
+	struct ldlanargs *lanargs = &cur_lanargs;
 
 	dmuci_get_option_value_string("layer2_interface_ethernet", "ethernet_interface", "baseifname", &wan_eth);
 	dmuci_get_value_by_section_string(cur_lanargs.ldlansection, "ifname", &ifname);
@@ -3269,8 +3257,10 @@ inline int browselanethernetinterfaceconfigInst(struct dmctx *dmctx, DMNODE *par
 		dmuci_get_value_by_section_string(s, "ifname", &baseifname);
 		init_ldargs_eth_cfg(dmctx, baseifname, s);
 		ieth =  handle_update_instance(2, dmctx, &ieth_last, update_instance_alias, 3, s, "ethinstance", "ethalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ieth);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ieth) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_ethargs);
 	return 0;
 }
 
@@ -3299,9 +3289,12 @@ inline int browseWlanConfigurationInst(struct dmctx *dmctx, DMNODE *parent_node,
 			dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wiface}}, 1, &res);
 			init_ldargs_wlan(dmctx, sss, wlctl_num, ss, section_name(ss), wiface, res, 0);
 			wlctl_num++;
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwlan);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwlan) == DM_STOP)
+				goto end;
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_wlanargs);
 	return 0;
 }
 
@@ -3309,7 +3302,7 @@ inline int browseWepKeyInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev
 {
 	int i = 0;
 	char *iwep = NULL, *iwep_last = NULL;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)dmctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	struct uci_section *s = NULL;
 
 	update_section_list("dmmap","wlan-wepkey", "wlan", 4, section_name(wlanargs->lwlansection), NULL, NULL, NULL, NULL);
@@ -3318,15 +3311,17 @@ inline int browseWepKeyInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev
 		cur_wepargs.wlanwep = s;
 		cur_wepargs.key_index = ++i;
 		iwep =  handle_update_instance(3, dmctx, &iwep_last, update_instance_alias, 3, s, "wepinstance", "wepalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwep);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwep) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wepargs);
 	return 0;
 }
 
 inline int browsepresharedkeyInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *ipk = NULL, *ipk_last = NULL ;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)dmctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 	struct uci_section *s = NULL;
 
 	wlanargs->pki = 0;
@@ -3337,8 +3332,10 @@ inline int browsepresharedkeyInst(struct dmctx *dmctx, DMNODE *parent_node, void
 		//init_wlan_psk_args(ctx, s);
 		cur_pskargs.wlanpsk = s;
 		ipk =  handle_update_instance(3, dmctx, &ipk_last, update_instance_alias, 3, s, "pskinstance", "pskalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipk);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipk) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_pskargs);
 	return 0;
 }
 
@@ -3347,7 +3344,7 @@ inline int browseassociateddeviceInst(struct dmctx *dmctx, DMNODE *parent_node, 
 	int id = 0;
 	json_object *res, *wl_client_obj;
 	char *idx, *idx_last = NULL;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)dmctx->args;
+	struct ldwlanargs *wlanargs = &cur_wlanargs;
 
 	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
 	if (res) {
@@ -3356,9 +3353,11 @@ inline int browseassociateddeviceInst(struct dmctx *dmctx, DMNODE *parent_node, 
 			idx = handle_update_instance(3, dmctx, &idx_last, update_instance_without_section, 1, ++id);
 			json_select(wl_client_obj, "macaddr", 0, NULL, &value, NULL);
 			init_wl_client_args(dmctx, value, wlanargs->wiface);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx) == DM_STOP)
+				break;
 		}
 	}
+	DM_CLEAN_ARGS(cur_wl_clientargs);
 	return 0;
 }
 
@@ -3375,10 +3374,12 @@ inline int browselandevice_hostInst(struct dmctx *dmctx, DMNODE *parent_node, vo
 			if (strcmp(network, section_name(cur_lanargs.ldlansection)) == 0) {
 				init_client_args(dmctx, client_obj, section_name(cur_lanargs.ldlansection));
 				idx = handle_update_instance(2, dmctx, &idx_last, update_instance_without_section, 1, ++id);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx) == DM_STOP)
+					break;
 			}
 		}
 	}
+	DM_CLEAN_ARGS(cur_clientargs);
 	return 0;
 }
 

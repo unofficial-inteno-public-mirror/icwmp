@@ -43,19 +43,19 @@ inline int browseXIntenoDropbear(struct dmctx *dmctx, DMNODE *parent_node, void 
 	char *idropbear = NULL, *idropbear_last = NULL;
 	struct uci_section *s = NULL;
 
-		uci_foreach_sections("dropbear", "dropbear", s) {
-			init_args_owsd_listen(dmctx, s);
-			idropbear =  handle_update_instance(1, dmctx, &idropbear_last, update_instance_alias, 3, s, "dropbearinstance", "dropbearalias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idropbear);
-		}
-		return 0;
-
+	uci_foreach_sections("dropbear", "dropbear", s) {
+		init_args_dropbear(dmctx, s);
+		idropbear =  handle_update_instance(1, dmctx, &idropbear_last, update_instance_alias, 3, s, "dropbearinstance", "dropbearalias");
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idropbear) == DM_STOP)
+			break;
+	}
+	DM_CLEAN_ARGS(cur_dropbear_args);
+	return 0;
 }
 
 inline int init_args_dropbear(struct dmctx *ctx, struct uci_section *s)
 {
 	struct dropbear_args *args = &cur_dropbear_args;
-	ctx->args = (void *)args;
 	args->dropbear_section = s;
 	return 0;
 }

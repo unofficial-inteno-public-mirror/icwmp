@@ -48,7 +48,6 @@ int get_linker_Wifi_Ssid(char *refparam, struct dmctx *dmctx, void *data, char *
 inline int init_wifi_radio(struct dmctx *ctx, struct uci_section *s)
 {
 	struct wifi_radio_args *args = &cur_wifi_radio_args;
-	ctx->args = (void *)args;
 	args->wifi_radio_sec = s;
 	return 0;
 }
@@ -1172,8 +1171,10 @@ inline int browseWifiRadioInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 	uci_foreach_sections("wireless", "wifi-device", s) {
 		init_wifi_radio(dmctx, s);
 		wnum =  handle_update_instance(1, dmctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wifi_radio_args);
 	return 0;
 }
 
@@ -1188,8 +1189,10 @@ inline int browseWifiSsidInst(struct dmctx *dmctx, DMNODE *parent_node, void *pr
 		dmuci_get_value_by_section_string(ss, "device", &linker);
 		init_wifi_ssid(dmctx, ss, ifname, linker);
 		wnum =  handle_update_instance(1, dmctx, &ssid_last, update_instance_alias, 3, ss, "ssidinstance", "ssidalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wifi_ssid_args);
 	return 0;
 }
 
@@ -1203,7 +1206,9 @@ inline int browseWifiAccessPointInst(struct dmctx *dmctx, DMNODE *parent_node, v
 		dmuci_get_value_by_section_string(ss, "ifname", &ifname);
 		init_wifi_acp(dmctx, ss, ifname);
 		wnum =  handle_update_instance(1, dmctx, &acpt_last, update_instance_alias, 3, ss, "accesspointinstance", "accesspointalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_wifi_acp_args);
 	return 0;
 }

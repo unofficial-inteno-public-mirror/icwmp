@@ -64,7 +64,6 @@ int get_dsl_channel_linker(char *refparam, struct dmctx *dmctx, void *data, char
 inline int init_dsl_link(struct dmctx *ctx, struct uci_section *s, char *type)
 {
 	struct dsl_line_args *args = &cur_dsl_line_args;
-	ctx->args = (void *)args;
 	args->line_sec = s;
 	args->type = type;
 	return 0;
@@ -73,7 +72,6 @@ inline int init_dsl_link(struct dmctx *ctx, struct uci_section *s, char *type)
 inline int init_atm_link(struct dmctx *ctx, struct uci_section *s, char *ifname)
 {
 	struct atm_args *args = &cur_atm_args;
-	ctx->args = (void *)args;
 	args->atm_sec = s;
 	args->ifname = ifname;
 	return 0;
@@ -82,7 +80,6 @@ inline int init_atm_link(struct dmctx *ctx, struct uci_section *s, char *ifname)
 inline int init_ptm_link(struct dmctx *ctx, struct uci_section *s, char *ifname)
 {
 	struct ptm_args *args = &cur_ptm_args;
-	ctx->args = (void *)args;
 	args->ptm_sec = s;
 	args->ifname = ifname;
 	return 0;
@@ -374,8 +371,6 @@ int set_channel_annexm_status(char *refparam, struct dmctx *ctx, int action, cha
 {
 	bool b;
 
-	struct wanargs *wandargs = (struct wanargs *)ctx->args;
-
 	switch (action) {
 		case VALUECHECK:
 			if (string_to_bool(value, &b))
@@ -414,7 +409,6 @@ int set_atm_destination_address(char *refparam, struct dmctx *ctx, int action, c
 {
 	char *vpi = NULL, *vci = NULL, *spch, *val;
 	struct uci_section *s;
-	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 
 	switch (action) {
 		case VALUECHECK:
@@ -481,7 +475,6 @@ int set_atm_encapsulation(char *refparam, struct dmctx *ctx, int action, char *v
 	int i;
 	struct uci_section *s;
 	char *type, *encapsulation, *encaptype, *pch;
-	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 
 	switch (action) {
 		case VALUECHECK:
@@ -990,8 +983,10 @@ inline int browseDslLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *pre
 	uci_foreach_sections("layer2_interface", "dsltype", s) {
 		init_dsl_link(dmctx, s, section_name(s));
 		wnum = handle_update_instance(1, dmctx, &wnum_last, update_instance_alias, 3, s, "dsllinkinstance", "dsllinkalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_dsl_line_args);
 	return 0;
 }
 
@@ -1002,8 +997,10 @@ inline int browseDslChannelInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 	uci_foreach_sections("layer2_interface", "dsltype", s) {
 		init_dsl_link(dmctx, s, section_name(s));
 		wnum = handle_update_instance(1, dmctx, &channel_last, update_instance_alias, 3, s, "channelinstance", "channelalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_dsl_line_args);
 	return 0;
 }
 
@@ -1015,8 +1012,10 @@ inline int browseAtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *pre
 		dmuci_get_value_by_section_string(s, "ifname", &ifname);
 		init_atm_link(dmctx, s, ifname);
 		wnum = handle_update_instance(1, dmctx, &channel_last, update_instance_alias, 3, s, "atmlinkinstance", "atmlinkalias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_atm_args);
 	return 0;
 }
 
@@ -1028,7 +1027,9 @@ inline int browsePtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *pre
 		dmuci_get_value_by_section_string(s, "ifname", &ifname);
 		init_ptm_link(dmctx, s, ifname);
 		wnum = handle_update_instance(1, dmctx, &channel_last, update_instance_alias, 3, s, "ptmlinkinstance", "ptmlinkalias"); //finish here
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_ptm_args);
 	return 0;
 }

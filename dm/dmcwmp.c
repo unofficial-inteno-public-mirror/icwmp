@@ -1460,7 +1460,7 @@ static int enabled_notify_check_param(DMPARAM_ARGS)
 	dmastrcat(&refparam, dmctx->current_obj, lastname);
 
 	if (notification == NULL) {
-		value = get_parameter_notification(dmctx, refparam);
+		notif = get_parameter_notification(dmctx, refparam);
 	} else {
 		notif = notification->val;
 		if (notification->get_notif)
@@ -1503,14 +1503,15 @@ int dm_entry_get_linker(struct dmctx *dmctx)
 
 static int get_linker_check_obj(DMOBJECT_ARGS)
 {
-	char *link_val;
+	char *link_val = "";
 
-	if (!get_linker)
+	if (!get_linker) {
 		return  FAULT_9005;
+	}
 	get_linker(node->current_object, dmctx, NULL, NULL, &link_val);
 	if (dmctx->linker[0] == '\0')
 		return  FAULT_9005;
-	if (strcmp(link_val, dmctx->linker) == 0) {
+	if (link_val && link_val[0] != '\0' && strcmp(link_val, dmctx->linker) == 0) {
 		dmctx->linker_param = dmstrdup(node->current_object);
 		dmctx->stop = true;
 		return 0;

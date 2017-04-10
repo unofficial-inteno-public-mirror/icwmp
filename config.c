@@ -1112,7 +1112,7 @@ int cwmp_get_xmpp_param(struct cwmp *cwmp) {
     {
 		char *enable;
 		asprintf(&instance, "%d", conf->xmpp_connection_id);
-		dm_ctx_init(&dmctx);
+		cwmp_dm_ctx_init(cwmp, &dmctx);
 		char *tmp;
 		asprintf(&tmp, "%s", get_xmpp_server_enable(instance));
 		//tmp = ;
@@ -1140,7 +1140,7 @@ int cwmp_get_xmpp_param(struct cwmp *cwmp) {
 			cwmp->xmpp_param.retry_max_interval = atoi((const char *)get_xmpp_connect_retry_max_interval(instance));
 			cwmp->xmpp_param.retry_max_interval = (cwmp->xmpp_param.retry_max_interval) ? cwmp->xmpp_param.retry_max_interval : DEFAULT_RETRY_MAX_INTERVAL;
 		}
-		dm_ctx_clean(&dmctx);
+		cwmp_dm_ctx_clean(cwmp, &dmctx);
 		check_xmpp_config(cwmp);
 	}
     else

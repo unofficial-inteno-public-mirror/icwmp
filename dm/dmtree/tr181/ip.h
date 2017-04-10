@@ -15,6 +15,8 @@ extern struct ip_ping_diagnostic ipping_diagnostic;
 struct ip_args
 {
 	struct uci_section *ip_sec;
+	char *ip_4address;
+	char *ip_6address;
 };
 
 struct ipv4_args
@@ -23,6 +25,7 @@ struct ipv4_args
 	char *ip_4address;
 	char *ip_6address;
 };
+
 extern DMOBJ tIPObj[];
 extern DMOBJ tInterfaceObj[];
 extern DMLEAF tIPv4Params[];

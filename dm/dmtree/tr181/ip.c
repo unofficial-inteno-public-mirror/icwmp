@@ -38,18 +38,18 @@ unsigned char get_ipv6_finform(char *refparam, struct dmctx *dmctx, void *data, 
 /*************************************************************
  * INIT
 /*************************************************************/
-inline int init_ip_args(struct dmctx *ctx, struct uci_section *s)
+inline int init_ip_args(struct dmctx *ctx, struct uci_section *s, char *ip_4address, char *ip_6address)
 {
 	struct ip_args *args = &cur_ip_args;
-	ctx->args = (void *)args;
 	args->ip_sec = s;
+	args->ip_4address = ip_4address;
+	args->ip_6address = ip_6address;
 	return 0;
 }
 
 inline int init_ipv4_args(struct dmctx *ctx, struct uci_section *s, char *ip_4address, char *ip_6address)
 {
 	struct ipv4_args *args = &cur_ipv4_args;
-	ctx->args = (void *)args;
 	args->ipv4_sec = s;
 	args->ip_4address = ip_4address;
 	args->ip_6address = ip_6address;
@@ -745,7 +745,7 @@ DMOBJ tDiagnosticObj[] = {
 {"IPPingDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tIpPingDiagParams, NULL},
 {0}
 };
-/* *** Device.IP.Interface.{i}.IPv4Address. *** */
+/* *** Device.IP.Interface.{i}.IPv4Address.{i}. *** */
 DMLEAF tIPv4Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
 {"Alias", &DMWRITE, DMT_STRING, get_ipv4_alias, set_ipv4_alias, &IPv4INFRM, NULL},
@@ -758,7 +758,7 @@ DMLEAF tIPv4Params[] = {
 };
 
 
-/* *** Device.IP.Interface.{i}.IPv6Address. *** */
+/* *** Device.IP.Interface.{i}.IPv6Address.{i}. *** */
 DMLEAF tIPv6Params[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform*/
 {"Alias", &DMWRITE, DMT_STRING, get_ipv6_alias, set_ipv6_alias, &IPv6INFRM, NULL},
@@ -812,11 +812,12 @@ int browseIPIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data,
 		if (ipv4addr[0] == '\0' && ipv6addr[0] == '\0' && strcmp(proto, "dhcp") != 0 && strcmp(proto, "dhcpv6") != 0 && strcmp(inst, "") == 0) {
 			continue;
 		}
-		init_ip_args(dmctx, net_sec);
-		init_ipv4_args(dmctx, net_sec, ipv4addr, ipv6addr);
+		init_ip_args(dmctx, net_sec, ipv4addr, ipv6addr);
 		ip_int = handle_update_instance(1, dmctx, &ip_int_last, update_instance_alias, 3, net_sec, "ip_int_instance", "ip_int_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ip_int);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ip_int) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_ip_args);
 	return 0;
 }
 
@@ -825,19 +826,23 @@ int browseIfaceIPv4Inst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_dat
 	struct uci_section *ip_sec = NULL;
 	char *type, *ifname, *ipv4, *ipv6, *ipv4_inst = NULL, *ipv6_inst = NULL,*ipv4_inst_last = NULL, *ipv6_inst_last = NULL ;
 
-	if(cur_ipv4_args.ip_4address[0] != '\0') {
-		ipv4_inst = handle_update_instance(2, dmctx, &ipv4_inst_last, update_instance_alias, 3, cur_ipv4_args.ipv4_sec, "ipv4_instance", "ipv4_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv4_inst);
+	if(cur_ip_args.ip_4address[0] != '\0') {
+		ipv4_inst = handle_update_instance(2, dmctx, &ipv4_inst_last, update_instance_alias, 3, cur_ip_args.ip_sec, "ipv4_instance", "ipv4_alias");
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv4_inst) == DM_STOP)
+			goto end;
 	}
-	dmasprintf(&ifname, "br-%s", section_name(cur_ipv4_args.ipv4_sec));
+	dmasprintf(&ifname, "br-%s", section_name(cur_ip_args.ip_sec));
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, ip_sec) {
 		dmuci_get_value_by_section_string(ip_sec, "ipaddr", &ipv4);
 		if(ipv4[0] != '\0') {
-			init_ipv4_args(dmctx, ip_sec, ipv4, ipv6);
+			init_ipv4_args(dmctx, ip_sec, cur_ip_args.ip_4address, NULL);
 			ipv4_inst = handle_update_instance(2, dmctx, &ipv4_inst_last, update_instance_alias, 3, ip_sec, "ipv4_instance", "ipv4_alias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv4_inst);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv4_inst) == DM_STOP)
+				goto end;
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_ipv4_args);
 	return 0;
 }
 
@@ -846,18 +851,22 @@ int browseIfaceIPv6Inst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_dat
 	struct uci_section *ip_sec = NULL;
 	char *type, *ifname, *ipv4, *ipv6, *ipv4_inst = NULL, *ipv6_inst = NULL,*ipv4_inst_last = NULL, *ipv6_inst_last = NULL ;
 
-	if (cur_ipv4_args.ip_6address[0] != '\0') {
-		ipv6_inst = handle_update_instance(2, dmctx, &ipv6_inst_last, update_instance_alias, 3, cur_ipv4_args.ipv4_sec, "ipv6_instance", "ipv6_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv6_inst);
+	if (cur_ip_args.ip_6address[0] != '\0') {
+		ipv6_inst = handle_update_instance(2, dmctx, &ipv6_inst_last, update_instance_alias, 3, cur_ip_args.ip_sec, "ipv6_instance", "ipv6_alias");
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv6_inst) == DM_STOP)
+			goto end;
 	}
-	dmasprintf(&ifname, "br-%s", section_name(cur_ipv4_args.ipv4_sec));
+	dmasprintf(&ifname, "br-%s", section_name(cur_ip_args.ip_sec));
 	uci_foreach_option_eq("network", "interface", "ifname", ifname, ip_sec) {
 		dmuci_get_value_by_section_string(ip_sec, "ip6addr", &ipv6);
 		if(ipv6[0] != '\0') {
-			init_ipv4_args(dmctx, ip_sec, ipv4, ipv6);
+			init_ipv4_args(dmctx, ip_sec, NULL, cur_ip_args.ip_6address);
 			ipv6_inst = handle_update_instance(2, dmctx, &ipv6_inst_last, update_instance_alias, 3, ip_sec, "ipv6_instance", "ipv6_alias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv6_inst);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ipv6_inst) == DM_STOP)
+				goto end;
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_ipv4_args);
 	return 0;
 }

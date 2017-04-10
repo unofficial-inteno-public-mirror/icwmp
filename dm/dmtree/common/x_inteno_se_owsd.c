@@ -50,20 +50,21 @@ inline int browseXIntenoOwsdListenObj(struct dmctx *dmctx, DMNODE *parent_node, 
 	char *iowsd_listen = NULL, *iowsd_listen_last = NULL;
 	struct uci_section *s = NULL;
 
-		uci_foreach_sections("owsd", "owsd-listen", s) {
-			init_args_owsd_listen(dmctx, s);
-			iowsd_listen =  handle_update_instance(1, dmctx, &iowsd_listen_last, update_instance_alias, 3, s, "olisteninstance", "olistenalias");
-			handle_update_instance(1, dmctx, &iowsd_listen_last, update_instance_alias, 3, s, "olisteninstance", "olistenalias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iowsd_listen);
-		}
-		return 0;
+	uci_foreach_sections("owsd", "owsd-listen", s) {
+		init_args_owsd_listen(dmctx, s);
+		iowsd_listen =  handle_update_instance(1, dmctx, &iowsd_listen_last, update_instance_alias, 3, s, "olisteninstance", "olistenalias");
+		handle_update_instance(1, dmctx, &iowsd_listen_last, update_instance_alias, 3, s, "olisteninstance", "olistenalias");
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iowsd_listen) == DM_STOP)
+			break;
+	}
+	DM_CLEAN_ARGS(cur_owsd_listenargs);
+	return 0;
 
 }
 
 inline int init_args_owsd_listen(struct dmctx *ctx, struct uci_section *s)
 {
 	struct owsd_listenargs *args = &cur_owsd_listenargs;
-	ctx->args = (void *)args;
 	args->owsd_listensection = s;
 	return 0;
 }

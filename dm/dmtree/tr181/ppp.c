@@ -27,7 +27,6 @@ inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 inline int init_ppp_args(struct dmctx *ctx, struct uci_section *s)
 {
 	struct ppp_args *args = &cur_ppp_args;
-	ctx->args = (void *)args;
 	args->ppp_sec = s;
 	return 0;
 }
@@ -260,8 +259,10 @@ inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 			continue;
 		init_ppp_args(dmctx, net_sec);
 		ppp_int = handle_update_instance(1, dmctx, &ppp_int_last, update_instance_alias, 3, net_sec, "ppp_int_instance", "ppp_int_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ppp_int);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ppp_int) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_ppp_args);
 	return 0;
 }
 

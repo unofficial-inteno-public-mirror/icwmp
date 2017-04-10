@@ -29,7 +29,6 @@ inline int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, 
 inline int init_nat_args(struct dmctx *ctx, struct uci_section *int_sec)
 {
 	struct nat_args *args = &cur_nat_args;
-	ctx->args = (void *)args;
 	args->int_sec = int_sec;	
 	return 0;
 }
@@ -42,14 +41,14 @@ int get_nat_enable(char *refparam, struct dmctx *ctx, char **value)
 
 int get_nat_alias(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct nat_args *natargs = (struct nat_args *)ctx->args;
+	struct nat_args *natargs = &cur_nat_args;
 	dmuci_get_value_by_section_string(natargs->int_sec, "natalias", value);
 	return 0;
 }
 
 int set_nat_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct nat_args *natargs = (struct nat_args *)ctx->args;
+	struct nat_args *natargs = &cur_nat_args;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -159,11 +158,14 @@ inline int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, 
 			if(nat[0] == '1') {
 				nati =  handle_update_instance(1, dmctx, &nati_last, nat_update_instance_alias, 4, net_sec, "natinstance", "natalias", &find_max);
 				init_nat_args(dmctx, net_sec);
-				DM_LINK_INST_OBJ(dmctx, parent_node, NULL, nati);
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, nati) == DM_STOP)
+					goto end;
 				break;
 			}
 		}
 	}
+end:
+	DM_CLEAN_ARGS(cur_nat_args);
 	return 0;
 }
 

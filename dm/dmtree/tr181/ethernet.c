@@ -39,7 +39,6 @@ int get_linker_val(char *refparam, struct dmctx *dmctx, void *data, char *instan
 inline int init_eth_port(struct dmctx *ctx, struct uci_section *s, char *ifname)
 {
 	struct eth_port_args *args = &cur_eth_port_args;
-	ctx->args = (void *)args;
 	args->eth_port_sec = s;
 	args->ifname = ifname;
 	return 0;
@@ -336,9 +335,11 @@ inline int browseEthIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *pr
 		}
 		init_eth_port(dmctx, ss, ifname);
 		int_num =  handle_update_instance(1, dmctx, &int_num_last, update_instance_alias, 3, ss, "eth_port_instance", "eth_port_alias");
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, int_num);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, int_num) == DM_STOP)
+			break;
 
 	}
+	DM_CLEAN_ARGS(cur_eth_port_args);
 	return 0;
 }
 

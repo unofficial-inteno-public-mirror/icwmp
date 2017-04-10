@@ -37,19 +37,19 @@ inline int browseXIntenoButton(struct dmctx *dmctx, DMNODE *parent_node, void *p
 	char *ibutton = NULL, *ibutton_last = NULL;
 	struct uci_section *s = NULL;
 
-		uci_foreach_sections("buttons", "button", s) {
-			init_args_button(dmctx, s);
-			ibutton =  handle_update_instance(1, dmctx, &ibutton_last, update_instance_alias, 3, s, "buttoninstance", "buttonalias");
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ibutton);
-		}
-		return 0;
-
+	uci_foreach_sections("buttons", "button", s) {
+		init_args_button(dmctx, s);
+		ibutton =  handle_update_instance(1, dmctx, &ibutton_last, update_instance_alias, 3, s, "buttoninstance", "buttonalias");
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ibutton) == DM_STOP)
+			break;
+	}
+	DM_CLEAN_ARGS(cur_button_args);
+	return 0;
 }
 
 inline int init_args_button(struct dmctx *ctx, struct uci_section *s)
 {
 	struct button_args *args = &cur_button_args;
-	ctx->args = (void *)args;
 	args->button_section = s;
 	return 0;
 }

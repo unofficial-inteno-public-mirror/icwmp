@@ -61,7 +61,6 @@ inline void init_args_layer2(struct dmctx *ctx, struct uci_section *s, struct uc
 							char *interface_type, char *oface)
 {
 	struct args_layer2 *args = &cur_args;
-	ctx->args = (void *)args;
 	args->layer2section = s;
 	args->layer2sectionlev2 = ss;
 	args->interface_type = interface_type;
@@ -73,7 +72,6 @@ inline void init_args_layer2(struct dmctx *ctx, struct uci_section *s, struct uc
 inline void init_args_layer2_vlan(struct dmctx *ctx, struct uci_section *ss)
 {
 	struct args_layer2 *args = &cur_args;
-	ctx->args = (void *)args;
 	args->layer2sectionlev2 = ss;
 }
 
@@ -216,7 +214,7 @@ void update_add_vlan_to_bridge_interface(char *bridge_key, struct uci_section *d
 
 int get_marking_bridge_reference(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2section, "bridgekey", value);
 	return 0;
 }
@@ -319,7 +317,7 @@ int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value)
 	char *old_bridge_key, *baseifname, *ifname, *vid, *enable, *bridgekey, *p;
 	char new_ifname[128];
 	struct uci_section *s, *ss;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	char iface[16];
 	bool found;
 
@@ -409,7 +407,7 @@ int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value)
 
 int get_marking_interface_key(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2section, "interfacekey", value);
 	return 0;
 }
@@ -435,7 +433,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 	char new_ifname[128];
 	char *obifname, *instance;
 	struct uci_section *s = NULL, *ss = NULL, *ab, *mb, *sbridge = NULL;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	mb = args->layer2section;
 
 	uci_foreach_option_eq("dmmap", "available-bridge", "key", value, ab) {
@@ -510,7 +508,7 @@ int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value
 
 int get_bridge_vlan_enable(char *refparam,struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2sectionlev2, "enable", value);
 	return 0;
 }
@@ -537,7 +535,7 @@ int set_bridge_vlan_enable_sub(char *refparam, struct dmctx *ctx, bool b)
 	char *value, *vid, *bkey, *cval;
 	struct uci_section *vb;
 	bool bcval;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 
 	vb = args->layer2sectionlev2;
 	dmuci_get_value_by_section_string(vb, "vid", &vid);
@@ -560,7 +558,7 @@ int set_bridge_vlan_enable_sub(char *refparam, struct dmctx *ctx, bool b)
 
 int get_bridge_vlan_name(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2sectionlev2, "name", value);
 	return 0;
 }
@@ -572,7 +570,7 @@ int set_bridge_vlan_name(char *refparam, struct dmctx *ctx, int action, char *va
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = (struct args_layer2 *)ctx->args;
+			args = &cur_args;
 			dmuci_set_value_by_section(args->layer2sectionlev2, "name", value);
 			return 0;
 	}
@@ -581,7 +579,7 @@ int set_bridge_vlan_name(char *refparam, struct dmctx *ctx, int action, char *va
 
 int get_bridge_vlan_vid(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2sectionlev2, "vid", value);
 	return 0;
 }
@@ -596,7 +594,7 @@ int set_bridge_vlan_vid(char *refparam, struct dmctx *ctx, int action, char *val
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = (struct args_layer2 *)ctx->args;
+			args = &cur_args;
 			vb = args->layer2sectionlev2;
 			set_bridge_vlan_vid_sub(vb, value);
 			return 0;
@@ -627,7 +625,7 @@ int set_bridge_vlan_vid_sub(struct uci_section *vb, char *value)
 int get_bridge_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "up", 0, NULL, value, NULL);
@@ -637,7 +635,7 @@ int get_bridge_status(char *refparam, struct dmctx *ctx, char **value)
 int set_bridge_status(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 
 	int error = string_to_bool(value, &b);
 	switch (action) {
@@ -659,14 +657,14 @@ int set_bridge_status(char *refparam, struct dmctx *ctx, int action, char *value
 
 int get_bridge_key(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = args->bridge_instance;
 	return 0;
 }
 
 int get_bridge_name(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = dmstrdup(section_name(args->layer2section));
 	return 0;
 }
@@ -678,7 +676,7 @@ int set_bridge_name(char *refparam, struct dmctx *ctx, int action, char *value)
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = (struct args_layer2 *)ctx->args;
+			args = &cur_args;
 			dmuci_rename_section_by_section(args->layer2section, value);
 			return 0;
 	}
@@ -689,7 +687,7 @@ int get_bridge_vlanid(char *refparam, struct dmctx *ctx, char **value)
 {
 	char *bridge_instance;
 	struct uci_section *s = NULL;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = "";
 
 	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", args->bridge_instance, s)
@@ -702,14 +700,14 @@ int get_bridge_vlanid(char *refparam, struct dmctx *ctx, char **value)
 
 int set_bridge_vlanid(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	struct uci_section *vb;
 
 	switch(action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = (struct args_layer2 *)ctx->args;
+			args = &cur_args;
 			vb = args->layer2section;
 			set_bridge_vlanid_sub(refparam, ctx, value);
 			return 0;
@@ -721,7 +719,7 @@ int set_bridge_vlanid_sub(char *refparam, struct dmctx *ctx, char *value)
 {
 	char *add_value, *name, *instance;
 	struct uci_section *s = NULL, *vb;;
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 
 	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", args->bridge_instance, s)
 	{
@@ -746,7 +744,7 @@ int set_bridge_vlanid_sub(char *refparam, struct dmctx *ctx, char *value)
 
 int get_associated_interfaces(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	dmuci_get_value_by_section_string(args->layer2section, "ifname", value);
 	return 0;
 }
@@ -758,7 +756,7 @@ int set_associated_interfaces(char *refparam, struct dmctx *ctx, int action, cha
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = (struct args_layer2 *)ctx->args;
+			args = &cur_args;
 			dmuci_set_value_by_section(args->layer2section, "ifname", value);
 			return 0;
 	}
@@ -767,21 +765,21 @@ int set_associated_interfaces(char *refparam, struct dmctx *ctx, int action, cha
 
 int get_available_interface_key(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = args->availableinterface_instance;
 	return 0;
 }
 
 int get_interface_reference(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = args->oface;
 	return 0;
 }
 
 int get_interfaces_type(char *refparam, struct dmctx *ctx, char **value)
 {
-	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args = &cur_args;
 	*value = args->interface_type;
 	return 0;
 }
@@ -827,7 +825,7 @@ int add_layer2bridging_bridge(struct dmctx *ctx, char **instance)
 
 int delete_layer2bridging_bridge(struct dmctx *ctx, unsigned char del_action)
 {
-	struct args_layer2 *args_bridge = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args_bridge = &cur_args;
 	struct uci_section *bridge_s, *vlan_s, *prev_s = NULL;
 	char *bridgekey = NULL, *bridge_instance;
 
@@ -930,7 +928,7 @@ int delete_layer2bridging_marking(struct dmctx *ctx, unsigned char del_action)
 
 	switch (del_action) {
 		case DEL_INST:
-			args_bridge = (struct args_layer2 *)ctx->args;
+			args_bridge = &cur_args;
 			dmuci_get_value_by_section_string(args_bridge->layer2section, "bridgekey", &b_key);
 			dmuci_get_value_by_section_string(args_bridge->layer2section, "baseifname", &bifname);
 			dmuci_get_value_by_section_string(args_bridge->layer2section, "marking_instance", &m_instance);
@@ -967,7 +965,7 @@ int delete_layer2bridging_marking(struct dmctx *ctx, unsigned char del_action)
 
 int add_layer2bridging_bridge_vlan(struct dmctx *ctx, char **instance)
 {
-	struct args_layer2 *args_bridge = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args_bridge = &cur_args;
 	char *value, *last_instance ;
 	struct uci_section *vlan_s;
 	char buf[16];
@@ -992,7 +990,7 @@ int delete_layer2bridging_bridge_vlan(struct dmctx *ctx, unsigned char del_actio
 	char *vid, *ifname;
 	char new_ifname[128];
 	struct uci_section *vlan_s, *prev_s = NULL ;
-	struct args_layer2 *args_bridge = (struct args_layer2 *)ctx->args;
+	struct args_layer2 *args_bridge = &cur_args;
 
 	switch (del_action) {
 		case DEL_INST:
@@ -1166,7 +1164,8 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 			dmuci_get_value_by_section_string(wan_s, "baseifname", &base_ifname);
 			ai_s = update_availableinterface_list(dmctx, base_ifname, &available_inst, &instance_last);
 			init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "WANInterface", oface);
-			DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+				goto end;
 		}
 	}
 	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_interface);
@@ -1177,7 +1176,8 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 		dmasprintf(&oface, DMROOT".LANInterfaces.LANEthernetInterfaceConfig.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
 		ai_s = update_availableinterface_list(dmctx, ch_ptr, &available_inst, &instance_last);
 		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+			goto end;
 		ch_ptr = strtok_r(NULL, " ", &saveptr);
 	}
 	i = 0;
@@ -1185,8 +1185,11 @@ inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *pare
 		dmasprintf(&oface, DMROOT".LANInterfaces.WLANConfiguration.%d.", ++i); // MEM WILL BE FREED IN DMMEMCLEAN
 		ai_s = update_availableinterface_list(dmctx, section_name(wifi_s), &available_inst, &instance_last);
 		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+			goto end;
 	}
+end:
+	DM_CLEAN_ARGS(cur_args);
 	return 0;
 }
 
@@ -1199,8 +1202,10 @@ inline int browselayer2_bridgeInst(struct dmctx *dmctx, DMNODE *parent_node, voi
 		bridge_instance =  handle_update_instance(1, dmctx, &bridge_instance_last, update_instance_alias, 3, bridge_s, "bridge_instance", "bridge_alias");
 		update_markinginterface_list(bridge_s, bridge_instance_last);
 		init_args_layer2(dmctx, bridge_s, NULL, NULL, bridge_instance_last, NULL, NULL);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, bridge_instance);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, bridge_instance) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_args);
 	return 0;
 }
 
@@ -1212,8 +1217,10 @@ inline int browselayer2_markingInst(struct dmctx *dmctx, DMNODE *parent_node, vo
 	uci_foreach_sections("dmmap", "marking-bridge", marking_s) {
 		marking_instance =  handle_update_instance(1, dmctx, &marking_instance_last, update_instance_alias, 3, marking_s, "marking_instance", "marking_alias");
 		init_args_layer2(dmctx, marking_s, NULL, NULL, NULL, NULL, NULL);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, marking_instance);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, marking_instance) == DM_STOP)
+			break;
 	}
+	DM_CLEAN_ARGS(cur_args);
 	return 0;
 }
 
@@ -1226,7 +1233,10 @@ inline int browsebridge_vlanInst(struct dmctx *dmctx, DMNODE *parent_node, void 
 	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", cur_args.bridge_instance, ss) {
 		vlan_instance =  handle_update_instance(2, dmctx, &vlan_instance_last, update_instance_alias, 3, ss, "vlan_instance", "vlan_alias");
 		init_args_layer2_vlan(dmctx, ss);
-		DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan_instance);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan_instance) == DM_STOP)
+			break;
 	}
+	//NO Clean args here. It will be done in the parent object
+	cur_args.layer2sectionlev2 = NULL;
 	return 0;
 }
