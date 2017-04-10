@@ -785,7 +785,7 @@ int add_br_port(struct dmctx *ctx, char **instance)
 
 	int m = get_br_port_last_inst(cur_bridging_args.br_key);
 	dmasprintf(instance, "%d", m+1);
-	dmuci_add_section("dmmap", "bridge_port", &br_port_s, &value);
+	DMUCI_ADD_SECTION(icwmpd, "dmmap", "bridge_port", &br_port_s, &value);
 	dmuci_set_value_by_section(br_port_s, "bridge_key", cur_bridging_args.br_key);
 	dmuci_set_value_by_section(br_port_s, "bridge_port_instance", *instance);
 	dmuci_set_value_by_section(br_port_s, "mg_port", "false");

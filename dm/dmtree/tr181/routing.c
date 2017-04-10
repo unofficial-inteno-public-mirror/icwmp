@@ -213,7 +213,7 @@ struct uci_section *update_route_dynamic_section(struct proc_routing *proute)
 {
 	struct uci_section *s = NULL;
 	char *name, *mask;
-	uci_foreach_option_eq_icwmpd("dmmap", "route_dynamic", "target", proute->destination, s) {
+	uci_path_foreach_option_eq(icwmpd, "dmmap", "route_dynamic", "target", proute->destination, s) {
 		dmuci_get_value_by_section_string(s, "netmask", &mask);
 		if (strcmp(proute->mask, mask) == 0){
 			return s;

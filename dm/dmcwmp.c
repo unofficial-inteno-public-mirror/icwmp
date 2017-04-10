@@ -328,9 +328,22 @@ char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char 
 {
 	struct uci_section *s;
 	char *instance = NULL;
+	char *last_inst = NULL;
 
-	uci_foreach_option_cont(package, section, opt_check, value_check, s) {
-		instance = update_instance(s, instance, opt_inst);
+	if (package == DMMAP)
+	{
+		uci_path_foreach_option_cont(icwmpd, package, section, opt_check, value_check, s) {
+			instance = update_instance_icwmpd(s, last_inst, opt_inst);
+			if(last_inst)
+				dmfree(last_inst);
+			last_inst = dmstrdup(instance);
+		}
+	}
+	else
+	{
+		uci_foreach_option_cont(package, section, opt_check, value_check, s) {
+			instance = update_instance(s, instance, opt_inst);
+		}
 	}
 	return instance;
 }
