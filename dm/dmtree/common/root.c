@@ -59,7 +59,7 @@ int entry_method_root(struct dmctx *ctx)
 
 DMOBJ tEntryObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, NOTIFICATION, nextobj, leaf, linker*/
-{DMROOT, &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE, tRootObj, NULL, NULL},
+{(char *)&DMROOT, &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE, tRootObj, NULL, NULL},
 {0}
 };
 

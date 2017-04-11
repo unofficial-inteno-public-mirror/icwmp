@@ -88,7 +88,9 @@ LIST_HEAD( list_enabled_lw_notify);
 LIST_HEAD(list_execute_end_session);
 int end_session_flag = 0;
 int ip_version = 4;
-char dm_delim = '.';
+char dm_delim = DMDELIM_CWMP;
+char DMROOT[64] = DMROOT_CWMP;
+
 
 struct notification notifications[] = {
 	[0] = {"0", "disabled"},
@@ -1583,6 +1585,7 @@ int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_ses
 	execute_end_session->function = function;
 	execute_end_session->amd_version = ctx->amd_version;
 	execute_end_session->instance_mode = ctx->instance_mode;
+	execute_end_session->dm_type = ctx->dm_type;
 	list_add_tail (&(execute_end_session->list), &(list_execute_end_session));
 
 	return 0;

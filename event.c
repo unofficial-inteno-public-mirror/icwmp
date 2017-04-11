@@ -297,7 +297,7 @@ void cwmp_add_notification(void)
 
 	cwmp_dm_ctx_init(&cwmp_main, &dmctx);
 	list_for_each_entry(p, &list_enabled_notify, list) {
-		dm_ctx_init_sub(&dmctx,cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
+		dm_ctx_init_sub(&dmctx, DM_CWMP, cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
 		initiate = true;
 		fault = dm_entry_param_method(&dmctx, CMD_GET_VALUE, p->name, NULL, NULL);
 		if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
@@ -316,7 +316,7 @@ void cwmp_add_notification(void)
 	//dm_ctx_init(&dmctx);
 	list_for_each_entry(p, &list_enabled_lw_notify, list) {
 		if (!initiate || i != 0)		
-			dm_ctx_init_sub(&dmctx, cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
+			dm_ctx_init_sub(&dmctx, DM_CWMP, cwmp_main.conf.amd_version, cwmp_main.conf.instance_mode);
 		i++;
 		if (!conf->lw_notification_enable)
 			break;		
@@ -440,6 +440,7 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
     int                     error,cmp=0;
     struct event_container  *event_container;
     struct session          *session;
+    char buf[64] = "";
 
     error   = cwmp_load_saved_session(cwmp, &acsurl, ACS);
 
@@ -483,8 +484,9 @@ int cwmp_root_cause_event_bootstrap (struct cwmp *cwmp)
             pthread_mutex_unlock (&(cwmp->mutex_session_queue));
             return CWMP_MEM_ERR;
         }
+        sprintf(buf, "%sManagementServer.URL", DMROOT);
         add_dm_parameter_tolist(&(event_container->head_dm_parameter),
-        		DMROOT"ManagementServer.URL", NULL, NULL);
+        		buf, NULL, NULL);
         cwmp_save_event_container (cwmp,event_container);
         save_acs_bkp_config(cwmp);
         cwmp_scheduleInform_remove_all();

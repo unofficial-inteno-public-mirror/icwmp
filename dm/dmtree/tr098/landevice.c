@@ -112,7 +112,7 @@ void update_dhcp_conf_start(struct execute_end_session *ees)
 		struct dhcp_param *dhcp_param = (struct dhcp_param *)(ees->data);
 		char *mask, *start, *dhcp_name, *ipaddr, buf[16];
 		
-		dm_ctx_init(&dmctx, ees->amd_version, ees->instance_mode);
+		dm_ctx_init(&dmctx, ees->dm_type, ees->amd_version, ees->instance_mode);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
 			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
@@ -154,7 +154,7 @@ void update_dhcp_conf_end(struct execute_end_session *ees)
 		struct dhcp_param *dhcp_param = (struct dhcp_param *)(ees->data);
 		struct dmctx dmctx = {0};
 
-		dm_ctx_init(&dmctx, ees->amd_version, ees->instance_mode);
+		dm_ctx_init(&dmctx, ees->dm_type, ees->amd_version, ees->instance_mode);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
 			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);

@@ -3107,7 +3107,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									du_instance = strdup(add_softwaremodules_deploymentunit(p->uuid, p->url, p->username, p->password, package_name, package_version));
 									dmuci_commit();
 									cwmp_dm_ctx_clean(cwmp, &dmctx);
-									sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+									sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 									res->uuid = strdup(p->uuid);
 									res->du_ref = strdup(du_ref);
 									res->current_state = strdup("Installed");
@@ -3153,7 +3153,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 								{
 									cwmp_dm_ctx_init(cwmp, &dmctx);
 									du_instance = get_softwaremodules_instance(p->uuid);
-									sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+									sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 									res->uuid = strdup(p->uuid);
 									res->du_ref = strdup(du_ref);
 									FREE(du_instance);
@@ -3169,7 +3169,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 								{
 									res->uuid = strdup(p->uuid);
 									du_instance = get_softwaremodules_instance(p->uuid);
-									sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+									sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 									res->du_ref = strdup(du_ref);
 									FREE(du_instance);
 									res->version = strdup(p->version);
@@ -3228,7 +3228,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									}
 									else
 										res->uuid = strdup(p->uuid);
-									sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+									sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 									res->du_ref = strdup(du_ref);
 									FREE(du_instance);
 									res->current_state = strdup("Installed");
@@ -3245,7 +3245,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									}
 									else
 										res->uuid = strdup(p->uuid);
-									sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+									sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 									res->du_ref = strdup(du_ref);
 									FREE(du_instance);
 									res->current_state = strdup("Failed");
@@ -3274,7 +3274,7 @@ void *thread_cwmp_rpc_cpe_change_du_state (void *v)
 									}
 								}
 								free(fault_code);
-								sprintf(du_ref,DMROOT"SoftwareModules.%s.", du_instance);
+								sprintf(du_ref,"%sSoftwareModules.%s.", DMROOT, du_instance);
 								if (p->uuid == NULL || (p->uuid)[0] == '\0') {
 									res->uuid = strdup(cur_url);
 									FREE(cur_url);

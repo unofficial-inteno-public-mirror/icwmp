@@ -37,7 +37,7 @@ int cwmp_dm_ctx_init(struct cwmp *cwmp, struct dmctx *ctx)
 	if(cwmp->conf.supported_amd_version == 0)
 		get_amd_version_config();
 	get_instance_mode_config();
-	dm_ctx_init(ctx, cwmp->conf.amd_version, cwmp->conf.instance_mode);
+	dm_ctx_init(ctx, DM_CWMP, cwmp->conf.amd_version, cwmp->conf.instance_mode);
 	return 0;
 }
 

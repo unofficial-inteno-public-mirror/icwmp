@@ -21,15 +21,21 @@
 #include "dmmem.h"
 
 #ifdef DATAMODEL_TR098
-#define DMROOT "InternetGatewayDevice"
+#define DMROOT_CWMP "InternetGatewayDevice"
+#define DMROOT_UPNP "/InternetGatewayDevice"
 #endif
 #ifdef DATAMODEL_TR181
-#define DMROOT "Device"
+#define DMROOT_CWMP "Device"
+#define DMROOT_UPNP "/Device"
 #endif
+
+#define DMDELIM_UPNP '/'
+#define DMDELIM_CWMP '.'
+
+
 #ifdef UNDEF
 #undef UNDEF
 #endif
-
 #define UNDEF -1
 
 #ifndef ARRAY_SIZE
@@ -47,23 +53,6 @@ extern struct dm_forced_inform_s DMFINFRM;
 extern struct dm_notif_s DMNONE;
 extern struct dm_notif_s DMACTIVE;
 extern struct dm_notif_s DMPASSIVE;
-
-enum dmt_type_enum {
-	DMT_STRING,
-	DMT_UNINT,
-	DMT_INT,
-	DMT_LONG,
-	DMT_BOOL,
-	DMT_TIME,
-};
-
-enum amd_version_enum{
-	AMD_1 = 1,
-	AMD_2,
-	AMD_3,
-	AMD_4,
-	AMD_5,
-};
 
 #define DMPARAM_ARGS \
 	struct dmctx *dmctx, \
@@ -195,6 +184,7 @@ struct dmctx
 	unsigned int nbrof_instance;
 	unsigned int amd_version;
 	unsigned int instance_mode;
+	unsigned int dm_type;
 	unsigned char inparam_isparam;
 	unsigned char findobj;
 	char current_obj[512];
@@ -227,6 +217,7 @@ struct notification {
 typedef struct execute_end_session {
 	struct list_head list;
 	int action;
+	unsigned int dm_type;
 	unsigned int amd_version;
 	unsigned int instance_mode;
 	void *data;
@@ -316,6 +307,28 @@ enum dm_browse_enum {
 	DM_STOP = 1
 };
 
+enum dmt_type_enum {
+	DMT_STRING,
+	DMT_UNINT,
+	DMT_INT,
+	DMT_LONG,
+	DMT_BOOL,
+	DMT_TIME,
+};
+
+enum amd_version_enum{
+	AMD_1 = 1,
+	AMD_2,
+	AMD_3,
+	AMD_4,
+	AMD_5,
+};
+
+enum dm_type_enum{
+	DM_CWMP,
+	DM_UPNP,
+};
+
 #define DM_CLEAN_ARGS(X) memset(&(X), 0, sizeof(X))
 static inline int DM_LINK_INST_OBJ(struct dmctx *dmctx, DMNODE *parent_node, void *data, char *instance)
 {
@@ -331,6 +344,7 @@ extern struct list_head list_execute_end_session;
 extern int end_session_flag;
 extern int ip_version;
 extern char dm_delim;
+extern char DMROOT[64];
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);

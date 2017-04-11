@@ -424,7 +424,7 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			if (strcmp(mg, "true") == 0)
 				sprintf(linker, "%s+", section_name(port));
 
-			adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cBridging%cBridge%c", dm_delim, dm_delim, dm_delim), linker, value);
+			adm_entry_get_linker_param(ctx, dm_print_path("%s%cBridging%cBridge%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 			if (*value == NULL)
 				*value = "";
 			return 0;
@@ -447,15 +447,15 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			sprintf(linker, "%s", section_name(cur_ip_args.ip_sec));
 		}
 	}
-	adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cATM%cLink%c", dm_delim, dm_delim, dm_delim), linker, value);
+	adm_entry_get_linker_param(ctx, dm_print_path("%s%cATM%cLink%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cPTM%cLink%c", dm_delim, dm_delim, dm_delim), linker, value);
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cPTM%cLink%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cEthernet%cInterface%c", dm_delim, dm_delim, dm_delim), linker, value);
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cEthernet%cInterface%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cWiFi%cSSID%c", dm_delim, dm_delim, dm_delim), linker, value);
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cWiFi%cSSID%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 	if (*value == NULL)
-		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cPPP%cInterface%c", dm_delim, dm_delim, dm_delim), linker, value);
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cPPP%cInterface%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
 	if (*value == NULL)
 		*value = "";
 	return 0;

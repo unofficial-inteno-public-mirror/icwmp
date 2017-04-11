@@ -18,7 +18,7 @@
 
 LIST_HEAD(head_package_change);
 
-static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode, int custom)
+static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int dm_type, unsigned int amd_version, unsigned int instance_mode, int custom)
 {
 	if (custom == CTX_INIT_ALL) {
 		memset(&dmubus_ctx, 0, sizeof(struct dmubus_ctx));
@@ -31,6 +31,11 @@ static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int amd_version, unsig
 	INIT_LIST_HEAD(&ctx->list_fault_param);
 	ctx->amd_version = amd_version;
 	ctx->instance_mode = instance_mode;
+	ctx->dm_type = dm_type;
+	if (dm_type == DM_UPNP) {
+		strcpy(DMROOT, DMROOT_UPNP);
+		dm_delim = DMDELIM_UPNP;
+	}
 	return 0;
 }
 
@@ -51,9 +56,9 @@ static int dm_ctx_clean_custom(struct dmctx *ctx, int custom)
 	return 0;
 }
 
-int dm_ctx_init(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode)
+int dm_ctx_init(struct dmctx *ctx, unsigned int dm_type, unsigned int amd_version, unsigned int instance_mode)
 {
-	dm_ctx_init_custom(ctx, amd_version, instance_mode, CTX_INIT_ALL);
+	dm_ctx_init_custom(ctx, dm_type, amd_version, instance_mode, CTX_INIT_ALL);
 	return 0;
 }
 
@@ -63,9 +68,9 @@ int dm_ctx_clean(struct dmctx *ctx)
 	return 0;
 }
 
-int dm_ctx_init_sub(struct dmctx *ctx, unsigned int amd_version, unsigned int instance_mode)
+int dm_ctx_init_sub(struct dmctx *ctx, unsigned int dm_type, unsigned int amd_version, unsigned int instance_mode)
 {
-	dm_ctx_init_custom(ctx, amd_version, instance_mode, CTX_INIT_SUB);
+	dm_ctx_init_custom(ctx, dm_type, amd_version, instance_mode, CTX_INIT_SUB);
 	return 0;
 }
 
@@ -228,11 +233,11 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 	return fault;
 }
 
-int dm_entry_load_enabled_notify(unsigned int amd_version, int instance_mode)
+int dm_entry_load_enabled_notify(unsigned int dm_type, unsigned int amd_version, int instance_mode)
 {
 	struct dmctx dmctx = {0};
 
-	dm_ctx_init(&dmctx, amd_version, instance_mode);
+	dm_ctx_init(&dmctx, dm_type, amd_version, instance_mode);
 	dmctx.in_param = "";
 	dmctx.tree = true;
 
@@ -248,7 +253,7 @@ int adm_entry_get_linker_param(struct dmctx *ctx, char *param, char *linker, cha
 {
 	struct dmctx dmctx = {0};
 
-	dm_ctx_init_sub(&dmctx, ctx->amd_version, ctx->instance_mode);
+	dm_ctx_init_sub(&dmctx, ctx->dm_type, ctx->amd_version, ctx->instance_mode);
 	dmctx.in_param = param ? param : "";
 	dmctx.linker = linker;
 
@@ -275,7 +280,7 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value)
 		return 0;
 	}
 
-	dm_ctx_init_sub(&dmctx, ctx->amd_version, ctx->instance_mode);
+	dm_ctx_init_sub(&dmctx, ctx->dm_type, ctx->amd_version, ctx->instance_mode);
 	dmctx.in_param = param;
 	dmctx.tree = false;
 
@@ -364,7 +369,7 @@ void dm_entry_cli(int argc, char** argv, unsigned int amd_version, unsigned int 
 	int fault = 0, status = -1;
 	bool set_fault = false;
 
-	dm_ctx_init(&cli_dmctx, amd_version, instance_mode);
+	dm_ctx_init(&cli_dmctx, DM_CWMP, amd_version, instance_mode);
 
 	if (argc < 4) goto invalid_arguments;
 

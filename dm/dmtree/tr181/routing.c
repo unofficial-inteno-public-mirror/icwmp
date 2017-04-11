@@ -437,7 +437,7 @@ int get_router_ipv4forwarding_interface_linker_parameter(char *refparam, struct 
 	iface = get_router_ipv4forwarding_interface(ctx);
 	if (iface[0] != '\0') {
 		dmasprintf(&linker, "%s", iface);
-		adm_entry_get_linker_param(ctx, dm_print_path(DMROOT"%cIP%cInterface%c", dm_delim, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cIP%cInterface%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL)
 			*value = "";
 		dmfree(linker);
