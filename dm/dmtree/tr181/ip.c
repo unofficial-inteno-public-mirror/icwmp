@@ -465,6 +465,7 @@ int set_ip_int_lower_layer(char *refparam, struct dmctx *ctx, int action, char *
 {
 	char *linker, *pch, *spch, *dup, *b_key, *proto, *ipaddr, *ip_inst, *ipv4_inst, *p, *type;
 	char sec[16];
+	char pat[32] = "";
 	struct uci_section *s;
 
 	switch (action) {
@@ -472,8 +473,8 @@ int set_ip_int_lower_layer(char *refparam, struct dmctx *ctx, int action, char *
 			return 0;
 		case VALUESET:
 			adm_entry_get_linker_value(ctx, value, &linker);
-			p = strstr(value, ".Port.");
-			if (linker && p && strcmp(p, ".Port.1.") == 0)
+			sprintf(pat, "%cPort%c1%c", dm_delim, dm_delim, dm_delim);
+			if (linker && strstr(value, pat))
 			{
 				strncpy(sec, linker, strlen(linker) - 1);
 				sec[strlen(linker) - 1] = '\0';

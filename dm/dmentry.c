@@ -80,7 +80,9 @@ void dmentry_instance_lookup_inparam(struct dmctx *ctx)
 	char *pch, *spch, *in_param;
 	in_param = dmstrdup(ctx->in_param);
 	int i = 0;
-	for (pch = strtok_r(in_param, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+	char pat[2] = {0};
+	*pat = dm_delim;
+	for (pch = strtok_r(in_param, pat, &spch); pch != NULL; pch = strtok_r(NULL, pat, &spch)) {
 		if (pch[0]== '[') {
 			ctx->alias_register |= (1 << i);
 			i++;
@@ -109,13 +111,13 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
-			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_value(ctx);
 			break;
 		case CMD_GET_NAME:
-			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
 				fault = dm_entry_get_name(ctx);
@@ -124,7 +126,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_GET_NOTIFICATION:
-			if (ctx->in_param[0] == '.' && strlen(ctx->in_param) == 1)
+			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_notification(ctx);

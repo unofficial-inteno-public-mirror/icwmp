@@ -139,7 +139,7 @@ int plugin_leaf_match(DMOBJECT_ARGS)
 	if (!dmctx->inparam_isparam)
 		return FAULT_9005;
 	str = dmctx->in_param + strlen(node->current_object);
-	if (!strchr(str, '.'))
+	if (!strchr(str, dm_delim))
 		return 0;
 	return FAULT_9005;
 }
@@ -318,7 +318,7 @@ int plugin_leaf_nextlevel_match(DMOBJECT_ARGS)
 	if (!dmctx->inparam_isparam)
 		return FAULT_9005;
 	str = dmctx->in_param + strlen(node->current_object);
-	if (!strchr(str, '.'))
+	if (!strchr(str, dm_delim))
 		return 0;
 	return FAULT_9005;
 }
@@ -619,7 +619,7 @@ static char *get_parameter_notification(struct dmctx *ctx, char *param)
 					return notification;
 				}
 				len = strlen(pch);
-				if (pch[len-1] == '.') {
+				if (pch[len-1] == dm_delim) {
 					if (strstr(new_param, pch)) {
 						if (len > maxlen )
 						{
@@ -642,7 +642,7 @@ static int remove_parameter_notification(char *param)
 	struct uci_element *e, *tmp;
 	char *pch;
 	for (i = (ARRAY_SIZE(notifications) - 1); i >= 0; i--) {
-		if (param[strlen(param)-1] == '.') {
+		if (param[strlen(param)-1] == dm_delim) {
 			dmuci_get_option_value_list("cwmp", "@notifications[0]", notifications[i].type, &list_notif);
 			if (list_notif) {
 				uci_foreach_element_safe(list_notif, e, tmp) {
@@ -664,21 +664,23 @@ int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param
 	char *pch, *spch, *p;
 	char buf[512];
 	int i = 0, j = 0;
+	char pat[2] = {0};
 
 	char *dup = dmstrdup(param);
+	*pat = dm_delim;
 	p = buf;
-	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+	for (pch = strtok_r(dup, pat, &spch); pch != NULL; pch = strtok_r(NULL, pat, &spch)) {
 		if (isdigit(pch[0])) {
-			dmstrappendchr(p, '.');
+			dmstrappendchr(p, dm_delim);
 			dmstrappendstr(p, pch);
 			i++;
 		} else if (pch[0]== '[') {
-			dmstrappendchr(p, '.');
+			dmstrappendchr(p, dm_delim);
 			dmstrappendstr(p, ctx->inst_buf[i]);
 			i++;
 		} else {
 			if (j > 0) {
-				dmstrappendchr(p, '.');
+				dmstrappendchr(p, dm_delim);
 				dmstrappendstr(p, pch);
 			}
 			if (j == 0) {
@@ -687,8 +689,8 @@ int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param
 			}
 		}
 	}
-	if (param[strlen(param) - 1] == '.')
-		dmstrappendchr(p, '.');
+	if (param[strlen(param) - 1] == dm_delim)
+		dmstrappendchr(p, dm_delim);
 	dmstrappendend(p);
 	*new_param = dmstrdup(buf);
 	dmfree(dup);
@@ -734,7 +736,7 @@ static int set_parameter_notification(struct dmctx *ctx, char *param, char *valu
 				uci_foreach_element(list_notif, e) {
 					pch = e->name;
 					len = strlen(pch);
-					if (pch[len-1] == '.' && strstr(new_param, pch)) {
+					if (pch[len-1] == dm_delim && strstr(new_param, pch)) {
 						dmuci_add_list_value("cwmp", "@notifications[0]", "disabled", new_param);
 						goto end;
 					}
@@ -792,7 +794,7 @@ int dm_entry_get_value(struct dmctx *dmctx)
 		dmctx->findobj = 1;
 		dmctx->stop = 0;
 		findobj_check = 1;
-	} else if (dmctx->in_param[strlen(dmctx->in_param) - 1] == '.') {
+	} else if (dmctx->in_param[strlen(dmctx->in_param) - 1] == dm_delim) {
 		dmctx->inparam_isparam = 0;
 		dmctx->findobj = 0;
 		dmctx->stop = 0;
@@ -884,7 +886,7 @@ int dm_entry_get_name(struct dmctx *ctx)
 		ctx->in_param = root->obj;
 		node.matched = 1;
 		findobj_check = 1;
-	} else if (*(ctx->in_param + strlen(ctx->in_param) - 1) == '.') {
+	} else if (*(ctx->in_param + strlen(ctx->in_param) - 1) == dm_delim) {
 		ctx->inparam_isparam = 0;
 		ctx->findobj = 0;
 		ctx->stop = 0;
@@ -1012,7 +1014,7 @@ int dm_entry_get_notification(struct dmctx *dmctx)
 		dmctx->method_obj = mobj_get_notification;
 		dmctx->method_param = mparam_get_notification;
 		findobj_check = 1;
-	} else if (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == '.') {
+	} else if (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == dm_delim) {
 		dmctx->inparam_isparam = 0;
 		dmctx->findobj = 0;
 		dmctx->stop = 0;
@@ -1147,7 +1149,7 @@ int dm_entry_add_object(struct dmctx *dmctx)
 	int err;
 
 	if (dmctx->in_param == NULL || dmctx->in_param[0] == '\0'
-			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) != '.'))
+			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) != dm_delim))
 		return FAULT_9005;
 
 	dmctx->inparam_isparam = 0;
@@ -1207,7 +1209,7 @@ int dm_entry_delete_object(struct dmctx *dmctx)
 	int err;
 
 	if (dmctx->in_param == NULL || dmctx->in_param[0] == '\0'
-			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) != '.'))
+			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) != dm_delim))
 		return FAULT_9005;
 
 	dmctx->inparam_isparam = 0;
@@ -1260,7 +1262,7 @@ int dm_entry_set_value(struct dmctx *dmctx)
 	int err;
 
 	if (dmctx->in_param == NULL || dmctx->in_param[0] == '\0'
-			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == '.'))
+			|| (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == dm_delim))
 		return FAULT_9005;
 
 	dmctx->inparam_isparam = 1;
@@ -1335,7 +1337,7 @@ int dm_entry_set_notification(struct dmctx *dmctx)
 
 	if (dmctx->in_param[0] == '\0' || rootcmp(dmctx->in_param, root->obj) == 0) {
 		return FAULT_9009;
-	} else if (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == '.') {
+	} else if (*(dmctx->in_param + strlen(dmctx->in_param) - 1) == dm_delim) {
 		dmctx->inparam_isparam = 0;
 		dmctx->findobj = 0;
 		dmctx->stop = 0;
