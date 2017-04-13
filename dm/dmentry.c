@@ -17,6 +17,30 @@
 #include "dmentry.h"
 
 LIST_HEAD(head_package_change);
+unsigned char dmcli_timetrack = 0;
+unsigned char dmcli_evaluatetest = 0;
+
+static void print_dm_help(void)
+{
+	printf("Usage:\n");
+	printf(" get_value [param1] [param2] .... [param n]\n");
+	printf(" set_value <parameter key> <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
+	printf(" get_name <param> <Next Level>\n");
+	printf(" get_notification [param1] [param2] .... [param n]\n");
+	printf(" set_notification <param1> <notif1> <change1>  [param2] [notif2] [change2] .... [param n] [notif n] [change n]\n");
+	printf(" add_obj <param> <parameter key>\n");
+	printf(" del_obj <param> <parameter key>\n");
+	printf(" download <url> <file type> [file size] [username] [password]\n");
+	printf(" reboot\n");
+	printf(" factory_reset\n");
+	printf(" inform\n");
+	printf(" inform_device_id\n");
+	printf(" apply_service\n");
+	printf(" update_value_change\n");
+	printf(" check_value_change\n");
+	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
+	printf(" exit\n");
+}
 
 static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int dm_type, unsigned int amd_version, unsigned int instance_mode, int custom)
 {
@@ -257,16 +281,13 @@ int adm_entry_get_linker_param(struct dmctx *ctx, char *param, char *linker, cha
 	dmctx.in_param = param ? param : "";
 	dmctx.linker = linker;
 
-
 	if (dmctx.in_param[0] == '\0') {
 		dmctx.tree = true;
 	} else {
 		dmctx.tree = false;
 	}
-
 	dm_entry_get_linker(&dmctx);
 	*value = dmctx.linker_param;
-
 	dm_ctx_clean_sub(&dmctx);
 	return 0;
 }
@@ -361,15 +382,94 @@ end:
 	return 0;
 }
 
-void dm_entry_cli(int argc, char** argv, unsigned int amd_version, unsigned int instance_mode)
+static char *parse_arg_r(char *pch, char **last)
+{
+	if (pch == NULL) {
+		pch = *last;
+	}
+
+	if (pch == NULL) {
+		return NULL;
+	}
+
+	for(; *pch != '\0'; pch++)
+	{
+		if(*pch == ' ' || *pch == '\t')
+			continue;
+		if (*pch == '"')
+		{
+			char *s = strchr(++pch, '"');
+			if(s) {
+				*s = '\0';
+				*last = s + 1;
+				return pch;
+			}
+			else {
+				*last = NULL;
+				return NULL;
+			}
+		}
+		else
+		{
+			char *s = strchr(pch, ' ');
+			if(s) {
+				*s = '\0';
+				 *last = s + 1;
+			}
+			else {
+				s = strchr(pch, '\t');
+				if(s) {
+					*s = '\0';
+					 *last = s + 1;
+				}
+				else {
+					*last = NULL;
+				}
+			}
+
+			return pch;
+		}
+	}
+	*last = NULL;
+	return NULL;
+}
+
+static int dmentry_external_cmd(char **argv)
+{
+	int pid;
+
+	if ((pid = fork()) == -1)
+		return -1;
+
+	if (pid == 0) {
+		/* child */
+		execvp(argv[0], argv);
+		exit(ESRCH);
+
+	} else if (pid < 0)
+		return -1;
+
+	int status;
+	while (wait(&status) != pid);
+
+	return 0;
+}
+
+void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode)
 {
 	struct dmctx cli_dmctx = {0};
 	int output = 1;
 	char *param, *next_level, *parameter_key, *value, *cmd;
 	int fault = 0, status = -1;
 	bool set_fault = false;
+	long ms; // Milliseconds
+	time_t s;  // Seconds
+	struct timespec tstart, tend;
 
-	dm_ctx_init(&cli_dmctx, DM_CWMP, amd_version, instance_mode);
+	if (dmcli_timetrack)
+		clock_gettime(CLOCK_REALTIME, &tstart);
+
+	dm_ctx_init(&cli_dmctx, dmtype, amd_version, instance_mode);
 
 	if (argc < 4) goto invalid_arguments;
 
@@ -454,11 +554,245 @@ void dm_entry_cli(int argc, char** argv, unsigned int amd_version, unsigned int 
 		goto invalid_arguments;
 	}
 	dm_ctx_clean(&cli_dmctx);
+
+	if (dmcli_timetrack) {
+		clock_gettime(CLOCK_REALTIME, &tend);
+		s = tend.tv_sec - tstart.tv_sec;
+		ms = (tend.tv_nsec - tstart.tv_nsec) / 1.0e6; // Convert nanoseconds to milliseconds
+		if (ms < 0) {
+			ms = 1000 + ms;
+			s--;
+		}
+		fprintf(stdout, "-----------------------------\n");
+		fprintf(stdout, "End: %ld s : %ld ms\n", (long)s, ms);
+		fprintf(stdout, "-----------------------------\n");
+		fflush(stdout);
+	}
 	return;
 
 invalid_arguments:
 	dm_ctx_clean(&cli_dmctx);
 	fprintf(stdout, "Invalid arguments!\n");;
+}
+
+int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode)
+{
+	struct dmctx cli_dmctx = {0};
+	int fault = 0, set_fault = 0;
+	int i;
+	char *param;
+	char *value;
+	char *parameter_key;
+	char *notifset;
+
+	if (argc < 3) {
+		fprintf(stderr, "Wrong arguments!\n");
+		return -1;
+	}
+
+	dm_ctx_init(&cli_dmctx, dmtype, amd_version, instance_mode);
+	if (strcmp(argv[2], "get_value") == 0) {
+		char *param = "";
+		if (argc >= 4)
+			param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_VALUE, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_VALUE, 1);
+	}
+	else if (strcmp(argv[2], "get_name") == 0) {
+		if (argc < 5)
+			goto invalid_arguments;
+		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_NAME, argv[3], argv[4], NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_NAME, 1);
+	}
+	else if (strcmp(argv[2], "get_notification") == 0) {
+		char *param = "";
+		if (argc >= 4)
+			param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_GET_NOTIFICATION, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_GET_NOTIFICATION, 1);
+	}
+	else if (strcmp(argv[2], "set_value") == 0) {
+		if (argc < 6 || (argc % 2) != 0)
+			goto invalid_arguments;
+
+		for (i = 4; i < argc; i+=2) {
+			param = argv[i];
+			value = argv[i+1];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_SET_VALUE, param, value, NULL);
+			if (fault) set_fault = true;
+		}
+		parameter_key = argv[3];
+		if (!set_fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_SET_VALUE, parameter_key, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_SET_VALUE, 1);
+	}
+	else if (strcmp(argv[2], "set_notification") == 0) {
+		if (argc < 6 || (argc % 3) != 0)
+			goto invalid_arguments;
+		for (i=3; i<argc; i+=3) {
+			param = argv[i];
+			value = argv[i+1];
+			notifset = argv[i+2];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_SET_NOTIFICATION, param, value, notifset);
+			if (fault) set_fault = true;
+		}
+		if(!set_fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_SET_NOTIFICATION, NULL, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_SET_NOTIFICATION, 1);
+	}
+	else if (strcmp(argv[2], "inform") == 0 || strcmp(argv[2], "inform_parameter") == 0) {
+		fault = dm_entry_param_method(&cli_dmctx, CMD_INFORM, "", NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_INFORM, 1);
+	}
+	else if (strcmp(argv[2], "add_obj") == 0) {
+		if (argc < 5)
+			goto invalid_arguments;
+		param = argv[3];
+		parameter_key = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_ADD_OBJECT, param, parameter_key, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_ADD_OBJECT, 1);
+	}
+	else if (strcmp(argv[2], "del_obj") == 0) {
+		if (argc < 5)
+			goto invalid_arguments;
+		param =argv[3];
+		parameter_key =argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_DEL_OBJECT, param, parameter_key, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_DEL_OBJECT, 1);
+	}
+	else if (strcmp(argv[2], "external_command") == 0) {
+		if (argc < 4)
+			goto invalid_arguments;
+		argv[argc] = NULL;
+		dmentry_external_cmd(&argv[3]);
+	}
+	else {
+		goto invalid_arguments;
+	}
+	dm_ctx_clean(&cli_dmctx);
+	return 0;
+
+invalid_arguments:
+	dm_ctx_clean(&cli_dmctx);
+	fprintf(stdout, "Invalid arguments!\n");
+	return -1;
+}
+
+void dm_execute_cli_command(char *file, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode)
+{
+	FILE *fp;
+	char *argv[64];
+	char buf[2048], dbuf[2048];
+	char *pch, *pchr;
+	int argc, len, i=0;
+	long ms; // Milliseconds
+	time_t s;  // Seconds
+	struct timespec tstart, tend;
+
+	if (file) {
+		fp = fopen(file, "r");
+		if (fp == NULL) {
+			fprintf(stderr, "ERROR: Wrong file!\n");
+			fflush(stderr);
+			return;
+		}
+	}
+	else {
+		fp = stdin;
+	}
+
+	printf("%s", DM_PROMPT" "); fflush(stdout);
+
+	while (fgets (buf , 2048 , fp) != NULL) {
+		if (dmcli_evaluatetest)
+			argc = 1;
+		else
+			argc = 2;
+
+		len = strlen(buf);
+		if (len>0 && buf[len-1] == '\n') {
+			buf[len-1] = '\0';
+		}
+		if (strcasecmp(buf, "exit") == 0) {
+			if (file) {
+				fprintf(stdout, "%s\n", buf);
+				fflush(stdout);
+			}
+			return;
+		}
+		if (strcasecmp(buf, "help") == 0) {
+			if (file) {
+				fprintf(stdout, "%s\n", buf);
+				fflush(stdout);
+			}
+			print_dm_help();
+			printf(DM_PROMPT" "); fflush(stdout);
+			continue;
+		}
+
+		i++;
+
+		strcpy(dbuf, buf);
+		for (pch = parse_arg_r(buf, &pchr); pch != NULL; pch = parse_arg_r(NULL, &pchr)) {
+			if(argc < 3 && (pch[0] == '#' || pch[0] == '\0'))
+				break;
+			if (*pch == '"')
+				pch++;
+			len = strlen(pch);
+			if (len>0 && pch[len-1] == '"')
+				pch[len-1] = '\0';
+			argv[argc++] = pch;
+		}
+		if (file) {
+			if (!pch || pch[0] != '#') {
+				fprintf(stdout, "%s\n", dbuf);
+				fflush(stdout);
+			}
+			else {
+				fprintf(stdout, "\n");
+				fflush(stdout);
+			}
+		}
+		if (argc>2) {
+			char testref[32] = "";
+			if (dmcli_evaluatetest)
+				sprintf(testref, "Ref: %s - ", argv[1]);
+			if (dmcli_timetrack || dmcli_evaluatetest) {
+				fprintf(stdout, "-----------------------------\n");
+				fprintf(stdout, "[%s%04d] %s\n", testref, i, dbuf);
+				fprintf(stdout, "-----------------------------\n");
+				fflush(stdout);
+				clock_gettime(CLOCK_REALTIME, &tstart);
+			}
+			if (dmentry_cli(argc, argv, dmtype, amd_version, instance_mode) == 0) {
+				if (dmcli_timetrack || dmcli_evaluatetest) {
+					clock_gettime(CLOCK_REALTIME, &tend);
+					s = tend.tv_sec - tstart.tv_sec;
+					ms = (tend.tv_nsec - tstart.tv_nsec) / 1.0e6; // Convert nanoseconds to milliseconds
+					if (ms < 0) {
+						ms = 1000 + ms;
+						s--;
+					}
+					fprintf(stdout, "-----------------------------\n");
+					fprintf(stdout, "%sEnd: %ld s : %ld ms\n", testref, (long)s, ms);
+					fprintf(stdout, "-----------------------------\n");
+					fflush(stdout);
+				}
+			}
+			else {
+				fprintf(stdout, "Type help for help\n");
+				fflush(stdout);
+			}
+		}
+		printf(DM_PROMPT" "); fflush(stdout);
+	}
+	if (file) {
+		fclose(fp);
+		fprintf(stdout, "\n");
+		fflush(stdout);
+	}
 }
 
 int cli_output_wepkey64(char strk64[4][11])
@@ -501,3 +835,4 @@ void wepkey_cli(int argc, char** argv)
 invalid_arguments:
 	fprintf(stdout, "Invalid arguments!\n");;
 }
+

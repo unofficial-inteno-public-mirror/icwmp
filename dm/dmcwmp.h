@@ -32,6 +32,7 @@
 #define DMDELIM_UPNP '/'
 #define DMDELIM_CWMP '.'
 
+#define DM_PROMPT "icwmp>"
 
 #ifdef UNDEF
 #undef UNDEF

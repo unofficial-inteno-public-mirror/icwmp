@@ -3237,6 +3237,7 @@ inline int browseDhcp_static_addressInst(struct dmctx *dmctx, DMNODE *parent_nod
 		}
 	}
 end:
+	DM_CLEAN_ARGS(cur_ipargs);
 	DM_CLEAN_ARGS(cur_dhcpargs);
 	return 0;
 }

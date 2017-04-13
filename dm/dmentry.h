@@ -3,6 +3,8 @@
 
 #include "dmcwmp.h"
 extern struct list_head head_package_change;
+extern unsigned char dmcli_timetrack;
+extern unsigned char dmcli_evaluatetest;
 
 enum ctx_init_enum {
 	CTX_INIT_ALL,
@@ -19,6 +21,7 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value);
 int dm_entry_restart_services();
 int dm_ctx_clean(struct dmctx *ctx);
 int dm_ctx_clean_sub(struct dmctx *ctx);
-void dm_entry_cli(int argc, char** argv, unsigned int amd_version, unsigned int instance_mode);
+void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode);
+void dm_execute_cli_command(char *file, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode);
 void wepkey_cli(int argc, char** argv);
 #endif

@@ -31,6 +31,7 @@
 #include "cwmp.h"
 #include "xml.h"
 #include "log.h"
+#include "dmcwmp.h"
 
 #include <stdarg.h>
 static int pid;
@@ -118,7 +119,7 @@ static void external_read_pipe_input(int (*external_handler)(char *msg))
 			value = c;
         } else {
         	if (!value) continue;
-        	if (strcmp(value, "icwmp>")==0) {
+        	if (strcmp(value, DM_PROMPT)==0) {
         	    FREE(value);
         	    break;
         	}
