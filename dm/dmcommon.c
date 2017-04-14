@@ -605,15 +605,12 @@ void update_section_list(char *config, char *section, char *option, int number, 
 }
 
 char *get_nvram_wpakey() {
-	FILE* fp = NULL;
-	char wpakey[64];
-	fp = fopen(NVRAM_FILE, "r");
-	if (fp != NULL) {
-		fgets(wpakey, 64, fp);
-		fclose(fp);
-		return dmstrdup(wpakey);
-	}
-	return NULL;
+	json_object *res;
+	char *wpakey = "";
+	dmubus_call("router.system", "info", UBUS_ARGS{{}}, 0, &res);
+	if (res)
+		json_select(res, "keys", 0, "wpa", &wpakey, NULL);
+	return dmstrdup(wpakey);
 }
 
 int reset_wlan(struct uci_section *s)
