@@ -22,12 +22,11 @@
 
 #ifdef DATAMODEL_TR098
 #define DMROOT_CWMP "InternetGatewayDevice"
-#define DMROOT_UPNP "/InternetGatewayDevice"
 #endif
 #ifdef DATAMODEL_TR181
 #define DMROOT_CWMP "Device"
-#define DMROOT_UPNP "/Device"
 #endif
+#define DMROOT_UPNP ""
 
 #define DMDELIM_UPNP '/'
 #define DMDELIM_CWMP '.'
@@ -162,7 +161,6 @@ struct dm_parameter {
 struct dmctx
 {
 	bool stop;
-	bool tree;
 	bool match;
 	int (*method_param)(DMPARAM_ARGS);
 	int (*method_obj)(DMOBJECT_ARGS);
@@ -171,6 +169,7 @@ struct dmctx
 	struct list_head list_parameter;
 	struct list_head set_list_tmp;
 	struct list_head list_fault_param;
+	DMOBJ *dm_entryobj;
 	bool nextlevel;
 	int faultcode;
 	int setaction;

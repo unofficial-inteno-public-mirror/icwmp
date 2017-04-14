@@ -16,6 +16,7 @@
 #include "dmcwmp.h"
 extern DMOBJ tEntryObj[];
 extern DMOBJ tRootObj[];
-extern DMLEAF tRootParams[];
-
+extern DMOBJ tEntryObjUPNP[];
+extern DMOBJ tRootObjUPNP[];
+extern DMOBJ tRootObjUPNPBBF[];
 #endif

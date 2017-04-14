@@ -2160,7 +2160,7 @@ DMOBJ tServiceObj[] = {
 {0}
 };
 
-inline int browseVoiceServiceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseVoiceServiceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *s = NULL;
 	char *vs = NULL, *vs_last = NULL;

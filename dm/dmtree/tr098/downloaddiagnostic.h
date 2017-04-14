@@ -11,7 +11,6 @@
 #ifndef __DOWNLOAD_DIAGNOSTIC_H
 #define __DOWNLOAD_DIAGNOSTIC_H
 
-int entry_method_root_Download_Diagnostics(struct dmctx *ctx);
 static inline char *download_diagnostic_get(char *option, char *def);
 int get_download_diagnostics_state(char *refparam, struct dmctx *ctx, char **value);
 int set_download_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value);

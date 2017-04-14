@@ -15,6 +15,7 @@
 
 extern DMOBJ tServiceObj[];
 extern DMOBJ tVoiceServiceObj[];
+extern DMLEAF tVoiceServiceParam[];
 extern DMLEAF tCapabilitiesParams[];
 extern DMOBJ tCapabilitiesObj[];
 extern DMLEAF tSIPParams[];
@@ -135,4 +136,5 @@ enum enum_cap_sip_codecs {
 };
 
 bool dm_service_enable_set(void);
+int browseVoiceServiceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

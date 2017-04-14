@@ -15,6 +15,7 @@
 #include "dmubus.h"
 #include "dmuci.h"
 #include "dmentry.h"
+#include "root.h"
 
 LIST_HEAD(head_package_change);
 unsigned char dmcli_timetrack = 0;
@@ -59,6 +60,10 @@ static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int dm_type, unsigned 
 	if (dm_type == DM_UPNP) {
 		strcpy(DMROOT, DMROOT_UPNP);
 		dm_delim = DMDELIM_UPNP;
+		ctx->dm_entryobj = tEntryObjUPNP;
+	}
+	else {
+		ctx->dm_entryobj = tEntryObj;
 	}
 	return 0;
 }
@@ -132,21 +137,16 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 	if (!inparam) inparam = "";
 	ctx->in_param = inparam;
 	dmentry_instance_lookup_inparam(ctx);
-	if (ctx->in_param[0] == '\0' || rootcmp(ctx->in_param, DMROOT) == 0) {
-		ctx->tree = true;
-	} else {
-		ctx->tree = false;
-	}
 	ctx->stop = false;
 	switch(cmd) {
 		case CMD_GET_VALUE:
-			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
+			if (ctx->dm_type == DM_CWMP && ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_value(ctx);
 			break;
 		case CMD_GET_NAME:
-			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
+			if (ctx->dm_type == DM_CWMP && ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else if (arg1 && string_to_bool(arg1, &ctx->nextlevel) == 0){
 				fault = dm_entry_get_name(ctx);
@@ -155,7 +155,7 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			}
 			break;
 		case CMD_GET_NOTIFICATION:
-			if (ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
+			if (ctx->dm_type == DM_CWMP && ctx->in_param[0] == dm_delim && strlen(ctx->in_param) == 1)
 				fault = FAULT_9005;
 			else
 				fault = dm_entry_get_notification(ctx);
@@ -216,7 +216,6 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 	switch(cmd) {
 		case CMD_SET_VALUE:
 			ctx->setaction = VALUESET;
-			ctx->tree = false;
 			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
 				ctx->in_param = n->name;
 				ctx->in_value = n->value ? n->value : "";
@@ -237,7 +236,6 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 			break;
 		case CMD_SET_NOTIFICATION:
 			ctx->setaction = VALUESET;
-			ctx->tree = false;
 			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
 				ctx->in_param = n->name;
 				ctx->in_notification = n->value ? n->value : "0";
@@ -263,7 +261,6 @@ int dm_entry_load_enabled_notify(unsigned int dm_type, unsigned int amd_version,
 
 	dm_ctx_init(&dmctx, dm_type, amd_version, instance_mode);
 	dmctx.in_param = "";
-	dmctx.tree = true;
 
 	free_all_list_enabled_lwnotify();
 	free_all_list_enabled_notify();
@@ -281,11 +278,6 @@ int adm_entry_get_linker_param(struct dmctx *ctx, char *param, char *linker, cha
 	dmctx.in_param = param ? param : "";
 	dmctx.linker = linker;
 
-	if (dmctx.in_param[0] == '\0') {
-		dmctx.tree = true;
-	} else {
-		dmctx.tree = false;
-	}
 	dm_entry_get_linker(&dmctx);
 	*value = dmctx.linker_param;
 	dm_ctx_clean_sub(&dmctx);
@@ -303,7 +295,6 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value)
 
 	dm_ctx_init_sub(&dmctx, ctx->dm_type, ctx->amd_version, ctx->instance_mode);
 	dmctx.in_param = param;
-	dmctx.tree = false;
 
 	dm_entry_get_linker_value(&dmctx);
 	*value = dmctx.linker;

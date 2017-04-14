@@ -784,7 +784,7 @@ int dm_entry_get_value(struct dmctx *dmctx)
 	int i;
 	int err = 0;
 	unsigned char findobj_check = 0;
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = {.current_object = ""};
 
 	if (dmctx->in_param[0] == '\0' || rootcmp(dmctx->in_param, root->obj) == 0) {
@@ -864,7 +864,7 @@ static int mparam_get_value_in_param(DMPARAM_ARGS)
 
 int dm_entry_get_name(struct dmctx *ctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = ctx->dm_entryobj;
 	DMNODE node = {.current_object = ""};
 	unsigned char findobj_check = 0;
 	int err;
@@ -876,7 +876,6 @@ int dm_entry_get_name(struct dmctx *ctx)
 		ctx->checkleaf = NULL;
 		ctx->method_obj = mobj_get_name;
 		ctx->method_param = mparam_get_name;
-		entry_method_root(ctx);
 	} else if (ctx->nextlevel && (ctx->in_param[0] == '\0')) {
 		ctx->inparam_isparam = 0;
 		ctx->findobj = 1;
@@ -1001,7 +1000,7 @@ static int mobj_get_name_in_obj(DMOBJECT_ARGS)
  * ********************/
 int dm_entry_get_notification(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	unsigned char findobj_check = 0;
 	int err;
@@ -1095,7 +1094,7 @@ static int mobj_get_notification_in_param(DMOBJECT_ARGS)
  ***************/
 int dm_entry_inform(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = {.current_object = ""};
 	int err;
 
@@ -1146,7 +1145,7 @@ static int inform_check_param(DMPARAM_ARGS)
  * **************/
 int dm_entry_add_object(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	int err;
 
@@ -1206,7 +1205,7 @@ static int mobj_add_object(DMOBJECT_ARGS)
  * **************/
 int dm_entry_delete_object(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	int err;
 
@@ -1259,7 +1258,7 @@ static int delete_object_param(DMPARAM_ARGS)
  * **************/
 int dm_entry_set_value(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	int err;
 
@@ -1329,7 +1328,7 @@ static int mparam_set_value(DMPARAM_ARGS)
  * ****************/
 int dm_entry_set_notification(struct dmctx *dmctx)
 {
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	unsigned char findobj_check = 0;
 	int err;
@@ -1439,7 +1438,7 @@ static int mobj_set_notification_in_param(DMOBJECT_ARGS)
 int dm_entry_enabled_notify(struct dmctx *dmctx)
 {
 	int err;
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 	//unsigned char findobj_check = 0;
 
@@ -1493,7 +1492,7 @@ static int enabled_notify_check_param(DMPARAM_ARGS)
 int dm_entry_get_linker(struct dmctx *dmctx)
 {
 	int err;
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 
 	dmctx->method_obj = get_linker_check_obj;
@@ -1536,7 +1535,7 @@ static int get_linker_check_param(DMPARAM_ARGS)
 int dm_entry_get_linker_value(struct dmctx *dmctx)
 {
 	int err ;
-	DMOBJ *root = tEntryObj;
+	DMOBJ *root = dmctx->dm_entryobj;
 	DMNODE node = { .current_object = "" };
 
 	dmctx->method_obj = get_linker_value_check_obj;

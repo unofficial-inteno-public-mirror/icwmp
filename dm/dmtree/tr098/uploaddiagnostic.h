@@ -10,7 +10,6 @@
 #ifndef __UPLOAD_DIAGNOSTIC_H
 #define __UPLOAD_DIAGNOSTIC_H
 
-int entry_method_root_Upload_Diagnostics(struct dmctx *ctx);
 extern DMLEAF tUploadDiagnosticsParam[];
 static inline char *upload_diagnostic_get(char *option, char *def);
 int get_upload_diagnostics_state(char *refparam, struct dmctx *ctx, char **value);
