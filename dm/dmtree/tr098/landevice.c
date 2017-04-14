@@ -246,7 +246,7 @@ int get_dhcp_option_last_inst(struct uci_section *ss)
 	int dr = 0;
 	struct uci_section *s;
 
-	uci_path_foreach_sections(icwmpd, "dmmap", section_name(ss), s) {
+	uci_path_foreach_sections(icwmpd, "dmmap", section_name(cur_dhcppoolargs.dhcppoolsection), s) {
 		dmuci_get_value_by_section_string(s, "optioninst", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -3550,17 +3550,22 @@ inline int entry_landevice_dhcpconditionalservingpool_option(struct dmctx *ctx, 
 	bool find_max = true;
 	char *tt;
 
+	int found = 0;
 	dmuci_get_value_by_section_list(poolargs->dhcppoolsection, "dhcp_option", &val);
 	if (val) {
 		uci_foreach_element_safe(val, e, tmp)
 		{
 			tt = dmstrdup(tmp->name);
 			pch = strtok_r(tt, ",", &spch);
+			found = 0;
 			uci_path_foreach_option_eq(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), "dhcp_option", pch, ss)
 			{
 				dmuci_get_value_by_section_string(ss, "value", &value);
 				if (strcmp(spch, value) == 0)
+				{
 					dmuci_get_value_by_section_string(ss, "optioninst", &idx);
+					found = 1;
+				}
 				else
 					continue;
 				init_args_pool_option(ctx, ss, poolargs->dhcppoolsection);
@@ -3568,7 +3573,7 @@ inline int entry_landevice_dhcpconditionalservingpool_option(struct dmctx *ctx, 
 				dmfree(tt);
 				break;
 			}
-			if (!idx)
+			if (!found)
 			{
 				DMUCI_ADD_SECTION(icwmpd, "dmmap", section_name(poolargs->dhcppoolsection), &ss, &name);
 				DMUCI_SET_VALUE_BY_SECTION(icwmpd, ss, "dhcp_option", pch);

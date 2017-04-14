@@ -24,6 +24,8 @@
 #define DB_CONFIG		"/lib/db/config"
 #define VARSTATE_CONFIG "/var/state"
 #define ICWMPD_CONFIG "/etc/icwmpd"
+#define ICWMPD_PATH "icwmpd"
+#define ICWMPD_SAVEDIR "/tmp/.icwmpd"
 
 extern struct uci_context *uci_ctx;
 extern struct uci_context *uci_varstate_ctx;
@@ -146,8 +148,10 @@ struct uci_section *dmuci_walk_state_section(char *package, char *stype, void *a
 struct uci_section *dmuci_walk_section_icwmpd(char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk);
 char *dmuci_set_value_by_section_icwmpd(struct uci_section *s, char *option, char *value);
 
-#define NEW_UCI_PATH(UCI_PATH, DPATH)		\
+#define NEW_UCI_PATH(UCI_PATH, CPATH, DPATH)		\
 struct uci_context *uci_ctx_##UCI_PATH;			\
+const char *uci_savedir_##UCI_PATH = DPATH; \
+const char *uci_confdir_##UCI_PATH = CPATH; \
 int dmuci_get_section_type_##UCI_PATH(char *package, char *section,char **value)	\
 {\
 	struct uci_context *save_uci_ctx;	\
@@ -163,7 +167,8 @@ int dmuci_init_##UCI_PATH(void)		\
 		return -1;								\
 	}											\
 	uci_add_delta_path(uci_ctx_##UCI_PATH, uci_ctx_##UCI_PATH->savedir);	\
-	uci_set_savedir(uci_ctx_##UCI_PATH, DPATH);						\
+	uci_set_savedir(uci_ctx_##UCI_PATH, uci_savedir_##UCI_PATH);					\
+	uci_set_confdir(uci_ctx_##UCI_PATH, strdup(uci_confdir_##UCI_PATH));					\
 	return 0;	\
 }\
 int dmuci_exit_##UCI_PATH(void)		\
@@ -252,6 +257,14 @@ struct uci_section *dmuci_walk_section_##UCI_PATH(char *package, char *stype, vo
 	dmuci_walk_section(package, stype, arg1, arg2, cmp ,filter, prev_section, walk); \
 	uci_ctx = save_uci_ctx;			\
 }\
+int dmuci_commit_package_##UCI_PATH(char *package) \
+{\
+	struct uci_context *save_uci_ctx;	\
+		save_uci_ctx = uci_ctx;			\
+		uci_ctx = uci_ctx_##UCI_PATH;	\
+		dmuci_commit_package(package); \
+		uci_ctx = save_uci_ctx;			\
+}\
 
 #define DMUCI_GET_SECTION_TYPE(UCI_PATH, package, section, value) dmuci_get_section_type_##UCI_PATH(package, section, value)
 #define DMUCI_GET_OPTION_VALUE_STRING(UCI_PATH, package, section, option, value) dmuci_get_option_value_string_##UCI_PATH(package, section, option, value)
@@ -265,6 +278,7 @@ struct uci_section *dmuci_walk_section_##UCI_PATH(char *package, char *stype, vo
 #define DMUCI_DELETE_BY_SECTION(UCI_PATH, s, option, value) dmuci_delete_by_section_##UCI_PATH(s, option, value)
 #define DMUCI_WALK_SECTION(UCI_PATH, package, stype, arg1, arg2, cmp , filter, value), struct uci_section *prev_section, int walk)\) dmuci_walk_section_##UCI_PATH(package, stype, arg1, arg2, cmp , filter, value)
 
+#define DMUCI_COMMIT_PACKAGE(UCI_PATH, package) dmuci_commit_package_##UCI_PATH(package)
 #define DMUCI_INIT(UCI_PATH) dmuci_init_##UCI_PATH()
 #define DMUCI_EXIT(UCI_PATH) dmuci_exit_##UCI_PATH()
 #endif

@@ -23,7 +23,7 @@
 struct uci_context *uci_ctx;
 struct uci_context *uci_varstate_ctx;
 
-NEW_UCI_PATH(icwmpd, ICWMPD_CONFIG)
+NEW_UCI_PATH(icwmpd, ICWMPD_CONFIG, ICWMPD_SAVEDIR)
 struct uci_section *dmuci_walk_state_section (char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk) {
 	struct uci_section *s = NULL;
 	struct uci_element *e, *m;
@@ -351,6 +351,10 @@ int dmuci_commit(void)
 	}
 	for (p = configs; *p; p++) {
 		dmuci_commit_package(*p);
+	}
+	if(uci_ctx_icwmpd)
+	{
+		DMUCI_COMMIT_PACKAGE(icwmpd, "dmmap");
 	}
 	return 0;
 }
