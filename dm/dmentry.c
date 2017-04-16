@@ -24,21 +24,15 @@ unsigned char dmcli_evaluatetest = 0;
 static void print_dm_help(void)
 {
 	printf("Usage:\n");
-	printf(" get_value [param1] [param2] .... [param n]\n");
+	printf(" get_value [param]\n");
 	printf(" set_value <parameter key> <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
 	printf(" get_name <param> <Next Level>\n");
-	printf(" get_notification [param1] [param2] .... [param n]\n");
+	printf(" get_notification [param]\n");
 	printf(" set_notification <param1> <notif1> <change1>  [param2] [notif2] [change2] .... [param n] [notif n] [change n]\n");
 	printf(" add_obj <param> <parameter key>\n");
 	printf(" del_obj <param> <parameter key>\n");
-	printf(" download <url> <file type> [file size] [username] [password]\n");
-	printf(" reboot\n");
-	printf(" factory_reset\n");
 	printf(" inform\n");
-	printf(" inform_device_id\n");
-	printf(" apply_service\n");
-	printf(" update_value_change\n");
-	printf(" check_value_change\n");
+	printf(" get_instances [param]\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
 	printf(" exit\n");
 }
@@ -202,6 +196,10 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
 				dmuci_change_packages(&head_package_change);
 			}
+			break;
+		case CMD_UPNP_GET_INSTANCES:
+			ctx->depth = atoi(arg1);
+			fault = dm_entry_upnp_get_instances(ctx);
 			break;
 	}
 	dmuci_commit();
@@ -367,6 +365,11 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 	else if (cmd == CMD_GET_VALUE || cmd == CMD_INFORM) {
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
+		}
+	}
+	else if (cmd == CMD_UPNP_GET_INSTANCES) {
+		list_for_each_entry(n, &dmctx->list_parameter, list) {
+			fprintf (stdout, "{ \"parameter\": \"%s\"}\n", n->name);
 		}
 	}
 end:
@@ -541,6 +544,13 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_INFORM, "", NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_INFORM, output);
 	}
+	/* UPNP GET INSTANCES */
+	else if (strcmp(cmd, "get_instances") == 0) {
+		if (argc < 6) goto invalid_arguments;
+		param = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_INSTANCES, param, argv[5], NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_INSTANCES, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
@@ -658,6 +668,13 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 			goto invalid_arguments;
 		argv[argc] = NULL;
 		dmentry_external_cmd(&argv[3]);
+	}
+	else if (strcmp(argv[2], "get_instances") == 0) {
+		if (argc < 5)
+			goto invalid_arguments;
+		param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_INSTANCES, param, argv[4], NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_INSTANCES, 1);
 	}
 	else {
 		goto invalid_arguments;

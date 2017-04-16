@@ -81,7 +81,11 @@ static int get_linker_check_obj(DMOBJECT_ARGS);
 static int get_linker_check_param(DMPARAM_ARGS);
 static int get_linker_value_check_obj(DMOBJECT_ARGS);
 static int get_linker_value_check_param(DMPARAM_ARGS);
-static int check_leaf_skip_params(DMPARAM_ARGS);
+static int plugin_upnp_obj_check_get_instances(DMOBJECT_ARGS);
+static int plugin_upnp_leaf_check_get_instances(DMOBJECT_ARGS);
+static int mparam_upnp_get_instances(DMPARAM_ARGS);
+static int mobj_upnp_get_instances(DMOBJECT_ARGS);
+
 
 LIST_HEAD( list_enabled_notify);
 LIST_HEAD( list_enabled_lw_notify);
@@ -1569,6 +1573,74 @@ static int get_linker_value_check_param(DMPARAM_ARGS)
 {
 	return FAULT_9005;
 }
+
+/* ******************
+ * UPNP get instances
+ * ******************/
+
+int dm_entry_upnp_get_instances(struct dmctx *dmctx)
+{
+	DMOBJ *root = dmctx->dm_entryobj;
+	DMNODE node = {.current_object = ""};
+	unsigned char findobj_check = 1;
+	int err;
+	if (*(dmctx->in_param + strlen(dmctx->in_param) - 1) != dm_delim)
+		return FAULT_UPNP_701;
+
+	dmctx->inparam_isparam = 0;
+	dmctx->findobj = 0;
+	dmctx->stop = 0;
+	dmctx->checkobj = plugin_upnp_obj_check_get_instances;
+	dmctx->checkleaf = plugin_upnp_leaf_check_get_instances;
+	dmctx->method_obj = mobj_upnp_get_instances;
+	dmctx->method_param = mparam_upnp_get_instances;
+	err = dm_browse(dmctx, &node, root, NULL, NULL);
+	if (findobj_check && dmctx->findobj)
+		return 0;
+	else
+		return err;
+}
+
+static int plugin_upnp_obj_check_get_instances(DMOBJECT_ARGS)
+{
+	if (node->matched) {
+		node->matched++;
+	}
+	else if (strcmp(node->current_object, dmctx->in_param) == 0) {
+		node->matched++;
+		dmctx->findobj = 1;
+	}
+	else if (strstr(dmctx->in_param, node->current_object) == dmctx->in_param) {
+		return 0;
+	}
+	if (dmctx->depth == 0)
+		return 0;
+	if (dmctx->depth >= (node->matched - 1))
+		return 0;
+	return FAULT_UPNP_703;
+}
+
+static int plugin_upnp_leaf_check_get_instances(DMOBJECT_ARGS)
+{
+	return FAULT_UPNP_703;
+}
+
+static int mparam_upnp_get_instances(DMPARAM_ARGS)
+{
+	return 0;
+}
+
+static int mobj_upnp_get_instances(DMOBJECT_ARGS)
+{
+	char *refparam;
+	refparam = node->current_object;
+	if (!node->is_instanceobj || !node->matched)
+		return FAULT_UPNP_703;
+	add_list_paramameter(dmctx, refparam, NULL, NULL);
+	return 0;
+}
+
+/********************/
 
 int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data)
 {

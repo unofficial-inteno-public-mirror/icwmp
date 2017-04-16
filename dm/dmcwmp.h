@@ -171,6 +171,7 @@ struct dmctx
 	struct list_head list_fault_param;
 	DMOBJ *dm_entryobj;
 	bool nextlevel;
+	int depth;
 	int faultcode;
 	int setaction;
 	char *in_param;
@@ -242,9 +243,10 @@ enum {
 	CMD_ADD_OBJECT,
 	CMD_DEL_OBJECT,
 	CMD_INFORM,
+	CMD_UPNP_GET_INSTANCES,
 };
 
-enum fault_code {
+enum fault_code_enum {
 	FAULT_9000 = 9000,// Method not supported
 	FAULT_9001,// Request denied
 	FAULT_9002,// Internal error
@@ -279,6 +281,13 @@ enum fault_code {
 	FAULT_9031,// Invalid Deployment Unit Update: Version not specified
 	FAULT_9032,// Invalid Deployment Unit Update: Version already exist
 	__FAULT_MAX
+};
+
+enum upnp_fault_code_enum {
+	FAULT_UPNP_701 = 701,// Invalid Argument Syntax
+	FAULT_UPNP_702,//
+	FAULT_UPNP_703,// No Such Name
+	__FAULT_UPNP_MAX
 };
 
 enum {
@@ -371,6 +380,7 @@ int dm_entry_set_notification(struct dmctx *ctx);
 int dm_entry_enabled_notify(struct dmctx *ctx);
 int dm_entry_get_linker(struct dmctx *ctx);
 int dm_entry_get_linker_value(struct dmctx *ctx);
+int dm_entry_upnp_get_instances(struct dmctx *ctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
