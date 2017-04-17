@@ -32,6 +32,7 @@ static void print_dm_help(void)
 	printf(" add_obj <param> <parameter key>\n");
 	printf(" del_obj <param> <parameter key>\n");
 	printf(" inform\n");
+	printf(" upnp_get_value [param]\n");
 	printf(" upnp_get_instances <param> <depth>\n");
 	printf(" upnp_get_selected_values [param]\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
@@ -197,6 +198,9 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 				dmuci_set_value("cwmp", "acs", "ParameterKey", arg1 ? arg1 : "");
 				dmuci_change_packages(&head_package_change);
 			}
+			break;
+		case CMD_UPNP_GET_VALUES:
+			fault = dm_entry_upnp_get_values(ctx);
 			break;
 		case CMD_UPNP_GET_SELECTED_VALUES:
 			fault = dm_entry_upnp_get_selected_values(ctx);
@@ -366,7 +370,8 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"notification\": \"%s\" }\n", n->name, n->data);
 		}
 	}
-	else if (cmd == CMD_GET_VALUE || cmd == CMD_INFORM || cmd == CMD_UPNP_GET_SELECTED_VALUES) {
+	else if (cmd == CMD_GET_VALUE || cmd == CMD_INFORM ||
+			cmd == CMD_UPNP_GET_VALUES || cmd == CMD_UPNP_GET_SELECTED_VALUES) {
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
 		}
@@ -548,6 +553,13 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_INFORM, "", NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_INFORM, output);
 	}
+	/* UPNP GET VALUES */
+	else if (strcmp(cmd, "upnp_get_values") == 0) {
+		if (argc < 5) goto invalid_arguments;
+		param = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_VALUES, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_VALUES, output);
+	}
 	/* UPNP GET SELECTED VALUES */
 	else if (strcmp(cmd, "upnp_get_selected_values") == 0) {
 		if (argc < 5) goto invalid_arguments;
@@ -679,6 +691,13 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 			goto invalid_arguments;
 		argv[argc] = NULL;
 		dmentry_external_cmd(&argv[3]);
+	}
+	else if (strcmp(argv[2], "upnp_get_values") == 0) {
+		char *param = "";
+		if (argc >= 4)
+			param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_VALUES, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_VALUES, 1);
 	}
 	else if (strcmp(argv[2], "upnp_get_selected_values") == 0) {
 		char *param = "";

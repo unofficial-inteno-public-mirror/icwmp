@@ -1743,6 +1743,16 @@ static int mparam_upnp_structured_get_value_in_param(DMPARAM_ARGS)
 	return 0;
 }
 
+/* ************************
+ * UPNP get values
+ * ************************/
+
+int dm_entry_upnp_get_values(struct dmctx *dmctx)
+{
+	int err;
+	err = dm_entry_get_value(dmctx);
+	return (upnp_map_cwmp_fault(err));
+}
 /********************/
 
 int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data)
