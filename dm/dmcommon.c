@@ -57,6 +57,58 @@ char *cut_fx(char *str, char *delimiter, int occurence)
 	return pch;
 }
 
+unsigned char dmisnumeric(char *nbr)
+{
+	if (*nbr == '\0')
+		return 0;
+	while (*nbr <= '9' && *nbr >= '0') {
+		nbr++;
+	}
+	return ((*nbr) ? 0 : 1);
+}
+
+/* int strstructered(char *str1, char *str2)
+ * Return:
+ * STRUCTERED_SAME: if str1 is same of str2 (with # match any number)
+ * STRUCTERED_PART: if str2 is part of str1 (with # match any number)
+ * STRUCTERED_NULL: if str2 is not part of str1 (with # match any number)
+ *
+ */
+int strstructered(char *str1, char *str2)
+{
+	char buf[16];
+	int i = 0;
+	for (; *str1 && *str2; str1++, str2++) {
+		if (*str1 == *str2)
+			continue;
+		if (*str2 == '#') {
+			i = 0;
+			do {
+				buf[i++] = *str1;
+			} while (*(str1+1) && *(str1+1) != '/' && str1++);
+			buf[i] = '\0';
+			if (dmisnumeric(buf))
+				continue;
+		}
+		else if (*str1 == '#') {
+			i = 0;
+			do {
+				buf[i++] = *str2;
+			} while (*(str2+1) && *(str2+1) != '/' && str2++);
+			buf[i] = '\0';
+			if (dmisnumeric(buf))
+				continue;
+		}
+		return STRUCTERED_NULL;
+	}
+	if (*str1 == '\0' && *str2 == '\0')
+		return STRUCTERED_SAME;
+	else if (*str2 == '\0')
+		return STRUCTERED_PART;
+	return STRUCTERED_NULL;
+}
+
+
 pid_t get_pid(char *pname)
 {
 	DIR* dir;

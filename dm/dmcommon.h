@@ -68,6 +68,12 @@ enum notification_enum {
 	__MAX_notification
 };
 
+enum strstructered_enum {
+	STRUCTERED_SAME,
+	STRUCTERED_PART,
+	STRUCTERED_NULL
+};
+
 void compress_spaces(char *str);
 char *cut_fx(char *str, char *delimiter, int occurence);
 pid_t get_pid(char *pname);
