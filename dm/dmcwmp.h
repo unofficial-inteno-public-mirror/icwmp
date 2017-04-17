@@ -187,7 +187,7 @@ struct dmctx
 	unsigned int instance_mode;
 	unsigned int dm_type;
 	unsigned char inparam_isparam;
-	unsigned char findobj;
+	unsigned char findparam;
 	char current_obj[512];
 	char *inst_buf[16];
 };
@@ -244,6 +244,7 @@ enum {
 	CMD_DEL_OBJECT,
 	CMD_INFORM,
 	CMD_UPNP_GET_INSTANCES,
+	CMD_UPNP_GET_SELECTED_VALUES,
 };
 
 enum fault_code_enum {
@@ -381,6 +382,7 @@ int dm_entry_enabled_notify(struct dmctx *ctx);
 int dm_entry_get_linker(struct dmctx *ctx);
 int dm_entry_get_linker_value(struct dmctx *ctx);
 int dm_entry_upnp_get_instances(struct dmctx *ctx);
+int dm_entry_upnp_get_selected_values(struct dmctx *dmctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);

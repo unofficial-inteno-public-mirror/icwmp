@@ -85,7 +85,7 @@ int strstructered(char *str1, char *str2)
 			i = 0;
 			do {
 				buf[i++] = *str1;
-			} while (*(str1+1) && *(str1+1) != '/' && str1++);
+			} while (*(str1+1) && *(str1+1) != dm_delim && str1++);
 			buf[i] = '\0';
 			if (dmisnumeric(buf))
 				continue;
@@ -94,7 +94,7 @@ int strstructered(char *str1, char *str2)
 			i = 0;
 			do {
 				buf[i++] = *str2;
-			} while (*(str2+1) && *(str2+1) != '/' && str2++);
+			} while (*(str2+1) && *(str2+1) != dm_delim && str2++);
 			buf[i] = '\0';
 			if (dmisnumeric(buf))
 				continue;
