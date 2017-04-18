@@ -131,6 +131,13 @@ typedef struct dm_obj_s {
 	int (*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker);
 } DMOBJ;
 
+typedef struct dm_upnp_supported_dm_s {
+	char *location;
+	char *uri;
+	char *url;
+	char *description;
+	char *source_location;
+} UPNP_SUPPORTED_DM;
 
 struct set_tmp {
 	struct list_head list;
@@ -190,6 +197,7 @@ struct dmctx
 	unsigned char findparam;
 	char current_obj[512];
 	char *inst_buf[16];
+	char *instance_wildchar;
 };
 
 
@@ -243,6 +251,7 @@ enum {
 	CMD_ADD_OBJECT,
 	CMD_DEL_OBJECT,
 	CMD_INFORM,
+	CMD_UPNP_GET_SUPPORTED_PARAMETERS,
 	CMD_UPNP_GET_INSTANCES,
 	CMD_UPNP_GET_SELECTED_VALUES,
 	CMD_UPNP_GET_VALUES,

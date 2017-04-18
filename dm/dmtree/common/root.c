@@ -85,7 +85,6 @@ DMOBJ tRootObj[] = {
 {"X_INTENO_SE_Wifi", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tsewifiObj, NULL, NULL},
 {"DownloadDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tDownloadDiagnosticsParam, NULL},
 {"UploadDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tUploadDiagnosticsParam, NULL},
-
 #endif
 #ifdef XMPP_ENABLE
 {"XMPP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL,tXMPPObj, tXMPPParams, NULL},
@@ -146,7 +145,6 @@ DMOBJ tRootObjUPNPBBF[] = {
 {"X_INTENO_SE_Wifi", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,tsewifiObj, NULL, NULL},
 {"DownloadDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tDownloadDiagnosticsParam, NULL},
 {"UploadDiagnostics", &DMREAD, NULL, NULL, NULL, NULL, &DMFINFRM, &DMNONE,NULL, tUploadDiagnosticsParam, NULL},
-
 #endif
 #ifdef XMPP_ENABLE
 {"XMPP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL,tXMPPObj, tXMPPParams, NULL},
@@ -168,3 +166,48 @@ DMOBJ tRootObjUPNPBBF[] = {
 {0}
 };
 
+UPNP_SUPPORTED_DM tUPNPSupportedDM[] = {
+{"/BBF/DeviceInfo/", DMROOT_URI, DMROOT_URL, "DeviceInfo from "DMROOT_DESC, ""},
+{"/BBF/ManagementServer/", DMROOT_URI, DMROOT_URL, "ManagementServer from "DMROOT_DESC, ""},
+{"/BBF/Time/", DMROOT_URI, DMROOT_URL, "Time from "DMROOT_DESC, ""},
+{"/BBF/UPnP/", DMROOT_URI, DMROOT_URL, "UPnP from "DMROOT_DESC, ""},
+{"/BBF/VoiceService/", "urn:broadband-forum-org:wt-104-2-0-0", "https://www.broadband-forum.org/cwmp/tr-104-2-0-0.html", "TR-104 Voice:2 Service Object definition", ""},
+{"/BBF/X_INTENO_SE_ICE/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for ICE", ""},
+{"/BBF/X_INTENO_SE_IGMP/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for ICE", ""},
+{"/BBF/X_INTENO_SE_IpAccCfg/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for IGMP", ""},
+{"/BBF/X_INTENO_SE_LoginCfg/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for LoginCfg", ""},
+{"/BBF/X_INTENO_SE_PowerManagement/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for PowerManagement", ""},
+{"/BBF/X_INTENO_SE_SyslogCfg/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for SyslogCfg", ""},
+{"/BBF/SoftwareModules/", DMROOT_URI, DMROOT_URL, "SoftwareModules from "DMROOT_DESC, ""},
+{"/BBF/X_INTENO_SE_Owsd/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for Owsd", ""},
+{"/BBF/X_INTENO_SE_Dropbear/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for Dropbear", ""},
+{"/BBF/X_INTENO_SE_Buttons/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for Buttons", ""},
+#ifdef DATAMODEL_TR098
+{"/BBF/LANDevice/", DMROOT_URI, DMROOT_URL, "LANDevice from "DMROOT_DESC, ""},
+{"/BBF/WANDevice/", DMROOT_URI, DMROOT_URL, "WANDevice from "DMROOT_DESC, ""},
+{"/BBF/LANInterfaces/", DMROOT_URI, DMROOT_URL, "LANInterfaces from "DMROOT_DESC, ""},
+{"/BBF/IPPingDiagnostics/", DMROOT_URI, DMROOT_URL, "IPPingDiagnostics from "DMROOT_DESC, ""},
+{"/BBF/Layer3Forwarding/", DMROOT_URI, DMROOT_URL, "Layer3Forwarding from "DMROOT_DESC, ""},
+{"/BBF/X_INTENO_SE_Wifi/", "urn:intenogroup-com:na", "https://www.intenogroup.com/", "Inteno extension for WiFi", ""},
+{"/BBF/DownloadDiagnostics/", DMROOT_URI, DMROOT_URL, "DownloadDiagnostics from "DMROOT_DESC, ""},
+{"/BBF/UploadDiagnostics/", DMROOT_URI, DMROOT_URL, "UploadDiagnostics from "DMROOT_DESC, ""},
+#endif
+#ifdef XMPP_ENABLE
+{"/BBF/XMPP/", DMROOT_URI, DMROOT_URL, "XMPP from "DMROOT_DESC, ""},
+#endif
+#ifdef DATAMODEL_TR181
+{"/BBF/Bridging/", DMROOT_URI, DMROOT_URL, "Bridging from "DMROOT_DESC, ""},
+{"/BBF/WiFi/", DMROOT_URI, DMROOT_URL, "WiFi from "DMROOT_DESC, ""},
+{"/BBF/IP/", DMROOT_URI, DMROOT_URL, "IP from "DMROOT_DESC, ""},
+{"/BBF/Ethernet/", DMROOT_URI, DMROOT_URL, "Ethernet from "DMROOT_DESC, ""},
+{"/BBF/DSL/", DMROOT_URI, DMROOT_URL, "DSL from "DMROOT_DESC, ""},
+{"/BBF/ATM/", DMROOT_URI, DMROOT_URL, "ATM from "DMROOT_DESC, ""},
+{"/BBF/PTM/", DMROOT_URI, DMROOT_URL, "PTM from "DMROOT_DESC, ""},
+{"/BBF/DHCPv4/", DMROOT_URI, DMROOT_URL, "DHCPv4 from "DMROOT_DESC, ""},
+{"/BBF/Hosts/", DMROOT_URI, DMROOT_URL, "Hosts from "DMROOT_DESC, ""},
+{"/BBF/NAT/", DMROOT_URI, DMROOT_URL, "NAT from "DMROOT_DESC, ""},
+{"/BBF/PPP/", DMROOT_URI, DMROOT_URL, "PPP from "DMROOT_DESC, ""},
+{"/BBF/Routing/", DMROOT_URI, DMROOT_URL, "Routing from "DMROOT_DESC, ""},
+#endif
+{0}
+};
