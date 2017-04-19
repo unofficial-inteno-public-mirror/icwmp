@@ -24,6 +24,12 @@ enum log_severity_enum {
 	DEBUG
 };
 
+void puts_log(int severity, const char *fmt, ...);
+int log_set_log_file_name (char *value);
+int log_set_file_max_size(char *value);
+int log_set_on_console(char *value);
+int log_set_on_file(char *value);
+int log_set_severity_idx (char *value);
 #define DEFAULT_LOG_FILE_SIZE	10240
 #define DEFAULT_LOG_FILE_NAME	"/var/log/icwmpd.log"
 #define DEFAULT_LOG_SEVERITY	INFO

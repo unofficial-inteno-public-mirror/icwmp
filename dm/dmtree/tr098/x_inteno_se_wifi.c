@@ -21,6 +21,7 @@
 struct sewifiargs cur_wifiargs = {0};
 
 inline int entry_sewifi_radio(struct dmctx *ctx);
+inline int entry_sewifi_radio_instance(struct dmctx *ctx, char *wnum);
 inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
 {
 	struct sewifiargs *args = &cur_wifiargs;
@@ -36,7 +37,7 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 	struct sewifiargs *wifiargs = (struct sewifiargs *)ctx->args;
 	char *wlan_name = section_name(wifiargs->sewifisection);
 	
-	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
+	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "frequency", 0, NULL, &freq, NULL);
 	dmastrcat(value, freq, "GHz");  // MEM WILL BE FREED IN DMMEMCLEAN

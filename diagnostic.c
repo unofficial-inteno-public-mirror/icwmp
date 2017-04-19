@@ -18,6 +18,7 @@
 #include "log.h"
 #include "external.h"	
 #include "dmentry.h"
+#include "dmcommon.h"
 #include "ubus.h"
 #include "diagnostic.h"
 #include <netinet/in.h>
@@ -688,10 +689,10 @@ int cwmp_start_diagnostic(int diagnostic_type)
 				extract_stats(DOWNLOAD_DUMP_FILE, DOWNLOAD_DIAGNOSTIC_HTTP, DOWNLOAD_DIAGNOSTIC);
 			if(strncmp(url,DOWNLOAD_PROTOCOL_FTP,strlen(DOWNLOAD_PROTOCOL_FTP)) == 0)
 				extract_stats(DOWNLOAD_DUMP_FILE, DOWNLOAD_DIAGNOSTIC_FTP, DOWNLOAD_DIAGNOSTIC);
-			cwmp_root_cause_event_ipdiagnostic(&cwmp_main);
+			cwmp_root_cause_event_ipdiagnostic();
 		}
 		else if (status && strncmp(status, "Error_", strlen("Error_")) == 0)
-			cwmp_root_cause_event_ipdiagnostic(&cwmp_main);
+			cwmp_root_cause_event_ipdiagnostic();
 		free(status);
 	}
 	else
@@ -706,10 +707,10 @@ int cwmp_start_diagnostic(int diagnostic_type)
 				extract_stats(UPLOAD_DUMP_FILE, DOWNLOAD_DIAGNOSTIC_HTTP, UPLOAD_DIAGNOSTIC);
 			if(strncmp(url,DOWNLOAD_PROTOCOL_FTP,strlen(DOWNLOAD_PROTOCOL_FTP)) == 0)
 				extract_stats(UPLOAD_DUMP_FILE, DOWNLOAD_DIAGNOSTIC_FTP, UPLOAD_DIAGNOSTIC);
-			cwmp_root_cause_event_ipdiagnostic(&cwmp_main);
+			cwmp_root_cause_event_ipdiagnostic();
 		}
 		else if (status && strncmp(status, "Error_", strlen("Error_")) == 0)
-			cwmp_root_cause_event_ipdiagnostic(&cwmp_main);
+			cwmp_root_cause_event_ipdiagnostic();
 		free(status);
 		free(size);
 	}

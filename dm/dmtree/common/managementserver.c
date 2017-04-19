@@ -153,7 +153,7 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 			if (!(strptime(value, "%Y-%m-%dT%H:%M:%S", &tm))) {
 				return 0;
 			}
-			sprintf(buf, "%d", mktime(&tm));
+			sprintf(buf, "%ld", mktime(&tm));
 			dmuci_set_value("cwmp", "acs", "periodic_inform_time", buf);
 			cwmp_set_end_session(END_SESSION_RELOAD);
 			return 0;

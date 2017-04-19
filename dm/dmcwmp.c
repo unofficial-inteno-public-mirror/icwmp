@@ -155,7 +155,7 @@ struct prefix_method prefix_methods[] = {
 
 int dm_entry_set_prefix_methods_enable(void)
 {
-	int i = 0;
+	unsigned int i = 0;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
 		if (prefix_methods[i].set_enable) {
 			prefix_methods[i].enable = prefix_methods[i].set_enable();
@@ -172,7 +172,7 @@ char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_
 	char *instance, *inst_mode;
 	char *alias;
 	int i = 0;
-	int pos = instance_ranck - 1;
+	unsigned int pos = instance_ranck - 1;
 	unsigned int alias_resister = 0, max, action;
 	void *argv[argc];
 
@@ -443,6 +443,42 @@ void free_all_list_fault_param(struct dmctx *ctx)
 	}
 }
 
+int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param)
+{
+	char *pch, *spch, *p;
+	char buf[512];
+	int i = 0, j = 0;
+
+	char *dup = dmstrdup(param);
+	p = buf;
+	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
+		if (isdigit(pch[0])) {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, pch);
+			i++;
+		} else if (pch[0]== '[') {
+			dmstrappendchr(p, '.');
+			dmstrappendstr(p, ctx->inst_buf[i]);
+			i++;
+		} else {
+			if(j > 0) {
+				dmstrappendchr(p, '.');
+				dmstrappendstr(p, pch);
+			}
+			if(j == 0) {
+				dmstrappendstr(p, pch);
+				j++;
+			}
+		}
+	}
+	if (param[strlen(param)-1] == '.')
+		dmstrappendchr(p, '.');
+	dmstrappendend(p);
+	*new_param = dmstrdup(buf);
+	dmfree(dup);
+	return 0;
+}
+
 void add_list_enabled_notify(char *param, char *notification, char *value)
 {
 	struct dm_enabled_notify *dm_enabled_notify;
@@ -567,42 +603,6 @@ static int remove_parameter_notification(char *param)
 	return 0;
 }
 
-int update_param_instance_alias(struct dmctx *ctx, char *param, char **new_param)
-{
-	char *pch, *spch, *p;
-	char buf[512];
-	int i = 0, j = 0;
-
-	char *dup = dmstrdup(param);
-	p = buf;
-	for (pch = strtok_r(dup, ".", &spch); pch != NULL; pch = strtok_r(NULL, ".", &spch)) {
-		if (isdigit(pch[0])) {
-			dmstrappendchr(p, '.');
-			dmstrappendstr(p, pch);
-			i++;
-		} else if (pch[0]== '[') {
-			dmstrappendchr(p, '.');
-			dmstrappendstr(p, ctx->inst_buf[i]);
-			i++;
-		} else {
-			if(j > 0) {
-				dmstrappendchr(p, '.');
-				dmstrappendstr(p, pch);
-			}
-			if(j == 0) {
-				dmstrappendstr(p, pch);
-				j++;
-			}
-		}
-	}
-	if (param[strlen(param)-1] == '.')
-		dmstrappendchr(p, '.');
-	dmstrappendend(p);
-	*new_param = dmstrdup(buf);
-	dmfree(dup);
-	return 0;
-}
-
 static int set_parameter_notification(struct dmctx *ctx, char *param, char *value)
 {
 	char *tmp = NULL, *buf = NULL, *pch, *new_param;
@@ -673,13 +673,13 @@ static int check_obj_is_nl1(char *refparam, char *inparam, int ndot)
 {
 	unsigned int len, i;
 	len = strlen(refparam);
-	for (i = len - 1; i >= 0; i--) {
-		if (refparam[i] == '.') {
+	for (i = len; i > 0; i--) {
+		if (refparam[i-1] == '.') {
 			if (--ndot == 0)
 				break;
 		}
 	}
-	i++;
+	//i++;
 	if (strlen(inparam) == i)
 		return 0;
 	return -1;
@@ -712,7 +712,7 @@ int string_to_bool(char *v, bool *b)
  * **********/
 int dm_entry_get_value(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->faultcode = FAULT_9005;
 
 	if (ctx->in_param[0] == '\0' || check_param_prefix(ctx) == 0) {
@@ -806,7 +806,7 @@ static int get_value_inparam_isobj_check_param(DMPARAM_API_ARGS)
 
 int dm_entry_get_name(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->faultcode = FAULT_9005;
 	if (ctx->in_param[0] == '\0' && ctx->nextlevel == 1) {
 		ctx->method_obj=&get_name_emptyin_nl1_obj;
@@ -932,7 +932,7 @@ static int get_name_emptyin_nl1_param(DMPARAM_API_ARGS)
  * ********************/
 int dm_entry_get_notification(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->faultcode = FAULT_9005;
 	
 	if (ctx->in_param[0] == '\0' || check_param_prefix(ctx) == 0) {
@@ -1031,7 +1031,7 @@ static int get_notification_inparam_isobj_check_param(DMPARAM_API_ARGS)
 ***************/
 int dm_entry_inform(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->method_obj = &inform_check_obj;
 	ctx->method_param = &inform_check_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
@@ -1064,7 +1064,7 @@ static int inform_check_param(DMPARAM_API_ARGS)
  * **************/
 int dm_entry_add_object(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	if (ctx->tree)
 		return FAULT_9005;
 	ctx->method_obj=&add_object_obj;
@@ -1110,7 +1110,7 @@ static int add_object_param(DMPARAM_API_ARGS)
  * **************/
 int dm_entry_delete_object(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	if (ctx->tree == 1)
 		return FAULT_9005;
 	ctx->method_obj=&delete_object_obj;
@@ -1148,7 +1148,7 @@ static int delete_object_param(DMPARAM_API_ARGS)
  * **************/
 int dm_entry_set_value(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	if (ctx->in_param[0] == '\0' || ctx->in_param[strlen(ctx->in_param)-1] == '.' ) {
 		return FAULT_9005;
 	} else {
@@ -1211,7 +1211,7 @@ static int set_value_check_param(DMPARAM_API_ARGS)
  * ****************/
 int dm_entry_set_notification(struct dmctx *ctx)
 {
-	int i; 
+	unsigned int i;
 	if (ctx->in_param[0] == '\0') {
 		return FAULT_9009;
 	} else {
@@ -1277,7 +1277,7 @@ static int set_notification_check_param(DMPARAM_API_ARGS)
  ********************/
 int dm_entry_enabled_notify(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->method_obj = &enabled_notify_check_obj;
 	ctx->method_param = &enabled_notify_check_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
@@ -1324,7 +1324,7 @@ static int enabled_notify_check_param(DMPARAM_API_ARGS)
  *****************/
 int dm_entry_get_linker(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->method_obj = &get_linker_check_obj;
 	ctx->method_param = &get_linker_check_param;
 	for (i = 0; i < ARRAY_SIZE(prefix_methods); i++) {
@@ -1361,7 +1361,7 @@ static int get_linker_check_param(DMPARAM_API_ARGS)
  *****************/
 int dm_entry_get_linker_value(struct dmctx *ctx)
 {
-	int i;
+	unsigned int i;
 	ctx->method_obj = &get_linker_value_check_obj;
 	ctx->method_param = &get_linker_value_check_param;
 	dmentry_instance_lookup_inparam(ctx);

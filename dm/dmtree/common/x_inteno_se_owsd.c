@@ -16,6 +16,7 @@
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
+#include "dmentry.h"
 #include "x_inteno_se_owsd.h"
 
 struct owsd_listenargs cur_owsd_listenargs = {0};

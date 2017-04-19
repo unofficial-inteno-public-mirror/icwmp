@@ -19,8 +19,10 @@
 struct linterfargs cur_linterfargs = {0};
 struct wifaceargs cur_wifaceargs = {0};
 static inline void laninterface_lookup(char *eths[], int *size);
-inline int entry_laninterface_lan(struct dmctx *ctx);
-inline int entry_laninterface_wlan(struct dmctx *ctx);
+int entry_laninterface_lan(struct dmctx *ctx);
+int entry_laninterface_wlan(struct dmctx *ctx);
+inline int entry_laninterface_wlan_instance(struct dmctx *ctx, char  *wli);
+inline int entry_laninterface_lan_instance(struct dmctx *ctx, char *li);
 //////////////////////INIT ARGS////////////////////////////////
 static inline int init_lan_interface_args(char *lif, struct uci_section *port_sec)
 {
@@ -86,7 +88,7 @@ static inline void laninterface_lookup(char *eths[], int *size)
 	*size = n;
 }
 
-inline void init_laninterface_lan(struct dmctx *ctx)
+void init_laninterface_lan(struct dmctx *ctx)
 {
 	struct linterfargs *args = &cur_linterfargs;
 	ctx->args = (void *)args;
@@ -130,7 +132,7 @@ int set_wlan_conf_alias(char *refparam, struct dmctx *ctx, int action, char *val
 	return 0;
 }
 /////////////SUB ENTRIES///////////////
-inline int entry_laninterface_lan(struct dmctx *ctx)
+int entry_laninterface_lan(struct dmctx *ctx)
 {
 	char *ei, *ei_last = NULL;
 	int i = 0;
@@ -148,7 +150,7 @@ inline int entry_laninterface_lan(struct dmctx *ctx)
 	return 0;
 }
 
-inline int entry_laninterface_wlan(struct dmctx *ctx)
+int entry_laninterface_wlan(struct dmctx *ctx)
 {
 	struct uci_section *s = NULL;
 	char *wi, *wi_last = NULL;

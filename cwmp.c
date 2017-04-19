@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "cwmp.h"
+#include "http.h"
 #include "backupSession.h"
 #include "xml.h"
 #include "log.h"

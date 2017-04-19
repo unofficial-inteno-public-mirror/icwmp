@@ -11,7 +11,9 @@
 
 #include <uci.h>
 #include <ctype.h>
+#include <arpa/inet.h>
 #include "dmcwmp.h"
+#include "dmentry.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
@@ -460,7 +462,7 @@ char *get_layer3_interface(struct dmctx *ctx)
 		if (!strstr(bval, "br-")) {
 			uci_foreach_option_cont("network", "interface", "ifname", bval, ss) {
 				ifname = section_name(ss);
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname, String}}, 1, &res);
 				if (res) {
 					json_select(res, "device", 0, NULL, &device, NULL);
 					if (strcmp(bval, device) == 0) {

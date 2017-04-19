@@ -14,12 +14,15 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/klog.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
 #include "deviceinfo.h"
 
+inline int entry_method_device_info_vcf(struct dmctx *ctx);
+inline int entry_method_device_info_vcf_instance(struct dmctx *ctx, char *ivcf);
 struct dev_vcf cur_dev_vcf = {0};
 
 inline int init_args_vcf(struct dmctx *ctx, struct uci_section *s)

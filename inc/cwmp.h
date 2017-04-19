@@ -201,8 +201,8 @@ typedef struct config {
 	bool                                lw_notification_enable;
     char                                *lw_notification_hostname;
     int                                 lw_notification_port;
-    unsigned int 						amd_version;
-	unsigned int 						supported_amd_version;
+    int 								amd_version;
+	int 								supported_amd_version;
     unsigned int 						instance_mode;
 	unsigned int 						session_timeout;
 	bool								xmpp_enable;
@@ -336,6 +336,12 @@ extern struct list_head list_lw_value_change;
 extern struct list_head list_value_change;
 extern pthread_mutex_t mutex_value_change;
 
+int cwmp_config_reload(struct cwmp *cwmp);
+int cwmp_move_session_to_session_send (struct cwmp *cwmp, struct session *session);
+int cwmp_schedule_rpc (struct cwmp *cwmp, struct session *session);
+int run_session_end_func (struct session *session);
+int cwmp_move_session_to_session_queue (struct cwmp *cwmp, struct session *session);
+int cwmp_session_destructor (struct cwmp *cwmp, struct session *session);
 int dm_add_end_session(void(*function)(int a, void *d), int action, void *data);
 int apply_end_session();
 struct rpc *cwmp_add_session_rpc_cpe (struct session *session, int type);
@@ -348,6 +354,7 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
 void *thread_event_periodic (void *v);
 void cwmp_add_notification(void);
 int netlink_init(void);
+int netlink_init_v6(void);
 char * mix_get_time(void);
 char * mix_get_time_of(time_t t_time);
 void *thread_exit_program (void *v);
@@ -358,4 +365,13 @@ void cwmp_set_end_session (unsigned int end_session_flag);
 void *thread_handle_notify(void *v);
 int zlib_compress (char *message, unsigned char **zmsg, int *zlen, int type);
 int cwmp_get_int_event_code(char *code);
+int cwmp_apply_acs_changes ();
+int cwmp_init(int argc, char** argv,struct cwmp *cwmp);
+int cwmp_config_reload(struct cwmp *cwmp);
+int uci_get_value(char *cmd,char **value);
+int uci_set_state_value(char *cmd);
+int uci_get_state_value(char *cmd,char **value);
+int save_acs_bkp_config(struct cwmp *cwmp);
+int get_instance_mode_config();
+int get_amd_version_config();
 #endif /* _CWMP_H__ */

@@ -265,6 +265,7 @@ char *get_last_instance_icwmpd(char *package, char *section, char *opt_inst);
 char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char *opt_check, char *value_check);
 char *handle_update_instance(int instance_ranck, struct dmctx *ctx, char **last_inst, char * (*up_instance)(int action, char **last_inst, void *argv[]), int argc, ...);
 
+void free_all_list_enabled_lwnotify();
 #ifndef TRACE
 #define TRACE_TYPE 0
 static inline void trace_empty_func()

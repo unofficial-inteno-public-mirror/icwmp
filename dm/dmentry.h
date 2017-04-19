@@ -22,4 +22,5 @@ int dm_ctx_clean(struct dmctx *ctx);
 int dm_ctx_clean_sub(struct dmctx *ctx);
 void dm_entry_cli(int argc, char** argv);
 void wepkey_cli(int argc, char** argv);
+void dmentry_instance_lookup_inparam(struct dmctx *ctx);
 #endif

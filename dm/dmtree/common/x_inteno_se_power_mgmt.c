@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include "dmcwmp.h"
 #include "dmuci.h"
+#include "dmcommon.h"
 
 int get_pwr_mgmt_value_ethapd(char *refparam, struct dmctx *ctx, char **value)
 {

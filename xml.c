@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <microxml.h>
 #include <time.h>
+#include "http.h"
 #include "cwmp.h"
 #include "xml.h"
 #include "external.h"
@@ -49,17 +50,17 @@ LIST_HEAD(list_schedule_inform);
 static pthread_mutex_t      mutex_schedule_inform = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t       threshold_schedule_inform;
 
-const static char *soap_env_url = "http://schemas.xmlsoap.org/soap/envelope/";
-const static char *soap_enc_url = "http://schemas.xmlsoap.org/soap/encoding/";
-const static char *xsd_url = "http://www.w3.org/2001/XMLSchema";
-const static char *xsi_url = "http://www.w3.org/2001/XMLSchema-instance";
+static const char *soap_env_url = "http://schemas.xmlsoap.org/soap/envelope/";
+static const char *soap_enc_url = "http://schemas.xmlsoap.org/soap/encoding/";
+static const char *xsd_url = "http://www.w3.org/2001/XMLSchema";
+static const char *xsi_url = "http://www.w3.org/2001/XMLSchema-instance";
 
 typedef struct DEVICE_ID_STRUCT {
 	char *device_id_name;
 	char *parameter_name;
 } DEVICE_ID_STRUCT;
 
-const static char *cwmp_urls[] = {
+static const char *cwmp_urls[] = {
 		"urn:dslforum-org:cwmp-1-0",
 		"urn:dslforum-org:cwmp-1-1",
 		"urn:dslforum-org:cwmp-1-2",
@@ -125,6 +126,8 @@ const struct rpc_acs_method rpc_acs_methods[] = {
 	[RPC_ACS_DU_STATE_CHANGE_COMPLETE] = {"DUStateChangeComplete", cwmp_rpc_acs_prepare_du_state_change_complete,	NULL, cwmp_rpc_acs_destroy_data_du_state_change_complete}
 
 };
+int cwmp_free_change_du_state_request(struct change_du_state *change_du_state);
+int cwmp_launch_uninstall_du_state(char *package_name, struct opresult **pchange_du_state_complete);
 
 static int xml_recreate_namespace(mxml_node_t *tree)
 {
@@ -3386,7 +3389,7 @@ int cwmp_launch_change_du_state_download(struct operations *poperations, struct 
 {
     int							i, error = FAULT_CPE_NO_FAULT;
     char						*download_startTime;
-    struct opresult				*p;
+    struct opresult				*p = NULL;
     char						*fault_code;
 	char						*package_version;
 	char						*package_name;
@@ -3841,14 +3844,14 @@ int cwmp_handle_rpc_cpe_change_du_state(struct session *session, struct rpc *rpc
 	pthread_t           			change_du_state_thread;
 	char 						*c, *tmp, *file_type = NULL;
 	int							error = FAULT_CPE_NO_FAULT;
-	struct change_du_state 			*change_du_state,*ichange_du_state;
+	struct change_du_state 			*change_du_state = NULL,*ichange_du_state;
 	struct transfer_complete 	*ptransfer_complete;
 	struct list_head    		*ilist, *ilist1;
 	time_t             			scheduled_time;
 	time_t 						download_delay;
 	bool                		cond_signal = false;
 	int 				i = 0;
-	struct operations *elem;
+	struct operations *elem = NULL;
 	struct installop *p;
 	struct uninstallop *q;
 	struct updateop *r;
@@ -4041,11 +4044,11 @@ int cwmp_handle_rpc_cpe_download(struct session *session, struct rpc *rpc)
 	pthread_t           		download_thread;
 	char 						*c, *tmp, *file_type = NULL;
 	int							error = FAULT_CPE_NO_FAULT;
-	struct download 			*download,*idownload;
+	struct download 			*download = NULL,*idownload;
 	struct transfer_complete 	*ptransfer_complete;
 	struct list_head    		*ilist;
-	time_t             			scheduled_time;
-	time_t 						download_delay;
+	time_t             			scheduled_time = 0;
+	time_t 						download_delay = 0;
 	bool                		cond_signal = false;
 
 	if (asprintf(&c, "%s:%s", ns.cwmp, "Download") == -1)
@@ -4237,7 +4240,7 @@ int cwmp_handle_rpc_cpe_schedule_download(struct session *session, struct rpc *r
 	char 						*windowmode0 = NULL, *windowmode1 = NULL;
 	int							i = 0, j = 0;
 	int							error = FAULT_CPE_NO_FAULT;
-	struct schedule_download 	*schedule_download,*ischedule_download;
+	struct schedule_download 	*schedule_download = NULL,*ischedule_download;
 	struct transfer_complete 	*ptransfer_complete;
 	struct list_head    		*ilist;
 	time_t             			scheduled_time;
@@ -4494,11 +4497,11 @@ int cwmp_handle_rpc_cpe_upload(struct session *session, struct rpc *rpc)
 	pthread_t           		upload_thread;
 	char 						*c, *tmp, *file_type = NULL;
 	int							error = FAULT_CPE_NO_FAULT;
-	struct upload 			*upload,*iupload;
+	struct upload 			*upload = NULL,*iupload;
 	struct transfer_complete 	*ptransfer_complete;
 	struct list_head    		*ilist;
-	time_t             			scheduled_time;
-	time_t 						upload_delay;
+	time_t             			scheduled_time = 0;
+	time_t 						upload_delay = 0;
 	bool                		cond_signal = false;
 
 	if (asprintf(&c, "%s:%s", ns.cwmp, "Upload") == -1)

@@ -104,7 +104,15 @@ inline int entry_voice_service_capabilities_codecs(struct dmctx *ctx, char *ivoi
 inline int entry_services_voice_service_voiceprofile(struct dmctx *ctx, char *ivoice);
 inline int entry_services_voice_service_line(struct dmctx *ctx, char *ivoice, char *profile_num);
 inline int entry_services_voice_service_line_codec_list(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num);
+int entry_method_root_Service_sub(struct dmctx *ctx, char *ivoice);
+inline int entry_method_Service(struct dmctx *ctx);
 inline int init_allowed_sip_codecs();
+int get_voice_service_max_line();
+inline int entry_services_voice_service_line_codec_list_instance(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num, char *codec_num);
+inline int entry_services_voice_service_line_codec_list_instance(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num, char *codec_num);
+inline int entry_services_voice_service_line_instance(struct dmctx *ctx, char *ivoice, char *profile_num, char *line_num);
+inline int entry_services_voice_service_voiceprofile_instance (struct dmctx *ctx, char *ivoice, char *profile_num);
+inline int entry_voice_service_capabilities_codecs_instance(struct dmctx *ctx, char *ivoice, char *id);
 
 ///////////////////////////////INIT ARGS//////////////////
 void wait_voice_service_up(void)
@@ -122,7 +130,7 @@ inline int init_allowed_sip_codecs()
 {
 	json_object *res = NULL;
 	char id[8], priority[24], ptime[24];
-	int i;
+	unsigned int i;
 	available_sip_codecs = 0;
 	dmubus_call("asterisk", "codecs", UBUS_ARGS{}, 0, &res);
 	if(res) {
@@ -555,7 +563,7 @@ int get_entry_id(char *refparam, struct dmctx *ctx, char **value)
 
 int get_capabilities_sip_codec(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct codec_args *cdcargs = (struct codec_args *)(ctx->args);
 	bool sep = false;
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
@@ -569,7 +577,7 @@ int get_capabilities_sip_codec(char *refparam, struct dmctx *ctx, char **value)
 
 int get_capabilities_sip_bitrate(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct codec_args *cdcargs = (struct codec_args *)(ctx->args);
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == cdcargs->enumid) {
@@ -582,7 +590,7 @@ int get_capabilities_sip_bitrate(char *refparam, struct dmctx *ctx, char **value
 
 int get_capabilities_sip_pperiod(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct codec_args *cdcargs = (struct codec_args *)(ctx->args);
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == cdcargs->enumid) {
@@ -656,7 +664,7 @@ int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char 
 		case VALUESET:
 			string_to_bool(value, &b);
 			if(b) {
-				dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", "voice_client"}}, 1);
+				dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", "voice_client", String}}, 1);
 				return 0;
 			}
 			return 0;
@@ -1046,7 +1054,7 @@ int set_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx, int acti
 
 int get_sip_profile_region(char *refparam, struct dmctx *ctx,  char **value)
 {
-	int i;
+	unsigned int i;
 	
 	dmuci_get_option_value_string("voice_client", "BRCM", "country", value);
 	for (i = 0; i < ARRAY_SIZE(capabilities_regions); i++) {
@@ -1060,7 +1068,7 @@ int get_sip_profile_region(char *refparam, struct dmctx *ctx,  char **value)
 
 int set_sip_profile_region(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	int i;
+	unsigned int i;
 	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
 	
 	switch (action) {
@@ -1187,7 +1195,7 @@ int set_voice_profile_rtp_localportmax(char *refparam, struct dmctx *ctx, int ac
 
 int get_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx,  char **value)
 {
-	int i;
+	unsigned int i;
 	char *tmp;
 	*value = "0";
 
@@ -1203,7 +1211,7 @@ int get_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx,  char **val
 
 int set_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	int i;
+	unsigned int i;
 	struct sip_args *sipargs = (struct sip_args *)(ctx->args);
 	
 	switch (action) {
@@ -1593,7 +1601,9 @@ int codec_compare(const void *s1, const void *s2)
 
 void codec_priority_sort(struct uci_section *sip_section, char *new_codec)
 {
-	int j, k = 0, h = 0, size = ARRAY_SIZE(codec_option_array);
+	unsigned int j;
+
+	int k = 0, h = 0, size = ARRAY_SIZE(codec_option_array);
 	char *ucodec, *coption, *poption;
 	bool found;
 	struct codec sipcodec[ARRAY_SIZE(codec_option_array)+1] = {0};
@@ -1642,7 +1652,8 @@ void codec_priority_sort(struct uci_section *sip_section, char *new_codec)
 void codec_priority_update(struct uci_section *sip_section)
 {
 	bool found;
-	int i, j;
+	int i;
+	unsigned int j;
 	char *priority = NULL;
 	char *codec;
 	char pid[4] = "1";
@@ -1676,7 +1687,7 @@ int get_codec_entry_id(char *refparam, struct dmctx *ctx, char **value)
 
 int capabilities_sip_codecs_get_codec(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
@@ -1690,7 +1701,7 @@ int capabilities_sip_codecs_get_codec(char *refparam, struct dmctx *ctx, char **
 
 int capabilities_sip_codecs_get_bitrate(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
@@ -1704,7 +1715,7 @@ int capabilities_sip_codecs_get_bitrate(char *refparam, struct dmctx *ctx, char 
 
 int get_capabilities_sip_codecs_pperiod(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	dmuci_get_value_by_section_string(line_codecargs->sip_section, line_codecargs->ptime_cdc, value);
 	if ((*value)[0] != '\0')
@@ -1720,7 +1731,7 @@ int get_capabilities_sip_codecs_pperiod(char *refparam, struct dmctx *ctx, char 
 
 int get_line_codec_list_enable(char *refparam, struct dmctx *ctx, char **value)
 {
-	int i;
+	unsigned int i;
 	char *val;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	
@@ -1759,7 +1770,7 @@ int set_line_codec_list_packetization(char *refparam, struct dmctx *ctx, int act
 int set_line_codec_list_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
-	int j;
+	unsigned int j;
 	char *codec;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 	int error = string_to_bool(value, &b);
@@ -1794,7 +1805,7 @@ int set_line_codec_list_enable(char *refparam, struct dmctx *ctx, int action, ch
 
 int set_line_codec_list_priority(char *refparam, struct dmctx *ctx, int action, char *value)
 {
-	int i;
+	unsigned int i;
 	char *val;
 	struct line_codec_args *line_codecargs = (struct line_codec_args *)ctx->args;
 
@@ -1944,7 +1955,7 @@ int entry_method_root_Service(struct dmctx *ctx)
 {
 	IF_MATCH(ctx, DMROOT"Services.") {
 		DMOBJECT(DMROOT"Services.", ctx, "0", 1, NULL, NULL, NULL);
-		DMOBJECT(DMROOT"Services.VoiceService.", ctx, "0", 1, NULL, NULL, NULL, NULL);
+		DMOBJECT(DMROOT"Services.VoiceService.", ctx, "0", 1, NULL, NULL, NULL);
 		SUBENTRY(entry_method_Service, ctx);
 		return 0;
 	}

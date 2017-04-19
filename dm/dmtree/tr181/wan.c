@@ -516,7 +516,7 @@ int get_ptm_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 inline int ubus_atm_stats(json_object *res, char **value, char *stat_mod)
 {
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_atm_args.ifname}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_atm_args.ifname, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, stat_mod, value, NULL);
 	return 0;
@@ -553,7 +553,7 @@ int get_atm_stats_pack_sent(char *refparam, struct dmctx *ctx, char **value)
 inline int ubus_ptm_stats(json_object *res, char **value, char *stat_mod)
 {
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_ptm_args.ifname}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_ptm_args.ifname, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, stat_mod, value, NULL);
 	return 0;

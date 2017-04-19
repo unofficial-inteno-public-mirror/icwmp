@@ -137,7 +137,7 @@ int get_dns_server(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res;
 	int len;
 
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 	if(res)
 	json_parse_array(res, "dns-server", -1, NULL, value);
 	else
@@ -286,7 +286,7 @@ int get_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 	}
 	dmuci_get_option_value_string("network", cur_dhcp_args.interface, "ipaddr", &ipaddr);
 	if (ipaddr[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 		if (res)
 			json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 	}
@@ -295,7 +295,7 @@ int get_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 	}
 	dmuci_get_option_value_string("network", cur_dhcp_args.interface, "netmask", &mask);
 	if (mask[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 		if (res) {
 			json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 			if (mask[0] == '\0') {
@@ -341,7 +341,7 @@ int set_dhcp_address_min(char *refparam, struct dmctx *ctx, int action, char *va
 		case VALUESET:
 			dmuci_get_option_value_string("network", cur_dhcp_args.interface, "ipaddr", &ipaddr);
 			if (ipaddr[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 				if (res) {
 					json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 				}
@@ -351,7 +351,7 @@ int set_dhcp_address_min(char *refparam, struct dmctx *ctx, int action, char *va
 
 			dmuci_get_option_value_string("network", cur_dhcp_args.interface, "netmask", &mask);
 			if (mask[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 				if (res) {
 					json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 					if (mask[0] == '\0')
@@ -392,7 +392,7 @@ int set_dhcp_address_max(char *refparam, struct dmctx *ctx, int action, char *va
 
 			dmuci_get_option_value_string("network", cur_dhcp_args.interface, "ipaddr", &ipaddr);
 			if (ipaddr[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 				if (res) {
 					json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 				}
@@ -402,7 +402,7 @@ int set_dhcp_address_max(char *refparam, struct dmctx *ctx, int action, char *va
 
 			dmuci_get_option_value_string("network", cur_dhcp_args.interface, "netmask", &mask);
 			if (mask[0] == '\0') {
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 				if (res) {
 					json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 					if (mask[0] == '\0')
@@ -513,7 +513,7 @@ int get_dhcp_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 	if (s == NULL || (*value)[0] == '\0')
 	dmuci_get_option_value_string("network", cur_dhcp_args.interface, "netmask", value);
 	if ((*value)[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", cur_dhcp_args.interface, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 		int i_mask = atoi(mask);

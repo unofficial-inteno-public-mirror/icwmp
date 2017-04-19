@@ -300,6 +300,7 @@ int cwmp_rpc_acs_destroy_data_du_state_change_complete(struct session *session, 
 int xml_handle_message(struct session *session);
 int xml_prepare_msg_out(struct session *session);
 int xml_prepare_lwnotification_message(char **msg_out);
+int xml_set_cwmp_id_rpc_cpe(struct session *session);
 int cwmp_create_fault_message(struct session *session, struct rpc *rpc_cpe, int fault_code);
 int cwmp_get_fault_code (int fault_code);
 int cwmp_scheduleInform_remove_all();
@@ -319,5 +320,18 @@ int cwmp_launch_change_du_state_download(struct operations *poperation, struct o
 int cwmp_launch_update_du_state_download(char *user, char *pass, char *url, struct opresult **pchange_du_state_complete);
 const char *whitespace_cb(mxml_node_t *node, int where);
 
+int cwmp_root_cause_TransferComplete (struct cwmp *cwmp, struct transfer_complete *p);
+int cwmp_root_cause_dustatechangeComplete (struct cwmp *cwmp, struct du_state_change_complete *p);
+int cwmp_root_cause_events (struct cwmp *cwmp);
+void cwmp_root_cause_event_ipdiagnostic(void);
+int xml_set_cwmp_id(struct session *session);
+int xml_send_message(struct cwmp *cwmp, struct session *session, struct rpc *rpc);
+int cwmp_free_download_request(struct download *download);
+int cwmp_free_upload_request(struct upload *upload);
+int cwmp_free_schedule_download_request(struct schedule_download *schedule_download);
+int cwmp_add_apply_schedule_download(struct schedule_download *schedule_download, char *start_time);
+int cwmp_free_apply_schedule_download_request(struct apply_schedule_download *apply_schedule_download);
+char *calculate_lwnotification_cnonce();
+void sotfware_version_value_change(struct cwmp *cwmp, struct transfer_complete *p);
 #endif
 

@@ -11,12 +11,17 @@
 
 #include <ctype.h>
 #include <uci.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "cwmp.h"
 #include "dmcwmp.h"
 #include "dmuci.h"
 #include "dmubus.h"
 #include "dmcommon.h"
+#include "dmentry.h"
 #include "landevice.h"
+#include "wepkey.h"
 #define DELIMITOR ","
 #define TAILLE 10
 #define MAX_PROC_ARP 256
@@ -32,6 +37,8 @@ inline int entry_landevice_wlanconfiguration_associateddevice_instance(struct dm
 inline int entry_landevice_lanethernetinterfaceconfig_instance(struct dmctx *ctx, char *idev, char *ieth);
 inline int entry_landevice_host_instance(struct dmctx *ctx, char *idev, char *idx);
 
+inline int entry_landevice_wlanconfiguration_wepkey_instance(struct dmctx *ctx, char *idev, char *iwlan, char *iwep);
+inline int entry_landevice_dhcpconditionalservingpool_option_instance(struct dmctx *ctx, char * idev, char *icondpool, char *idx);
 inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool_instance(struct dmctx *ctx, char * idev, char *icondpool);
 inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool(struct dmctx *ctx, char *idev);
 
@@ -158,7 +165,7 @@ void update_dhcp_conf_start(int i, void *data)
 		dm_ctx_init(&dmctx);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface, String}}, 1, &res);
 			if (res) {
 				json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 			}
@@ -168,7 +175,7 @@ void update_dhcp_conf_start(int i, void *data)
 
 		dmuci_get_option_value_string("network", dhcp_param->interface, "netmask", &mask);
 		if (mask[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface, String}}, 1, &res);
 			if (res) {
 				json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 				if (mask[0] == '\0')
@@ -199,7 +206,7 @@ void update_dhcp_conf_end(int i, void *data)
 		dm_ctx_init(&dmctx);
 		dmuci_get_option_value_string("network", dhcp_param->interface, "ipaddr", &ipaddr);
 		if (ipaddr[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface, String}}, 1, &res);
 			if (res) {
 				json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 			}
@@ -209,7 +216,7 @@ void update_dhcp_conf_end(int i, void *data)
 
 		dmuci_get_option_value_string("network", dhcp_param->interface, "netmask", &mask);
 		if (mask[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", dhcp_param->interface, String}}, 1, &res);
 			if (res) {
 				json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 				if (mask[0] == '\0')
@@ -246,7 +253,7 @@ int get_dhcp_option_last_inst(struct uci_section *ss)
 	int dr = 0;
 	struct uci_section *s;
 
-	uci_path_foreach_sections(icwmpd, "dmmap", section_name(cur_dhcppoolargs.dhcppoolsection), s) {
+	uci_path_foreach_sections(icwmpd, "dmmap", section_name(ss), s) {
 		dmuci_get_value_by_section_string(s, "optioninst", &tmp);
 		if (tmp[0] == '\0')
 			break;
@@ -541,7 +548,7 @@ int get_lan_dns(char *refparam, struct dmctx *ctx, char **value)
 	struct ldlanargs *lanargs = (struct ldlanargs *)ctx->args;
 	char *lan_name = section_name(lanargs->ldlansection);
 	
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_parse_array(res, "dns-server", -1, NULL, value);
 	if ((*value)[0] == '\0') {
@@ -698,7 +705,7 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 	}
 	dmuci_get_value_by_section_string(lanargs->ldlansection, "ipaddr", &ipaddr);
 	if (ipaddr[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 		if (res)
 			json_select(res, "ipv4-address", 0, "address", &ipaddr, NULL);
 	}
@@ -707,7 +714,7 @@ int get_lan_dhcp_interval_address(struct dmctx *ctx, char **value, int option)
 	}
 	dmuci_get_value_by_section_string(lanargs->ldlansection, "netmask", &mask);
 	if (mask[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 		if (res) {
 			json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 			if (mask[0] == '\0') {
@@ -945,7 +952,7 @@ int get_lan_dhcp_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 	if (s == NULL || (*value)[0] == '\0')
 		dmuci_get_value_by_section_string(lanargs->ldlansection, "netmask", value);
 	if ((*value)[0] == '\0') {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "ipv4-address", 0, "mask", &mask, NULL);
 		int i_mask = atoi(mask);
@@ -1213,7 +1220,7 @@ int get_interface_ipaddress(char *refparam, struct dmctx *ctx, char **value)
 	if (strcmp(proto, "static") == 0)
 		dmuci_get_value_by_section_string(ipargs->ldipsection, "ipaddr", value);
 	else {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "ipv4-address", 0, "address", value, NULL);
 	}
@@ -1250,7 +1257,7 @@ int get_interface_subnetmask(char *refparam, struct dmctx *ctx, char **value)
 	if (strcmp(proto, "static") == 0)
 		dmuci_get_value_by_section_string(ipargs->ldipsection, "netmask", value);
 	else {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", lan_name, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
     json_select(res, "ipv4-address", 0, "mask", &val, NULL);
 		tmp = cidr2netmask(atoi(val));
@@ -1424,7 +1431,7 @@ int get_lan_eth_iface_cfg_enable(char *refparam, struct dmctx *ctx, char **value
 	json_object *res;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 		
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "up", -1, NULL, value, NULL);
 	return 0;
@@ -1498,7 +1505,7 @@ int set_lan_eth_iface_cfg_maxbitrate(char *refparam, struct dmctx *ctx, int acti
 	char *val = NULL;
 	char *duplex;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
-	struct uci_section *s, *sec;
+	struct uci_section *s, *sec = NULL;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1563,7 +1570,7 @@ int set_lan_eth_iface_cfg_duplexmode(char *refparam, struct dmctx *ctx, int acti
 {
 	char *m, *spch, *rate, *val = NULL;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
-	struct uci_section *s, *sec;
+	struct uci_section *s, *sec = NULL;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1606,7 +1613,7 @@ int get_lan_eth_iface_cfg_stats_tx_bytes(char *refparam, struct dmctx *ctx, char
 	json_object *res;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_bytes", value, NULL);	
 	return 0;
@@ -1617,7 +1624,7 @@ int get_lan_eth_iface_cfg_stats_rx_bytes(char *refparam, struct dmctx *ctx, char
 	json_object *res;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_bytes", value, NULL);	
 	return 0;
@@ -1628,7 +1635,7 @@ int get_lan_eth_iface_cfg_stats_tx_packets(char *refparam, struct dmctx *ctx, ch
 	json_object *res;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_packets", value, NULL);
 	return 0;
@@ -1639,7 +1646,7 @@ int get_lan_eth_iface_cfg_stats_rx_packets(char *refparam, struct dmctx *ctx, ch
 	json_object *res;
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", ethargs->eth, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);	
 	return 0;
@@ -1667,7 +1674,7 @@ char *get_interface_type(char *mac, char *ndev)
 				else {
 					p = wunit;
 				}
-				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p}}, 1, &res);
+				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p, String}}, 1, &res);
 				if(res) {
 					json_object_object_foreach(res, key, val) {
 						json_select(val, "assoc_mac", 0, NULL, &value, NULL);
@@ -2155,6 +2162,26 @@ int set_wlan_wep_key_index(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
+int set_wlan_pre_shared_key(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	char *encryption;
+	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
+			if (!strstr(encryption, "psk")) {
+				reset_wlan(wlanargs->lwlansection);
+				dmuci_set_value_by_section(wlanargs->lwlansection, "gtk_rekey", "3600");
+				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "psk");
+			}
+			dmuci_set_value_by_section(wlanargs->lwlansection, "key", value);
+			return 0;
+	}
+	return 0;
+}
+
 int set_wlan_key_passphrase(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	char *option, *encryption;
@@ -2611,7 +2638,7 @@ int get_wlan_total_associations(char *refparam, struct dmctx *ctx, char **value)
 	char *wunit, buf[8];
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_object_object_foreach(res, key, val) {
 		if (strstr(key, "sta-"))
@@ -2626,7 +2653,7 @@ int get_wlan_devstatus_statistics_tx_bytes(char *refparam, struct dmctx *ctx, ch
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	json_object *res;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wlanargs->wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wlanargs->wiface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", -1, "tx_bytes", value, NULL);
 	return 0;
@@ -2637,7 +2664,7 @@ int get_wlan_devstatus_statistics_rx_bytes(char *refparam, struct dmctx *ctx, ch
 	json_object *res;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_bytes", value, NULL);
 	return 0;
@@ -2648,7 +2675,7 @@ int get_wlan_devstatus_statistics_tx_packets(char *refparam, struct dmctx *ctx, 
 	json_object *res;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_packets", value, NULL);
 	return 0;
@@ -2660,7 +2687,7 @@ int get_wlan_devstatus_statistics_rx_packets(char *refparam, struct dmctx *ctx, 
 	char *val = NULL;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name",  wlanargs->wiface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);
 	return 0;
@@ -2930,26 +2957,6 @@ int get_wlan_associated_authenticationstate(char *refparam, struct dmctx *ctx, c
 	return 0;
 }
 
-int set_wlan_pre_shared_key(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	char *encryption;
-	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
-	switch (action) {
-		case VALUECHECK:
-			return 0;
-		case VALUESET:
-			dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
-			if (!strstr(encryption, "psk")) {
-				reset_wlan(wlanargs->lwlansection);
-				dmuci_set_value_by_section(wlanargs->lwlansection, "gtk_rekey", "3600");
-				dmuci_set_value_by_section(wlanargs->lwlansection, "encryption", "psk");
-			}
-			dmuci_set_value_by_section(wlanargs->lwlansection, "key", value);
-			return 0;
-	}
-	return 0;
-}
-
 int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
@@ -2960,7 +2967,7 @@ int get_wlan_psk_assoc_MACAddress(char *refparam, struct dmctx *ctx, char **valu
 	dmuci_get_value_by_section_string(wlanargs->lwlansection, "encryption", &encryption);
 	if (strstr(encryption, "psk")) {
 		sprintf(sta_pki, "sta-%d", wlanargs->pki);
-		dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+		dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, sta_pki, -1, "macaddr", value, NULL);
 		return 0;
@@ -3037,7 +3044,7 @@ int set_x_inteno_se_frequency(char *refparam, struct dmctx *ctx, int action, cha
 			else if (value[0] == '5' || value[0] == '2')
 			{
 				uci_foreach_sections("wireless", "wifi-device", s) {
-					dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", section_name(s)}}, 1, &res);
+					dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", section_name(s), String}}, 1, &res);
 					if(res)
 					{
 						json_select(res, "frequency", 0, NULL, &freq, NULL);
@@ -3419,7 +3426,7 @@ inline int entry_landevice_wlanconfiguration(struct dmctx *ctx, struct uci_secti
 				sprintf(buf, "%s.%d", wiface, wlctl_num);
 				wiface = buf;
 			}
-			dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wiface}}, 1, &res);
+			dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wiface, String}}, 1, &res);
 			init_ldargs_wlan(ctx, sss, wlctl_num, ss, section_name(ss), wiface, res, 0);
 			wlctl_num++;
 			SUBENTRY(entry_landevice_wlanconfiguration_instance, ctx, idev, iwlan);
@@ -3472,7 +3479,7 @@ inline int entry_landevice_wlanconfiguration_associateddevice(struct dmctx *ctx,
 	char *idx, *idx_last = NULL;
 	struct ldwlanargs *wlanargs = (struct ldwlanargs *)ctx->args;
 
-	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface}}, 1, &res);
+	dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", wlanargs->wiface, String}}, 1, &res);
 	if (res) {
 		char *value;
 		json_object_object_foreach(res, key, wl_client_obj) {

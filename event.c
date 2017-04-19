@@ -24,6 +24,7 @@
 #include "jshn.h"
 #include "external.h"
 #include "dmcwmp.h"
+#include "dmentry.h"
 #include "deviceinfo.h"
 
 LIST_HEAD(list_value_change);
@@ -75,7 +76,7 @@ void cwmp_save_event_container (struct cwmp *cwmp,struct event_container *event_
 
 struct event_container *cwmp_add_event_container (struct cwmp *cwmp, int event_code, char *command_key)
 {
-    static unsigned int      id;
+    static int      id;
     struct event_container   *event_container;
     struct session           *session;
     struct list_head         *ilist;

@@ -385,6 +385,84 @@ static void uppercase ( char *sPtr )
 	}
 }
 
+int get_amd_version_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.amd_version = DEFAULT_AMD_VERSION;
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 if ( a >= 1 ) {
+				 cwmp->conf.amd_version = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+		 cwmp->conf.supported_amd_version = cwmp->conf.amd_version;
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_session_timeout_config()
+{
+	 int error;
+	 int a = 0;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_SESSION_TIMEOUT ,&value)) == CWMP_OK)
+	 {
+		 cwmp->conf.session_timeout = DEFAULT_SESSION_TIMEOUT;
+		 if(value != NULL)
+		 {
+			 a = atoi(value) ;
+			 if ( a >= 1 ) {
+				 cwmp->conf.session_timeout = a;
+			 }
+			 free(value);
+			 value = NULL;
+		 }
+	 }
+	 else
+	 {
+		 return error;
+	 }
+	 return CWMP_OK;
+}
+
+int get_instance_mode_config()
+{
+	 int error;
+	 char *value = NULL;
+	 struct cwmp   *cwmp = &cwmp_main;
+	 if((error = uci_get_value(UCI_CPE_INSTANCE_MODE ,&value)) == CWMP_OK)
+	    {
+		 cwmp->conf.instance_mode = DEFAULT_INSTANCE_MODE;
+	        if(value != NULL)
+	        {
+	            if ( 0 == strcmp(value, "InstanceNumber") ) {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_NUMBER;
+	            } else {
+	            	cwmp->conf.instance_mode = INSTANCE_MODE_ALIAS;
+	            }
+	            free(value);
+	            value = NULL;
+	        }
+	    }
+	    else
+	    {
+	        return error;
+	    }
+	 return CWMP_OK;
+}
 int get_global_config(struct config *conf)
 {
     int                     error, error2, error3;
@@ -892,84 +970,6 @@ int get_global_config(struct config *conf)
 	return CWMP_OK;
 }
 
-int get_amd_version_config()
-{
-	 int error;
-	 int a = 0;
-	 char *value = NULL;
-	 struct cwmp   *cwmp = &cwmp_main;
-	 if((error = uci_get_value(UCI_CPE_AMD_VERSION ,&value)) == CWMP_OK)
-	 {
-		 cwmp->conf.amd_version = DEFAULT_AMD_VERSION;
-		 if(value != NULL)
-		 {
-			 a = atoi(value) ;
-			 if ( a >= 1 ) {
-				 cwmp->conf.amd_version = a;
-			 }
-			 free(value);
-			 value = NULL;
-		 }
-		 cwmp->conf.supported_amd_version = cwmp->conf.amd_version;
-	 }
-	 else
-	 {
-		 return error;
-	 }
-	 return CWMP_OK;
-}
-
-int get_session_timeout_config()
-{
-	 int error;
-	 int a = 0;
-	 char *value = NULL;
-	 struct cwmp   *cwmp = &cwmp_main;
-	 if((error = uci_get_value(UCI_CPE_SESSION_TIMEOUT ,&value)) == CWMP_OK)
-	 {
-		 cwmp->conf.session_timeout = DEFAULT_SESSION_TIMEOUT;
-		 if(value != NULL)
-		 {
-			 a = atoi(value) ;
-			 if ( a >= 1 ) {
-				 cwmp->conf.session_timeout = a;
-			 }
-			 free(value);
-			 value = NULL;
-		 }
-	 }
-	 else
-	 {
-		 return error;
-	 }
-	 return CWMP_OK;
-}
-
-int get_instance_mode_config()
-{
-	 int error;
-	 char *value = NULL;
-	 struct cwmp   *cwmp = &cwmp_main;
-	 if((error = uci_get_value(UCI_CPE_INSTANCE_MODE ,&value)) == CWMP_OK)
-	    {
-		 cwmp->conf.instance_mode = DEFAULT_INSTANCE_MODE;
-	        if(value != NULL)
-	        {
-	            if ( 0 == strcmp(value, "InstanceNumber") ) {
-	            	cwmp->conf.instance_mode = INSTANCE_MODE_NUMBER;
-	            } else {
-	            	cwmp->conf.instance_mode = INSTANCE_MODE_ALIAS;
-	            }
-	            free(value);
-	            value = NULL;
-	        }
-	    }
-	    else
-	    {
-	        return error;
-	    }
-	 return CWMP_OK;
-}
 int get_lwn_config(struct config *conf)
 {
     int error;

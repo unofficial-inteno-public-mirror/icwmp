@@ -17,6 +17,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <uci.h>
+#include <ctype.h>
 #include "dmuci.h"
 #include "dmmem.h"
 

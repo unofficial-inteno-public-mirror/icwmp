@@ -186,8 +186,9 @@ void external_init()
     close(pfds_out[0]);
 
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+    {
     	DD(ERROR, "icwmp script intialization: signal ignoring error");
-
+    }
 	external_read_pipe_input(NULL);
 
 	DD(INFO, "icwmp script is listening");

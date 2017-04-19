@@ -81,7 +81,7 @@ int get_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res = NULL;
 	bool bstatus = false, bpend = false;
 
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ppp_args.ppp_sec)}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ppp_args.ppp_sec), String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
@@ -137,7 +137,7 @@ inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
 	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "ifname", &ifname);
 	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "proto", &proto);
 	if (strcmp(proto, "pppoe") == 0) {
-		dmubus_call("network.device", "status", UBUS_ARGS{{"name", ifname}}, 1, &res);
+		dmubus_call("network.device", "status", UBUS_ARGS{{"name", ifname, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "statistics", 0, stat_mod, value, NULL);
 	}

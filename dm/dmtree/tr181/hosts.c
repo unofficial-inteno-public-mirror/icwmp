@@ -144,7 +144,7 @@ char *get_interface_type(char *mac, char *ndev)
 				else {
 					p = wunit;
 				}
-				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p}}, 1, &res);
+				dmubus_call("router.wireless", "stas", UBUS_ARGS{{"vif", p, String}}, 1, &res);
 				if(res) {
 					json_object_object_foreach(res, key, val) {
 						json_select(val, "macaddr", 0, NULL, &value, NULL);

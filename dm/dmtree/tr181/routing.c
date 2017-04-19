@@ -414,7 +414,7 @@ char *get_router_ipv4forwarding_interface(struct dmctx *ctx)
 		if (!strstr(bval, "br-")) {
 			uci_foreach_option_cont("network", "interface", "ifname", bval, ss) {
 				ifname = section_name(ss);
-				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname}}, 1, &res);
+				dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", ifname, String}}, 1, &res);
 				if (res) {
 					json_select(res, "device", 0, NULL, &device, NULL);
 					if (strcmp(bval, device) == 0) {

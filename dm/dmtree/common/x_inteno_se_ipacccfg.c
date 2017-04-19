@@ -23,6 +23,8 @@ struct pforwardrgs cur_pforwardrgs = {0};
 
 inline int entry_xinteno_ipacccfg_listcfgobj(struct dmctx *ctx);
 inline int entry_xinteno_ipacccfg_portforwarding(struct dmctx *ctx);
+inline int entry_xinteno_ipacccfg_portforwarding_instance(struct dmctx *ctx, char *iforward);
+inline int entry_xinteno_ipacccfg_listcfgobj_instance(struct dmctx *ctx, char *irule);
 inline int init_args_ipacc(struct dmctx *ctx, struct uci_section *s)
 {
 	struct ipaccargs *args = &cur_ipaccargs;

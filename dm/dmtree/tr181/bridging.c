@@ -314,7 +314,7 @@ int get_br_enable(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res;
 	char *br_name;
 	dmastrcat(&br_name, "br-", section_name(cur_bridging_args.bridge_sec));
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", br_name}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", br_name, String}}, 1, &res);
 	DM_ASSERT(res, *value = "false");
 	json_select(res, "up", 0, NULL, value, NULL);
 	return 0;
@@ -323,7 +323,7 @@ int get_br_enable(char *refparam, struct dmctx *ctx, char **value)
 int get_br_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec), String}}, 1, &res);
 	DM_ASSERT(res, *value = "Disabled");
 	json_select(res, "up", 0, NULL, value, NULL);
 	if(strcmp(*value,"true") == 0)
@@ -342,10 +342,10 @@ int set_br_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 			return 0;
 		case VALUESET:
 			if (b) {
-				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1);
+				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec), String}}, 1);
 			}
 			else {
-				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec)}}, 1);
+				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(cur_bridging_args.bridge_sec), String}}, 1);
 			}
 			return 0;
 	}
@@ -375,7 +375,7 @@ int get_br_port_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", *value}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", *value, String}}, 1, &res);
 	DM_ASSERT(res, *value = "Down");
 	json_select(res, "up", 0, NULL, value, NULL);
 	if (strcmp(*value,"true") == 0)
@@ -409,7 +409,7 @@ int get_br_port_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_bytes", value, NULL);
 	return 0;
@@ -421,7 +421,7 @@ int get_br_port_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_bytes", value, NULL);
 	return 0;
@@ -433,7 +433,7 @@ int get_br_port_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "tx_packets", value, NULL);
 	return 0;
@@ -445,7 +445,7 @@ int get_br_port_stats_rx_packets(char *refparam, struct dmctx *ctx, char **value
 	struct ldethargs *ethargs = (struct ldethargs *)ctx->args;
 
 	dmuci_get_value_by_section_string(cur_bridging_port_args.bridge_port_sec, "ifname", value);
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", *value, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);
 	return 0;

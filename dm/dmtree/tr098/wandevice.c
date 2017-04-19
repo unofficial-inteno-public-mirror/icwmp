@@ -185,7 +185,7 @@ int check_multiwan_interface(struct uci_section *interface_section, char *fwan)
 	if (type[0] == '\0' || cn < 2)
 		return 0;
 
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(interface_section)}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(interface_section), String}}, 1, &res);
 	if (res) {
 		json_select(res, "device", -1, NULL, &device, NULL);
 	}
@@ -888,7 +888,7 @@ int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, char **value)
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "up", -1, NULL, &val, NULL);
 	if (val) {
@@ -917,7 +917,7 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 			return 0;
 		case VALUESET: //ENHANCEMENT look for function to start and stop the ethernet driver
 			string_to_bool(value, &b);
-			dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+			dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 			if (res) {
 				json_select(res, "up", 0, NULL, &enable, NULL);
 				string_to_bool(enable, &enable_b);
@@ -939,7 +939,7 @@ int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char 
 						goto end;
 					}
 					else {
-						dmubus_call("network.interface", "status", UBUS_ARGS{{"name", section_name(s)}}, 1, &res);
+						dmubus_call("network.interface", "status", UBUS_ARGS{{"name", section_name(s), String}}, 1, &res);
 						if (res) {
 							json_select(res, "device", -1, NULL, &device, NULL);
 							if (strstr(device, wandargs->fdev)) {
@@ -962,7 +962,7 @@ int get_wan_eth_intf_status(char *refparam, struct dmctx *ctx, char **value)
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 	bool b;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "Disabled");
 	json_select(res, "up", 0, NULL, value, NULL);
 	if (*value) {
@@ -979,7 +979,7 @@ int get_wan_eth_intf_mac(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "00:00:00:00:00:00");
 	json_select(res, "macaddr", 0, NULL, value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -993,7 +993,7 @@ int get_wan_eth_intf_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **va
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "statistics", 0, "tx_bytes", value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -1007,7 +1007,7 @@ int get_wan_eth_intf_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **va
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "statistics", 0, "rx_bytes", value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -1021,7 +1021,7 @@ int get_wan_eth_intf_stats_tx_packets(char *refparam, struct dmctx *ctx, char **
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "statistics", 0, "tx_packets", value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -1035,7 +1035,7 @@ int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, char **
 	struct wanargs *wandargs = (struct wanargs *)ctx->args;
 	json_object *res;
 	
-	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
+	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev, String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "statistics", 0, "rx_packets", value, NULL);
 	if (!(*value) || (*value)[0] == '\0') {
@@ -1135,7 +1135,8 @@ int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 {
 	int i;
 	struct uci_section *s;
-	char *type, *encapsulation, *encaptype, *pch;
+	char *type, *pch;
+	char *encapsulation = NULL, *encaptype = NULL;
 	struct wancdevargs *wandcdevargs = (struct wancdevargs *)ctx->args;
 
 	switch (action) {
@@ -1218,7 +1219,7 @@ int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 
 	intf = section_name(wandcprotoargs->wancprotosection);
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf, String}}, 1, &res);
 	DM_ASSERT(res, *value = "Disconnected");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
@@ -1527,7 +1528,7 @@ int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	struct wancprotoargs *wandcprotoargs = (struct wancprotoargs *) (ctx->args);
 
 	intf = section_name(wandcprotoargs->wancprotosection);
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
@@ -1565,10 +1566,10 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 	*value = "";
 	intf = section_name(wandcprotoargs->wancprotosection);
 	
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "device", 0, NULL, &device, NULL) != -1) {
-		dmubus_call("network.device", "status", UBUS_ARGS{{"name", device}}, 1, &res);
+		dmubus_call("network.device", "status", UBUS_ARGS{{"name", device, String}}, 1, &res);
 		if (res) {
 			json_select(res, "macaddr", 0, NULL, value, NULL);
 			return 0;
@@ -1647,7 +1648,7 @@ int get_layer2_interface(char *wan_name, char **ifname)
 	dmuci_get_option_value_string("network", wan_name, "type", &wtype);
 	if(wtype[0] == '\0' || strcmp(wtype, "anywan") == 0)
 	{
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", wan_name}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", wan_name, String}}, 1, &res);
 		if (res) {
 			json_select(res, "device", -1, NULL, &device, NULL);
 			if(device[0] != '\0') {
@@ -1945,7 +1946,7 @@ inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
 	dmuci_get_option_value_string("network", section_name(cur_wancprotoargs.wancprotosection), "proto", &proto);
 	if (strcmp(proto, "dhcp") == 0 || strcmp(proto, "pppoe") == 0)
 	{
-		dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wancdevargs.wan_ifname}}, 1, &res);
+		dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wancdevargs.wan_ifname, String}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "statistics", 0, stat_mod, value, NULL);
 		return 0;
@@ -1956,28 +1957,28 @@ inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
 
 int get_wan_link_connection_eth_bytes_received(char *refparam, struct dmctx *ctx, char **value)
 {
-	json_object *res;
+	json_object *res = NULL;
 	ubus_get_wan_stats(res, value, "rx_bytes");
 	return 0;
 }
 
 int get_wan_link_connection_eth_bytes_sent(char *refparam, struct dmctx *ctx, char **value)
 {
-	json_object *res;
+	json_object *res = NULL;
 	ubus_get_wan_stats(res, value, "tx_bytes");
 	return 0;
 }
 
 int get_wan_link_connection_eth_pack_received(char *refparam, struct dmctx *ctx, char **value)
 {
-	json_object *res;
+	json_object *res = NULL;
 	ubus_get_wan_stats(res, value, "rx_packets");
 	return 0;
 }
 
 int get_wan_link_connection_eth_pack_sent(char *refparam, struct dmctx *ctx, char **value)
 {
-	json_object *res;
+	json_object *res = NULL;
 	ubus_get_wan_stats(res, value, "tx_packets");
 	return 0;
 }
@@ -2056,7 +2057,7 @@ int set_wan_ppp_con_alias(char *refparam, struct dmctx *ctx, int action, char *v
 	return 0;
 }
 /////////////SUB ENTRIES///////////////
-inline int entry_wandevice_sub(struct dmctx *ctx)
+int entry_wandevice_sub(struct dmctx *ctx)
 {
 	int i = 0;
 	bool notif_permission;
@@ -2095,7 +2096,7 @@ inline int entry_wandevice_sub(struct dmctx *ctx)
 	return 0;
 }
 
-inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, char *dev, int i, char *cwritable)
+int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, char *dev, int i, char *cwritable)
 {
 	struct uci_section *s = NULL;
 	char *fwan;
@@ -2123,7 +2124,7 @@ inline int entry_wandevice_wanconnectiondevice(struct dmctx *ctx, char *dev, int
 	return 0;
 }
 
-inline int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, char *iwan, char *fwan)
+int entry_wandevice_wanprotocolconnection(struct dmctx *ctx, char *idev, char *iwan, char *fwan)
 {
 	struct uci_section *ss = NULL;
 	char *pack, *stype, *p, *iconp_ip_last = NULL, *iconp_ppp_last = NULL;
@@ -2179,7 +2180,7 @@ int entry_method_root_WANDevice(struct dmctx *ctx)
 
 inline int entry_wandevice_sub_instance(struct dmctx *ctx, char *dev, int i, char *cwritable, bool notif_permission)
 {
-	IF_MATCH(ctx, DMROOT"WANDevice.", dev) {
+	IF_MATCH(ctx, DMROOT"WANDevice.%s.", dev) {
 		DMOBJECT(DMROOT"WANDevice.%s.", ctx, "0", notif_permission, NULL, NULL, NULL, dev);
 		DMPARAM("Alias", ctx, "1", get_wan_dev_alias, set_wan_dev_alias, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"WANDevice.%s.WANConnectionDevice.", ctx, cwritable, notif_permission, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice_all, NULL, dev);

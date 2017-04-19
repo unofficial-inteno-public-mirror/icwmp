@@ -42,10 +42,12 @@ struct search_keywords {
 
 extern pthread_mutex_t mutex_backup_session;
 
+int cwmp_init_backup_session(struct cwmp *cwmp, char **ret, enum backup_loading load);
 void bkp_session_save();
 int cwmp_load_saved_session(struct cwmp *cwmp, char **acsurl, enum backup_loading load);
 mxml_node_t *bkp_session_insert_event(int index, char *command_key, int id, char *status);
 void bkp_session_delete_event(int id, char *status);
+void bkp_session_simple_insert_in_parent(char *parent, char *child, char *value);
 void bkp_session_insert_parameter(mxml_node_t *b, char *name);
 void bkp_session_simple_insert(char *parent, char *child, char *value);
 void bkp_session_move_inform_to_inform_send ();
@@ -64,4 +66,7 @@ void bkp_session_delete_transfer_complete(struct transfer_complete *ptransfer_co
 void bkp_session_insert_schedule_download(struct schedule_download *pschedule_download);
 void bkp_session_insert_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
 void bkp_session_delete_apply_schedule_download(struct apply_schedule_download *papply_schedule_download);
+void bkp_session_delete_du_state_change_complete(struct du_state_change_complete *pdu_state_change_complete);
+void bkp_session_delete_schedule_download(struct schedule_download *pschedule_download);
+void bkp_session_insert_du_state_change_complete(struct du_state_change_complete *pdu_state_change_complete);
 #endif /* _BACKUPSESSION_H__ */

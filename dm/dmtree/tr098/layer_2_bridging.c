@@ -629,7 +629,7 @@ int get_bridge_status(char *refparam, struct dmctx *ctx, char **value)
 {
 	json_object *res;
 	struct args_layer2 *args = (struct args_layer2 *)ctx->args;
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(args->layer2section), String}}, 1, &res);
 	DM_ASSERT(res, *value = "0");
 	json_select(res, "up", 0, NULL, value, NULL);
 	return 0;
@@ -648,10 +648,10 @@ int set_bridge_status(char *refparam, struct dmctx *ctx, int action, char *value
 			return 0;
 		case VALUESET:
 			if (b) {
-				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1);
+				dmubus_call_set("network.interface", "up", UBUS_ARGS{{"interface", section_name(args->layer2section), String}}, 1);
 			}
 			else {
-				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(args->layer2section)}}, 1);
+				dmubus_call_set("network.interface", "down", UBUS_ARGS{{"interface", section_name(args->layer2section), String}}, 1);
 			}
 			return 0;
 	}

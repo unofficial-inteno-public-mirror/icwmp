@@ -22,6 +22,7 @@
 #include "softwaremodules.h"
 
 struct software_module cur_software_module = {0};
+inline int entry_softwaremodules_deploymentunit_instance(struct dmctx *ctx, char *idu);
 
 inline int init_args_du_entry(struct dmctx *ctx, struct uci_section *s)
 {

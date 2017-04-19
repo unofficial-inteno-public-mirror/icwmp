@@ -414,7 +414,7 @@ int get_ip_int_lower_layer(char *refparam, struct dmctx *ctx, char **value)
 			return 0;
 		}
 	} else if (wtype[0] == '\0' || strcmp(wtype, "anywan") == 0) {
-		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ip_args.ip_sec)}}, 1, &res);
+		dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ip_args.ip_sec), String}}, 1, &res);
 		dmuci_get_value_by_section_string(cur_ip_args.ip_sec, "ifname", &wifname);
 		strcpy (linker, wifname);
 		if (res) {
@@ -695,13 +695,13 @@ inline int entry_ip_interface(struct dmctx *ctx)
 			continue;
 		dmuci_get_value_by_section_string(net_sec, "ipaddr", &ipv4addr);
 		if (ipv4addr[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(net_sec)}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(net_sec), String}}, 1, &res);
 			if (res)
 				json_select(res, "ipv4-address", 0, "address", &ipv4addr, NULL);
 		}
 		dmuci_get_value_by_section_string(net_sec, "ip6addr", &ipv6addr);
 		if (ipv6addr[0] == '\0') {
-			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(net_sec)}}, 1, &res);
+			dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(net_sec), String}}, 1, &res);
 			if (res)
 				json_select(res, "ipv6-address", 0, "address", &ipv6addr, NULL);
 		}

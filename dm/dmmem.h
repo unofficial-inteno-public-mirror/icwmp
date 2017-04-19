@@ -6,6 +6,7 @@
 #ifndef __DMMEM_H
 #define __DMMEM_H
 
+void dmfree(void *m);
 static inline void dm_empty_func()
 {
 }
@@ -28,7 +29,7 @@ struct dmmem {
 	char mem[0];
 };
 
-inline void *__dmmalloc
+void *__dmmalloc
 (
 #ifdef WITH_MEMTRACK
 const char *file, const char *func, int line,
@@ -36,7 +37,7 @@ const char *file, const char *func, int line,
 size_t size
 );
 
-inline void *__dmcalloc
+void *__dmcalloc
 (
 #ifdef WITH_MEMTRACK
 const char *file, const char *func, int line,
@@ -51,7 +52,7 @@ const char *file, const char *func, int line,
 #endif /*WITH_MEMTRACK*/
 const char *s
 );
-inline void dmfree(void *m);
+//inline void dmfree(void *m);
 void dmcleanmem();
 #endif /*WITH_MEMLEACKSEC*/
 int __dmasprintf

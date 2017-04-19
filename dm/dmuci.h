@@ -148,6 +148,14 @@ struct uci_section *dmuci_walk_state_section(char *package, char *stype, void *a
 struct uci_section *dmuci_walk_section_icwmpd(char *package, char *stype, void *arg1, void *arg2, int cmp , int (*filter)(struct uci_section *s, void *value), struct uci_section *prev_section, int walk);
 char *dmuci_set_value_by_section_icwmpd(struct uci_section *s, char *option, char *value);
 
+int dmuci_add_section_icwmpd(char *package, char *stype, struct uci_section **s, char **value);
+int dmuci_add_state_section(char *package, char *stype, struct uci_section **s, char **value);
+char *dmuci_set_varstate_value(char *package, char *section, char *option, char *value);
+char *dmuci_set_value_icwmpd(char *package, char *section, char *option, char *value);
+int dmuci_delete_by_section_icwmpd(struct uci_section *s, char *option, char *value);
+int dmuci_rename_section_by_section(struct uci_section *s, char *value);
+int dmuci_exit_icwmpd(void);
+int dmuci_init_icwmpd(void);
 #define NEW_UCI_PATH(UCI_PATH, CPATH, DPATH)		\
 struct uci_context *uci_ctx_##UCI_PATH;			\
 const char *uci_savedir_##UCI_PATH = DPATH; \

@@ -195,7 +195,7 @@ int get_interface_enable_ubus(char *iface, char *refparam, struct dmctx *ctx, ch
 {
 	json_object *res;
 
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "up", 0, NULL, value, NULL);
 	return 0;
@@ -442,7 +442,7 @@ int network_get_ipaddr(char **value, char *iface)
 	json_object *res;
 	char *ipv6_value = "";
 	
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", iface, String}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	json_select(res, "ipv4-address", 0, "address", value, NULL);
 	json_select(res, "ipv6-address", 0, "address", &ipv6_value, NULL);

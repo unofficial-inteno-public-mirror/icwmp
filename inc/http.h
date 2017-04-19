@@ -13,6 +13,7 @@
 #include <stdint.h>
 
 #include <libubox/uloop.h>
+#include <cwmp.h>
 
 #ifdef HTTP_CURL
 #include <curl/curl.h>

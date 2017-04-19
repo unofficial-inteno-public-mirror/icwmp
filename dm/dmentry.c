@@ -17,6 +17,7 @@
 #include "dmentry.h"
 #include "cwmp.h"
 #include "log.h"
+#include "wepkey.h"
 
 LIST_HEAD(head_package_change);
 
@@ -309,7 +310,7 @@ int dm_entry_restart_services()
 	list_for_each_entry(pc, &head_package_change, list) {
 		if(strcmp(pc->package, "cwmp") == 0)
 			continue;
-		dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", pc->package}}, 1);
+		dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", pc->package, String}}, 1);
 	}
 	free_all_list_package_change(&head_package_change);
 

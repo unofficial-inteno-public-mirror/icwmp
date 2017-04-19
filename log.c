@@ -94,7 +94,7 @@ void puts_log(int severity, const char *fmt, ...)
     time_t          t;
     struct tm       *Tm;
     struct timeval  tv;
-    FILE            *pLog;
+    FILE            *pLog = NULL;
     struct stat     st;
     long int        size = 0;
     char            log_file_name_bak[256];

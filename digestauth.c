@@ -139,6 +139,7 @@ static int lookup_sub_value(char *dest, size_t size, const char *data,
 	const char *q2;
 	const char *qn;
 
+	unsigned int diff;
 	if (0 == size)
 		return 0;
 	keylen = strlen(key);
@@ -177,8 +178,9 @@ static int lookup_sub_value(char *dest, size_t size, const char *data,
 			}
 			else
 			{
-				if (size > (q2 - q1) + 1)
-					size = (q2 - q1) + 1;
+				diff = (q2 - q1) + 1;
+				if (size > diff)
+					size = diff;
 				size--;
 				memcpy(dest, q1, size);
 				dest[size] = '\0';

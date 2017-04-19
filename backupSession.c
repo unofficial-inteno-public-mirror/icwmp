@@ -10,6 +10,7 @@
  *
  */
 
+#include <stdbool.h>
 #include "cwmp.h"
 #include "backupSession.h"
 #include "xml.h"
@@ -49,7 +50,7 @@ mxml_node_t *bkp_session_node_found(mxml_node_t *tree, char *name, struct search
 {
 	mxml_node_t *b = tree, *c, *d;
 	struct search_keywords;
-	int i;
+	int i = 0;
 
 	b = mxmlFindElement(b, b, name, NULL, NULL, MXML_DESCEND_FIRST);
 	while (b)
@@ -415,7 +416,7 @@ void bkp_session_delete_apply_schedule_download(struct apply_schedule_download *
 	{
 		sprintf(delay[2*i],"%ld",papply_schedule_download->timeintervals[i].windowstart);
 		sprintf(delay[2*i+1],"%ld",papply_schedule_download->timeintervals[i].windowend);
-		sprintf(maxretrie[i],"%ld",papply_schedule_download->timeintervals[i].maxretries);
+		sprintf(maxretrie[i],"%d",papply_schedule_download->timeintervals[i].maxretries);
 	}
 	
 	keys[0].name = "start_time";
@@ -581,7 +582,7 @@ void bkp_session_delete_schedule_download(struct schedule_download *pschedule_do
 	{
 		sprintf(delay[2*i],"%ld",pschedule_download->timewindowstruct[i].windowstart);
 		sprintf(delay[2*i+1],"%ld",pschedule_download->timewindowstruct[i].windowend);
-		sprintf(maxretrie[i],"%ld",pschedule_download->timewindowstruct[i].maxretries);
+		sprintf(maxretrie[i],"%d",pschedule_download->timewindowstruct[i].maxretries);
 	}
 	keys[0].name = "url";
 	keys[0].value = pschedule_download->url;
@@ -781,7 +782,7 @@ void load_queue_event(mxml_node_t *tree,struct cwmp *cwmp)
 {
 	char						*command_key = NULL;
 	mxml_node_t					*b = tree, *c;
-	int							idx = -1, id;
+	int							idx = -1, id = -1;
 	struct event_container		*event_container_save = NULL;
 
 	b = mxmlWalkNext(b, tree, MXML_DESCEND);
@@ -855,9 +856,9 @@ void load_queue_event(mxml_node_t *tree,struct cwmp *cwmp)
 
 void load_schedule_inform(mxml_node_t *tree,struct cwmp *cwmp)
 {
-	char						*command_key;
+	char						*command_key = NULL;
 	mxml_node_t					*b = tree, *c;
-	time_t						scheduled_time;
+	time_t						scheduled_time = 0;
 	struct schedule_inform		*schedule_inform = NULL;
 	struct list_head			*ilist = NULL;
 
@@ -1797,7 +1798,7 @@ void load_du_state_change_complete (mxml_node_t	*tree,struct cwmp *cwmp)
 							{
 								if(d->value.text.string != NULL)
 								{
-									elem->start_time = atol(d->value.text.string);
+									elem->start_time = strdup(d->value.text.string);
 								}
 							}
 						}
@@ -1810,7 +1811,7 @@ void load_du_state_change_complete (mxml_node_t	*tree,struct cwmp *cwmp)
 							{
 								if(d->value.text.string != NULL)
 								{
-									elem->complete_time = atol(d->value.text.string);
+									elem->complete_time = strdup(d->value.text.string);
 								}
 							}
 						}

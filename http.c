@@ -20,6 +20,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <uci.h>
+#include "external.h"
 #include "cwmp.h"
 #include "log.h"
 #include "xml.h"
@@ -48,8 +50,7 @@ static struct http_client http_c;
 static CURL *curl;
 #endif
 
-int
-http_client_init(struct cwmp *cwmp)
+int http_client_init(struct cwmp *cwmp)
 {
 	char *dhcp_dis;
 	char *acs_var_stat;
@@ -153,7 +154,7 @@ http_get_response(void *buffer, size_t size, size_t rxed, char **msg_in)
 {
 	char *c;
 
-	if (asprintf(&c, "%s%.*s", *msg_in, size * rxed, buffer) == -1) {
+	if (asprintf(&c, "%s%.*s", *msg_in, size * rxed, (char *)buffer) == -1) {
 		FREE(*msg_in);
 		return -1;
 	}
