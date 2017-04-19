@@ -32,10 +32,11 @@ static void print_dm_help(void)
 	printf(" add_obj <param> <parameter key>\n");
 	printf(" del_obj <param> <parameter key>\n");
 	printf(" inform\n");
-	printf(" upnp_get_value [param]\n");
+	printf(" upnp_get_values [param]\n");
 	printf(" upnp_get_selected_values [param]\n");
 	printf(" upnp_get_instances <param> <depth>\n");
 	printf(" upnp_get_supported_parameters <param> <depth>\n");
+	printf(" upnp_set_values <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
 	printf(" exit\n");
 }
@@ -214,6 +215,11 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			ctx->depth = atoi(arg1);
 			fault = dm_entry_upnp_get_instances(ctx);
 			break;
+		case CMD_UPNP_SET_VALUES:
+			ctx->in_value = arg1 ? arg1 : "";
+			ctx->setaction = VALUECHECK;
+			fault = dm_entry_upnp_set_values(ctx);
+			break;
 	}
 	dmuci_commit();
 	return fault;
@@ -261,6 +267,23 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 				dmuci_commit();
 			}
 			free_all_set_list_tmp(ctx);
+			break;
+		case CMD_UPNP_SET_VALUES:
+			ctx->setaction = VALUESET;
+			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
+				ctx->in_param = n->name;
+				ctx->in_value = n->value ? n->value : "";
+				ctx->stop = false;
+				fault = dm_entry_upnp_set_values(ctx);
+				if (fault) break;
+			}
+			if (fault) {
+				//Should not happen
+				dmuci_revert();
+			} else {
+				dmuci_change_packages(&head_package_change);
+				dmuci_commit();
+			}
 			break;
 	}
 	return fault;
@@ -314,7 +337,7 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value)
 	return 0;
 }
 
-int dm_entry_restart_services()
+int dm_entry_restart_services(void)
 {
 	struct package_change *pc;
 
@@ -326,6 +349,24 @@ int dm_entry_restart_services()
 	free_all_list_package_change(&head_package_change);
 
 	return 0;
+}
+
+int dm_entry_upnp_restart_services(void)
+{
+	struct package_change *pc;
+
+	list_for_each_entry(pc, &head_package_change, list) {
+		dmubus_call_set("uci", "commit", UBUS_ARGS{{"config", pc->package}}, 1);
+	}
+	free_all_list_package_change(&head_package_change);
+
+	return 0;
+}
+
+void dm_upnp_apply_config(void)
+{
+	apply_end_session();
+	dm_entry_upnp_restart_services();
 }
 
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
@@ -359,7 +400,7 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		goto end;
 	}
 
-	if (cmd == CMD_SET_NOTIFICATION) {
+	if (cmd == CMD_SET_NOTIFICATION || cmd == CMD_UPNP_SET_VALUES) {
 		fprintf (stdout, "{ \"status\": \"0\" }\n");
 		goto end;
 	}
@@ -473,6 +514,7 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 	long ms; // Milliseconds
 	time_t s;  // Seconds
 	struct timespec tstart, tend;
+	unsigned char apply_services = 0;
 
 	if (dmcli_timetrack)
 		clock_gettime(CLOCK_REALTIME, &tstart);
@@ -586,10 +628,30 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_PARAMETERS, param, argv[5], NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_SUPPORTED_PARAMETERS, output);
 	}
+	/* SET VALUE */
+	else if (strcmp(cmd, "upnp_set_values") == 0) {
+		if (argc < 6 || (argc % 2) == 1) goto invalid_arguments;
+		int i;
+		for (i = 4; i < argc; i+=2) {
+			param = argv[i];
+			value = argv[i+1];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_SET_VALUES, param, value, NULL);
+			if (fault) break;
+		}
+		if (!fault) {
+			apply_services = 1;
+			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_VALUES, NULL, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_VALUES, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
+
 	dm_ctx_clean(&cli_dmctx);
+	if (apply_services) {
+		dm_upnp_apply_config();
+	}
 
 	if (dmcli_timetrack) {
 		clock_gettime(CLOCK_REALTIME, &tend);
@@ -620,6 +682,7 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 	char *value;
 	char *parameter_key;
 	char *notifset;
+	unsigned char apply_services = 0;
 
 	if (argc < 3) {
 		fprintf(stderr, "Wrong arguments!\n");
@@ -733,10 +796,31 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_INSTANCES, param, argv[4], NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_INSTANCES, 1);
 	}
+	else if (strcmp(argv[2], "upnp_set_values") == 0) {
+		if (argc < 5 || (argc % 2) == 0)
+			goto invalid_arguments;
+
+		for (i = 3; i < argc; i+=2) {
+			param = argv[i];
+			value = argv[i+1];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_SET_VALUES, param, value, NULL);
+			if (fault) break;
+		}
+		if (!set_fault) {
+			apply_services = 1;
+			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_VALUES, parameter_key, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_VALUES, 1);
+	}
 	else {
 		goto invalid_arguments;
 	}
+
 	dm_ctx_clean(&cli_dmctx);
+	if (apply_services) {
+		dm_upnp_apply_config();
+	}
+
 	return 0;
 
 invalid_arguments:

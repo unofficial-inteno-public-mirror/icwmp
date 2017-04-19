@@ -255,6 +255,7 @@ enum {
 	CMD_UPNP_GET_INSTANCES,
 	CMD_UPNP_GET_SELECTED_VALUES,
 	CMD_UPNP_GET_VALUES,
+	CMD_UPNP_SET_VALUES,
 };
 
 enum fault_code_enum {
@@ -295,9 +296,15 @@ enum fault_code_enum {
 };
 
 enum upnp_fault_code_enum {
+	FAULT_UPNP_606 = 606,// Action not authorized
 	FAULT_UPNP_701 = 701,// Invalid Argument Syntax
-	FAULT_UPNP_702,//
+	FAULT_UPNP_702,//Invalid XML Argument
 	FAULT_UPNP_703,// No Such Name
+	FAULT_UPNP_704,// Invalid Value Type
+	FAULT_UPNP_705,// Invalid Value
+	FAULT_UPNP_706,// Read Only Violation
+	FAULT_UPNP_707,// Multiple Set
+	FAULT_UPNP_708,// Resource Temporarily Unavailable
 	__FAULT_UPNP_MAX
 };
 
@@ -394,6 +401,7 @@ int dm_entry_get_linker_value(struct dmctx *ctx);
 int dm_entry_upnp_get_instances(struct dmctx *ctx);
 int dm_entry_upnp_get_selected_values(struct dmctx *dmctx);
 int dm_entry_upnp_get_values(struct dmctx *dmctx);
+int dm_entry_upnp_set_values(struct dmctx *dmctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
@@ -404,6 +412,8 @@ int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_ses
 int apply_end_session();
 void cwmp_set_end_session (unsigned int flag);
 char *dm_print_path(char *fpath, ...);
+void dm_upnp_apply_config(void);
+
 
 #ifndef TRACE
 #define TRACE_TYPE 0

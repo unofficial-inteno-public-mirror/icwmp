@@ -1591,6 +1591,10 @@ int upnp_map_cwmp_fault(int cwmp_fault)
 		return FAULT_UPNP_703;
 	case FAULT_9003:
 		return FAULT_UPNP_701;
+	case FAULT_9007:
+		return FAULT_UPNP_705;
+	case FAULT_9008:
+		return FAULT_UPNP_706;
 	}
 	if (cwmp_fault > __FAULT_UPNP_MAX)
 		return FAULT_UPNP_701;
@@ -1841,9 +1845,9 @@ static int mparam_upnp_structured_get_value_in_param(DMPARAM_ARGS)
 	return 0;
 }
 
-/* ************************
+/* ***************
  * UPNP get values
- * ************************/
+ * ***************/
 
 int dm_entry_upnp_get_values(struct dmctx *dmctx)
 {
@@ -1851,6 +1855,18 @@ int dm_entry_upnp_get_values(struct dmctx *dmctx)
 	err = dm_entry_get_value(dmctx);
 	return (upnp_map_cwmp_fault(err));
 }
+
+/* ***************
+ * UPNP set values
+ * ***************/
+
+int dm_entry_upnp_set_values(struct dmctx *dmctx)
+{
+	int err;
+	err = dm_entry_set_value(dmctx);
+	return (upnp_map_cwmp_fault(err));
+}
+
 /********************/
 
 int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data)

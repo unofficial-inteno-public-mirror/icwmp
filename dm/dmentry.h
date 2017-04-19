@@ -18,7 +18,10 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2);
 int dm_entry_load_enabled_notify(unsigned int dm_type, unsigned int amd_version, int instance_mode);
 int adm_entry_get_linker_param(struct dmctx *ctx, char *param, char *linker, char **value);
 int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value);
-int dm_entry_restart_services();
+int dm_entry_restart_services(void);
+int dm_entry_upnp_restart_services(void);
+void dm_upnp_apply_config(void);
+
 int dm_ctx_clean(struct dmctx *ctx);
 int dm_ctx_clean_sub(struct dmctx *ctx);
 void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode);
