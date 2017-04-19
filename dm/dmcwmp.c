@@ -1867,6 +1867,28 @@ int dm_entry_upnp_set_values(struct dmctx *dmctx)
 	return (upnp_map_cwmp_fault(err));
 }
 
+/* ********************
+ * UPNP delete instance
+ * *******************/
+
+int dm_entry_upnp_delete_instance(struct dmctx *dmctx)
+{
+	int err;
+	err = dm_entry_delete_object(dmctx);
+	return (upnp_map_cwmp_fault(err));
+}
+
+/* ********************
+ * UPNP add instance
+ * *******************/
+
+int dm_entry_upnp_add_instance(struct dmctx *dmctx)
+{
+	int err;
+	err = dm_entry_add_object(dmctx);
+	return (upnp_map_cwmp_fault(err));
+}
+
 /********************/
 
 int dm_add_end_session(struct dmctx *ctx, void(*function)(struct execute_end_session *), int action, void *data)

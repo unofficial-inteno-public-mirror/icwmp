@@ -37,6 +37,8 @@ static void print_dm_help(void)
 	printf(" upnp_get_instances <param> <depth>\n");
 	printf(" upnp_get_supported_parameters <param> <depth>\n");
 	printf(" upnp_set_values <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
+	printf(" upnp_add_instance <param> [sub param 1] [val1] [sub param n] [val2] .... [sub param n] [valn]\n");
+	printf(" upnp_delete_instance <param>\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
 	printf(" exit\n");
 }
@@ -220,6 +222,18 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			ctx->setaction = VALUECHECK;
 			fault = dm_entry_upnp_set_values(ctx);
 			break;
+		case CMD_UPNP_DEL_INSTANCE:
+			fault = dm_entry_upnp_delete_instance(ctx);
+			if (!fault) {
+				dmuci_change_packages(&head_package_change);
+			}
+			break;
+		case CMD_UPNP_ADD_INSTANCE:
+			fault = dm_entry_upnp_add_instance(ctx);
+			if (!fault) {
+				dmuci_change_packages(&head_package_change);
+			}
+			break;
 	}
 	dmuci_commit();
 	return fault;
@@ -371,6 +385,7 @@ void dm_upnp_apply_config(void)
 
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 {
+	struct dm_parameter *n;
 	if (!out) return 0;
 
 	if (dmctx->list_fault_param.next != &dmctx->list_fault_param) {
@@ -385,47 +400,58 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		goto end;
 	}
 
-	if (cmd == CMD_ADD_OBJECT) {
+	switch (cmd) {
+	case CMD_ADD_OBJECT:
 		if (dmctx->addobj_instance) {
 			fprintf (stdout, "{ \"status\": \"1\", \"instance\": \"%s\" }\n", dmctx->addobj_instance);
-			goto end;
 		} else {
 			fprintf (stdout, "{ \"fault\": \"%d\" }\n", FAULT_9002);
-			goto end;
 		}
-	}
+		break;
 
-	if (cmd == CMD_DEL_OBJECT || cmd == CMD_SET_VALUE) {
+	case CMD_UPNP_ADD_INSTANCE:
+		if (dmctx->addobj_instance) {
+			fprintf (stdout, "{ \"status\": \"0\", \"instance_path\": \"%s%s%c\" }\n", dmctx->in_param, dmctx->addobj_instance, dm_delim);
+		} else {
+			fprintf (stdout, "{ \"fault\": \"%d\" }\n", FAULT_UPNP_701);
+		}
+		break;
+
+	case CMD_DEL_OBJECT:
+	case CMD_SET_VALUE:
 		fprintf (stdout, "{ \"status\": \"1\" }\n");
-		goto end;
-	}
+		break;
 
-	if (cmd == CMD_SET_NOTIFICATION || cmd == CMD_UPNP_SET_VALUES) {
+	case CMD_SET_NOTIFICATION:
+	case CMD_UPNP_SET_VALUES:
+	case CMD_UPNP_DEL_INSTANCE:
 		fprintf (stdout, "{ \"status\": \"0\" }\n");
-		goto end;
-	}
+		break;
 
-	struct dm_parameter *n;
-	if (cmd == CMD_GET_NAME) {
+	case CMD_GET_NAME:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"writable\": \"%s\" }\n", n->name, n->data);
 		}
-	}
-	else if (cmd == CMD_GET_NOTIFICATION) {
+		break;
+	case CMD_GET_NOTIFICATION:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"notification\": \"%s\" }\n", n->name, n->data);
 		}
-	}
-	else if (cmd == CMD_GET_VALUE || cmd == CMD_INFORM ||
-			cmd == CMD_UPNP_GET_VALUES || cmd == CMD_UPNP_GET_SELECTED_VALUES) {
+		break;
+	case CMD_GET_VALUE:
+	case CMD_INFORM:
+	case CMD_UPNP_GET_VALUES:
+	case CMD_UPNP_GET_SELECTED_VALUES:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
 		}
-	}
-	else if (cmd == CMD_UPNP_GET_INSTANCES || cmd == CMD_UPNP_GET_SUPPORTED_PARAMETERS) {
+		break;
+	case CMD_UPNP_GET_INSTANCES:
+	case CMD_UPNP_GET_SUPPORTED_PARAMETERS:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\"}\n", n->name);
 		}
+		break;
 	}
 end:
 	return 0;
@@ -628,7 +654,7 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_PARAMETERS, param, argv[5], NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_SUPPORTED_PARAMETERS, output);
 	}
-	/* SET VALUE */
+	/* UPNP SET VALUE */
 	else if (strcmp(cmd, "upnp_set_values") == 0) {
 		if (argc < 6 || (argc % 2) == 1) goto invalid_arguments;
 		int i;
@@ -643,6 +669,38 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_VALUES, NULL, NULL);
 		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_VALUES, output);
+	}
+	/* UPNP DEL INSTANCE */
+	else if (strcmp(cmd, "upnp_delete_instance") == 0) {
+		if (argc < 5) goto invalid_arguments;
+		param =argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_DEL_INSTANCE, param, NULL, NULL);
+		if (!fault)
+			apply_services = 1;
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_DEL_INSTANCE, output);
+	}
+	/* UPNP ADD INSTANCE */
+	else if (strcmp(cmd, "upnp_add_instance") == 0) {
+		char buf[256];
+		int i;
+		if (argc < 5 || (argc % 2) == 0) goto invalid_arguments;
+		param = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_ADD_INSTANCE, param, NULL, NULL);
+		if (!fault && cli_dmctx.addobj_instance) {
+			struct dmctx set_dmctx = {0};
+			apply_services = 1;
+			if (argc >= 6) {
+				dm_ctx_init_sub(&set_dmctx, dmtype, amd_version, instance_mode);
+				for (i = 5; i < argc; i+=2) {
+					sprintf(buf, "%s%s%c%s", param, cli_dmctx.addobj_instance, dm_delim, argv[i]); // concatenate obj path + instance + sub param
+					value = argv[i+1];
+					dm_entry_param_method(&set_dmctx, CMD_UPNP_SET_VALUES, buf, value, NULL);
+				}
+				dm_entry_apply(&set_dmctx, CMD_UPNP_SET_VALUES, NULL, NULL);
+				dm_ctx_clean_sub(&set_dmctx);
+			}
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_ADD_INSTANCE, output);
 	}
 	else {
 		goto invalid_arguments;
@@ -806,11 +864,43 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 			fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_SET_VALUES, param, value, NULL);
 			if (fault) break;
 		}
-		if (!set_fault) {
+		if (!fault) {
 			apply_services = 1;
 			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_VALUES, parameter_key, NULL);
 		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_VALUES, 1);
+	}
+	else if (strcmp(argv[2], "upnp_add_instance") == 0) {
+		char buf[256];
+		int i;
+		if (argc < 4 || (argc % 2) != 0)
+			goto invalid_arguments;
+		param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_ADD_INSTANCE, param, NULL, NULL);
+		if (!fault && cli_dmctx.addobj_instance) {
+			struct dmctx set_dmctx = {0};
+			apply_services = 1;
+			if (argc >= 5) {
+				dm_ctx_init_sub(&set_dmctx, dmtype, amd_version, instance_mode);
+				for (i = 4; i < argc; i+=2) {
+					sprintf(buf, "%s%s%c%s", param, cli_dmctx.addobj_instance, dm_delim, argv[i]); // concatenate obj path + instance + sub param
+					value = argv[i+1];
+					dm_entry_param_method(&set_dmctx, CMD_UPNP_SET_VALUES, buf, value, NULL);
+				}
+				dm_entry_apply(&set_dmctx, CMD_UPNP_SET_VALUES, NULL, NULL);
+				dm_ctx_clean_sub(&set_dmctx);
+			}
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_ADD_INSTANCE, 1);
+	}
+	else if (strcmp(argv[2], "upnp_delete_instance") == 0) {
+		if (argc < 4)
+			goto invalid_arguments;
+		param =argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_DEL_INSTANCE, param, NULL, NULL);
+		if (!fault)
+			apply_services = 1;
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_DEL_INSTANCE, 1);
 	}
 	else {
 		goto invalid_arguments;
