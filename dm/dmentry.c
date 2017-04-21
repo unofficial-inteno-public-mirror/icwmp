@@ -38,6 +38,7 @@ static void print_dm_help(void)
 	printf(" upnp_get_supported_parameters <param> <depth>\n");
 	printf(" upnp_set_values <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
 	printf(" upnp_get_attributes <param>\n");
+	printf(" upnp_set_attributes <param 1> <EventOnChange 1> <AlarmOnChange 1> .... [param n] [EventOnChange n] [AlarmOnChange n]\n");
 	printf(" upnp_add_instance <param> [sub param 1] [val1] [sub param n] [val2] .... [sub param n] [valn]\n");
 	printf(" upnp_delete_instance <param>\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
@@ -133,7 +134,8 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 {
 	int fault = 0;
 	bool setnotif = true;
-	int err;
+	bool alarm = false, event = false;
+	int err, err2;
 	
 	if (!inparam) inparam = "";
 	ctx->in_param = inparam;
@@ -223,6 +225,20 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			ctx->setaction = VALUECHECK;
 			fault = dm_entry_upnp_set_values(ctx);
 			break;
+		case CMD_UPNP_SET_ATTRIBUTES:
+			if (arg1)
+				err = string_to_bool(arg1, &event);
+			if (arg2)
+				err2 = string_to_bool(arg2, &alarm);
+			if (!err && !err2) {
+				ctx->dmparam_flags |= (event) ? DM_PARAM_EVENT_ON_CHANGE : 0;
+				ctx->dmparam_flags |= (alarm) ? DM_PARAM_ALARAM_ON_CHANGE : 0;
+				ctx->setaction = VALUECHECK;
+				fault = dm_entry_upnp_set_attributes(ctx);
+			} else {
+				fault = FAULT_9003;
+			}
+			break;
 		case CMD_UPNP_GET_ATTRIBUTES:
 			fault = dm_entry_upnp_get_attributes(ctx);
 			break;
@@ -302,6 +318,23 @@ int dm_entry_apply(struct dmctx *ctx, int cmd, char *arg1, char *arg2)
 				dmuci_change_packages(&head_package_change);
 				dmuci_commit();
 			}
+			break;
+		case CMD_UPNP_SET_ATTRIBUTES:
+			ctx->setaction = VALUESET;
+			list_for_each_entry_safe(n, p, &ctx->set_list_tmp, list) {
+				ctx->in_param = n->name;
+				ctx->dmparam_flags = n->flags;
+				ctx->stop = false;
+				fault = dm_entry_upnp_set_attributes(ctx);
+				if (fault) break;
+			}
+			if (fault) {
+				//Should not happen
+				dmuci_revert();
+			} else {
+				dmuci_commit();
+			}
+			free_all_set_list_tmp(ctx);
 			break;
 	}
 	return fault;
@@ -415,7 +448,7 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 
 	case CMD_UPNP_ADD_INSTANCE:
 		if (dmctx->addobj_instance) {
-			fprintf (stdout, "{ \"status\": \"0\", \"instance_path\": \"%s%s%c\" }\n", dmctx->in_param, dmctx->addobj_instance, dm_delim);
+			fprintf (stdout, "{ \"status\": \"ChangesApplied\", \"instance_path\": \"%s%s%c\" }\n", dmctx->in_param, dmctx->addobj_instance, dm_delim);
 		} else {
 			fprintf (stdout, "{ \"fault\": \"%d\" }\n", FAULT_UPNP_701);
 		}
@@ -427,9 +460,13 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		break;
 
 	case CMD_SET_NOTIFICATION:
+		fprintf (stdout, "{ \"status\": \"0\" }\n");
+		break;
+
+	case CMD_UPNP_SET_ATTRIBUTES:
 	case CMD_UPNP_SET_VALUES:
 	case CMD_UPNP_DEL_INSTANCE:
-		fprintf (stdout, "{ \"status\": \"0\" }\n");
+		fprintf (stdout, "{ \"status\": \"ChangesApplied\" }\n");
 		break;
 
 	case CMD_GET_NAME:
@@ -452,12 +489,14 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		break;
 	case CMD_UPNP_GET_ATTRIBUTES:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
-			char *alrm = (n->flags & DM_PARAM_ALARAM_ON_CHANGE) ? "1" : "0";
-			char *evnt = (n->flags & DM_PARAM_EVENT_ON_CHANGE) ? "1" : "0";
-			if (n->type) // is parameter
-				fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\",  \"type\": \"%s\",  \"eventOnChange\": \"%s\", \"alarmOnChange\": \"%s\"}\n", n->name, n->data, n->type, evnt, alrm);
-			else // is object
-				fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\",  \"eventOnChange\": \"%s\"}\n", n->name, n->data, evnt);
+			char alrm[32] = "", evnt[32] = "", btype[16];
+			if (n->flags & DM_PARAM_ALARAM_ON_CHANGE)
+				strcpy(alrm, ",  \"alarmOnChange\": \"1\"");
+			if (n->flags & DM_PARAM_EVENT_ON_CHANGE)
+				strcpy(evnt, ",  \"eventOnChange\": \"1\"");
+			if (n->type)
+				sprintf(btype, ",  \"type\": \"%s\"", n->type);
+			fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\"%s%s%s}\n", n->name, n->data, btype, evnt, alrm);
 		}
 		break;
 	case CMD_UPNP_GET_INSTANCES:
@@ -723,6 +762,22 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTES, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ATTRIBUTES, output);
 	}
+	/* UPNP SET ATTRIBUTES */
+	else if (strcmp(cmd, "upnp_set_attributes") == 0) {
+		if (argc < 7 || (argc % 3) != 1) goto invalid_arguments;
+		int i;
+		for (i = 4; i < argc; i+=3) {
+			param = argv[i];
+			char *evnt = argv[i+1];
+			char *alrm = argv[i+2];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_SET_ATTRIBUTES, param, evnt, alrm);
+			if (fault) break;
+		}
+		if(!fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_ATTRIBUTES, NULL, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_ATTRIBUTES, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
@@ -896,6 +951,21 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 		param = argv[3];
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTES, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ATTRIBUTES, 1);
+	}
+	else if (strcmp(argv[2], "upnp_set_attributes") == 0) {
+		if (argc < 6 || (argc % 3) != 0) goto invalid_arguments;
+		int i;
+		for (i = 3; i < argc; i+=3) {
+			param = argv[i];
+			char *evnt = argv[i+1];
+			char *alrm = argv[i+2];
+			fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_SET_ATTRIBUTES, param, evnt, alrm);
+			if (fault) break;
+		}
+		if(!fault) {
+			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_ATTRIBUTES, NULL, NULL);
+		}
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_ATTRIBUTES, 1);
 	}
 	else if (strcmp(argv[2], "upnp_add_instance") == 0) {
 		char buf[256];

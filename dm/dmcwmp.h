@@ -143,6 +143,7 @@ struct set_tmp {
 	struct list_head list;
 	char *name;
 	char *value;
+	unsigned int flags;
 };
 
 struct param_fault {
@@ -189,6 +190,7 @@ struct dmctx
 	char *addobj_instance;
 	char *linker;
 	char *linker_param;
+	unsigned int dmparam_flags;
 	unsigned int alias_register;
 	unsigned int nbrof_instance;
 	unsigned int amd_version;
@@ -390,7 +392,7 @@ int get_empty(char *refparam, struct dmctx *args, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type, unsigned int flags);
 void del_list_parameter(struct dm_parameter *dm_parameter);
 void free_all_list_parameter(struct dmctx *ctx);
-void add_set_list_tmp(struct dmctx *ctx, char *param, char *value);
+void add_set_list_tmp(struct dmctx *ctx, char *param, char *value, unsigned int flags);
 void del_set_list_tmp(struct set_tmp *set_tmp);
 void free_all_set_list_tmp(struct dmctx *ctx);
 void add_list_fault_param(struct dmctx *ctx, char *param, int fault);
