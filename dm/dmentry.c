@@ -37,6 +37,7 @@ static void print_dm_help(void)
 	printf(" upnp_get_instances <param> <depth>\n");
 	printf(" upnp_get_supported_parameters <param> <depth>\n");
 	printf(" upnp_set_values <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
+	printf(" upnp_get_attributes <param>\n");
 	printf(" upnp_add_instance <param> [sub param 1] [val1] [sub param n] [val2] .... [sub param n] [valn]\n");
 	printf(" upnp_delete_instance <param>\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
@@ -221,6 +222,9 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			ctx->in_value = arg1 ? arg1 : "";
 			ctx->setaction = VALUECHECK;
 			fault = dm_entry_upnp_set_values(ctx);
+			break;
+		case CMD_UPNP_GET_ATTRIBUTES:
+			fault = dm_entry_upnp_get_attributes(ctx);
 			break;
 		case CMD_UPNP_DEL_INSTANCE:
 			fault = dm_entry_upnp_delete_instance(ctx);
@@ -444,6 +448,16 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 	case CMD_UPNP_GET_SELECTED_VALUES:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
+		}
+		break;
+	case CMD_UPNP_GET_ATTRIBUTES:
+		list_for_each_entry(n, &dmctx->list_parameter, list) {
+			char *alrm = (n->flags & DM_PARAM_ALARAM_ON_CHANGE) ? "1" : "0";
+			char *evnt = (n->flags & DM_PARAM_EVENT_ON_CHANGE) ? "1" : "0";
+			if (n->type) // is parameter
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\",  \"type\": \"%s\",  \"eventOnChange\": \"%s\", \"alarmOnChange\": \"%s\"}\n", n->name, n->data, n->type, evnt, alrm);
+			else // is object
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\",  \"eventOnChange\": \"%s\"}\n", n->name, n->data, evnt);
 		}
 		break;
 	case CMD_UPNP_GET_INSTANCES:
@@ -702,6 +716,13 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_ADD_INSTANCE, output);
 	}
+	/* UPNP GET ATTRIBUTES */
+	else if (strcmp(cmd, "upnp_get_attributes") == 0) {
+		if (argc < 5) goto invalid_arguments;
+		param = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTES, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ATTRIBUTES, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
@@ -869,6 +890,12 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 			fault = dm_entry_apply(&cli_dmctx, CMD_UPNP_SET_VALUES, parameter_key, NULL);
 		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_VALUES, 1);
+	}
+	else if (strcmp(argv[2], "upnp_get_attributes") == 0) {
+		if (argc < 4) goto invalid_arguments;
+		param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTES, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ATTRIBUTES, 1);
 	}
 	else if (strcmp(argv[2], "upnp_add_instance") == 0) {
 		char buf[256];

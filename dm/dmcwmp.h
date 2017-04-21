@@ -163,6 +163,7 @@ struct dm_parameter {
 	char *name;
 	char *data;
 	char *type; 
+	unsigned int flags;
 };
 
 struct dmctx
@@ -256,6 +257,8 @@ enum {
 	CMD_UPNP_GET_SELECTED_VALUES,
 	CMD_UPNP_GET_VALUES,
 	CMD_UPNP_SET_VALUES,
+	CMD_UPNP_GET_ATTRIBUTES,
+	CMD_UPNP_SET_ATTRIBUTES,
 	CMD_UPNP_DEL_INSTANCE,
 	CMD_UPNP_ADD_INSTANCE,
 };
@@ -358,6 +361,11 @@ enum dm_type_enum{
 	DM_UPNP,
 };
 
+enum dm_param_flags_enum{
+	DM_PARAM_ALARAM_ON_CHANGE = 0x1,
+	DM_PARAM_EVENT_ON_CHANGE = 0x2,
+};
+
 #define DM_CLEAN_ARGS(X) memset(&(X), 0, sizeof(X))
 static inline int DM_LINK_INST_OBJ(struct dmctx *dmctx, DMNODE *parent_node, void *data, char *instance)
 {
@@ -379,7 +387,7 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
 char *update_instance_without_section(int action, char **last_inst, void *argv[]);
 int get_empty(char *refparam, struct dmctx *args, char **value);
-void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type);
+void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type, unsigned int flags);
 void del_list_parameter(struct dm_parameter *dm_parameter);
 void free_all_list_parameter(struct dmctx *ctx);
 void add_set_list_tmp(struct dmctx *ctx, char *param, char *value);
@@ -404,6 +412,7 @@ int dm_entry_upnp_get_instances(struct dmctx *ctx);
 int dm_entry_upnp_get_selected_values(struct dmctx *dmctx);
 int dm_entry_upnp_get_values(struct dmctx *dmctx);
 int dm_entry_upnp_set_values(struct dmctx *dmctx);
+int dm_entry_upnp_get_attributes(struct dmctx *dmctx);
 void free_all_list_enabled_notify();
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);

@@ -60,7 +60,6 @@ static void show_help(void)
 	printf(" -b, --boot-event                      (CWMP daemon) Start CWMP with BOOT event\n");
 	printf(" -g, --get-rpc-methods                 (CWMP daemon) Start CWMP with GetRPCMethods request to ACS\n");
 	printf(" -c, --command-input                   (DataModel CLI) Execute data model rpc(s) with commands input\n");
-	printf(" -j, --json-input                      (DataModel CLI) Execute data model rpc(s) with json format commands\n");
 	printf(" -m, --shell-cli <data model rpc>      (DataModel CLI) Execute data model RPC command directly from shell.\n");
 	printf(" -a, --alias-based-addressing          (DataModel CLI) Alias based addressing supported\n");
 	printf(" -N, --instance-mode-number            (DataModel CLI) Instance mode is Number (Enabled by default)\n");
