@@ -30,6 +30,10 @@ char *array_notifcation_char[__MAX_notification] = {
 	[notification_none] = "0",
 	[notification_passive] = "1",
 	[notification_active] = "2",
+	[notification_passive_lw] = "3",
+	[notification_ppassive_passive_lw] = "4",
+	[notification_aactive_lw] = "5",
+	[notification_passive_active_lw] = "6",
 };
 
 void compress_spaces(char *str)

@@ -65,6 +65,10 @@ enum notification_enum {
 	notification_none,
 	notification_passive,
 	notification_active,
+	notification_passive_lw,
+	notification_ppassive_passive_lw,
+	notification_aactive_lw,
+	notification_passive_active_lw,
 	__MAX_notification
 };
 
