@@ -2131,10 +2131,6 @@ int cwmp_free_dm_end_session(struct execute_end_session *execute_end_session)
 {
 	if(execute_end_session != NULL)
 	{
-		if(execute_end_session->data != NULL)
-		{
-			FREE(execute_end_session->data);
-		}
 		FREE(execute_end_session);
 	}
 	return 0;
