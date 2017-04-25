@@ -521,6 +521,7 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 			char blist[64] = "";
 			char bread[64] = "";
 			char bwrite[64] = "";
+			char bfac[32] = "";
 			if (n->flags & DM_PUBLIC_LIST) {
 				strcat(blist, "Public ");
 			}
@@ -554,7 +555,9 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 			}
 			if (*bwrite)
 				bwrite[strlen(bwrite) - 1] = '\0';
-			fprintf (stdout, "{ \"ACLDataPath\": \"%s\", \"factorized\": \"%d\" \"List\": \"%s\", \"Read\": \"%s\", \"Write\": \"%s\"}\n", n->name, (n->flags & DM_FACTORIZED) ? 1 : 0, blist, bread, bwrite);
+			if (n->flags & DM_FACTORIZED)
+				sprintf(bfac, ", \"factorized\": \"1\"");
+			fprintf (stdout, "{ \"ACLDataPath\": \"%s\", \"List\": \"%s\", \"Read\": \"%s\", \"Write\": \"%s\"%s }\n", n->name, blist, bread, bwrite, bfac);
 		}
 	}
 end:
