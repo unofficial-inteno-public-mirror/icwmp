@@ -44,6 +44,7 @@ struct option long_options[] = {
 	{"instance-mode-number", no_argument, NULL, 'N'},
 	{"instance-mode-alias", no_argument, NULL, 'A'},
 	{"upnp", no_argument, NULL, 'U'},
+	{"user-acl", required_argument, NULL, 'u'},
 	{"amendment", required_argument, NULL, 'M'},
 	{"time-tracking", no_argument, NULL, 't'},
 	{"evaluating-test", no_argument, NULL, 'E'},
@@ -57,21 +58,22 @@ struct option long_options[] = {
 static void show_help(void)
 {
 	printf("Usage: icwmpd [OPTIONS]\n");
-	printf(" -b, --boot-event                      (CWMP daemon) Start CWMP with BOOT event\n");
-	printf(" -g, --get-rpc-methods                 (CWMP daemon) Start CWMP with GetRPCMethods request to ACS\n");
-	printf(" -c, --command-input                   (DataModel CLI) Execute data model rpc(s) with commands input\n");
-	printf(" -m, --shell-cli <data model rpc>      (DataModel CLI) Execute data model RPC command directly from shell.\n");
-	printf(" -a, --alias-based-addressing          (DataModel CLI) Alias based addressing supported\n");
-	printf(" -N, --instance-mode-number            (DataModel CLI) Instance mode is Number (Enabled by default)\n");
-	printf(" -A, --instance-mode-alias             (DataModel CLI) Instance mode is Alias\n");
-	printf(" -M, --amendment <amendment version>   (DataModel CLI) Amendment version (Default amendment version is 2)\n");
-	printf(" -U, --upnp                            (DataModel CLI) Use UPNP data model paths\n");
-	printf(" -t, --time-tracking                   (DataModel CLI) Tracking time of RPC commands\n");
-	printf(" -E, --evaluating-test                 (DataModel CLI) Evaluating test format\n");
-	printf(" -f, --file <file path>                (DataModel CLI) Execute data model rpc(s) from file\n");
-	printf(" -w, --wep <strength> <passphrase>     (WEP KEY GEN) Generate wep keys\n");
-	printf(" -h, --help                            Display this help text\n");
-	printf(" -v, --version                         Display the version\n");
+	printf(" -b, --boot-event                                    (CWMP daemon) Start CWMP with BOOT event\n");
+	printf(" -g, --get-rpc-methods                               (CWMP daemon) Start CWMP with GetRPCMethods request to ACS\n");
+	printf(" -c, --command-input                                 (DataModel CLI) Execute data model rpc(s) with commands input\n");
+	printf(" -m, --shell-cli <data model rpc>                    (DataModel CLI) Execute data model RPC command directly from shell.\n");
+	printf(" -a, --alias-based-addressing                        (DataModel CLI) Alias based addressing supported\n");
+	printf(" -N, --instance-mode-number                          (DataModel CLI) Instance mode is Number (Enabled by default)\n");
+	printf(" -A, --instance-mode-alias                           (DataModel CLI) Instance mode is Alias\n");
+	printf(" -M, --amendment <amendment version>                 (DataModel CLI) Amendment version (Default amendment version is 2)\n");
+	printf(" -U, --upnp                                          (DataModel CLI) Use UPNP data model paths\n");
+	printf(" -u, --user-acl <public|basic|xxxadmin|superadmin>   (DataModel CLI) user access level. Default: superadmin\n");
+	printf(" -t, --time-tracking                                 (DataModel CLI) Tracking time of RPC commands\n");
+	printf(" -E, --evaluating-test                               (DataModel CLI) Evaluating test format\n");
+	printf(" -f, --file <file path>                              (DataModel CLI) Execute data model rpc(s) from file\n");
+	printf(" -w, --wep <strength> <passphrase>                   (WEP KEY GEN) Generate wep keys\n");
+	printf(" -h, --help                                          Display this help text\n");
+	printf(" -v, --version                                       Display the version\n");
 }
 
 void show_version()
@@ -1064,12 +1066,13 @@ int global_env_init (int argc, char** argv, struct env *env)
 	struct dmctx dmctx = {0};
 
 	char *file = NULL;
+	char *upnpuser;
 	char *next;
 	char *m_argv[64];
 	int m_argc;
 	int c, option_index = 0, iv, idx;
 
-	while ((c = getopt_long(argc, argv, "bgcaNAUtEhvm:M:f:w:", long_options, &option_index)) != -1) {
+	while ((c = getopt_long(argc, argv, "bgcaNAUtEhvm:u:M:f:w:", long_options, &option_index)) != -1) {
 
 		switch (c)
 		{
@@ -1121,6 +1124,22 @@ int global_env_init (int argc, char** argv, struct env *env)
 
 		case 'U':
 			dmtype = DM_UPNP;
+			break;
+
+		case 'u':
+			upnpuser = optarg;
+			if (strcmp(upnpuser, "public") == 0) {
+				upnp_in_user_mask = DM_PUBLIC_MASK;
+			}
+			else if (strcmp(upnpuser, "basic") == 0) {
+				upnp_in_user_mask = DM_BASIC_MASK;
+			}
+			else if (strcmp(upnpuser, "xxxadmin") == 0) {
+				upnp_in_user_mask = DM_XXXADMIN_MASK;
+			}
+			else if (strcmp(upnpuser, "superadmin") == 0) {
+				upnp_in_user_mask = DM_SUPERADMIN_MASK;
+			}
 			break;
 
 		case 'w':
@@ -1179,7 +1198,6 @@ int global_env_init (int argc, char** argv, struct env *env)
 		dm_execute_cli_command(file, dmtype, dmamendment, dminstancemode);
 		exit (0);
 	}
-
 	return CWMP_OK;
 }
 

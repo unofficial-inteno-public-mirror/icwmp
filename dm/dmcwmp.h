@@ -196,6 +196,7 @@ struct dmctx
 	unsigned int amd_version;
 	unsigned int instance_mode;
 	unsigned int dm_type;
+	unsigned int user_mask;
 	unsigned char inparam_isparam;
 	unsigned char findparam;
 	char current_obj[512];
@@ -224,6 +225,11 @@ struct prefix_method {
 struct notification {
 	char *value;
 	char *type;
+};
+
+struct dm_acl {
+	unsigned int flag;
+	char *user_access;
 };
 
 typedef struct execute_end_session {
@@ -263,6 +269,7 @@ enum {
 	CMD_UPNP_SET_ATTRIBUTES,
 	CMD_UPNP_DEL_INSTANCE,
 	CMD_UPNP_ADD_INSTANCE,
+	CMD_UPNP_GET_ACLDATA,
 };
 
 enum fault_code_enum {
@@ -364,8 +371,25 @@ enum dm_type_enum{
 };
 
 enum dm_param_flags_enum{
-	DM_PARAM_ALARAM_ON_CHANGE = 0x1,
-	DM_PARAM_EVENT_ON_CHANGE = 0x2,
+	DM_PARAM_ALARAM_ON_CHANGE = 1 << 0,
+	DM_PARAM_EVENT_ON_CHANGE = 1 << 1,
+	DM_PUBLIC_LIST = 1 << 0,
+	DM_PUBLIC_READ = 1 << 1,
+	DM_PUBLIC_WRITE = 1 << 2,
+	DM_PUBLIC_MASK = DM_PUBLIC_LIST|DM_PUBLIC_READ|DM_PUBLIC_WRITE,
+	DM_BASIC_LIST = 1 << 3,
+	DM_BASIC_READ = 1 << 4,
+	DM_BASIC_WRITE = 1 << 5,
+	DM_BASIC_MASK = DM_PUBLIC_MASK|DM_BASIC_LIST|DM_BASIC_READ|DM_BASIC_WRITE,
+	DM_XXXADMIN_LIST = 1 << 6,
+	DM_XXXADMIN_READ = 1 << 7,
+	DM_XXXADMIN_WRITE = 1 << 8,
+	DM_XXXADMIN_MASK = DM_BASIC_MASK|DM_XXXADMIN_LIST|DM_XXXADMIN_READ|DM_XXXADMIN_WRITE,
+	DM_SUPERADMIN_MASK = DM_XXXADMIN_MASK | (1 << 9),
+	DM_LIST_MASK = DM_PUBLIC_LIST|DM_BASIC_LIST|DM_XXXADMIN_LIST,
+	DM_READ_MASK = DM_PUBLIC_READ|DM_BASIC_READ|DM_XXXADMIN_READ,
+	DM_WRITE_MASK = DM_PUBLIC_WRITE|DM_BASIC_WRITE|DM_XXXADMIN_WRITE,
+	DM_FACTORIZED = 1 << 31
 };
 
 #define DM_CLEAN_ARGS(X) memset(&(X), 0, sizeof(X))
@@ -384,6 +408,7 @@ extern int end_session_flag;
 extern int ip_version;
 extern char dm_delim;
 extern char DMROOT[64];
+extern unsigned int upnp_in_user_mask;
 
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);

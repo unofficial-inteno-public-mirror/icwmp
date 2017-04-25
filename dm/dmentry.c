@@ -41,6 +41,7 @@ static void print_dm_help(void)
 	printf(" upnp_set_attributes <param 1> <EventOnChange 1> <AlarmOnChange 1> .... [param n] [EventOnChange n] [AlarmOnChange n]\n");
 	printf(" upnp_add_instance <param> [sub param 1] [val1] [sub param n] [val2] .... [sub param n] [valn]\n");
 	printf(" upnp_delete_instance <param>\n");
+	printf(" upnp_get_acldata <param>\n");
 	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
 	printf(" exit\n");
 }
@@ -63,8 +64,11 @@ static int dm_ctx_init_custom(struct dmctx *ctx, unsigned int dm_type, unsigned 
 		strcpy(DMROOT, DMROOT_UPNP);
 		dm_delim = DMDELIM_UPNP;
 		ctx->dm_entryobj = tEntryObjUPNP;
+		ctx->user_mask = upnp_in_user_mask;
 	}
 	else {
+		strcpy(DMROOT, DMROOT_CWMP);
+		dm_delim = DMDELIM_CWMP;
 		ctx->dm_entryobj = tEntryObj;
 	}
 	return 0;
@@ -253,6 +257,9 @@ int dm_entry_param_method(struct dmctx *ctx, int cmd, char *inparam, char *arg1,
 			if (!fault) {
 				dmuci_change_packages(&head_package_change);
 			}
+			break;
+		case CMD_UPNP_GET_ACLDATA:
+			fault = dm_entry_upnp_get_acl_data(ctx);
 			break;
 	}
 	dmuci_commit();
@@ -481,10 +488,14 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		break;
 	case CMD_GET_VALUE:
 	case CMD_INFORM:
+		list_for_each_entry(n, &dmctx->list_parameter, list) {
+			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
+		}
+		break;
 	case CMD_UPNP_GET_VALUES:
 	case CMD_UPNP_GET_SELECTED_VALUES:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
-			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"type\": \"%s\" }\n", n->name, n->data, n->type);
+			fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\" }\n", n->name, n->data);
 		}
 		break;
 	case CMD_UPNP_GET_ATTRIBUTES:
@@ -505,6 +516,46 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 			fprintf (stdout, "{ \"parameter\": \"%s\"}\n", n->name);
 		}
 		break;
+	case CMD_UPNP_GET_ACLDATA:
+		list_for_each_entry(n, &dmctx->list_parameter, list) {
+			char blist[64] = "";
+			char bread[64] = "";
+			char bwrite[64] = "";
+			if (n->flags & DM_PUBLIC_LIST) {
+				strcat(blist, "Public ");
+			}
+			if (n->flags & DM_BASIC_LIST) {
+				strcat(blist, "Basic ");
+			}
+			if (n->flags & DM_XXXADMIN_LIST) {
+				strcat(blist, "xxxAdmin ");
+			}
+			if (*blist)
+				blist[strlen(blist) - 1] = '\0';
+			if (n->flags & DM_PUBLIC_READ) {
+				strcat(bread, "Public ");
+			}
+			if (n->flags & DM_BASIC_READ) {
+				strcat(bread, "Basic ");
+			}
+			if (n->flags & DM_XXXADMIN_READ) {
+				strcat(bread, "xxxAdmin ");
+			}
+			if (*bread)
+				bread[strlen(bread) - 1] = '\0';
+			if (n->flags & DM_PUBLIC_WRITE) {
+				strcat(bwrite, "Public ");
+			}
+			if (n->flags & DM_BASIC_WRITE) {
+				strcat(bwrite, "Basic ");
+			}
+			if (n->flags & DM_XXXADMIN_WRITE) {
+				strcat(bwrite, "xxxAdmin ");
+			}
+			if (*bwrite)
+				bwrite[strlen(bwrite) - 1] = '\0';
+			fprintf (stdout, "{ \"ACLDataPath\": \"%s\", \"factorized\": \"%d\" \"List\": \"%s\", \"Read\": \"%s\", \"Write\": \"%s\"}\n", n->name, (n->flags & DM_FACTORIZED) ? 1 : 0, blist, bread, bwrite);
+		}
 	}
 end:
 	return 0;
@@ -778,6 +829,13 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		}
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_SET_ATTRIBUTES, output);
 	}
+	/* UPNP GET ACLDATA */
+	else if (strcmp(cmd, "upnp_get_acldata") == 0) {
+		if (argc < 5) goto invalid_arguments;
+		param = argv[4];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ACLDATA, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ACLDATA, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
@@ -998,6 +1056,12 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 		if (!fault)
 			apply_services = 1;
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_DEL_INSTANCE, 1);
+	}
+	else if (strcmp(argv[2], "upnp_get_acldata") == 0) {
+		if (argc < 4) goto invalid_arguments;
+		param = argv[3];
+		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ACLDATA, param, NULL, NULL);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ACLDATA, 1);
 	}
 	else {
 		goto invalid_arguments;

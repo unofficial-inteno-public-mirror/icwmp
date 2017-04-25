@@ -736,3 +736,15 @@ int dmcommon_check_notification_value(char *value)
 	}
 	return -1;
 }
+
+char *print_bin(unsigned int n, char *buf, int sep)
+{
+	int i = 0, j;
+	for (j = 0; j < 32;  j++) {
+		if (j % sep == 0)
+			buf[i++] = ' ';
+		buf[i++] = (n & (1<<j)) ? '1' : '0';
+	}
+	buf[i] = '\0';
+	return buf;
+}
