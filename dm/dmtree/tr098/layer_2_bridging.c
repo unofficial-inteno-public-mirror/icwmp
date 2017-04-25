@@ -1092,11 +1092,6 @@ int set_brvlan_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 /*************************************************************
 * LAYER2-DM OBJ & PARAM
 / * ***********************************************************/
-bool check_init_layer2(struct dmctx *dmctx, void *data)
-{
-	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &wan_baseifname);
-	return true;
-}
 
 DMLEAF tavailableinterfaceParam[] = {
 {"Alias", &DMWRITE, DMT_STRING, get_avai_int_alias, set_avai_int_alias, NULL, NULL},
@@ -1198,6 +1193,7 @@ inline int browselayer2_bridgeInst(struct dmctx *dmctx, DMNODE *parent_node, voi
 	char *bridge_instance = NULL, *bridge_instance_last = NULL;
 	struct uci_section *bridge_s;
 
+	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &wan_baseifname);
 	uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
 		bridge_instance =  handle_update_instance(1, dmctx, &bridge_instance_last, update_instance_alias, 3, bridge_s, "bridge_instance", "bridge_alias");
 		update_markinginterface_list(bridge_s, bridge_instance_last);

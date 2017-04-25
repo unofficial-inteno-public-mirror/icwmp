@@ -18,6 +18,5 @@ extern DMLEAF tbridge_vlanParam[];
 extern DMLEAF tlayer2_bridgeParam[];
 extern DMLEAF tlayer2_markingParam[];
 extern DMLEAF tavailableinterfaceParam[];
-bool check_init_layer2(struct dmctx *dmctx, void *data);
 
 #endif
