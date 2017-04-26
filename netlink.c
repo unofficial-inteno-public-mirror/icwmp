@@ -123,7 +123,7 @@ static void netlink_new_msg(struct uloop_fd *ufd, unsigned events)
 		return;
 	}
 
-	while (msg_size - sizeof(*nlh) > 0) {
+	while (msg_size > sizeof(*nlh)) {
 		int len = nlh->nlmsg_len;
 		int req_len = len - sizeof(*nlh);
 
@@ -159,7 +159,7 @@ static void netlink_new_msg_v6(struct uloop_fd *ufd, unsigned events)
 		return;
 	}
 
-	while (msg_size - sizeof(*nlh) > 0 ) {
+	while (msg_size > sizeof(*nlh)) {
 		int len = nlh->nlmsg_len;
 		int req_len = len - sizeof(*nlh);
 
