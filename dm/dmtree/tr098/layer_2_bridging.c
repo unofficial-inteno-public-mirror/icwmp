@@ -18,43 +18,204 @@
 #include "dmcommon.h"
 #include "layer_2_bridging.h"
 
-inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browselayer2_bridgeInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browselayer2_markingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browsebridge_vlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-int set_marking_bridge_key_sub(char *refparam, struct dmctx *ctx, char *value);
-int set_marking_interface_key_sub(char *refparam, struct dmctx *ctx, char *value);
-int set_bridge_vlan_enable_sub(char *refparam, struct dmctx *ctx, bool b);
-int set_bridge_vlan_vid_sub(struct uci_section *vb, char *value);
-int set_bridge_vlanid_sub(char *refparam, struct dmctx *ctx, char *value);
-void remove_config_interfaces(char *baseifname, char *bridge_key, struct uci_section *bridge_s, char *mbi);
-
-struct wan_interface 
-{
-	char *instance;
-	char *name;
-	char *package;
-	char *section;		
-};
-
-struct args_layer2
-{
-	struct uci_section *layer2section;
-	struct uci_section *layer2sectionlev2;
-	char *bridge_instance;
-	char *availableinterface_instance;
-	char *interface_type;
-	char *oface;
-};
 const char *vlan_ifname[3] = {"eth","atm", "ptm"};
+struct args_layer2 cur_args = {0};
+char *wan_baseifname = NULL;
 struct wan_interface wan_interface_tab[3] = {
 {"1", "ethernet", "layer2_interface_ethernet", "ethernet_interface"},
 {"2", "adsl", "layer2_interface_adsl", "atm_bridge"},
 {"3", "vdsl", "layer2_interface_vdsl", "vdsl_interface"}
 };
 
-struct args_layer2 cur_args = {0};
-char *wan_baseifname = NULL;
+/*************************************************************
+* LAYER2-DM OBJ & PARAM
+/************************************************************/
+
+DMLEAF tavailableinterfaceParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_avai_int_alias, set_avai_int_alias, NULL, NULL},
+{"AvailableInterfaceKey", &DMREAD, DMT_UNINT, get_available_interface_key, NULL, NULL, &DMNONE},
+{"InterfaceReference", &DMREAD, DMT_STRING, get_interface_reference, NULL, NULL, &DMNONE},
+{"InterfaceType", &DMREAD, DMT_STRING, get_interfaces_type, NULL, NULL, &DMNONE},
+{0}
+};
+
+DMLEAF tlayer2_markingParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_marking_alias, set_marking_alias, NULL, NULL},
+{"MarkingBridgeReference", &DMWRITE, DMT_INT, get_marking_bridge_reference, set_marking_bridge_key, NULL, NULL},
+{"MarkingInterface", &DMWRITE, DMT_STRING, get_marking_interface_key, set_marking_interface_key, NULL, NULL},
+{0}
+};
+
+DMLEAF tlayer2_bridgeParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_bridge_alias, set_bridge_alias, NULL, NULL},
+{"BridgeEnable", &DMWRITE, DMT_BOOL, get_bridge_status, set_bridge_status, NULL, NULL},
+{"BridgeKey", &DMREAD, DMT_UNINT, get_bridge_key, NULL, NULL, NULL},
+{"BridgeName", &DMWRITE, DMT_STRING, get_bridge_name, set_bridge_name, NULL, NULL},
+{"VLANID", &DMWRITE, DMT_UNINT, get_bridge_vlanid, set_bridge_vlanid, NULL, NULL},
+{"X_INTENO_COM_AssociatedInterfaces", &DMWRITE, DMT_STRING, get_associated_interfaces, set_associated_interfaces, NULL, NULL},
+{0}
+};
+
+DMLEAF tbridge_vlanParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_brvlan_alias, set_brvlan_alias, NULL, NULL},
+{"VLANEnable", &DMWRITE, DMT_BOOL, get_bridge_vlan_enable, set_bridge_vlan_enable, NULL, NULL},
+{"VLANName", &DMWRITE, DMT_STRING, get_bridge_vlan_name, set_bridge_vlan_name, NULL, NULL},
+{"VLANID", &DMWRITE, DMT_UNINT, get_bridge_vlan_vid, set_bridge_vlan_vid, NULL, NULL},
+{0}
+};
+
+DMOBJ tBridge_VlanObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"VLAN", &DMWRITE, add_layer2bridging_bridge_vlan, delete_layer2bridging_bridge_vlan, NULL, browsebridge_vlanInst, NULL, NULL, NULL, tbridge_vlanParam, NULL},
+{0}
+};
+
+DMOBJ tLayer2BridgingObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"AvailableInterface", &DMREAD, NULL, NULL, NULL, browselayer2_availableinterfaceInst, NULL, NULL, NULL, tavailableinterfaceParam, NULL},
+{"Marking", &DMWRITE, add_layer2bridging_marking, delete_layer2bridging_marking, NULL, browselayer2_markingInst, NULL, NULL, NULL, tlayer2_markingParam, NULL},
+{"Bridge", &DMWRITE, add_layer2bridging_bridge, delete_layer2bridging_bridge, NULL, browselayer2_bridgeInst, NULL, NULL, tBridge_VlanObj, tlayer2_bridgeParam, NULL},
+{0}
+};
+
+int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+{
+	int i = 0;
+	char *oface, *phy_interface, *ch_ptr, *saveptr, *waninstance = NULL, *phy_interface_dup = NULL;
+	char *base_ifname, *available_inst = NULL;
+	struct uci_section *wifi_s , *wan_s, *ai_s;
+	char *instance_last = NULL;
+
+	for (i=0; i<3; i++) {
+		uci_foreach_sections(wan_interface_tab[i].package, wan_interface_tab[i].section, wan_s) {
+			waninstance = update_instance(wan_s, waninstance, "waninstance");
+			dmasprintf(&oface, "%s%cWANDevice%c%s%cWANConnectionDevice%c%s%c", DMROOT, dm_delim, dm_delim, wan_interface_tab[i].instance, dm_delim, dm_delim, waninstance, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+			dmuci_get_value_by_section_string(wan_s, "baseifname", &base_ifname);
+			ai_s = update_availableinterface_list(dmctx, base_ifname, &available_inst, &instance_last);
+			init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "WANInterface", oface);
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+				goto end;
+		}
+	}
+	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_interface);
+	phy_interface_dup = dmstrdup(phy_interface);
+	i = 0;
+	for (ch_ptr = strtok_r(phy_interface_dup, " ", &saveptr); ch_ptr; ch_ptr = strtok_r(NULL, " ", &saveptr))
+	{
+		dmasprintf(&oface, "%s%cLANInterfaces%cLANEthernetInterfaceConfig%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+		ai_s = update_availableinterface_list(dmctx, ch_ptr, &available_inst, &instance_last);
+		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+			goto end;
+	}
+	i = 0;
+	uci_foreach_sections("wireless", "wifi-iface", wifi_s) {
+		dmasprintf(&oface, "%s%cLANInterfaces%cWLANConfiguration%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+		ai_s = update_availableinterface_list(dmctx, section_name(wifi_s), &available_inst, &instance_last);
+		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
+			goto end;
+	}
+end:
+	dmfree(phy_interface_dup);
+	DM_CLEAN_ARGS(cur_args);
+	return 0;
+}
+
+int browselayer2_bridgeInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+{
+	char *bridge_instance = NULL, *bridge_instance_last = NULL;
+	struct uci_section *bridge_s;
+
+	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &wan_baseifname);
+	uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
+		bridge_instance =  handle_update_instance(1, dmctx, &bridge_instance_last, update_instance_alias, 3, bridge_s, "bridge_instance", "bridge_alias");
+		init_args_layer2(dmctx, bridge_s, NULL, NULL, bridge_instance_last, NULL, NULL);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, bridge_instance) == DM_STOP)
+			break;
+	}
+	DM_CLEAN_ARGS(cur_args);
+	return 0;
+}
+
+int browselayer2_markingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+{
+	char *marking_instance = NULL, *marking_instance_last = NULL;
+	struct uci_section *marking_s = NULL;
+
+	synchronize_availableinterfaceInst(dmctx);
+	synchrinize_layer2_bridgeInst(dmctx);
+	uci_foreach_sections("dmmap", "marking-bridge", marking_s) {
+		marking_instance =  handle_update_instance(1, dmctx, &marking_instance_last, update_instance_alias, 3, marking_s, "marking_instance", "marking_alias");
+		init_args_layer2(dmctx, marking_s, NULL, NULL, NULL, NULL, NULL);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, marking_instance) == DM_STOP)
+			break;
+	}
+	DM_CLEAN_ARGS(cur_args);
+	return 0;
+}
+
+int browsebridge_vlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+{
+	struct uci_section *ss = NULL;
+	char *vlan_instance = NULL, *vlan_instance_last = NULL;
+
+	update_bridge_all_vlan_config_bybridge(dmctx);
+	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", cur_args.bridge_instance, ss) {
+		vlan_instance =  handle_update_instance(2, dmctx, &vlan_instance_last, update_instance_alias, 3, ss, "vlan_instance", "vlan_alias");
+		init_args_layer2_vlan(dmctx, ss);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan_instance) == DM_STOP)
+			break;
+	}
+	//NO Clean args here. It will be done in the parent object
+	cur_args.layer2sectionlev2 = NULL;
+	return 0;
+}
+
+int synchronize_availableinterfaceInst(struct dmctx *dmctx)
+{
+	int i = 0;
+	char *oface, *phy_interface, *ch_ptr, *saveptr, *waninstance = NULL, *phy_interface_dup = NULL;
+	char *base_ifname, *available_inst = NULL;
+	struct uci_section *wifi_s , *wan_s, *ai_s;
+	char *instance_last = NULL;
+
+	for (i=0; i<3; i++) {
+		uci_foreach_sections(wan_interface_tab[i].package, wan_interface_tab[i].section, wan_s) {
+			waninstance = update_instance(wan_s, waninstance, "waninstance");
+			dmasprintf(&oface, "%s%cWANDevice%c%s%cWANConnectionDevice%c%s%c", DMROOT, dm_delim, dm_delim, wan_interface_tab[i].instance, dm_delim, dm_delim, waninstance, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+			dmuci_get_value_by_section_string(wan_s, "baseifname", &base_ifname);
+			update_availableinterface_list(dmctx, base_ifname, &available_inst, &instance_last);
+		}
+	}
+	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_interface);
+	phy_interface_dup = dmstrdup(phy_interface);
+	i = 0;
+	for (ch_ptr = strtok_r(phy_interface_dup, " ", &saveptr); ch_ptr != NULL; ch_ptr = strtok_r(NULL, " ", &saveptr))
+	{
+		dmasprintf(&oface, "%s%cLANInterfaces%cLANEthernetInterfaceConfig%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+		update_availableinterface_list(dmctx, ch_ptr, &available_inst, &instance_last);
+	}
+	i = 0;
+	uci_foreach_sections("wireless", "wifi-iface", wifi_s) {
+		dmasprintf(&oface, "%s%cLANInterfaces%cWLANConfiguration%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
+		update_availableinterface_list(dmctx, section_name(wifi_s), &available_inst, &instance_last);
+	}
+	dmfree(phy_interface_dup);
+	return 0;
+}
+
+int synchrinize_layer2_bridgeInst(struct dmctx *dmctx)
+{
+	char *ifname = "", *bridge_instance = "";
+	struct uci_section *bridge_s = NULL;
+	uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
+		handle_update_instance(1, dmctx, &bridge_instance, update_instance_alias, 3, bridge_s, "bridge_instance", "bridge_alias");
+		dmuci_get_value_by_section_string(bridge_s, "ifname", &ifname);
+		update_markinginterface_list(bridge_s, bridge_instance, ifname);
+	}
+	return 0;
+}
 
 inline void init_args_layer2(struct dmctx *ctx, struct uci_section *s, struct uci_section *ss,
 							char *availableinterface_instance, char *bridge_instance,
@@ -227,16 +388,15 @@ void get_baseifname_from_ifname(char *ifname, char *baseifname)
 	*baseifname = '\0';
 }
 
-void update_markinginterface_list(struct uci_section *interface_section, char *bridge_key)
+void update_markinginterface_list(struct uci_section *interface_section, char *bridge_key, char *ifname)
 {
-	char *ifname, *dupifname, *ifname_element, *bridgekey, *instance;
+	char *dupifname, *ifname_element, *bridgekey, *instance;
 	char *add_value, *interfacekey="", *spch;
 	struct uci_section *marking_section, *new_marking_section, *wireless_section;
 	struct uci_section *ciface;
 	bool found;
 	char baseifname[8];
 
-	dmuci_get_value_by_section_string(interface_section, "ifname", &ifname);
 	dupifname = dmstrdup(ifname);
 	ifname_element = strtok_r(dupifname, " ", &spch);
 	while (ifname_element != NULL) {
@@ -513,7 +673,6 @@ int get_bridge_vlan_enable(char *refparam,struct dmctx *ctx, char **value)
 	return 0;
 }
 
-//set_bridgevlan_enable
 int set_bridge_vlan_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	bool b;
@@ -584,7 +743,6 @@ int get_bridge_vlan_vid(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-//set_bridgevlan_vid
 int set_bridge_vlan_vid(char *refparam, struct dmctx *ctx, int action, char *value)
 {
 	struct uci_section *vb;
@@ -1089,150 +1247,3 @@ int set_brvlan_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 
-/*************************************************************
-* LAYER2-DM OBJ & PARAM
-/ * ***********************************************************/
-
-DMLEAF tavailableinterfaceParam[] = {
-{"Alias", &DMWRITE, DMT_STRING, get_avai_int_alias, set_avai_int_alias, NULL, NULL},
-{"AvailableInterfaceKey", &DMREAD, DMT_UNINT, get_available_interface_key, NULL, NULL, &DMNONE},
-{"InterfaceReference", &DMREAD, DMT_STRING, get_interface_reference, NULL, NULL, &DMNONE},
-{"InterfaceType", &DMREAD, DMT_STRING, get_interfaces_type, NULL, NULL, &DMNONE},
-{0}
-};
-
-DMLEAF tlayer2_markingParam[] = {
-{"Alias", &DMWRITE, DMT_STRING, get_marking_alias, set_marking_alias, NULL, NULL},
-{"MarkingBridgeReference", &DMWRITE, DMT_INT, get_marking_bridge_reference, set_marking_bridge_key, NULL, NULL},
-{"MarkingInterface", &DMWRITE, DMT_STRING, get_marking_interface_key, set_marking_interface_key, NULL, NULL},
-{0}
-};
-
-DMLEAF tlayer2_bridgeParam[] = {
-{"Alias", &DMWRITE, DMT_STRING, get_bridge_alias, set_bridge_alias, NULL, NULL},
-{"BridgeEnable", &DMWRITE, DMT_BOOL, get_bridge_status, set_bridge_status, NULL, NULL},
-{"BridgeKey", &DMREAD, DMT_UNINT, get_bridge_key, NULL, NULL, NULL},
-{"BridgeName", &DMWRITE, DMT_STRING, get_bridge_name, set_bridge_name, NULL, NULL},
-{"VLANID", &DMWRITE, DMT_UNINT, get_bridge_vlanid, set_bridge_vlanid, NULL, NULL},
-{"X_INTENO_COM_AssociatedInterfaces", &DMWRITE, DMT_STRING, get_associated_interfaces, set_associated_interfaces, NULL, NULL},
-{0}
-};
-
-DMLEAF tbridge_vlanParam[] = {
-{"Alias", &DMWRITE, DMT_STRING, get_brvlan_alias, set_brvlan_alias, NULL, NULL},
-{"VLANEnable", &DMWRITE, DMT_BOOL, get_bridge_vlan_enable, set_bridge_vlan_enable, NULL, NULL},
-{"VLANName", &DMWRITE, DMT_STRING, get_bridge_vlan_name, set_bridge_vlan_name, NULL, NULL},
-{"VLANID", &DMWRITE, DMT_UNINT, get_bridge_vlan_vid, set_bridge_vlan_vid, NULL, NULL},
-{0}
-};
-
-DMOBJ tBridge_VlanObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"VLAN", &DMWRITE, add_layer2bridging_bridge_vlan, delete_layer2bridging_bridge_vlan, NULL, browsebridge_vlanInst, NULL, NULL, NULL, tbridge_vlanParam, NULL},
-{0}
-};
-
-DMOBJ tLayer2BridgingObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"AvailableInterface", &DMREAD, NULL, NULL, NULL, browselayer2_availableinterfaceInst, NULL, NULL, NULL, tavailableinterfaceParam, NULL},
-{"Marking", &DMWRITE, add_layer2bridging_marking, delete_layer2bridging_marking, NULL, browselayer2_markingInst, NULL, NULL, NULL, tlayer2_markingParam, NULL},
-{"Bridge", &DMWRITE, add_layer2bridging_bridge, delete_layer2bridging_bridge, NULL, browselayer2_bridgeInst, NULL, NULL, tBridge_VlanObj, tlayer2_bridgeParam, NULL},
-{0}
-};
-
-/*************************************************************
- * SUB ENTRIES
-/*************************************************************/
-
-inline int browselayer2_availableinterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
-{
-	int i = 0;
-	char *oface, *phy_interface, *ch_ptr, *saveptr, *waninstance = NULL;
-	char *base_ifname, *available_inst = NULL;
-	struct uci_section *wifi_s , *wan_s, *ai_s;
-	char *instance_last = NULL;
-
-	for (i=0; i<3; i++) {
-		uci_foreach_sections(wan_interface_tab[i].package, wan_interface_tab[i].section, wan_s) {
-			waninstance = update_instance(wan_s, waninstance, "waninstance");
-			dmasprintf(&oface, "%s%cWANDevice%c%s%cWANConnectionDevice%c%s%c", DMROOT, dm_delim, dm_delim, wan_interface_tab[i].instance, dm_delim, dm_delim, waninstance, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
-			dmuci_get_value_by_section_string(wan_s, "baseifname", &base_ifname);
-			ai_s = update_availableinterface_list(dmctx, base_ifname, &available_inst, &instance_last);
-			init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "WANInterface", oface);
-			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
-				goto end;
-		}
-	}
-	db_get_value_string("hw", "board", "ethernetLanPorts", &phy_interface);
-	ch_ptr = strtok_r(phy_interface, " ", &saveptr);
-	i = 0;
-	while (ch_ptr != NULL)
-	{
-		dmasprintf(&oface, "%s%cLANInterfaces%cLANEthernetInterfaceConfig%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
-		ai_s = update_availableinterface_list(dmctx, ch_ptr, &available_inst, &instance_last);
-		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
-			goto end;
-		ch_ptr = strtok_r(NULL, " ", &saveptr);
-	}
-	i = 0;
-	uci_foreach_sections("wireless", "wifi-iface", wifi_s) {
-		dmasprintf(&oface, "%s%cLANInterfaces%cWLANConfiguration%c%d%c", DMROOT, dm_delim, dm_delim, dm_delim, ++i, dm_delim); // MEM WILL BE FREED IN DMMEMCLEAN
-		ai_s = update_availableinterface_list(dmctx, section_name(wifi_s), &available_inst, &instance_last);
-		init_args_layer2(dmctx, ai_s, NULL, instance_last, NULL, "LANInterface", oface);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, available_inst) == DM_STOP)
-			goto end;
-	}
-end:
-	DM_CLEAN_ARGS(cur_args);
-	return 0;
-}
-
-inline int browselayer2_bridgeInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
-{
-	char *bridge_instance = NULL, *bridge_instance_last = NULL;
-	struct uci_section *bridge_s;
-
-	dmuci_get_option_value_string("layer2_interface_ethernet", "Wan", "baseifname", &wan_baseifname);
-	uci_foreach_option_eq("network", "interface", "type", "bridge", bridge_s) {
-		bridge_instance =  handle_update_instance(1, dmctx, &bridge_instance_last, update_instance_alias, 3, bridge_s, "bridge_instance", "bridge_alias");
-		update_markinginterface_list(bridge_s, bridge_instance_last);
-		init_args_layer2(dmctx, bridge_s, NULL, NULL, bridge_instance_last, NULL, NULL);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, bridge_instance) == DM_STOP)
-			break;
-	}
-	DM_CLEAN_ARGS(cur_args);
-	return 0;
-}
-
-inline int browselayer2_markingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
-{
-	char *marking_instance = NULL, *marking_instance_last = NULL;
-	struct uci_section *marking_s = NULL;
-
-	uci_foreach_sections("dmmap", "marking-bridge", marking_s) {
-		marking_instance =  handle_update_instance(1, dmctx, &marking_instance_last, update_instance_alias, 3, marking_s, "marking_instance", "marking_alias");
-		init_args_layer2(dmctx, marking_s, NULL, NULL, NULL, NULL, NULL);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, marking_instance) == DM_STOP)
-			break;
-	}
-	DM_CLEAN_ARGS(cur_args);
-	return 0;
-}
-
-inline int browsebridge_vlanInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
-{
-	struct uci_section *ss = NULL;
-	char *vlan_instance = NULL, *vlan_instance_last = NULL;
-
-	update_bridge_all_vlan_config_bybridge(dmctx);
-	uci_foreach_option_eq("dmmap", "vlan_bridge", "bridgekey", cur_args.bridge_instance, ss) {
-		vlan_instance =  handle_update_instance(2, dmctx, &vlan_instance_last, update_instance_alias, 3, ss, "vlan_instance", "vlan_alias");
-		init_args_layer2_vlan(dmctx, ss);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vlan_instance) == DM_STOP)
-			break;
-	}
-	//NO Clean args here. It will be done in the parent object
-	cur_args.layer2sectionlev2 = NULL;
-	return 0;
-}
