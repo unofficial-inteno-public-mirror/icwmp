@@ -23,6 +23,9 @@ extern DMOBJ tRootObjUPNP[];
 extern DMOBJ tRootObjUPNPBBF[];
 extern UPNP_SUPPORTED_DM tUPNPSupportedDM[];
 
+#define UPNP_SUPPORTED_PARAMETERS_VERSION 1 //Should be incremented each time the Parameters are updated
+#define UPNP_SUPPORTED_DATAMODEL_VERSION 1 //Should be incremented each time the tUPNPSupportedDM array is updated
+
 #ifdef DATAMODEL_TR098
 #define DMROOT_URI "urn:broadband-forum-org:tr-098-1-8-0"
 #define DMROOT_URL "https://www.broadband-forum.org/cwmp/tr-098-1-8-0.html"

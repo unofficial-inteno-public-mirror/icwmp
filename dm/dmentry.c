@@ -395,6 +395,309 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value)
 	return 0;
 }
 
+/****************************************
+ * upnp load tracked on change parameters
+ ****************************************/
+
+int dm_entry_upnp_load_tracked_parameters(struct dmctx *dmctx)
+{
+
+	dmctx->in_param = "";
+
+	free_all_list_upnp_param_track(&list_upnp_enabled_onevent);
+	free_all_list_upnp_param_track(&list_upnp_enabled_onalarm);
+	free_all_list_upnp_param_track(&list_upnp_enabled_version);
+	dm_entry_upnp_tracked_parameters(dmctx);
+
+	return 0;
+}
+
+/*********************************************
+ * upnp check on change params (event & alarm)
+ *********************************************/
+
+void dm_upnp_update_enabled_track_value(struct dm_upnp_enabled_track *p, char *new_value)
+{
+	free(p->value); // Should be free and not dmfree
+	p->value = strdup(new_value);
+}
+
+void dm_upnp_update_enabled_track_key(struct dm_upnp_enabled_track *p, char *key)
+{
+	free(p->key); // Should be free and not dmfree
+	p->key = strdup(key);
+}
+
+int dm_entry_upnp_check_onchange_param(struct list_head *enabled_head, struct list_head *changed_head)
+{
+	struct dmctx dmctx = {0};
+	struct dm_upnp_enabled_track *p;
+	struct dm_parameter *dm_parameter;
+	int fault;
+	int ischange = 0;
+	char *all_instances;
+
+	list_for_each_entry(p, enabled_head, list) {
+		dm_ctx_init(&dmctx, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER);
+		if (p->isobj) {
+			all_instances = dm_entry_get_all_instance_numbers(&dmctx, p->name);
+			if (all_instances && strcmp(all_instances, p->value) != 0) {
+				dm_upnp_update_enabled_track_value(p, all_instances);
+				add_list_upnp_param_track(dmctx, changed_head, p->name, "1", all_instances, 1);
+				ischange = 1;
+			}
+		}
+		else {
+			fault = dm_entry_param_method(&dmctx, CMD_UPNP_GET_VALUES, p->name, NULL, NULL);
+			if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
+				dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
+				if (strcmp(dm_parameter->data, p->value) != 0) {
+					dm_upnp_update_enabled_track_value(p, all_instances);
+					add_list_upnp_param_track(dmctx, changed_head, p->name, "1",  p->value, 0);
+					ischange = 1;
+				}
+			}
+		}
+		dm_ctx_clean(&dmctx);
+	}
+	return ischange;
+}
+
+int dm_entry_upnp_check_alarmonchange_param(void)
+{
+	int r;
+	r = dm_entry_upnp_check_onchange_param(&list_upnp_enabled_onalarm, &list_upnp_changed_onalarm);
+	return r;
+}
+
+int dm_entry_upnp_check_eventonchange_param(void)
+{
+	int r;
+	r = dm_entry_upnp_check_onchange_param(&list_upnp_enabled_onevent, &list_upnp_changed_onevent);
+	return r;
+}
+
+/*************************************
+ * upnp check on change version params
+ *************************************/
+
+int dm_entry_upnp_update_version_configuration(struct dmctx *dmctx)
+{
+	char *v, *tmp, buf[32];
+	struct uci_section *s;
+	int version;
+
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_version", &v);
+	version = atoi(v);
+	version++;
+
+	dmuci_get_section_type(UPNP_CFG, "@dm[0]", &tmp);
+	if (!tmp || tmp[0] == '\0') {
+		dmuci_add_section(UPNP_CFG, "dm", &s, &tmp);
+	}
+	sprintf(buf, "%d", version);
+	dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_version", buf);
+	sprintf(buf, "%ld", time(NULL));
+	dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_upchtime", buf);
+
+	return version;
+}
+
+int dm_entry_upnp_check_versiononchange_param(void)
+{
+	struct dmctx dmctx = {0};
+	struct dm_upnp_enabled_track *p;
+	struct dm_parameter *dm_parameter;
+	int version, fault;
+	int ischange = 0;
+	char *all_instances;
+
+	list_for_each_entry(p, &list_upnp_enabled_version, list) {
+		dm_ctx_init(&dmctx, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER);
+		if (p->isobj) {
+			all_instances = dm_entry_get_all_instance_numbers(&dmctx, p->name);
+			if (strcmp(all_instances, p->value) != 0) {
+				dm_upnp_update_enabled_track_value(p, all_instances);
+				add_list_upnp_param_track(dmctx, &list_upnp_changed_version, p->name, "1", all_instances, 1);
+				ischange = 1;
+			}
+		}
+		else {
+			fault = dm_entry_param_method(&dmctx, CMD_UPNP_GET_VALUES, p->name, NULL, NULL);
+			if (!fault && dmctx.list_parameter.next != &dmctx.list_parameter) {
+				dm_parameter = list_entry(dmctx.list_parameter.next, struct dm_parameter, list);
+				if (strcmp(dm_parameter->data, p->value) != 0) {
+					dm_upnp_update_enabled_track_value(p, all_instances);
+					add_list_upnp_param_track(dmctx, &list_upnp_changed_version, p->name, "1",  p->value, 0);
+					ischange = 1;
+				}
+			}
+		}
+		if (ischange)
+		{
+			char buf[32];
+			char *tmp;
+			struct uci_section *s = NULL;
+			version = dm_entry_upnp_update_version_configuration(&dmctx);
+			sprintf(buf, "%d", version);
+			if (p->key) {
+				dmuci_set_value(UPNP_CFG, p->key, "version", buf);
+			}
+			else {
+				dmuci_add_section(UPNP_CFG, "parameter_version", &s, &tmp);
+				if (s != NULL) {
+					dmuci_set_value_by_section(s, "version", buf);
+					dmuci_set_value_by_section(s, "parameter", p->name);
+					dm_upnp_update_enabled_track_key(p, section_name(s));
+				}
+			}
+			dmuci_commit();
+		}
+		dm_ctx_clean(&dmctx);
+	}
+	return ischange;
+}
+
+/* *************************
+ * UPNP init state variables
+ * ************************/
+int upnp_state_variables_init(struct dmctx *dmctx)
+{
+	char *v, *tmp;
+	struct uci_section *s;
+	char buf[32];
+	int n;
+
+	dmuci_get_section_type(UPNP_CFG, "@dm[0]", &tmp);
+	if (!tmp || tmp[0] == '\0') {
+		dmuci_add_section(UPNP_CFG, "dm", &s, &tmp);
+	}
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_datamodel_version", &v);
+	n = atoi(v);
+	if (n && n != UPNP_SUPPORTED_DATAMODEL_VERSION) {
+		sprintf(buf, "%d", n);
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_datamodel_version", buf);
+		sprintf(buf, "%ld", time(NULL));
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_datamodel_upchtime", buf);
+	}
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_parameters_version", &v);
+	n = atoi(v);
+	if (n && n != UPNP_SUPPORTED_PARAMETERS_VERSION) {
+		sprintf(buf, "%d", n);
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_parameters_version", buf);
+		sprintf(buf, "%ld", time(NULL));
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_parameters_upchtime", buf);
+	}
+	dmuci_commit();
+	return 0;
+}
+
+/* ************************************
+ * UPNP get supported parameters update
+ * ***********************************/
+
+int dm_entry_upnp_get_supported_parameters_update(struct dmctx *dmctx, char **value)
+{
+	static char csv[128] = "";
+	char *v;
+	time_t time_value;
+
+	*value = csv;
+
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_parameters_upchtime", &v);
+	if (v[0] != '0' && v[0] != '\0') {
+		time_value = atoi(v);
+		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+		strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&time_value));
+		sprintf(csv, "%d,%s", UPNP_SUPPORTED_PARAMETERS_VERSION, s_now);
+	}
+
+	return 0;
+}
+
+/* ************************************
+ * UPNP get supported_datamodel  update
+ * ***********************************/
+
+int dm_entry_upnp_get_supported_datamodel_update(struct dmctx *dmctx, char **value)
+{
+	static char csv[128] = "";
+	char *v;
+	time_t time_value;
+
+	*value = csv;
+
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_datamodel_upchtime", &v);
+	if (v[0] != '0' && v[0] != '\0') {
+		time_value = atoi(v);
+		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+		strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&time_value));
+		sprintf(csv, "%d,%s", UPNP_SUPPORTED_DATAMODEL_VERSION, s_now);
+	}
+
+	return 0;
+}
+
+/* ********************************
+ * UPNP get attribute values update
+ * ********************************/
+
+int dm_entry_upnp_get_attribute_values_update(struct dmctx *dmctx, char **value)
+{
+	static char csv[128] = "";
+	char *v, *s;
+	time_t time_value;
+
+	*value = csv;
+
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_version", &s);
+	if (v[0] != '0' && v[0] != '\0' && s[0] != '\0') {
+		time_value = atoi(v);
+		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+		strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&time_value));
+		sprintf(csv, "%s,%s", s, s_now);
+	}
+
+	return 0;
+}
+
+/* ********************************
+ * UPNP get configuration update
+ * ********************************/
+
+int dm_entry_upnp_get_configuration_update(struct dmctx *dmctx, char **value)
+{
+	static char csv[128] = "";
+	char *v, *s;
+	time_t time_value;
+
+	*value = csv;
+
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_version", &s);
+	if (v[0] != '0' && v[0] != '\0' && s[0] != '\0') {
+		time_value = atoi(v);
+		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+		strftime(s_now, sizeof s_now, "%Y-%m-%dT%H:%M:%S.000Z", localtime(&time_value));
+		sprintf(csv, "%s,%s", s, s_now);
+	}
+
+	return 0;
+}
+
+/* **************************************
+ * UPNP get current configuration version
+ * *************************************/
+
+int dm_entry_upnp_get_current_configuration_version(struct dmctx *dmctx, char **value)
+{
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_version", value);
+	return 0;
+}
+
+/************************/
+
 int dm_entry_restart_services(void)
 {
 	struct package_change *pc;
@@ -427,6 +730,27 @@ void dm_upnp_apply_config(void)
 	dm_entry_upnp_restart_services();
 }
 
+int cli_output_dm_upnp_variable_state(struct dmctx *dmctx, int cmd, char *variable)
+{
+	switch (cmd) {
+		case CMD_UPNP_GET_CONFIGURATION_UPDATE:
+			fprintf (stdout, "{ \"ConfigurationUpdate\": \"%s\"}\n", variable);
+			break;
+		case CMD_UPNP_GET_CURRENT_CONFIGURATION_VERSION:
+			fprintf (stdout, "{ \"CurrentConfigurationVersion\": \"%s\"}\n", variable);
+			break;
+		case CMD_UPNP_GET_SUPPORTED_DATA_MODEL_UPDATE:
+			fprintf (stdout, "{ \"SupportedDataModelsUpdate\": \"%s\"}\n", variable);
+			break;
+		case CMD_UPNP_GET_SUPPORTED_PARAMETERS_UPDATE:
+			fprintf (stdout, "{ \"SupportedParametersUpdate\": \"%s\"}\n", variable);
+			break;
+		case CMD_UPNP_GET_ATTRIBUTE_VALUES_UPDATE:
+			fprintf (stdout, "{ \"AttributeValuesUpdate\": \"%s\"}\n", variable);
+			break;
+	}
+	return 0;
+}
 int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 {
 	struct dm_parameter *n;
@@ -500,13 +824,36 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 		break;
 	case CMD_UPNP_GET_ATTRIBUTES:
 		list_for_each_entry(n, &dmctx->list_parameter, list) {
-			char alrm[32] = "", evnt[32] = "", btype[16];
+			char alrm[32] = "", evnt[32] = "", btype[16], *stype = NULL;
 			if (n->flags & DM_PARAM_ALARAM_ON_CHANGE)
 				strcpy(alrm, ",  \"alarmOnChange\": \"1\"");
 			if (n->flags & DM_PARAM_EVENT_ON_CHANGE)
 				strcpy(evnt, ",  \"eventOnChange\": \"1\"");
-			if (n->type)
-				sprintf(btype, ",  \"type\": \"%s\"", n->type);
+			switch (n->flags & NODE_DATA_ATTRIBUTE_TYPEMASK) {
+			case NODE_DATA_ATTRIBUTE_TYPEINT:
+				stype = "int";
+				break;
+			case NODE_DATA_ATTRIBUTE_TYPESTRING:
+				stype = "string";
+				break;
+			case NODE_DATA_ATTRIBUTE_TYPELONG:
+				stype = "long";
+				break;
+			case NODE_DATA_ATTRIBUTE_TYPEBOOL:
+				stype = "boolean";
+				break;
+			case NODE_DATA_ATTRIBUTE_TYPEDATETIME:
+				stype = "dateTime";
+				break;
+			case NODE_DATA_ATTRIBUTE_TYPEPTR:
+				if (n->flags & NODE_DATA_ATTRIBUTE_INSTANCE)
+					stype = "Instance";
+				else if (n->flags & NODE_DATA_ATTRIBUTE_MULTIINSTANCE)
+					stype = "MultiInstance";
+				break;
+			}
+			if (stype)
+				sprintf(btype, ",  \"type\": \"%s\"", stype);
 			fprintf (stdout, "{ \"parameter\": \"%s\", \"access\": \"%s\"%s%s%s}\n", n->name, n->data, btype, evnt, alrm);
 		}
 		break;
@@ -559,6 +906,55 @@ int cli_output_dm_result(struct dmctx *dmctx, int fault, int cmd, int out)
 				sprintf(bfac, ", \"factorized\": \"1\"");
 			fprintf (stdout, "{ \"ACLDataPath\": \"%s\", \"List\": \"%s\", \"Read\": \"%s\", \"Write\": \"%s\"%s }\n", n->name, blist, bread, bwrite, bfac);
 		}
+		break;
+	case CMD_UPNP_GET_ENABLED_PARAMETRS_ALARM:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_enabled_onalarm, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
+	case CMD_UPNP_GET_ENABLED_PARAMETRS_EVENT:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_enabled_onevent, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
+	case CMD_UPNP_GET_ENABLED_PARAMETRS_VERSION:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_enabled_version, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
+	case CMD_UPNP_CHECK_CHANGED_PARAMETRS_ALARM:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_changed_onalarm, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
+	case CMD_UPNP_CHECK_CHANGED_PARAMETRS_EVENT:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_changed_onevent, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
+	case CMD_UPNP_CHECK_CHANGED_PARAMETRS_VERSION:
+		{
+			struct dm_upnp_enabled_track *p;
+			list_for_each_entry(p, &list_upnp_changed_version, list) {
+				fprintf (stdout, "{ \"parameter\": \"%s\", \"value\": \"%s\", \"key\": \"%s\"}\n", p->name, p->value, p->key);
+			}
+		}
+		break;
 	}
 end:
 	return 0;
@@ -839,6 +1235,68 @@ void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned i
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ACLDATA, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ACLDATA, output);
 	}
+	else if (strcmp(cmd, "upnp_init_state_variables") == 0) {
+		upnp_state_variables_init(&cli_dmctx);
+	}
+	else if (strcmp(cmd, "upnp_get_supported_parameters_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_supported_parameters_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_PARAMETERS_UPDATE, var);
+	}
+	else if (strcmp(cmd, "upnp_get_supported_datamodel_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_supported_datamodel_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_DATA_MODEL_UPDATE, var);
+	}
+	else if (strcmp(cmd, "upnp_get_configuration_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_configuration_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_CONFIGURATION_UPDATE, var);
+	}
+	else if (strcmp(cmd, "upnp_get_current_configuration_version") == 0) {
+		char *var;
+		dm_entry_upnp_get_current_configuration_version(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_CURRENT_CONFIGURATION_VERSION, var);
+	}
+	else if (strcmp(cmd, "upnp_get_attribute_values_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_attribute_values_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTE_VALUES_UPDATE, var);
+	}
+	else if (strcmp(cmd, "upnp_load_enabled_parametrs_track") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+	}
+	else if (strcmp(cmd, "upnp_get_enabled_parametrs_alarm") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_ALARM, output);
+	}
+	else if (strcmp(cmd, "upnp_get_enabled_parametrs_event") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_EVENT, output);
+	}
+	else if (strcmp(cmd, "upnp_get_enabled_parametrs_version") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_VERSION, output);
+	}
+	else if (strcmp(cmd, "upnp_check_changed_parametrs_alarm") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_ALARM, output);
+	}
+	else if (strcmp(cmd, "upnp_check_changed_parametrs_event") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_EVENT, output);
+	}
+	else if (strcmp(cmd, "upnp_check_changed_parametrs_version") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_VERSION, output);
+	}
 	else {
 		goto invalid_arguments;
 	}
@@ -1065,6 +1523,68 @@ int dmentry_cli(int argc, char *argv[], unsigned int dmtype, unsigned int amd_ve
 		param = argv[3];
 		fault = dm_entry_param_method(&cli_dmctx, CMD_UPNP_GET_ACLDATA, param, NULL, NULL);
 		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ACLDATA, 1);
+	}
+	else if (strcmp(argv[2], "upnp_init_state_variables") == 0) {
+		upnp_state_variables_init(&cli_dmctx);
+	}
+	else if (strcmp(argv[2], "upnp_get_supported_parameters_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_supported_parameters_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_PARAMETERS_UPDATE, var);
+	}
+	else if (strcmp(argv[2], "upnp_get_supported_datamodel_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_supported_datamodel_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_SUPPORTED_DATA_MODEL_UPDATE, var);
+	}
+	else if (strcmp(argv[2], "upnp_get_configuration_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_configuration_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_CONFIGURATION_UPDATE, var);
+	}
+	else if (strcmp(argv[2], "upnp_get_current_configuration_version") == 0) {
+		char *var;
+		dm_entry_upnp_get_current_configuration_version(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_CURRENT_CONFIGURATION_VERSION, var);
+	}
+	else if (strcmp(argv[2], "upnp_get_attribute_values_update") == 0) {
+		char *var;
+		dm_entry_upnp_get_attribute_values_update(&cli_dmctx, &var);
+		cli_output_dm_upnp_variable_state(&cli_dmctx, CMD_UPNP_GET_ATTRIBUTE_VALUES_UPDATE, var);
+	}
+	else if (strcmp(argv[2], "upnp_load_enabled_parametrs_track") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+	}
+	else if (strcmp(argv[2], "upnp_get_enabled_parametrs_alarm") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_ALARM, 1);
+	}
+	else if (strcmp(argv[2], "upnp_get_enabled_parametrs_event") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_EVENT, 1);
+	}
+	else if (strcmp(argv[2], "upnp_get_enabled_parametrs_version") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_GET_ENABLED_PARAMETRS_VERSION, 1);
+	}
+	else if (strcmp(argv[2], "upnp_check_changed_parametrs_alarm") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_ALARM, 1);
+	}
+	else if (strcmp(argv[2], "upnp_check_changed_parametrs_event") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_EVENT, 1);
+	}
+	else if (strcmp(argv[2], "upnp_check_changed_parametrs_version") == 0) {
+		char *var;
+		dm_entry_upnp_load_tracked_parameters(&cli_dmctx);
+		cli_output_dm_result(&cli_dmctx, fault, CMD_UPNP_CHECK_CHANGED_PARAMETRS_VERSION, 1);
 	}
 	else {
 		goto invalid_arguments;

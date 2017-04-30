@@ -21,6 +21,15 @@ int adm_entry_get_linker_value(struct dmctx *ctx, char *param, char **value);
 int dm_entry_restart_services(void);
 int dm_entry_upnp_restart_services(void);
 void dm_upnp_apply_config(void);
+int dm_entry_upnp_check_alarmonchange_param(void);
+int dm_entry_upnp_check_eventonchange_param(void);
+int dm_entry_upnp_check_versiononchange_param(void);
+int dm_entry_upnp_load_tracked_parameters(struct dmctx *dmctx);
+int dm_entry_upnp_get_supported_parameters_update(struct dmctx *dmctx, char **value);
+int dm_entry_upnp_get_supported_datamodel_update(struct dmctx *dmctx, char **value);
+int dm_entry_upnp_get_attribute_values_update(struct dmctx *dmctx, char **value);
+int dm_entry_upnp_get_configuration_update(struct dmctx *dmctx, char **value);
+int dm_entry_upnp_get_current_configuration_version(struct dmctx *dmctx, char **value);
 
 int dm_ctx_clean(struct dmctx *ctx);
 int dm_ctx_clean_sub(struct dmctx *ctx);

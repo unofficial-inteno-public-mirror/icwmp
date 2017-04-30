@@ -33,6 +33,8 @@
 
 #define DM_PROMPT "icwmp>"
 
+#define UPNP_CFG "tr064"
+
 #ifdef UNDEF
 #undef UNDEF
 #endif
@@ -159,11 +161,20 @@ struct dm_enabled_notify {
 	char *value;
 };
 
+struct dm_upnp_enabled_track {
+	struct list_head list;
+	char *name;
+	char *key;
+	char *value;
+	unsigned int isobj;
+};
+
 struct dm_parameter {
 	struct list_head list;
 	char *name;
 	char *data;
 	char *type; 
+	char *version;
 	unsigned int flags;
 };
 
@@ -200,6 +211,7 @@ struct dmctx
 	unsigned char inparam_isparam;
 	unsigned char findparam;
 	char current_obj[512];
+	char all_instances[256];
 	char *inst_buf[16];
 	char *instance_wildchar;
 };
@@ -270,6 +282,18 @@ enum {
 	CMD_UPNP_DEL_INSTANCE,
 	CMD_UPNP_ADD_INSTANCE,
 	CMD_UPNP_GET_ACLDATA,
+	CMD_UPNP_GET_CONFIGURATION_UPDATE,
+	CMD_UPNP_GET_CURRENT_CONFIGURATION_VERSION,
+	CMD_UPNP_GET_SUPPORTED_DATA_MODEL_UPDATE,
+	CMD_UPNP_GET_SUPPORTED_PARAMETERS_UPDATE,
+	CMD_UPNP_GET_ATTRIBUTE_VALUES_UPDATE,
+	CMD_UPNP_LOAD_ENABLED_PARAMETRS_TRACK,
+	CMD_UPNP_GET_ENABLED_PARAMETRS_ALARM,
+	CMD_UPNP_GET_ENABLED_PARAMETRS_EVENT,
+	CMD_UPNP_GET_ENABLED_PARAMETRS_VERSION,
+	CMD_UPNP_CHECK_CHANGED_PARAMETRS_ALARM,
+	CMD_UPNP_CHECK_CHANGED_PARAMETRS_EVENT,
+	CMD_UPNP_CHECK_CHANGED_PARAMETRS_VERSION,
 };
 
 enum fault_code_enum {
@@ -371,8 +395,22 @@ enum dm_type_enum{
 };
 
 enum dm_param_flags_enum{
+	/* UPNP OnChange flags flags */
 	DM_PARAM_ALARAM_ON_CHANGE = 1 << 0,
 	DM_PARAM_EVENT_ON_CHANGE = 1 << 1,
+	/* UPNP type flags */
+	NODE_DATA_ATTRIBUTE_INSTANCE = 0x0010,
+	NODE_DATA_ATTRIBUTE_MULTIINSTANCE = 0x0020,
+	NODE_DATA_ATTRIBUTE_TYPESTRING = 0x0100,
+	NODE_DATA_ATTRIBUTE_TYPEINT = 0x0200,
+	NODE_DATA_ATTRIBUTE_TYPELONG = 0x0400,
+	NODE_DATA_ATTRIBUTE_TYPEBOOL = 0x0800,
+	NODE_DATA_ATTRIBUTE_TYPEDATETIME = 0x1000,
+	NODE_DATA_ATTRIBUTE_TYPEBASE64 = 0x2000,
+	NODE_DATA_ATTRIBUTE_TYPEBIN = 0x4000,
+	NODE_DATA_ATTRIBUTE_TYPEPTR = 0x8000,
+	NODE_DATA_ATTRIBUTE_TYPEMASK = 0x0000FF00,
+	/*ACLRoles*/
 	DM_PUBLIC_LIST = 1 << 0,
 	DM_PUBLIC_READ = 1 << 1,
 	DM_PUBLIC_WRITE = 1 << 2,
@@ -404,6 +442,13 @@ static inline int DM_LINK_INST_OBJ(struct dmctx *dmctx, DMNODE *parent_node, voi
 extern struct list_head list_enabled_notify;
 extern struct list_head list_enabled_lw_notify;
 extern struct list_head list_execute_end_session;
+extern struct list_head list_upnp_enabled_onevent;
+extern struct list_head list_upnp_enabled_onalarm;
+extern struct list_head list_upnp_enabled_version;
+extern struct list_head list_upnp_changed_onevent;
+extern struct list_head list_upnp_changed_onalarm;
+extern struct list_head list_upnp_changed_version;
+
 extern int end_session_flag;
 extern int ip_version;
 extern char dm_delim;
@@ -414,7 +459,7 @@ char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
 char *update_instance_without_section(int action, char **last_inst, void *argv[]);
 int get_empty(char *refparam, struct dmctx *args, char **value);
-void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type, unsigned int flags);
+void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type, char *param_version, unsigned int flags);
 void del_list_parameter(struct dm_parameter *dm_parameter);
 void free_all_list_parameter(struct dmctx *ctx);
 void add_set_list_tmp(struct dmctx *ctx, char *param, char *value, unsigned int flags);
@@ -440,7 +485,12 @@ int dm_entry_upnp_get_selected_values(struct dmctx *dmctx);
 int dm_entry_upnp_get_values(struct dmctx *dmctx);
 int dm_entry_upnp_set_values(struct dmctx *dmctx);
 int dm_entry_upnp_get_attributes(struct dmctx *dmctx);
+int upnp_state_variables_init(struct dmctx *dmctx);
+int dm_entry_upnp_tracked_parameters(struct dmctx *dmctx);
+int dm_entry_upnp_get_instance_numbers(struct dmctx *dmctx);
+char *dm_entry_get_all_instance_numbers(struct dmctx *pctx, char *param);
 void free_all_list_enabled_notify();
+void free_all_list_upnp_param_track(struct list_head *head);
 void dm_update_enabled_notify(struct dm_enabled_notify *p, char *new_value);
 void dm_update_enabled_notify_byname(char *name, char *new_value);
 char *get_last_instance(char *package, char *section, char *opt_inst);
