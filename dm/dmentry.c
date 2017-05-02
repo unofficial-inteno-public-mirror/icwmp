@@ -25,10 +25,10 @@ static void print_dm_help(void)
 {
 	printf("Usage:\n");
 	printf(" get_value [param]\n");
-	printf(" set_value <parameter key> <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
+	printf(" set_value <parameter key> <param1> <val1> [<param2> <val2>] .... [<param N> <val N>]\n");
 	printf(" get_name <param> <Next Level>\n");
 	printf(" get_notification [param]\n");
-	printf(" set_notification <param1> <notif1> <change1>  [param2] [notif2] [change2] .... [param n] [notif n] [change n]\n");
+	printf(" set_notification <param1> <notif1> <change1> [<param2> <notif2> <change2>] ....[<param N> <notif N> <change N>]\n");
 	printf(" add_obj <param> <parameter key>\n");
 	printf(" del_obj <param> <parameter key>\n");
 	printf(" inform\n");
@@ -36,13 +36,26 @@ static void print_dm_help(void)
 	printf(" upnp_get_selected_values [param]\n");
 	printf(" upnp_get_instances <param> <depth>\n");
 	printf(" upnp_get_supported_parameters <param> <depth>\n");
-	printf(" upnp_set_values <param1> <val1> [param2] [val2] .... [param n] [val n]\n");
+	printf(" upnp_set_values <param1> <val1> [<param2> <val2>] .... [<param N> <val N>]\n");
 	printf(" upnp_get_attributes <param>\n");
-	printf(" upnp_set_attributes <param 1> <EventOnChange 1> <AlarmOnChange 1> .... [param n] [EventOnChange n] [AlarmOnChange n]\n");
-	printf(" upnp_add_instance <param> [sub param 1] [val1] [sub param n] [val2] .... [sub param n] [valn]\n");
+	printf(" upnp_set_attributes <param 1> <EventOnChange 1> <AlarmOnChange 1> .... [<param N> <EventOnChange N> <AlarmOnChange N>\n");
+	printf(" upnp_add_instance <param> [<sub param 1> <val1>] [<sub param 2> <val2>] .... [<sub param N> <val N>]\n");
 	printf(" upnp_delete_instance <param>\n");
 	printf(" upnp_get_acldata <param>\n");
-	printf(" external_command <command> [arg 1] [arg 2] ... [arg n]\n");
+	printf(" upnp_init_state_variables\n");
+	printf(" upnp_get_supported_parameters_update\n");
+	printf(" upnp_get_supported_datamodel_update\n");
+	printf(" upnp_get_configuration_update\n");
+	printf(" upnp_get_current_configuration_version\n");
+	printf(" upnp_get_attribute_values_update\n");
+	printf(" upnp_load_enabled_parametrs_track\n");
+	printf(" upnp_get_enabled_parametrs_alarm\n");
+	printf(" upnp_get_enabled_parametrs_event\n");
+	printf(" upnp_get_enabled_parametrs_version\n");
+	printf(" upnp_check_changed_parametrs_alarm\n");
+	printf(" upnp_check_changed_parametrs_event\n");
+	printf(" upnp_check_changed_parametrs_version\n");
+	printf(" external_command <command> [arg 1] [arg 2] ... [arg N]\n");
 	printf(" exit\n");
 }
 
@@ -498,7 +511,7 @@ int dm_entry_upnp_update_version_configuration(struct dmctx *dmctx)
 	sprintf(buf, "%d", version);
 	dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_version", buf);
 	sprintf(buf, "%ld", time(NULL));
-	dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_upchtime", buf);
+	dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_epochtime", buf);
 
 	return version;
 }
@@ -574,20 +587,33 @@ int upnp_state_variables_init(struct dmctx *dmctx)
 	}
 	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_datamodel_version", &v);
 	n = atoi(v);
-	if (n && n != UPNP_SUPPORTED_DATAMODEL_VERSION) {
-		sprintf(buf, "%d", n);
+	if (n != UPNP_SUPPORTED_DATAMODEL_VERSION) {
+		sprintf(buf, "%d", UPNP_SUPPORTED_DATAMODEL_VERSION);
 		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_datamodel_version", buf);
 		sprintf(buf, "%ld", time(NULL));
-		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_datamodel_upchtime", buf);
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_datamodel_epochtime", buf);
 	}
 	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_parameters_version", &v);
 	n = atoi(v);
-	if (n && n != UPNP_SUPPORTED_PARAMETERS_VERSION) {
-		sprintf(buf, "%d", n);
+	if (n != UPNP_SUPPORTED_PARAMETERS_VERSION) {
+		sprintf(buf, "%d", UPNP_SUPPORTED_PARAMETERS_VERSION);
 		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_parameters_version", buf);
 		sprintf(buf, "%ld", time(NULL));
-		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_parameters_upchtime", buf);
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "supported_parameters_epochtime", buf);
 	}
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_version", &v);
+	if (*v == '\0') {
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_version", "0");
+		sprintf(buf, "%ld", time(NULL));
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "current_configuration_epochtime", buf);
+	}
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_version", &v);
+	if (*v == '\0') {
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "attribute_values_version", "0");
+		sprintf(buf, "%ld", time(NULL));
+		dmuci_set_value(UPNP_CFG, "@dm[0]", "attribute_values_epochtime", buf);
+	}
+
 	dmuci_commit();
 	return 0;
 }
@@ -604,7 +630,7 @@ int dm_entry_upnp_get_supported_parameters_update(struct dmctx *dmctx, char **va
 
 	*value = csv;
 
-	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_parameters_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_parameters_epochtime", &v);
 	if (v[0] != '0' && v[0] != '\0') {
 		time_value = atoi(v);
 		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
@@ -616,7 +642,7 @@ int dm_entry_upnp_get_supported_parameters_update(struct dmctx *dmctx, char **va
 }
 
 /* ************************************
- * UPNP get supported_datamodel  update
+ * UPNP get supported_datamodel update
  * ***********************************/
 
 int dm_entry_upnp_get_supported_datamodel_update(struct dmctx *dmctx, char **value)
@@ -627,7 +653,7 @@ int dm_entry_upnp_get_supported_datamodel_update(struct dmctx *dmctx, char **val
 
 	*value = csv;
 
-	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_datamodel_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "supported_datamodel_epochtime", &v);
 	if (v[0] != '0' && v[0] != '\0') {
 		time_value = atoi(v);
 		char s_now[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
@@ -650,7 +676,7 @@ int dm_entry_upnp_get_attribute_values_update(struct dmctx *dmctx, char **value)
 
 	*value = csv;
 
-	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_epochtime", &v);
 	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "attribute_values_version", &s);
 	if (v[0] != '0' && v[0] != '\0' && s[0] != '\0') {
 		time_value = atoi(v);
@@ -674,7 +700,7 @@ int dm_entry_upnp_get_configuration_update(struct dmctx *dmctx, char **value)
 
 	*value = csv;
 
-	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_upchtime", &v);
+	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_epochtime", &v);
 	dmuci_get_option_value_string(UPNP_CFG, "@dm[0]", "current_configuration_version", &s);
 	if (v[0] != '0' && v[0] != '\0' && s[0] != '\0') {
 		time_value = atoi(v);

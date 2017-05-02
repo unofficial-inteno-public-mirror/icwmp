@@ -1910,7 +1910,7 @@ int dm_entry_upnp_update_attribute_values_update(struct dmctx *dmctx)
 	sprintf(buf, "%d", version);
 	dmuci_set_value(UPNP_CFG, "@dm[0]", "attribute_values_version", buf);
 	sprintf(buf, "%ld", time(NULL));
-	dmuci_set_value(UPNP_CFG, "@dm[0]", "attribute_values_upchtime", buf);
+	dmuci_set_value(UPNP_CFG, "@dm[0]", "attribute_values_epochtime", buf);
 
 	return 0;
 }
