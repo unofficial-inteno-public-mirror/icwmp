@@ -3295,6 +3295,24 @@ int set_dhcp_conditional_servingpool_vendorclassid(char *refparam, struct dmctx 
 	return 0;
 }
 
+int get_dhcp_conditional_servingpool_network_id(char *refparam, struct dmctx *ctx, char **value)
+{
+	dmuci_get_value_by_section_string(cur_dhcppoolargs.dhcppoolsection, "networkid", value);
+	return 0;
+}
+
+int set_dhcp_conditional_servingpool_network_id(char *refparam, struct dmctx *ctx, int action, char *value)
+{
+	switch (action) {
+		case VALUECHECK:
+				return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(cur_dhcppoolargs.dhcppoolsection, "networkid", value);
+			return 0;
+	}
+	return 0;
+}
+
 int get_dhcp_servingpool_alias(char *refparam, struct dmctx *ctx, char **value)
 {
 	struct dhcppooloptionargs *pooloptionargs = (struct dhcppooloptionargs *)ctx->args;
@@ -3648,6 +3666,7 @@ inline int entry_landevice_lanhostconfigmanagement_dhcpconditionalservingpool_in
 		DMPARAM("Alias", ctx, "1", get_dhcp_conditional_servingpool_alias, set_dhcp_conditional_servingpool_alias, NULL, 0, 1, UNDEF, NULL);
 		DMPARAM("Enable", ctx, "1", get_dhcp_conditional_servingpool_enable, set_dhcp_conditionalservingpool_enable, "xsd:boolean", 0, 1, UNDEF, NULL);
 		DMPARAM("VendorClassID", ctx, "1", get_dhcp_conditional_servingpool_vendorclassid, set_dhcp_conditional_servingpool_vendorclassid, NULL, 0, 1, UNDEF, NULL);
+		DMPARAM("X_INTENO_COM_Networkid", ctx, "1", get_dhcp_conditional_servingpool_network_id, set_dhcp_conditional_servingpool_network_id, NULL, 0, 1, UNDEF, NULL);
 		DMOBJECT(DMROOT"LANDevice.%s.LANHostConfigManagement.DHCPConditionalServingPool.%s.DHCPOption.", ctx, "1", 0, add_dhcp_serving_pool_option, delete_dhcp_serving_pool_option_all, NULL, idev, icondpool);
 		SUBENTRY(entry_landevice_dhcpconditionalservingpool_option, ctx, idev, icondpool);
 
