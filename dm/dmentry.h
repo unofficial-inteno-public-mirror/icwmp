@@ -36,4 +36,37 @@ int dm_ctx_clean_sub(struct dmctx *ctx);
 void dm_execute_cli_shell(int argc, char** argv, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode);
 void dm_execute_cli_command(char *file, unsigned int dmtype, unsigned int amd_version, unsigned int instance_mode);
 void wepkey_cli(int argc, char** argv);
+
+#define DM_ENTRY_UPNP_CHECK_CHANGES(ALARM, EVENT, VERSION) \
+	do { \
+		struct dmctx dmctx_chg = {0}; \
+		dm_ctx_init(&dmctx_chg, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER); \
+		ALARM = dm_entry_upnp_check_alarmonchange_param(&dmctx_chg); \
+		dm_ctx_clean(&dmctx_chg); \
+		memset(&dmctx_chg, 0, sizeof(struct dmctx)); \
+		dm_ctx_init(&dmctx_chg, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER); \
+		EVENT = dm_entry_upnp_check_eventonchange_param(&dmctx_chg); \
+		dm_ctx_clean(&dmctx_chg); \
+		memset(&dmctx_chg, 0, sizeof(struct dmctx)); \
+		dm_ctx_init(&dmctx_chg, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER); \
+		VERSION = dm_entry_upnp_check_versiononchange_param(&dmctx_chg); \
+		dm_ctx_clean(&dmctx_chg); \
+	} while(0)
+
+#define DM_ENTRY_UPNP_FREE_ALL_CHECK_CHANGES() \
+	do { \
+		free_all_list_upnp_param_track(&list_upnp_changed_onevent); \
+		free_all_list_upnp_param_track(&list_upnp_changed_onalarm); \
+		free_all_list_upnp_param_track(&list_upnp_changed_version); \
+	} while(0)
+
+#define DM_ENTRY_UPNP_LOAD_TRACKED_PARAMETERS() \
+	do { \
+		struct dmctx dmctx_trk = {0}; \
+		dm_ctx_init(&dmctx_trk, DM_UPNP, AMD_2, INSTANCE_MODE_NUMBER); \
+		dm_entry_upnp_load_tracked_parameters(&dmctx_trk); \
+		dm_ctx_clean(&dmctx_trk); \
+	} while(0)
+
+
 #endif
