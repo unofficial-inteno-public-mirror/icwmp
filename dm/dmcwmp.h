@@ -210,8 +210,7 @@ struct dmctx
 	unsigned int user_mask;
 	unsigned char inparam_isparam;
 	unsigned char findparam;
-	char current_obj[512];
-	char all_instances[256];
+	char all_instances[512];
 	char *inst_buf[16];
 	char *instance_wildchar;
 };
@@ -501,6 +500,7 @@ int apply_end_session();
 void cwmp_set_end_session (unsigned int flag);
 char *dm_print_path(char *fpath, ...);
 void dm_upnp_apply_config(void);
+void add_list_upnp_param_track(struct dmctx *dmctx, struct list_head *pchead, char *param, char *key, char *value, unsigned int isobj);
 
 
 #ifndef TRACE

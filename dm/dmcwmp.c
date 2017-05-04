@@ -1259,7 +1259,7 @@ static int mobj_add_object(DMOBJECT_ARGS)
 	if (fault)
 		return fault;
 	dmctx->addobj_instance = instance;
-	dmasprintf(&objinst, "%s%s%c", dmctx->current_obj, instance, dm_delim);
+	dmasprintf(&objinst, "%s%s%c", node->current_object, instance, dm_delim);
 	set_parameter_notification(dmctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
@@ -1526,7 +1526,7 @@ static int enabled_notify_check_param(DMPARAM_ARGS)
 	char *value = "";
 	char *notif;
 
-	dmastrcat(&refparam, dmctx->current_obj, lastname);
+	dmastrcat(&refparam, node->current_object, lastname);
 
 	if (notification == NULL) {
 		notif = get_parameter_notification(dmctx, refparam);
@@ -1620,8 +1620,8 @@ static int get_linker_value_check_obj(DMOBJECT_ARGS)
 	if (!get_linker)
 		return FAULT_9005;
 
-	if (strcmp(dmctx->current_obj, dmctx->in_param) == 0) {
-		get_linker(dmctx->current_obj, dmctx, NULL, NULL, &link_val);
+	if (strcmp(node->current_object, dmctx->in_param) == 0) {
+		get_linker(node->current_object, dmctx, NULL, NULL, &link_val);
 		dmctx->linker = dmstrdup(link_val);
 		dmctx->stop = true;
 		return 0;
@@ -1729,7 +1729,6 @@ static int upnp_get_parameter_onchange(struct dmctx *ctx, char *param, char *onc
 	struct uci_list *list_onchange;
 	char *pch;
 	struct uci_element *e;
-
 	dmuci_get_option_value_list(UPNP_CFG, "@notifications[0]", onchange, &list_onchange);
 	if (list_onchange) {
 		uci_foreach_element(list_onchange, e) {
@@ -1759,15 +1758,15 @@ static int upnp_set_parameter_onchange(struct dmctx *ctx, char *param, char *onc
 	return 0;
 }
 
-void add_list_upnp_param_track(struct dmctx *dmctx, struct list_head *head, char *param, char *key, char *value, unsigned int isobj)
+void add_list_upnp_param_track(struct dmctx *dmctx, struct list_head *pchead, char *param, char *key, char *value, unsigned int isobj)
 {
 	struct dm_upnp_enabled_track *dm_upnp_enabled_track;
 
 	dm_upnp_enabled_track = calloc(1, sizeof(struct dm_upnp_enabled_track)); // Should be calloc and not dmcalloc
-	list_add_tail(&dm_upnp_enabled_track->list, head);
+	list_add_tail(&dm_upnp_enabled_track->list, pchead);
 	dm_upnp_enabled_track->name = strdup(param); // Should be strdup and not dmstrdup
 	dm_upnp_enabled_track->value = value ? strdup(value) : strdup(""); // Should be strdup and not dmstrdup
-	dm_upnp_enabled_track->key = strdup(key); // Should be strdup and not dmstrdup
+	dm_upnp_enabled_track->key = key ? strdup(key) : NULL; // Should be strdup and not dmstrdup
 	dm_upnp_enabled_track->isobj = isobj;
 }
 
@@ -1780,11 +1779,11 @@ void del_list_upnp_param_track(struct dm_upnp_enabled_track *dm_upnp_enabled_tra
 	free(dm_upnp_enabled_track);
 }
 
-void free_all_list_upnp_param_track(struct list_head *head)
+void free_all_list_upnp_param_track(struct list_head *pchead)
 {
 	struct dm_upnp_enabled_track *dm_upnp_enabled_track;
-	while (head->next != head) {
-		dm_upnp_enabled_track = list_entry(head->next, struct dm_upnp_enabled_track, list);
+	while (pchead->next != pchead) {
+		dm_upnp_enabled_track = list_entry(pchead->next, struct dm_upnp_enabled_track, list);
 		del_list_upnp_param_track(dm_upnp_enabled_track);
 	}
 }
@@ -1958,7 +1957,7 @@ static int mobj_upnp_get_instances(DMOBJECT_ARGS)
 	refparam = node->current_object;
 	if (!node->is_instanceobj || !node->matched)
 		return FAULT_UPNP_703;
-	if (!dm_upnp_check_acl_list(dmctx, refparam)) {
+	if (!dm_upnp_check_acl_read(dmctx, refparam)) {
 		dmctx->findparam = 0;
 		dmctx->stop = 1;
 		return FAULT_UPNP_703;
@@ -2402,7 +2401,7 @@ static int mobj_upnp_add_instance(DMOBJECT_ARGS)
 	if (fault)
 		return fault;
 	dmctx->addobj_instance = instance;
-	dmasprintf(&objinst, "%s%s%c", dmctx->current_obj, instance, dm_delim);
+	dmasprintf(&objinst, "%s%s%c", node->current_object, instance, dm_delim);
 	set_parameter_notification(dmctx, objinst, "0");
 	dmfree(objinst);
 	return 0;
@@ -2783,18 +2782,22 @@ static int enabled_tracked_param_check_obj(DMOBJECT_ARGS)
 	char *all_instances;
 	char *version = "0";
 	struct uci_section *s;
+	int isevnt, isversion;
 
-	refparam = dmctx->current_obj;
+	refparam = node->current_object;
 	if (!node->obj->browseinstobj || node->is_instanceobj)
 		return FAULT_UPNP_703;
 
-	all_instances = dm_entry_get_all_instance_numbers(dmctx, refparam);
+	isevnt = upnp_get_parameter_onchange(dmctx, refparam, "eventchange");
+	isversion = get_parameter_version(dmctx, refparam, &version, &s);
+	if (isevnt || isversion)
+		all_instances = dm_entry_get_all_instance_numbers(dmctx, refparam);
 
-	if (upnp_get_parameter_onchange(dmctx, refparam, "eventchange")) {
+	if (isevnt) {
 		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onevent, refparam, "1", all_instances, 1);
 	}
-	if (get_parameter_version(dmctx, refparam, &version, &s)) {
-		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onevent, refparam, (s ? section_name(s) : NULL), all_instances, 1);
+	if (isversion) {
+		add_list_upnp_param_track(dmctx, &list_upnp_enabled_version, refparam, (s ? section_name(s) : NULL), all_instances, 1);
 	}
 	return 0;
 }
@@ -2805,17 +2808,23 @@ static int enabled_tracked_param_check_param(DMPARAM_ARGS)
 	char *value = "";
 	char *version = "0";
 	struct uci_section *s;
+	int isalrm, isevnt, isversion;
 
-	dmastrcat(&refparam, dmctx->current_obj, lastname);
-	(get_cmd)(refparam, dmctx, &value);
-	if (upnp_get_parameter_onchange(dmctx, refparam, "alarmchange")) {
+	dmastrcat(&refparam, node->current_object, lastname);
+	isalrm = upnp_get_parameter_onchange(dmctx, refparam, "alarmchange");
+	isevnt = upnp_get_parameter_onchange(dmctx, refparam, "eventchange");
+	isversion = get_parameter_version(dmctx, refparam, &version, &s);
+
+	if (isalrm || isevnt || isversion)
+		(get_cmd)(refparam, dmctx, &value);
+	if (isalrm) {
 		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onalarm, refparam, "1", value, 0);
 	}
-	if (upnp_get_parameter_onchange(dmctx, refparam, "eventchange")) {
+	if (isevnt) {
 		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onevent, refparam, "1", value, 0);
 	}
-	if (get_parameter_version(dmctx, refparam, &version, &s)) {
-		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onevent, refparam, (s ? section_name(s) : NULL), value, 0);
+	if (isversion) {
+		add_list_upnp_param_track(dmctx, &list_upnp_enabled_version, refparam, (s ? section_name(s) : NULL), value, 0);
 	}
 
 	dmfree(refparam);
