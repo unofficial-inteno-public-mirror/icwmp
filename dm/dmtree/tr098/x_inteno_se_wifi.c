@@ -18,22 +18,14 @@
 #include "dmcommon.h"
 #include "x_inteno_se_wifi.h"
 
-struct sewifiargs cur_wifiargs = {0};
+int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
-inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int init_se_wifi(struct dmctx *ctx, struct uci_section *s)
-{
-	struct sewifiargs *args = &cur_wifiargs;
-	args->sewifisection = s;
-	return 0;
-}
-
-int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
+int get_wifi_frequency(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *freq;
 	json_object *res;
-	struct sewifiargs *wifiargs = &cur_wifiargs;
-	char *wlan_name = section_name(wifiargs->sewifisection);
+	struct uci_section *sewifisection = (struct uci_section *)data;
+	char *wlan_name = section_name(sewifisection);
 	
 	dmubus_call("router.wireless", "status", UBUS_ARGS{{"vif", wlan_name}}, 1, &res);
 	DM_ASSERT(res, *value = "");
@@ -42,50 +34,50 @@ int get_wifi_frequency(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wifi_maxassoc(char *refparam, struct dmctx *ctx, char **value)
+int get_wifi_maxassoc(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sewifiargs *wifiargs = &cur_wifiargs;
+	struct uci_section *sewifisection = (struct uci_section *)data;
 	
-	dmuci_get_value_by_section_string(wifiargs->sewifisection, "maxassoc", value);
+	dmuci_get_value_by_section_string(sewifisection, "maxassoc", value);
 	return 0;
 }
 
-int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wifi_maxassoc(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sewifiargs *wifiargs = &cur_wifiargs;
+	struct uci_section *sewifisection = (struct uci_section *)data;
 	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(wifiargs->sewifisection, "maxassoc", value);
+			dmuci_set_value_by_section(sewifisection, "maxassoc", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_wifi_dfsenable(char *refparam, struct dmctx *ctx, char **value)
+int get_wifi_dfsenable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *val;
-	struct sewifiargs *wifiargs = &cur_wifiargs;
-	char *wlan_name = section_name(wifiargs->sewifisection);
+	struct uci_section *sewifisection = (struct uci_section *)data;
+	char *wlan_name = section_name(sewifisection);
 	*value = "";
 	
-	dmuci_get_value_by_section_string(wifiargs->sewifisection, "band", &val);
+	dmuci_get_value_by_section_string(sewifisection, "band", &val);
 	if (val[0] == 'a') {
-		dmuci_get_value_by_section_string(wifiargs->sewifisection, "dfsc", value);
+		dmuci_get_value_by_section_string(sewifisection, "dfsc", value);
 		if ((*value)[0] == '\0')
 			*value = "0";
 	}
 	return 0;
 }
 
-int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {	
 	bool b;
 	char *val;
-	struct sewifiargs *wifiargs = &cur_wifiargs;
-	char *wlan_name = section_name(wifiargs->sewifisection);
+	struct uci_section *sewifisection = (struct uci_section *)data;
+	char *wlan_name = section_name(sewifisection);
 	
 	switch (action) {
 		case VALUECHECK:
@@ -93,13 +85,13 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			dmuci_get_value_by_section_string(wifiargs->sewifisection, "band", &val);
+			dmuci_get_value_by_section_string(sewifisection, "band", &val);
 			if (val[0] == 'a') {
 				string_to_bool(value, &b);
 				if (b)
-					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "1");
+					dmuci_set_value_by_section(sewifisection, "dfsc", "1");
 				else
-					dmuci_set_value_by_section(wifiargs->sewifisection, "dfsc", "0");
+					dmuci_set_value_by_section(sewifisection, "dfsc", "0");
 			}
 			return 0;
 	}
@@ -107,19 +99,19 @@ int set_wifi_dfsenable(char *refparam, struct dmctx *ctx, int action, char *valu
 }
 
 ////////////////////////SET AND GET ALIAS/////////////////////////////////
-int get_radio_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_radio_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_wifiargs.sewifisection, "radioalias", value);
+	dmuci_get_value_by_section_string((struct uci_section *)data, "radioalias", value);
 	return 0;
 }
 
-int set_radio_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_radio_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_wifiargs.sewifisection, "radioalias", value);
+			dmuci_set_value_by_section((struct uci_section *)data, "radioalias", value);
 			return 0;
 	}
 	return 0;
@@ -139,17 +131,15 @@ DMOBJ tsewifiObj[] = {
 {0}
 };
 
-inline int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsesewifiradioInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *wnum = NULL, *wnum_last = NULL;
 	struct uci_section *s = NULL;
 	uci_foreach_sections("wireless", "wifi-device", s) {
-		init_se_wifi(dmctx, s);
 		wnum =  handle_update_instance(1, dmctx, &wnum_last, update_instance_alias, 3, s, "radioinstance", "radioalias");
 		//SUBENTRY(entry_sewifi_radio_instance, ctx, wnum);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, wnum) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, wnum) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_wifiargs);
 	return 0;
 }

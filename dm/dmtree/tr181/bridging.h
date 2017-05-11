@@ -23,6 +23,7 @@ struct bridging_args
 struct bridging_port_args
 {
 	struct uci_section *bridge_port_sec;
+	struct uci_section *bridge_sec;
 	bool vlan;
 	char *ifname;
 };
@@ -30,19 +31,20 @@ struct bridging_port_args
 struct bridging_vlan_args
 {
 	struct uci_section *bridge_vlan_sec;
+	struct uci_section *bridge_sec;
 	char *vlan_port;
 	char *br_inst;
 	char *ifname;
 };
 
 #define BUF_SIZE 7
-extern DMOBJ tBridgObj[];
-extern DMOBJ tBridgPortObj[];
-extern DMLEAF tBridgeParams[];
+extern DMOBJ tBridgingObj[];
+extern DMOBJ tDridgingBridgeObj[];
+extern DMLEAF tDridgingBridgeParams[];
 extern DMLEAF tBridgeVlanParams[];
 extern DMLEAF tBridgePortParams[];
 extern DMLEAF tBridgeVlanPortParams[];
-extern DMOBJ tBridgePortStatObj[];
+extern DMOBJ tBridgePortObj[];
 extern DMLEAF tBridgePortStatParams[];
 
 #endif

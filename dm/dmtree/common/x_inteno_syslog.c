@@ -18,13 +18,13 @@
 #include "dmcommon.h"
 #include "x_inteno_syslog.h"
 
-int get_server_ip_address(char *refparam, struct dmctx *ctx, char **value)
+int get_server_ip_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("system", "@system[0]", "log_ip", value);
 	return 0;
 }
 
-int set_server_ip_address(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_server_ip_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -36,7 +36,7 @@ int set_server_ip_address(char *refparam, struct dmctx *ctx, int action, char *v
 	return 0;
 }
 	
-int get_server_port_number(char *refparam, struct dmctx *ctx, char **value)
+int get_server_port_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
 	dmuci_get_option_value_string("system", "@system[0]", "log_port", &tmp);
@@ -47,7 +47,7 @@ int get_server_port_number(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_server_port_number(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_server_port_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -59,7 +59,7 @@ int set_server_port_number(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
-int get_remote_log_level(char *refparam, struct dmctx *ctx, char **value)
+int get_remote_log_level(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
 	dmuci_get_option_value_string("system", "@system[0]", "conloglevel", &tmp);
@@ -70,7 +70,7 @@ int get_remote_log_level(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_remote_log_level(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_remote_log_level(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			

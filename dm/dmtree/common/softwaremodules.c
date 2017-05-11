@@ -18,70 +18,62 @@
 #include "dmcommon.h"
 #include "softwaremodules.h"
 
-struct software_module cur_software_module = {0};
-inline int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
-inline int init_args_du_entry(struct dmctx *ctx, struct uci_section *s)
+int get_deploymentunit_uuid(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *args = &cur_software_module;
-	args->softsection = s;
-	return 0;
-}
+	struct uci_section *softsection = (struct uci_section *)data;
 
-int get_deploymentunit_uuid(char *refparam, struct dmctx *ctx, char **value)
-{
-	struct software_module *softawreargs = &cur_software_module;
-
-	dmuci_get_value_by_section_string(softawreargs->softsection, "uuid", value);
+	dmuci_get_value_by_section_string(softsection, "uuid", value);
 	
 	return 0;
 }
 
-int get_deploymentunit_name(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "name", value);
+	dmuci_get_value_by_section_string(softsection, "name", value);
 	return 0;
 }
 
-int get_deploymentunit_resolved(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_resolved(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "resolved", value);
+	dmuci_get_value_by_section_string(softsection, "resolved", value);
 	return 0;
 }
 
-int get_deploymentunit_url(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "url", value);
+	dmuci_get_value_by_section_string(softsection, "url", value);
 	return 0;
 }
 
-int get_deploymentunit_vendor(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_vendor(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "vendor", value);
+	dmuci_get_value_by_section_string(softsection, "vendor", value);
 	return 0;
 }
 
-int get_deploymentunit_version(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_version(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "version", value);
+	dmuci_get_value_by_section_string(softsection, "version", value);
 	return 0;
 }
 
-int get_deploymentunit_execution_env_ref(char *refparam, struct dmctx *ctx, char **value)
+int get_deploymentunit_execution_env_ref(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct software_module *softawreargs = &cur_software_module;
+	struct uci_section *softsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(softawreargs->softsection, "execution_env_ref", value);
+	dmuci_get_value_by_section_string(softsection, "execution_env_ref", value);
 	return 0;
 }
 
@@ -240,19 +232,17 @@ DMLEAF tDeploymentUnitParams[] = {
 };
 
 
-inline int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsesoftwaremodules_deploymentunitInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *idu = NULL, *idu_last = NULL;
 	char *permission = "1";
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("dmmap", "deploymentunit", s) {
-		init_args_du_entry(dmctx, s);
 		idu = handle_update_instance(1, dmctx, &idu_last, update_instance_alias, 3, s, "duinstance", "duinstance_alias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idu) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, idu) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_software_module);
 	return 0;
 }
 

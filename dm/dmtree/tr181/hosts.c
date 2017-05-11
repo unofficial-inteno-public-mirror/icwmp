@@ -18,15 +18,13 @@
 #include "dmcommon.h"
 #include "hosts.h"
 
-struct host_args cur_host_args = {0};
-inline int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 /*************************************************************
  * INIT
 /*************************************************************/
-inline int init_host_args(struct dmctx *ctx, json_object *clients, char *key)
+inline int init_host_args(struct host_args *args, json_object *clients, char *key)
 {
-	struct host_args *args = &cur_host_args;
 	args->client = clients;
 	args->key = key;
 	return 0;
@@ -34,34 +32,34 @@ inline int init_host_args(struct dmctx *ctx, json_object *clients, char *key)
 /*************************************************************
  * GET & SET PARAM
 /*************************************************************/
-int get_host_ipaddress(char *refparam, struct dmctx *ctx, char **value)
+int get_host_ipaddress(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	json_select(cur_host_args.client, "ipaddr", 0, NULL, value, NULL);
+	json_select(((struct host_args *)data)->client, "ipaddr", 0, NULL, value, NULL);
 	return 0;
 }
 
-int get_host_hostname(char *refparam, struct dmctx *ctx, char **value)
+int get_host_hostname(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	json_select(cur_host_args.client, "hostname", 0, NULL, value, NULL);
+	json_select(((struct host_args *)data)->client, "hostname", 0, NULL, value, NULL);
 	return 0;
 }
 
-int get_host_active(char *refparam, struct dmctx *ctx, char **value)
+int get_host_active(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	json_select(cur_host_args.client, "connected", 0, NULL, value, NULL);
+	json_select(((struct host_args *)data)->client, "connected", 0, NULL, value, NULL);
 	return 0;
 }
 
-int get_host_phy_address(char *refparam, struct dmctx *ctx, char **value)
+int get_host_phy_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	json_select(cur_host_args.client, "macaddr", 0, NULL, value, NULL);
+	json_select(((struct host_args *)data)->client, "macaddr", 0, NULL, value, NULL);
 	return 0;
 }
 
-int get_host_address_source(char *refparam, struct dmctx *ctx, char **value) {
+int get_host_address_source(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value) {
 	char *dhcp;
 
-	json_select(cur_host_args.client, "dhcp", 0, NULL, &dhcp, NULL);
+	json_select(((struct host_args *)data)->client, "dhcp", 0, NULL, &dhcp, NULL);
 	if (strcasecmp(dhcp, "true") == 0)
 		*value = "DHCP";
 	else
@@ -69,7 +67,7 @@ int get_host_address_source(char *refparam, struct dmctx *ctx, char **value) {
 	return 0;
 }
 
-int get_host_leasetime_remaining(char *refparam, struct dmctx *ctx, char **value)
+int get_host_leasetime_remaining(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char buf[80], *dhcp;
 	FILE *fp;
@@ -78,12 +76,12 @@ int get_host_leasetime_remaining(char *refparam, struct dmctx *ctx, char **value
 	char *leasetime, *mac_f, *mac, *line1;
 	char delimiter[] = " \t";
 
-	json_select(cur_host_args.client, "dhcp", 0, NULL, &dhcp, NULL);
+	json_select(((struct host_args *)data)->client, "dhcp", 0, NULL, &dhcp, NULL);
 	if (strcmp(dhcp, "false") == 0) {
 		*value = "0";
 	}
 	else {
-		json_select(cur_host_args.client, "macaddr", 0, NULL, &mac, NULL);
+		json_select(((struct host_args *)data)->client, "macaddr", 0, NULL, &mac, NULL);
 		//
 		fp = fopen(ARP_FILE, "r");
 		if ( fp != NULL)
@@ -111,10 +109,10 @@ int get_host_leasetime_remaining(char *refparam, struct dmctx *ctx, char **value
 	return 0;
 }
 
-int  get_host_dhcp_client(char *refparam, struct dmctx *ctx, char **value)
+int  get_host_dhcp_client(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *iface, *linker;
-		dmastrcat(&linker, "linker_dhcp:", cur_host_args.key);
+		dmastrcat(&linker, "linker_dhcp:", ((struct host_args *)data)->key);
 		adm_entry_get_linker_param(ctx, dm_print_path("%s%cDHCPv4%c", DMROOT, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 		if (*value == NULL) {
 			*value = "";
@@ -159,17 +157,17 @@ char *get_interface_type(char *mac, char *ndev)
 	return "Ethernet";
 }
 
-int get_host_interfacetype(char *refparam, struct dmctx *ctx, char **value)
+int get_host_interfacetype(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *mac, *network;
 	
-	json_select(cur_host_args.client, "macaddr", 0, NULL, &mac, NULL);
-	json_select(cur_host_args.client, "network", 0, NULL, &network, NULL);
+	json_select(((struct host_args *)data)->client, "macaddr", 0, NULL, &mac, NULL);
+	json_select(((struct host_args *)data)->client, "network", 0, NULL, &network, NULL);
 	*value = get_interface_type(mac, network);
 	return 0;
 }
 
-int get_host_nbr_entries(char *refparam, struct dmctx *ctx, char **value)
+int get_host_nbr_entries(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int entries = 0;
 	json_object *res;
@@ -209,21 +207,22 @@ DMOBJ thostsObj[] = {
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
-inline int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsehostInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	json_object *res, *client_obj;
 	char *idx, *idx_last = NULL;
 	int id = 0;
+	struct host_args curr_host_args = {0};
+
 	dmubus_call("router.network", "clients", UBUS_ARGS{}, 0, &res);
 	if (res) {
 		json_object_object_foreach(res, key, client_obj) {
-			init_host_args(dmctx, client_obj, key);
+			init_host_args(&curr_host_args, client_obj, key);
 			idx = handle_update_instance(2, dmctx, &idx_last, update_instance_without_section, 1, ++id);
-			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, idx) == DM_STOP)
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_host_args, idx) == DM_STOP)
 				break;
 		}
 	}
-	DM_CLEAN_ARGS(cur_host_args);
 	return 0;
 }
 

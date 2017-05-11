@@ -12,21 +12,21 @@
 #define __DOWNLOAD_DIAGNOSTIC_H
 
 static inline char *download_diagnostic_get(char *option, char *def);
-int get_download_diagnostics_state(char *refparam, struct dmctx *ctx, char **value);
-int set_download_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value);
-int get_download_diagnostics_interface(char *refparam, struct dmctx *ctx, char **value);
-int set_download_diagnostics_interface(char *refparam, struct dmctx *ctx, int action, char *value);
-int get_download_diagnostics_url(char *refparam, struct dmctx *ctx, char **value);
-int set_download_diagnostics_url(char *refparam, struct dmctx *ctx, int action, char *value);
-int get_download_diagnostics_ethernet_priority(char *refparam, struct dmctx *ctx, char **value);
-int set_download_diagnostics_ethernet_priority(char *refparam, struct dmctx *ctx, int action, char *value);
-int get_download_diagnostic_romtime(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_bomtime(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_eomtime(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_testbytes(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_totalbytes(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_tcp_open_request_time(char *refparam, struct dmctx *ctx, char **value);
-int get_download_diagnostic_tcp_open_response_time(char *refparam, struct dmctx *ctx, char **value);
+int get_download_diagnostics_state(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int set_download_diagnostics_state(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action);
+int get_download_diagnostics_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int set_download_diagnostics_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action);
+int get_download_diagnostics_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int set_download_diagnostics_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action);
+int get_download_diagnostics_ethernet_priority(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int set_download_diagnostics_ethernet_priority(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action);
+int get_download_diagnostic_romtime(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_bomtime(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_eomtime(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_testbytes(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_totalbytes(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_tcp_open_request_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+int get_download_diagnostic_tcp_open_response_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
 
 extern DMLEAF tDownloadDiagnosticsParam[];
 #endif

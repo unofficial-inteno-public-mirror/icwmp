@@ -18,7 +18,7 @@
 #include "dmcommon.h"
 #include "x_inteno_se_ice.h"
 
-int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	bool b;
 	dmuci_get_option_value_string("ice", "cloud", "enabled", value);
@@ -31,7 +31,7 @@ int get_ice_cloud_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	
@@ -50,13 +50,13 @@ int set_ice_cloud_enable(char *refparam, struct dmctx *ctx, int action, char *va
 	}
 }
 
-int get_ice_cloud_server(char *refparam, struct dmctx *ctx, char **value)
+int get_ice_cloud_server(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("ice", "cloud", "server", value);
 	return 0;
 }
 
-int set_ice_cloud_server(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ice_cloud_server(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:

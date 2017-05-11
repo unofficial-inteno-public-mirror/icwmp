@@ -62,8 +62,8 @@ extern struct dm_notif_s DMPASSIVE;
 	char *lastname, \
 	struct dm_permession_s *permission, \
 	int type, \
-	int (*get_cmd)(char *refparam, struct dmctx *dmctx, char **value), \
-	int (*set_cmd)(char *refparam, struct dmctx *dmctx, int action, char *value), \
+	int (*get_cmd)(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value), \
+	int (*set_cmd)(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action), \
 	struct dm_forced_inform_s *forced_inform, \
 	struct dm_notif_s *notification, \
 	void *data, \
@@ -73,8 +73,8 @@ extern struct dm_notif_s DMPASSIVE;
 	struct dmctx *dmctx, \
 	struct dmnode *node, \
 	struct dm_permession_s *permission, \
-	int (*addobj)(struct dmctx *dmctx, char **instance), \
-	int (*delobj)(struct dmctx *dmctx, unsigned char del_action), \
+	int (*addobj)(char *refparam, struct dmctx *ctx, void *data, char **instance), \
+	int (*delobj)(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action), \
 	struct dm_forced_inform_s *forced_inform, \
 	struct dm_notif_s *notification, \
 	int (*get_linker)(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker), \
@@ -112,8 +112,8 @@ typedef struct dm_leaf_s {
 	char *parameter;
 	struct dm_permession_s *permission;
 	int type;
-	int (*getvalue)(char *refparam, struct dmctx *dmctx, char **value);
-	int (*setvalue)(char *refparam, struct dmctx *dmctx, int action, char *value);
+	int (*getvalue)(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
+	int (*setvalue)(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action);
 	struct dm_forced_inform_s *forced_inform;
 	struct dm_notif_s *notification;
 } DMLEAF;
@@ -122,8 +122,8 @@ typedef struct dm_obj_s {
 	/* OBJ, permission, addobj, delobj, browseinstobj, forced_inform, notification, nextobj, leaf, linker(10)*/
 	char *obj;
 	struct dm_permession_s *permission;
-	int (*addobj)(struct dmctx *dmctx, char **instance);
-	int (*delobj)(struct dmctx *dmctx, unsigned char del_action);
+	int (*addobj)(char *refparam, struct dmctx *ctx, void *data, char **instance);
+	int (*delobj)(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action);
 	bool (*checkobj)(struct dmctx *dmctx, void *data);
 	int (*browseinstobj)(struct dmctx *dmctx, struct dmnode *node, void *data, char *instance);
 	struct dm_forced_inform_s *forced_inform;
@@ -431,7 +431,6 @@ enum dm_param_flags_enum{
 	DM_FACTORIZED = 1 << 31
 };
 
-#define DM_CLEAN_ARGS(X) memset(&(X), 0, sizeof(X))
 static inline int DM_LINK_INST_OBJ(struct dmctx *dmctx, DMNODE *parent_node, void *data, char *instance)
 {
 	dmctx->faultcode = dm_link_inst_obj(dmctx, parent_node, data, instance);
@@ -459,7 +458,7 @@ extern unsigned int upnp_in_user_mask;
 char *update_instance(struct uci_section *s, char *last_inst, char *inst_opt);
 char *update_instance_alias(int action, char **last_inst , void *argv[]);
 char *update_instance_without_section(int action, char **last_inst, void *argv[]);
-int get_empty(char *refparam, struct dmctx *args, char **value);
+int get_empty(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value);
 void add_list_paramameter(struct dmctx *ctx, char *param_name, char *param_data, char *param_type, char *param_version, unsigned int flags);
 void del_list_parameter(struct dm_parameter *dm_parameter);
 void free_all_list_parameter(struct dmctx *ctx);

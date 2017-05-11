@@ -108,11 +108,6 @@ struct codec
 	char *priority;
 };
 
-struct service_args
-{
-	struct uci_section *service_section;
-};
-
 enum enum_cap_sip_codecs {
 	SIP_CODEC_G723,
 	SIP_CODEC_GSM,

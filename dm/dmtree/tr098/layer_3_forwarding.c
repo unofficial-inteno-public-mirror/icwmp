@@ -23,13 +23,10 @@ enum enum_route_type {
 	ROUTE_DISABLED
 };
 
-struct routefwdargs cur_routefwdargs = {0};
-
-inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 char *get_forwording_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance);
-inline int init_args_rentry(struct dmctx *ctx, struct uci_section *s, char *permission, struct proc_route *proute, int type)
+inline int init_args_rentry(struct routefwdargs *args, struct uci_section *s, char *permission, struct proc_route *proute, int type)
 {
-	struct routefwdargs *args = &cur_routefwdargs;
 	args->permission = permission;
 	args->routefwdsection = s;
 	args->proute = proute;
@@ -218,9 +215,9 @@ struct uci_section *update_route_dynamic_section(struct proc_route *proute)
 		return s;
 }
 
-int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 
 	if (routeargs->routefwdsection == NULL) {
 		*value = "1";
@@ -234,11 +231,11 @@ int get_layer3_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	char *pch;
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -262,9 +259,9 @@ int set_layer3_enable(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
-int get_layer3_status(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 
 	if (routeargs->routefwdsection == NULL) {
 		*value = "Enabled";
@@ -281,11 +278,11 @@ int get_layer3_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;	
 }
 
-int get_layer3_type(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *netmask;
 
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);
@@ -298,9 +295,9 @@ int get_layer3_type(char *refparam, struct dmctx *ctx, char **value)
 	return 0;		
 }
 
-int get_layer3_destip(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_destip(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "target", value);
@@ -315,9 +312,9 @@ int get_layer3_destip(char *refparam, struct dmctx *ctx, char **value)
 	return 0;		
 }
 
-int set_layer3_destip(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_destip(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {	
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:			
@@ -329,9 +326,9 @@ int set_layer3_destip(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
-int get_layer3_destmask(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_destmask(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "netmask", value);
@@ -346,9 +343,9 @@ int get_layer3_destmask(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_layer3_destmask(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_destmask(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {	
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:			
@@ -360,21 +357,21 @@ int set_layer3_destmask(char *refparam, struct dmctx *ctx, int action, char *val
 	return 0;
 }
 
-int get_layer3_src_address(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_src_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "0.0.0.0";
 	return 0;
 }
 
-int get_layer3_src_mask(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_src_mask(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "0.0.0.0";
 	return 0;
 }
 
-int get_layer3_gatewayip(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_gatewayip(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "gateway", value);
@@ -389,9 +386,9 @@ int get_layer3_gatewayip(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 } 
 
-int set_layer3_gatewayip(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_gatewayip(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {	
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:			
@@ -403,13 +400,12 @@ int set_layer3_gatewayip(char *refparam, struct dmctx *ctx, int action, char *va
 	return 0;
 }
 
-char *get_layer3_interface(struct dmctx *ctx)
+char *get_layer3_interface(struct dmctx *ctx, struct routefwdargs *routeargs)
 {
 	json_object *res;
 	char *val, *bval, *ifname, *device;
 	char *name;
 	struct uci_section *ss;
-	struct routefwdargs *routeargs = &cur_routefwdargs;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "interface", &val);
@@ -439,12 +435,12 @@ char *get_layer3_interface(struct dmctx *ctx)
 	return "";
 }
 
-int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *iface, *linker;
 	*value = "";
 			
-	iface = get_layer3_interface(ctx);
+	iface = get_layer3_interface(ctx, (struct routefwdargs *)data);
 	if (iface[0] != '\0') {
 		dmastrcat(&linker, "linker_interface:", iface);
 		adm_entry_get_linker_param(ctx, dm_print_path("%s%cWANDevice%c", DMROOT, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
@@ -458,10 +454,10 @@ int get_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, cha
 	return 0;
 }
 
-int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *linker, *iface;
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -478,10 +474,10 @@ int set_layer3_interface_linker_parameter(char *refparam, struct dmctx *ctx, int
 	return 0;
 }
 
-int get_layer3_metric(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_metric(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *name;
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "metric", value);
@@ -496,9 +492,9 @@ int get_layer3_metric(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_layer3_metric(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_metric(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:			
@@ -510,9 +506,9 @@ int set_layer3_metric(char *refparam, struct dmctx *ctx, int action, char *value
 	return 0;
 }
 
-int get_layer3_mtu(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_mtu(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {	
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 
 	if (routeargs->routefwdsection != NULL)	{
 		dmuci_get_value_by_section_string(routeargs->routefwdsection, "mtu", value);
@@ -527,9 +523,9 @@ int get_layer3_mtu(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_layer3_mtu(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_mtu(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct routefwdargs *routeargs = &cur_routefwdargs;
+	struct routefwdargs *routeargs = (struct routefwdargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -542,7 +538,7 @@ int set_layer3_mtu(char *refparam, struct dmctx *ctx, int action, char *value)
 }
 
 
-int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *iface, *linker;
 
@@ -557,7 +553,7 @@ int get_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, char **value)
 	}
 	return 0;
 }
-int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int i;
 	char *linker, *iface;
@@ -577,7 +573,7 @@ int set_layer3_def_conn_serv(char *refparam, struct dmctx *ctx, int action, char
 	return 0;
 }
 
-int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	struct uci_section *s;
 	int cnt = 0;
@@ -610,20 +606,20 @@ int get_layer3_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_layer3_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_layer3_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "";
-	if (cur_routefwdargs.routefwdsection) dmuci_get_value_by_section_string(cur_routefwdargs.routefwdsection, "routealias", value);
+	if (((struct routefwdargs *)data)->routefwdsection) dmuci_get_value_by_section_string(((struct routefwdargs *)data)->routefwdsection, "routealias", value);
 	return 0;
 }
 
-int set_layer3_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_layer3_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			if (cur_routefwdargs.routefwdsection) dmuci_set_value_by_section(cur_routefwdargs.routefwdsection, "routealias", value);
+			if (((struct routefwdargs *)data)->routefwdsection) dmuci_set_value_by_section(((struct routefwdargs *)data)->routefwdsection, "routealias", value);
 			return 0;
 	}
 	return 0;
@@ -633,15 +629,23 @@ struct dm_permession_s DMForwarding_perm = {"0", &get_forwording_perm};
 
 char *get_forwording_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance)
 {
-	return cur_routefwdargs.permission;
+	return ((struct routefwdargs *)data)->permission;
 }
 
-DMLEAF tForwardingParam[] = {
+/*** Layer3Forwarding. ***/
+DMOBJ tLayer3ForwardingObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"Forwarding", &DMREAD, NULL, NULL, NULL, browseForwardingInst, NULL, NULL, NULL, tForwardingInstParam, NULL},
+{0}
+};
+
+DMLEAF tLayer3ForwardingParam[] = {
 {"DefaultConnectionService", &DMWRITE, DMT_STRING, get_layer3_def_conn_serv, set_layer3_def_conn_serv, NULL, NULL},
 {"ForwardNumberOfEntries", &DMREAD, DMT_UNINT, get_layer3_nbr_entry, NULL, NULL, NULL},
 {0}
 };
 
+/*** Layer3Forwarding.Forwarding.{i}. ***/
 DMLEAF tForwardingInstParam[] = {
 {"Enable", &DMForwarding_perm, DMT_BOOL, get_layer3_enable, set_layer3_enable, NULL, NULL},
 {"Status", &DMREAD, DMT_STRING, get_layer3_status, NULL, NULL, NULL},
@@ -658,14 +662,7 @@ DMLEAF tForwardingInstParam[] = {
 {0}
 };
 
-DMOBJ tLayer3ForwardingObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"Forwarding", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tForwardingParam, NULL},
-{"Forwarding", &DMREAD, NULL, NULL, NULL, browseForwardingInst, NULL, NULL, NULL, tForwardingInstParam, NULL},
-{0}
-};
-
-inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	char *iroute = NULL, *iroute_last = NULL;
 	char *permission = "1";
@@ -674,16 +671,18 @@ inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 	char line[MAX_PROC_ROUTE];
 	struct proc_route proute;
 	bool find_max = true;
+	struct routefwdargs curr_routefwdargs = {0};
+
 	uci_foreach_sections("network", "route", s) {
-		init_args_rentry(dmctx, s, "1", NULL, ROUTE_STATIC);
+		init_args_rentry(&curr_routefwdargs, s, "1", NULL, ROUTE_STATIC);
 		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_routefwdargs, iroute) == DM_STOP)
 			goto end;
 	}
 	uci_foreach_sections("network", "route_disabled", s) {
-		init_args_rentry(dmctx, s, "1", NULL, ROUTE_DISABLED);
+		init_args_rentry(&curr_routefwdargs, s, "1", NULL, ROUTE_DISABLED);
 		iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, s, "routeinstance", "routealias", &find_max);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_routefwdargs, iroute) == DM_STOP)
 			goto end;
 	}
 	fp = fopen(ROUTE_FILE, "r");
@@ -698,14 +697,13 @@ inline int browseForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *
 			if (is_proute_static(&proute))
 				continue;
 			ss = update_route_dynamic_section(&proute);
-			init_args_rentry(dmctx, ss, "0", &proute, ROUTE_DYNAMIC);
+			init_args_rentry(&curr_routefwdargs, ss, "0", &proute, ROUTE_DYNAMIC);
 			iroute =  handle_update_instance(1, dmctx, &iroute_last, forwarding_update_instance_alias, 4, ss, "routeinstance", "routealias", &find_max);
-			if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iroute) == DM_STOP)
+			if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_routefwdargs, iroute) == DM_STOP)
 				goto end;
 		}
 		fclose(fp) ;
 	}
 end:
-	DM_CLEAN_ARGS(cur_routefwdargs);
 	return 0;
 }

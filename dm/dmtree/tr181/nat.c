@@ -18,51 +18,38 @@
 #include "dmcommon.h"
 #include "nat.h"
 
-struct nat_args
-{
-	struct uci_section *int_sec;
-};
+int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
-struct nat_args cur_nat_args = {0};
-inline int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-
-inline int init_nat_args(struct dmctx *ctx, struct uci_section *int_sec)
-{
-	struct nat_args *args = &cur_nat_args;
-	args->int_sec = int_sec;	
-	return 0;
-}
-
-int get_nat_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_nat_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "1";
 	return 0;
 }
 
-int get_nat_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_nat_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct nat_args *natargs = &cur_nat_args;
-	dmuci_get_value_by_section_string(natargs->int_sec, "natalias", value);
+	struct uci_section *int_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(int_sec, "natalias", value);
 	return 0;
 }
 
-int set_nat_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_nat_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct nat_args *natargs = &cur_nat_args;
+	struct uci_section *int_sec = (struct uci_section *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(natargs->int_sec, "natalias", value);
+			dmuci_set_value_by_section(int_sec, "natalias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_nat_interface(char *refparam, struct dmctx *ctx, char **value)
+int get_nat_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *linker;
-	linker = dmstrdup(section_name(cur_nat_args.int_sec));
+	linker = dmstrdup(section_name(((struct uci_section *)data)));
 	adm_entry_get_linker_param(ctx, dm_print_path("%s%cIP%cInterface%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value); // MEM WILL BE FREED IN DMMEMCLEAN
 	if (*value == NULL)
 		*value = "";
@@ -145,7 +132,7 @@ DMOBJ tnatObj[] = {
  * ENTRY METHOD
 /*************************************************************/
 
-inline int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *net_sec = NULL, *s = NULL;
 	char *nat = NULL;
@@ -157,15 +144,13 @@ inline int browseInterfaceSettingInst(struct dmctx *dmctx, DMNODE *parent_node, 
 			dmuci_get_value_by_section_string(s, "masq", &nat);
 			if(nat[0] == '1') {
 				nati =  handle_update_instance(1, dmctx, &nati_last, nat_update_instance_alias, 4, net_sec, "natinstance", "natalias", &find_max);
-				init_nat_args(dmctx, net_sec);
-				if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, nati) == DM_STOP)
+				if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, nati) == DM_STOP)
 					goto end;
 				break;
 			}
 		}
 	}
 end:
-	DM_CLEAN_ARGS(cur_nat_args);
 	return 0;
 }
 

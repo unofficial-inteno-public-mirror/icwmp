@@ -15,19 +15,19 @@
 #include "dmcwmp.h"
 #include "dmuci.h"
 
-int get_pwr_mgmt_value_ethapd(char *refparam, struct dmctx *ctx, char **value)
+int get_pwr_mgmt_value_ethapd(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("power_mgmt", "power_mgmt", "ethapd", value);
 	return 0;
 }
 
-int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, char **value)
+int get_pwr_mgmt_value_eee(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("power_mgmt", "power_mgmt", "eee", value);
 	return 0;
 }
 
-int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value)
+int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char buf[256];
 	int pp, r;
@@ -43,7 +43,7 @@ int get_pwr_nbr_interfaces_up(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value)
+int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char buf[256];
 	int pp, r;
@@ -59,7 +59,7 @@ int get_pwr_nbr_interfaces_down(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 
@@ -79,7 +79,7 @@ int set_power_mgmt_param_ethapd(char *refparam, struct dmctx *ctx, int action, c
 	return 0;
 }
 
-int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_power_mgmt_param_eee(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 

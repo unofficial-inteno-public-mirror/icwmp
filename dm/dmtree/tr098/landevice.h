@@ -52,16 +52,6 @@ struct ldlanargs
 	char *ldinstance;
 };
 
-struct ldipargs
-{
-	struct uci_section *ldipsection;
-};
-
-struct lddhcpargs
-{
-	struct uci_section *lddhcpsection;
-};
-
 struct ldwlanargs
 {
 	struct uci_section *lwlansection;
@@ -82,11 +72,15 @@ struct ldethargs
 struct wlan_psk
 {
 	struct uci_section *wlanpsk;
+	struct uci_section *lwlansection;
+	char *wiface;
+	int pki;
 };
 
 struct wlan_wep
 {
 	struct uci_section *wlanwep;
+	struct uci_section *lwlansection;
 	unsigned int key_index;
 };
 
@@ -96,5 +90,5 @@ typedef struct dhcp_param
 	char *state_sec;
 }dhcp_param;
 
-inline int browselandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browselandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

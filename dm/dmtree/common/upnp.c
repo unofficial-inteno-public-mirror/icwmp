@@ -18,7 +18,7 @@
 #include "dmcommon.h"
 #include "upnp.h"
 
-int get_upnp_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_upnp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("upnpd","config","enabled", value);
 	if ((*value)[0] == '\0') {
@@ -27,7 +27,7 @@ int get_upnp_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_upnp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_upnp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	int check;
@@ -47,7 +47,7 @@ int set_upnp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 
-int get_upnp_status(char *refparam, struct dmctx *ctx, char **value)
+int get_upnp_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	pid_t pid = get_pid("miniupnpd");
 	

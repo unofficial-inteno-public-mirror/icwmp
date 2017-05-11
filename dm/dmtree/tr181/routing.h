@@ -26,14 +26,12 @@ struct routingfwdargs
 	int type;
 };
 
-struct router_args
-{
-	struct uci_section *router_section;
-};
-
 extern DMLEAF tRouterInstParam[];
 extern DMLEAF tIPv4ForwardingParam[];
 extern DMOBJ tRoutingObj[];
-extern DMLEAF tRouterParam[];
+extern DMLEAF tRoutingParam[];
 extern DMOBJ tRouterObj[];
+
+int browseRouterInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseIPv4ForwardingInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

@@ -11,11 +11,6 @@
 #ifndef __PPP_H
 #define __PPP_H
 
-struct ppp_args
-{
-	struct uci_section *ppp_sec;
-};
-
 extern DMLEAF tpppInterfaceParam[];
 extern DMLEAF tStatsParam[];
 extern DMOBJ tpppInterfaceObj[];

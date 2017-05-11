@@ -502,7 +502,7 @@ char *get_last_instance_lev2(char *package, char *section, char *opt_inst, char 
 	return instance;
 }
 
-int get_empty(char *refparam, struct dmctx *args, char **value)
+int get_empty(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "";
 	return 0;
@@ -895,7 +895,7 @@ static int get_value_param(DMPARAM_ARGS)
 	char *value = "";
 
 	dmastrcat(&full_param, node->current_object, lastname);
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, DMT_TYPE[type], NULL, 0);
 	return 0;
 }
@@ -915,7 +915,7 @@ static int mparam_get_value_in_param(DMPARAM_ARGS)
 		return FAULT_9005;
 	}
 
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, DMT_TYPE[type], NULL, 0);
 	dmctx->stop = true;
 	return 0;
@@ -1199,7 +1199,7 @@ static int inform_check_param(DMPARAM_ARGS)
 		return FAULT_9005;
 
 	dmastrcat(&full_param, node->current_object, lastname);
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, DMT_TYPE[type], NULL, 0);
 	return 0;
 }
@@ -1255,7 +1255,7 @@ static int mobj_add_object(DMOBJECT_ARGS)
 	if (perm[0] == '0' || addobj == NULL)
 		return FAULT_9005;
 
-	int fault = (addobj)(dmctx, &instance);
+	int fault = (addobj)(refparam, dmctx, data, &instance);
 	if (fault)
 		return fault;
 	dmctx->addobj_instance = instance;
@@ -1308,7 +1308,7 @@ static int delete_object_obj(DMOBJECT_ARGS)
 
 	if (!node->is_instanceobj)
 		del_action = DEL_ALL;
-	int fault = (delobj)(dmctx, del_action);
+	int fault = (delobj)(refparam, dmctx, data, instance, del_action);
 	return fault;
 }
 
@@ -1371,7 +1371,7 @@ static int mparam_set_value(DMPARAM_ARGS)
 			dmfree(refparam);
 			return FAULT_9008;
 		}
-		int fault = (set_cmd)(refparam, dmctx, VALUECHECK, dmctx->in_value);
+		int fault = (set_cmd)(refparam, dmctx, data, instance, dmctx->in_value, VALUECHECK);
 		if (fault) {
 			dmfree(refparam);
 			return fault;
@@ -1379,8 +1379,8 @@ static int mparam_set_value(DMPARAM_ARGS)
 		add_set_list_tmp(dmctx, dmctx->in_param, dmctx->in_value, 0);
 	}
 	else if (dmctx->setaction == VALUESET) {
-		(set_cmd)(refparam, dmctx, VALUESET, dmctx->in_value);
-		(get_cmd)(refparam, dmctx, &v);
+		(set_cmd)(refparam, dmctx, data, instance, dmctx->in_value, VALUESET);
+		(get_cmd)(refparam, dmctx, data, instance, &v);
 		dm_update_enabled_notify_byname(refparam, v);
 	}
 	dmfree(refparam);
@@ -1539,7 +1539,7 @@ static int enabled_notify_check_param(DMPARAM_ARGS)
 		dmfree(refparam);
 		return 0;
 	}
-	(get_cmd)(refparam, dmctx, &value);
+	(get_cmd)(refparam, dmctx, data, instance, &value);
 	if (notif[0] == '1' || notif[0] == '2'
 			|| notif[0] == '4' || notif[0] == '6')
 		add_list_enabled_notify(dmctx, refparam, notification, value);
@@ -1577,9 +1577,13 @@ static int get_linker_check_obj(DMOBJECT_ARGS)
 	if (!get_linker) {
 		return  FAULT_9005;
 	}
-	get_linker(node->current_object, dmctx, NULL, NULL, &link_val);
-	if (dmctx->linker[0] == '\0')
+	if (node->obj->browseinstobj && !node->is_instanceobj) {
 		return  FAULT_9005;
+	}
+	get_linker(node->current_object, dmctx, data, instance, &link_val);
+	if (dmctx->linker[0] == '\0') {
+		return  FAULT_9005;
+	}
 	if (link_val && link_val[0] != '\0' && strcmp(link_val, dmctx->linker) == 0) {
 		dmctx->linker_param = dmstrdup(node->current_object);
 		dmctx->stop = true;
@@ -1621,7 +1625,7 @@ static int get_linker_value_check_obj(DMOBJECT_ARGS)
 		return FAULT_9005;
 
 	if (strcmp(node->current_object, dmctx->in_param) == 0) {
-		get_linker(node->current_object, dmctx, NULL, NULL, &link_val);
+		get_linker(node->current_object, dmctx, data, instance, &link_val);
 		dmctx->linker = dmstrdup(link_val);
 		dmctx->stop = true;
 		return 0;
@@ -2108,7 +2112,7 @@ static int mparam_upnp_structured_get_value_in_param(DMPARAM_ARGS)
 		return FAULT_UPNP_703;
 	}
 	dmctx->findparam = 1;
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, DMT_TYPE[type], NULL, 0);
 	return 0;
 }
@@ -2175,7 +2179,7 @@ static int upnp_get_value_param(DMPARAM_ARGS)
 		dmctx->stop = 1;
 		return FAULT_UPNP_703;
 	}
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, NULL, NULL, 0);
 	return 0;
 }
@@ -2200,7 +2204,7 @@ static int mparam_upnp_get_value_in_param(DMPARAM_ARGS)
 		dmctx->stop = 1;
 		return FAULT_UPNP_703;
 	}
-	(get_cmd)(full_param, dmctx, &value);
+	(get_cmd)(full_param, dmctx, data, instance, &value);
 	add_list_paramameter(dmctx, full_param, value, NULL, NULL, 0);
 	dmctx->stop = 1;
 	return 0;
@@ -2265,7 +2269,7 @@ static int mparam_upnp_set_value(DMPARAM_ARGS)
 			dmctx->findparam = 0;
 			return FAULT_UPNP_706;
 		}
-		int fault = (set_cmd)(refparam, dmctx, VALUECHECK, dmctx->in_value);
+		int fault = (set_cmd)(refparam, dmctx, data, instance, dmctx->in_value, VALUECHECK);
 		if (fault) {
 			dmfree(refparam);
 			return fault;
@@ -2273,8 +2277,8 @@ static int mparam_upnp_set_value(DMPARAM_ARGS)
 		add_set_list_tmp(dmctx, dmctx->in_param, dmctx->in_value, 0);
 	}
 	else if (dmctx->setaction == VALUESET) {
-		(set_cmd)(refparam, dmctx, VALUESET, dmctx->in_value);
-		(get_cmd)(refparam, dmctx, &v);
+		(set_cmd)(refparam, dmctx, data, instance, dmctx->in_value, VALUESET);
+		(get_cmd)(refparam, dmctx, data, instance, &v);
 		dm_update_enabled_notify_byname(refparam, v);
 	}
 	dmfree(refparam);
@@ -2331,7 +2335,7 @@ static int upnp_delete_instance_obj(DMOBJECT_ARGS)
 
 	if (!node->is_instanceobj)
 		del_action = DEL_ALL;
-	int fault = (delobj)(dmctx, del_action);
+	int fault = (delobj)(refparam, dmctx, data, instance, del_action);
 	return fault;
 }
 
@@ -2397,7 +2401,7 @@ static int mobj_upnp_add_instance(DMOBJECT_ARGS)
 		return FAULT_UPNP_706;
 	}
 
-	int fault = (addobj)(dmctx, &instance);
+	int fault = (addobj)(refparam, dmctx, data, &instance);
 	if (fault)
 		return fault;
 	dmctx->addobj_instance = instance;
@@ -2816,7 +2820,7 @@ static int enabled_tracked_param_check_param(DMPARAM_ARGS)
 	isversion = get_parameter_version(dmctx, refparam, &version, &s);
 
 	if (isalrm || isevnt || isversion)
-		(get_cmd)(refparam, dmctx, &value);
+		(get_cmd)(refparam, dmctx, data, instance, &value);
 	if (isalrm) {
 		add_list_upnp_param_track(dmctx, &list_upnp_enabled_onalarm, refparam, "1", value, 0);
 	}

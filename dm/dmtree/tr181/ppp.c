@@ -18,36 +18,25 @@
 #include "dmcommon.h"
 #include "ppp.h"
 
-struct ppp_args cur_ppp_args = {0};
-inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-
-/*************************************************************
- * INIT
-/*************************************************************/
-inline int init_ppp_args(struct dmctx *ctx, struct uci_section *s)
-{
-	struct ppp_args *args = &cur_ppp_args;
-	args->ppp_sec = s;
-	return 0;
-}
+int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 /*************************************************************
  * GET SET ALIAS
 /*************************************************************/
 
-int get_ppp_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "ppp_int_alias", value);
+	dmuci_get_value_by_section_string(((struct uci_section *)data), "ppp_int_alias", value);
 	return 0;
 }
 
-int set_ppp_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ppp_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_ppp_args.ppp_sec, "ppp_int_alias", value);
+			dmuci_set_value_by_section(((struct uci_section *)data), "ppp_int_alias", value);
 			return 0;
 	}
 	return 0;
@@ -57,23 +46,23 @@ int set_ppp_alias(char *refparam, struct dmctx *ctx, int action, char *value)
 * GET & SET PARAMETERS
 ***************************************************************************/
 
-int get_ppp_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	return get_interface_enable_ubus(section_name(cur_ppp_args.ppp_sec), refparam, ctx, value);
+	return get_interface_enable_ubus(section_name(((struct uci_section *)data)), refparam, ctx, value);
 }
 
-int set_ppp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ppp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	return set_interface_enable_ubus(section_name(cur_ppp_args.ppp_sec), refparam, ctx, action, value);
+	return set_interface_enable_ubus(section_name(((struct uci_section *)data)), refparam, ctx, action, value);
 }
 
-int get_ppp_name(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	*value = dmstrdup(section_name(cur_ppp_args.ppp_sec));
+	*value = dmstrdup(section_name(((struct uci_section *)data)));
 	return 0;
 }
 
-int get_ppp_status(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *status = NULL;
 	char *uptime = NULL;
@@ -81,7 +70,7 @@ int get_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	json_object *res = NULL;
 	bool bstatus = false, bpend = false;
 
-	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(cur_ppp_args.ppp_sec)}}, 1, &res);
+	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", section_name(((struct uci_section *)data))}}, 1, &res);
 	DM_ASSERT(res, *value = "");
 	if (json_select(res, "up", 0, NULL, &status, NULL) != -1)
 	{
@@ -101,41 +90,41 @@ int get_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_ppp_username(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "username", value);
+	dmuci_get_value_by_section_string(((struct uci_section *)data), "username", value);
 	return 0;
 }
 
-int set_ppp_username(char *refparam, struct dmctx *ctx, int action, char *value)
-{
-	switch (action) {
-		case VALUECHECK:
-			return 0;
-		case VALUESET:
-			dmuci_set_value_by_section(cur_ppp_args.ppp_sec, "username", value);
-			return 0;
-	}
-	return 0;
-}
-
-int set_ppp_password(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ppp_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_ppp_args.ppp_sec, "password", value);
+			dmuci_set_value_by_section(((struct uci_section *)data), "username", value);
 			return 0;
 	}
 	return 0;
 }
 
-inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
+int set_ppp_password(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
+{
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			dmuci_set_value_by_section(((struct uci_section *)data), "password", value);
+			return 0;
+	}
+	return 0;
+}
+
+inline int ubus_get_wan_stats(void *data, char *instance, json_object *res, char **value, char *stat_mod)
 {
 	char *ifname, *proto;
-	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "ifname", &ifname);
-	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "proto", &proto);
+	dmuci_get_value_by_section_string(((struct uci_section *)data), "ifname", &ifname);
+	dmuci_get_value_by_section_string(((struct uci_section *)data), "proto", &proto);
 	if (strcmp(proto, "pppoe") == 0) {
 		dmubus_call("network.device", "status", UBUS_ARGS{{"name", ifname}}, 1, &res);
 		DM_ASSERT(res, *value = "");
@@ -144,51 +133,54 @@ inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
 	return 0;
 }
 
-int get_ppp_eth_bytes_received(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_eth_bytes_received(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "rx_bytes");
+	ubus_get_wan_stats(data, instance, res, value, "rx_bytes");
 	return 0;
 }
 
-int get_ppp_eth_bytes_sent(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_eth_bytes_sent(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "tx_bytes");
+	ubus_get_wan_stats(data, instance, res, value, "tx_bytes");
 	return 0;
 }
 
-int get_ppp_eth_pack_received(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_eth_pack_received(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "rx_packets");
+	ubus_get_wan_stats(data, instance, res, value, "rx_packets");
 	return 0;
 }
 
-int get_ppp_eth_pack_sent(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_eth_pack_sent(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "tx_packets");
+	ubus_get_wan_stats(data, instance, res, value, "tx_packets");
 	return 0;
 }
 
-int get_ppp_lower_layer(char *refparam, struct dmctx *ctx, char **value)
+int get_ppp_lower_layer(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *linker;
-	dmuci_get_value_by_section_string(cur_ppp_args.ppp_sec, "ifname", &linker);
+	dmuci_get_value_by_section_string(((struct uci_section *)data), "ifname", &linker);
 	adm_entry_get_linker_param(ctx, dm_print_path("%s%cATM%cLink%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
-	if (*value == NULL)
+	if (*value == NULL) {
 		adm_entry_get_linker_param(ctx, dm_print_path("%s%cPTM%cLink%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
-	if (*value == NULL)
-		adm_entry_get_linker_param(ctx, dm_print_path("%s%cEthernet%cInterface%c", DMROOT, dm_delim, dm_delim), dm_delim, linker, value);
-	if (*value == NULL)
+	}
+	if (*value == NULL) {
+		adm_entry_get_linker_param(ctx, dm_print_path("%s%cEthernet%cInterface%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
+	}
+	if (*value == NULL) {
 		adm_entry_get_linker_param(ctx, dm_print_path("%s%cWiFi%cSSID%c", DMROOT, dm_delim, dm_delim, dm_delim), linker, value);
+	}
 	if (*value == NULL)
 		*value = "";
 	return 0;
 }
 
-int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *linker;
 	switch (action) {
@@ -196,7 +188,7 @@ int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, int action, char *val
 			return 0;
 		case VALUESET:
 			adm_entry_get_linker_value(ctx, value, &linker);
-			dmuci_set_value_by_section(cur_ppp_args.ppp_sec, "ifname", linker);
+			dmuci_set_value_by_section(((struct uci_section *)data), "ifname", linker);
 			return 0;
 	}
 	return 0;
@@ -206,8 +198,8 @@ int set_ppp_lower_layer(char *refparam, struct dmctx *ctx, int action, char *val
 ***************************************************************************/
 int get_linker_ppp_interface(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 
-	if(cur_ppp_args.ppp_sec) {
-		dmasprintf(linker,"%s", section_name(cur_ppp_args.ppp_sec));
+	if(((struct uci_section *)data)) {
+		dmasprintf(linker,"%s", section_name(((struct uci_section *)data)));
 		return 0;
 	}
 	*linker = "";
@@ -247,7 +239,7 @@ DMOBJ tpppObj[] = {
 /*************************************************************
  * ENTRY METHOD
 /*************************************************************/
-inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *net_sec = NULL;
 	char *ppp_int = NULL, *ppp_int_last = NULL;
@@ -257,12 +249,10 @@ inline int browseInterfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 		dmuci_get_value_by_section_string(net_sec, "proto", &proto);
 		if (!strstr(proto, "ppp"))
 			continue;
-		init_ppp_args(dmctx, net_sec);
 		ppp_int = handle_update_instance(1, dmctx, &ppp_int_last, update_instance_alias, 3, net_sec, "ppp_int_instance", "ppp_int_alias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, ppp_int) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)net_sec, ppp_int) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_ppp_args);
 	return 0;
 }
 

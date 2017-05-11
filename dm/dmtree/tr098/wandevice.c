@@ -23,9 +23,9 @@
 #define WAN_INST_ATM 2
 #define WAN_INST_PTM 3
 
-inline int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 enum WAN_TYPE_CONNECTION {
 	WAN_IP_CONNECTION,
@@ -69,44 +69,37 @@ static char *default_wan_ifname;
 static int default_wan_proto;
 static char *eth_wan = NULL;
 
-struct wanargs cur_wanargs = {0};
-struct wancdevargs cur_wancdevargs = {0};
-struct wancprotoargs cur_wancprotoargs = {0};
 /**************************************************************************
 * LINKER
 ***************************************************************************/
 int get_protocol_connection_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 
-	if (cur_wancprotoargs.wancprotosection)
+	if (data && ((struct wanargs *)data)->wancprotosection)
 	{
-		dmasprintf(linker, "linker_interface:%s", section_name(cur_wancprotoargs.wancprotosection));
+		dmasprintf(linker, "linker_interface:%s", section_name(((struct wanargs *)data)->wancprotosection));
 		return 0;
 	}
 	*linker = "";
 	return 0;
 }
 
-inline int init_wanargs(struct dmctx *ctx, int wan_instance, char *fdev, struct uci_section *s)
+inline int init_wanargs(struct wanargs *args, int wan_instance, char *fdev, struct uci_section *s)
 {
-	struct wanargs *args = &cur_wanargs;
 	args->instance = wan_instance;
 	args->fdev = fdev;
 	args->wandevsection = s;
 	return 0;
 }
 
-inline int init_wancprotoargs(struct dmctx *ctx, struct uci_section *s)
+inline int init_wancprotoargs(struct wanargs *args, struct uci_section *s)
 {
-	struct wancprotoargs *args = &cur_wancprotoargs;
 	args->wancprotosection = s;
 	return 0;
 }
 
-inline int init_wancdevargs(struct dmctx *ctx, struct uci_section *s, int index, char *fwan, char *iwan, char *wan_ifname)
+inline int init_wancdevargs(struct wanargs *args, struct uci_section *s, char *fwan, char *iwan, char *wan_ifname)
 {
-	struct wancdevargs *args = &cur_wancdevargs;
-	args->wandevsection = s;
-	args->index = index;
+	args->wancdsection = s;
 	args->fwan = fwan;
 	args->iwan = iwan;
 	args->wan_ifname = wan_ifname;
@@ -134,10 +127,9 @@ inline int add_wvlan(char *baseifname, char *ifname, char *vid, char *prioprity,
 	return 0;
 }
 
-void set_bridge_layer2(struct dmctx *ctx, char *bridge)
+void set_bridge_layer2(struct dmctx *ctx, char *bridge, struct wanargs *wandcprotoargs)
 {
 	char *wifname, *dup, *pch, *spch;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
 	struct uci_section *s;
 
 	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "ifname", &wifname);
@@ -277,7 +269,7 @@ char *get_last_instance_proto(char *package, char *section, char *opt_inst, char
 	return instance;
 }
 
-int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
+int add_wan_wanconnectiondevice(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {
 	int iwan, idx;
 	char *value;
@@ -285,7 +277,7 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 	char ifname[16] = {0};
 	char buf[16] = {0};
 	struct uci_section *s = NULL;
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 
 	if (wandargs->instance == WAN_INST_ATM) {
 		idx = get_cfg_layer2idx("layer2_interface_adsl", "atm_bridge", "baseifname", sizeof("atm")-1);
@@ -320,17 +312,17 @@ int add_wan_wanconnectiondevice(struct dmctx *ctx, char **instancepara)
 	return FAULT_9005;
 }
 
-int delete_wan_wanconnectiondevice(struct dmctx *ctx, unsigned char del_action)
+int delete_wan_wanconnectiondevice(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	struct uci_section *s = NULL; 
 	struct uci_section *ss = NULL;
 	struct wanargs *wandargs;
-	struct wancdevargs *wandcdevargs;
+	struct wanargs *wandcdevargs;
 	
 	switch (del_action) {
 		case DEL_INST:
-			wandcdevargs = &cur_wancdevargs;
-			dmuci_delete_by_section(wandcdevargs->wandevsection, NULL, NULL);
+			wandcdevargs = (struct wanargs *)data;
+			dmuci_delete_by_section(wandcdevargs->wancdsection, NULL, NULL);
 			uci_foreach_option_cont("network", "interface", "ifname", wandcdevargs->fwan, s) {
 				if (ss)
 					wan_remove_dev_interface(ss, wandcdevargs->fwan);
@@ -340,7 +332,7 @@ int delete_wan_wanconnectiondevice(struct dmctx *ctx, unsigned char del_action)
 				wan_remove_dev_interface(ss, wandcdevargs->fwan);
 			return 0;
 		case DEL_ALL:
-			wandargs = &cur_wanargs;
+			wandargs = (struct wanargs *)data;
 			uci_foreach_option_cont(wan_devices[wandargs->instance - 1].cdev, wan_devices[wandargs->instance - 1].stype, "baseifname", wandargs->fdev, s) {
 				if (ss)
 					dmuci_delete_by_section(ss, NULL, NULL);
@@ -362,16 +354,16 @@ int delete_wan_wanconnectiondevice(struct dmctx *ctx, unsigned char del_action)
 	return 0;
 }
 
-int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
+int add_wan_wanipconnection(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
 	
 	instance = get_last_instance_proto("network", "interface", "conipinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_IP);
 	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1); //MEM WILL BE FREED IN DMMEMCLEAN
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, *instancepara);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->instance].instance, wandcdevargs->iwan, WAN_IP_CONNECTION, *instancepara);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
@@ -380,19 +372,19 @@ int add_wan_wanipconnection(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_wan_wanipconnectiondevice(struct dmctx *ctx, unsigned char del_action)
+int delete_wan_wanipconnectiondevice(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	char *ifname, *iproto;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 
 	switch (del_action) {
 		case DEL_INST:
-			dmuci_delete_by_section(wandcdevargs->wandevsection, NULL, NULL);
+			dmuci_delete_by_section(wandcdevargs->wancdsection, NULL, NULL);
 			return 0;
 		case DEL_ALL:
-			dmuci_get_value_by_section_string(wandcdevargs->wandevsection, "ifname", &ifname);
+			dmuci_get_value_by_section_string(wandcdevargs->wancdsection, "ifname", &ifname);
 			uci_foreach_option_eq("network", "interface", "ifname", ifname, s) {
 				dmuci_get_value_by_section_string(s, "proto", &iproto);
 				if (strcmp(iproto, "dhcp") == 0 || strcmp(iproto, "static") == 0) {
@@ -408,16 +400,16 @@ int delete_wan_wanipconnectiondevice(struct dmctx *ctx, unsigned char del_action
 	return 0;
 }
 
-int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
+int add_wan_wanpppconnection(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 	char sname[16] = {0};
 	char ifname[8] = {0};
 	char *instance;
 
 	instance = get_last_instance_proto("network", "interface", "conpppinstance", "ifname", wandcdevargs->fwan, "proto", WAN_PROTO_PPP);
 	dmasprintf(instancepara, "%d", instance ? atoi(instance) + 1 : 1);
-	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->index].instance, wandcdevargs->iwan, WANPPPConnection, *instancepara);
+	sprintf(sname,"wan_%s_%s_%d_%s", wan_devices[wandcdevargs->instance].instance, wandcdevargs->iwan, WANPPPConnection, *instancepara);
 	sprintf(ifname, "%s.1", wandcdevargs->fwan);
 	dmuci_set_value("network", sname, NULL, "interface");
 	dmuci_set_value("network", sname, "ifname", ifname);
@@ -426,20 +418,20 @@ int add_wan_wanpppconnection(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_wan_wanpppconnectiondevice(struct dmctx *ctx, unsigned char del_action)
+int delete_wan_wanpppconnectiondevice(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	int found = 0;
 	char *ifname, *iproto;
 	struct uci_section *s = NULL;
 	struct uci_section *ss = NULL;
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 
 	switch (del_action) {
 			case DEL_INST:
-				dmuci_delete_by_section(wandcdevargs->wandevsection, NULL, NULL);
+				dmuci_delete_by_section(wandcdevargs->wancdsection, NULL, NULL);
 				return 0;
 			case DEL_ALL:
-				dmuci_get_value_by_section_string(wandcdevargs->wandevsection, "ifname", &ifname);
+				dmuci_get_value_by_section_string(wandcdevargs->wancdsection, "ifname", &ifname);
 				uci_foreach_option_eq("network", "interface", "ifname", ifname, s) {
 					dmuci_get_value_by_section_string(s, "proto", &iproto);
 					if (strstr(iproto, "ppp")) { //CHECK IF WE CAN OPTIMISE AND IF iproto can be pppoa
@@ -481,10 +473,10 @@ int get_wan_device_wan_dsl_traffic()
 	return dsl;
 }
 
-int get_wan_device_wan_access_type(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_wan_access_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
-	switch(cur_wanargs.instance) {
+	struct wanargs *wandargs = (struct wanargs *)data;
+	switch(wandargs->instance) {
 		case WAN_INST_ETH:
 			*value = "Ethernet";
 			break;
@@ -499,15 +491,15 @@ int get_wan_device_wan_access_type(char *refparam, struct dmctx *ctx, char **val
 	return 0;
 }
 
-int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_wan_dsl_interface_config_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *status;
 	int dsl;
 	json_object *res;
 
 	*value = "";
-	if (cur_wanargs.instance == WAN_INST_ETH)
+	if (wandargs->instance == WAN_INST_ETH)
 		*value = "NoSignal Not a dsl interface";
 	else {
 		json_object *res = NULL;
@@ -536,15 +528,15 @@ end:
 	return 0;
 }
 
-int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *mode;
 	int dsl;
 	json_object *res = NULL;
 	*value = "";
 
-	if (cur_wanargs.instance == WAN_INST_ETH)
+	if (wandargs->instance == WAN_INST_ETH)
 		*value = "Not a dsl interface";
 	else {
 		dsl = get_wan_device_wan_dsl_traffic();
@@ -574,9 +566,9 @@ int get_wan_device_wan_dsl_interface_config_modulation_type(char *refparam, stru
 	return 0;
 }
 
-int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char buf[512], *val = "", *pch, *spch, *pch2, *spch2, *dup;
 	int dsl, pp, r;
 	*value = "None";
@@ -619,9 +611,9 @@ int get_wan_device_dsl_datapath(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wan_device_dsl_downstreamcurrrate(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_downstreamcurrrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *rate_down;
 	int dsl;
 	json_object *res = NULL;
@@ -650,9 +642,9 @@ int get_wan_device_dsl_downstreamcurrrate(char *refparam, struct dmctx *ctx, cha
 	return 0;
 }
 
-int get_wan_device_dsl_downstreammaxrate(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_downstreammaxrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *max_down;
 	int dsl;
 	json_object *res = NULL;
@@ -680,9 +672,9 @@ int get_wan_device_dsl_downstreammaxrate(char *refparam, struct dmctx *ctx, char
 	return 0; 	
 }
 
-int get_wan_device_dsl_downstreamattenuation(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_downstreamattenuation(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *attn_down_x100;
 	int dsl;
 	json_object *res = NULL;
@@ -706,9 +698,9 @@ int get_wan_device_dsl_downstreamattenuation(char *refparam, struct dmctx *ctx, 
 	return 0;
 }
 
-int get_wan_device_dsl_downstreamnoisemargin(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_downstreamnoisemargin(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *snr_down_x100;
 	int dsl;
 	json_object *res;
@@ -732,9 +724,9 @@ int get_wan_device_dsl_downstreamnoisemargin(char *refparam, struct dmctx *ctx, 
 	return 0;
 }
 
-int get_wan_device_dsl_upstreamcurrrate(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_upstreamcurrrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *rate_up;
 	int dsl;
 	json_object *res = NULL;
@@ -760,9 +752,9 @@ int get_wan_device_dsl_upstreamcurrrate(char *refparam, struct dmctx *ctx, char 
 	return 0;
 }
 
-int get_wan_device_dsl_upstreammaxrate(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_upstreammaxrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *max_up;
 	int dsl;
 	json_object *res = NULL; 
@@ -788,9 +780,9 @@ int get_wan_device_dsl_upstreammaxrate(char *refparam, struct dmctx *ctx, char *
 	return 0;
 }
 
-int get_wan_device_dsl_upstreamattenuation(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_upstreamattenuation(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *attn_up_x100;
 	int dsl;
 	json_object *res = NULL;
@@ -814,9 +806,9 @@ int get_wan_device_dsl_upstreamattenuation(char *refparam, struct dmctx *ctx, ch
 	return 0;
 }
 
-int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	char *snr_up_x100;
 	int dsl;
 	json_object *res;
@@ -845,11 +837,11 @@ int get_wan_device_dsl_upstreamnoisemargin(char *refparam, struct dmctx *ctx, ch
 	return 0;
 }
 
-int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
+int get_annexm_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *val = "0";
 	*value = "0";
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	
 	if (wandargs->instance == WAN_INST_ATM) {
 		dmuci_get_option_value_string("layer2_interface", "capabilities", "AnnexM", &val);
@@ -863,11 +855,11 @@ int get_annexm_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_annexm_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 		
 	switch (action) {
 		case VALUECHECK:
@@ -890,11 +882,11 @@ int set_annexm_enable(char *refparam, struct dmctx *ctx, int action, char *value
 }
 
 //TO CHECK IF NO VALUE RETURNE BY UBUS CMD
-int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *val;
 	bool b;
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -910,14 +902,14 @@ int get_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_eth_intf_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {		
 	struct uci_section *s;
 	json_object *res;
 	char *enable, *type, *device, json_name[32];
 	bool b;
 	bool enable_b;
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -966,9 +958,9 @@ end:
 	return 0;
 }
 
-int get_wan_eth_intf_status(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	bool b;
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -984,9 +976,9 @@ int get_wan_eth_intf_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wan_eth_intf_mac(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_mac(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
 	DM_ASSERT(res, *value = "00:00:00:00:00:00");
@@ -997,9 +989,9 @@ int get_wan_eth_intf_mac(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wan_eth_intf_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_stats_tx_bytes(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -1011,9 +1003,9 @@ int get_wan_eth_intf_stats_tx_bytes(char *refparam, struct dmctx *ctx, char **va
 	return 0;
 }
 
-int get_wan_eth_intf_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_stats_rx_bytes(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -1025,9 +1017,9 @@ int get_wan_eth_intf_stats_rx_bytes(char *refparam, struct dmctx *ctx, char **va
 	return 0;
 }
 
-int get_wan_eth_intf_stats_tx_packets(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_stats_tx_packets(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -1039,9 +1031,9 @@ int get_wan_eth_intf_stats_tx_packets(char *refparam, struct dmctx *ctx, char **
 	return 0;
 }
 
-int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wanargs *wandargs = &cur_wanargs;
+	struct wanargs *wandargs = (struct wanargs *)data;
 	json_object *res;
 	
 	dmubus_call("network.device", "status", UBUS_ARGS{{"name", wandargs->fdev}}, 1, &res);
@@ -1057,15 +1049,15 @@ int get_wan_eth_intf_stats_rx_packets(char *refparam, struct dmctx *ctx, char **
 **** ****  function related to get_wandevice_wanconnectiondevice_parameters **** ****
 ***************************************************************************/
 
-int get_wan_dsl_link_config_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_dsl_link_config_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "1";
 	return 0;
 }
 
-int get_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 	char *vpi, *vci;
 	struct uci_section *s;
 	
@@ -1078,11 +1070,11 @@ int get_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 	return 0;
 }
 
-int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *vpi = NULL, *vci = NULL, *spch, *val;
 	struct uci_section *s;
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1110,9 +1102,9 @@ int set_wan_dsl_link_config_destination_address(char *refparam, struct dmctx *ct
 	return 0;
 } 
 
-int get_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 	struct uci_section *s;
 	char *type, *encapsulation, *encaptype;
 	*value = "";
@@ -1140,12 +1132,12 @@ int get_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 	return 0;
 }
 
-int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int i;
 	struct uci_section *s;
 	char *type, *encapsulation, *encaptype, *pch;
-	struct wancdevargs *wandcdevargs = &cur_wancdevargs;
+	struct wanargs *wandcdevargs = (struct wanargs *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1188,35 +1180,35 @@ int set_wan_dsl_link_config_atm_encapsulation(char *refparam, struct dmctx *ctx,
 **** ****  function related to get_wandevice_wanprotoclconnection_parameters **** ****
 ***************************************************************************/
 
-int get_interface_enable_wanproto(char *refparam, struct dmctx *ctx, char **value)
+int get_interface_enable_wanproto(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *intf = section_name(wandcprotoargs->wancprotosection);
 	return get_interface_enable_ubus(intf, refparam, ctx, value);
 }
 
-int set_interface_enable_wanproto(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_interface_enable_wanproto(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *intf = section_name(wandcprotoargs->wancprotosection);
 	return set_interface_enable_ubus(intf, refparam, ctx, action, value);
 }
 
-int get_interface_firewall_enabled_wanproto(char *refparam, struct dmctx *ctx, char **value)
+int get_interface_firewall_enabled_wanproto(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *intf = section_name(wandcprotoargs->wancprotosection);
 	return get_interface_firewall_enabled(intf, refparam, ctx, value);
 }
 
-int set_interface_firewall_enabled_wanproto(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_interface_firewall_enabled_wanproto(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *intf = section_name(wandcprotoargs->wancprotosection);
 	return set_interface_firewall_enabled(intf, refparam, ctx, action, value);
 }
 //THE same as get_wan_device_ppp_status WHY DO WE CREATE A SEPARATED FUNCTION
-int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res = NULL;
 	char *pending = NULL;
@@ -1224,7 +1216,7 @@ int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
 	char *status = NULL;
 	char *uptime = NULL;
 	bool b = false;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 
 	intf = section_name(wandcprotoargs->wancprotosection);
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
@@ -1247,20 +1239,20 @@ int get_wan_device_mng_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wan_device_mng_interface_ip(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_mng_interface_ip(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	network_get_ipaddr(value, intf);
 	return 0;
 }
 
-int get_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *type;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "type", &type);
 	if (strcmp(type, "bridge") == 0 || strcmp(type, "alias") == 0)
@@ -1270,10 +1262,10 @@ int get_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 	return 0;
 }
 
-int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *type = "";
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1285,7 +1277,7 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 					return 0;
 				else {
 					type = "bridge";
-					set_bridge_layer2(ctx, "1");
+					set_bridge_layer2(ctx, "1", wandcprotoargs);
 				}
 			}
 			else if (strcmp(value, "IP_Routed") == 0) {
@@ -1293,7 +1285,7 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 					return 0;
 				else {
 					if (strcmp(type, "bridge") == 0)
-						set_bridge_layer2(ctx, "");
+						set_bridge_layer2(ctx, "", wandcprotoargs);
 					type = "anywan";
 				}
 			}
@@ -1305,10 +1297,10 @@ int set_wan_ip_link_connection_connection_type(char *refparam, struct dmctx *ctx
 	return 0;
 } 
 
-int get_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *proto;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "proto", &proto);
 	if (strcmp(proto, "dhcp") == 0)
@@ -1320,10 +1312,10 @@ int get_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx
 	return 0;
 }
 
-int set_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *proto;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1341,11 +1333,11 @@ int set_wan_ip_link_connection_addressing_type(char *refparam, struct dmctx *ctx
 	return 0;
 }
 
-int get_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf, *masq, *network;
 	struct uci_section *s = NULL;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	uci_foreach_sections("firewall", "zone", s) {
@@ -1362,13 +1354,13 @@ int get_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, ch
 	return 0;
 }
 
-int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_nat_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	char *intf;
 	int found = 0;
 	struct uci_section *s = NULL;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	switch (action) {
@@ -1436,13 +1428,13 @@ int get_wan_igmp_rule_idx(char *iface, struct uci_section **rule, struct uci_sec
 	return 0;
 }
 
-int get_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf, *enable = "0";
 	struct uci_section *rule = NULL;
 	struct uci_section *zone = NULL;
 	
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	get_wan_igmp_rule_idx(intf, &rule, &zone, &enable);
@@ -1450,14 +1442,14 @@ int get_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, c
 	return 0;
 }
 
-int set_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
 	bool b;
 	int found = 0;
 	char *val, *intf, *enable, *zname, buf[32];
 	struct uci_section *rule = NULL;
 	struct uci_section *zone = NULL;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	switch (action) {
@@ -1491,9 +1483,9 @@ int set_wan_ip_link_connection_igmp_enabled(char *refparam, struct dmctx *ctx, i
 	return 0;
 }
 
-int get_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "peerdns", value);
 	if ((*value)[0] == '\0') {
@@ -1502,11 +1494,11 @@ int get_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, ch
 	return 0;
 }
 
-int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
 	bool b;
 	char *intf;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	intf = section_name(wandcprotoargs->wancprotosection);
 	switch (action) {
@@ -1525,7 +1517,7 @@ int set_wan_ip_link_connection_dns_enabled(char *refparam, struct dmctx *ctx, in
 	}
 }
 
-int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf; 
 	char *status = NULL;
@@ -1533,7 +1525,7 @@ int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	char *pending = NULL;
 	json_object *res = NULL;
 	bool bstatus = false, bpend = false;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 
 	intf = section_name(wandcprotoargs->wancprotosection);
 	dmubus_call("network.interface", "status", UBUS_ARGS{{"interface", intf}}, 1, &res);
@@ -1556,21 +1548,21 @@ int get_wan_device_ppp_status(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_wan_device_ppp_interface_ip(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_ppp_interface_ip(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf, *val;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 
 	intf = section_name(wandcprotoargs->wancprotosection);
 	network_get_ipaddr(value, intf);
 	return 0;
 }
 
-int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf, *device;
 	json_object *res;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	*value = "";
 	intf = section_name(wandcprotoargs->wancprotosection);
 	
@@ -1586,17 +1578,17 @@ int get_wan_device_mng_interface_mac(char *refparam, struct dmctx *ctx, char **v
 	return 0;
 }
 
-int get_wan_device_ppp_username(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_device_ppp_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *intf;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	dmuci_get_value_by_section_string(wandcprotoargs->wancprotosection, "username", value);
 	return 0;
 }
 
-int set_wan_device_username(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_device_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1607,9 +1599,9 @@ int set_wan_device_username(char *refparam, struct dmctx *ctx, int action, char 
 	return 0;
 } 
 
-int set_wan_device_password(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_device_password(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1621,21 +1613,21 @@ int set_wan_device_password(char *refparam, struct dmctx *ctx, int action, char 
 	return 0;
 }
 
-int get_wan_ip_link_connection_name(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *args = &cur_wancprotoargs;
+	struct wanargs *args = (struct wanargs *)data;
 	*value = dmstrdup(section_name(args->wancprotosection));
 	return 0;
 }
 
-int set_wan_ip_link_connection_connection_name(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_connection_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct wancprotoargs *args;
+	struct wanargs *args;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			args = &cur_wancprotoargs;
+			args = (struct wanargs *)data;
 			dmuci_rename_section_by_section(args->wancprotosection, value);
 			return 0;
 	}
@@ -1681,9 +1673,9 @@ int get_layer2_interface(char *wan_name, char **ifname)
 	return  0;
 }
 
-int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	struct uci_section *ss = NULL;
 	char *ifname;
@@ -1702,10 +1694,10 @@ int get_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, char **val
 	return 0;
 }
 
-int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	struct uci_section *ss = NULL, *w_vlan, *s_last = NULL;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *add_value, *ifname, *vid, *prio;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	bool found = false;
@@ -1798,9 +1790,9 @@ int set_wan_ip_link_connection_vid(char *refparam, struct dmctx *ctx, int action
 	}
 	return 0;
 }
-int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	struct uci_section *ss = NULL;
 	char *ifname;
@@ -1821,11 +1813,11 @@ int get_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, char
 	return 0;
 }
 
-int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *ifname;
 	struct uci_section *ss = NULL;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 
 	switch (action) {
@@ -1849,9 +1841,9 @@ int set_wan_ip_link_connection_vpriority(char *refparam, struct dmctx *ctx, int 
 	return 0;
 }
 
-int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	struct uci_section *ss = NULL;
 	char *ifname, *p;
@@ -1872,11 +1864,11 @@ int get_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 	return 0;
 }
 
-int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *ifname, *add_value;
 	struct uci_section *ss = NULL, *w_vlan, *s_last;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *wandcprotoargs = (struct wanargs *)data;
 	char *wan_name = section_name(wandcprotoargs->wancprotosection);
 	char *p, *q, *wifname, *baseifname = NULL, *vid = NULL, *prio = NULL;
 	char r_new_wifname[128];
@@ -1947,14 +1939,14 @@ int set_wan_ip_link_connection_layer2_interface(char *refparam, struct dmctx *ct
 	return 0;
 }
 
-inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
+inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod, struct wanargs *wanargs)
 {
 	char *proto;
 
-	dmuci_get_option_value_string("network", section_name(cur_wancprotoargs.wancprotosection), "proto", &proto);
+	dmuci_get_option_value_string("network", section_name(wanargs->wancprotosection), "proto", &proto);
 	if (strcmp(proto, "dhcp") == 0 || strcmp(proto, "pppoe") == 0)
 	{
-		dmubus_call("network.device", "status", UBUS_ARGS{{"name", cur_wancdevargs.wan_ifname}}, 1, &res);
+		dmubus_call("network.device", "status", UBUS_ARGS{{"name", wanargs->wan_ifname}}, 1, &res);
 		DM_ASSERT(res, *value = "");
 		json_select(res, "statistics", 0, stat_mod, value, NULL);
 		return 0;
@@ -1963,103 +1955,103 @@ inline int ubus_get_wan_stats(json_object *res, char **value, char *stat_mod)
 	return 0;
 }
 
-int get_wan_link_connection_eth_bytes_received(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_link_connection_eth_bytes_received(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "rx_bytes");
+	ubus_get_wan_stats(res, value, "rx_bytes", (struct wanargs *)data);
 	return 0;
 }
 
-int get_wan_link_connection_eth_bytes_sent(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_link_connection_eth_bytes_sent(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "tx_bytes");
+	ubus_get_wan_stats(res, value, "tx_bytes", (struct wanargs *)data);
 	return 0;
 }
 
-int get_wan_link_connection_eth_pack_received(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_link_connection_eth_pack_received(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "rx_packets");
+	ubus_get_wan_stats(res, value, "rx_packets", (struct wanargs *)data);
 	return 0;
 }
 
-int get_wan_link_connection_eth_pack_sent(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_link_connection_eth_pack_sent(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
-	ubus_get_wan_stats(res, value, "tx_packets");
+	ubus_get_wan_stats(res, value, "tx_packets", (struct wanargs *)data);
 	return 0;
 }
 
 ////////////////////////SET AND GET ALIAS/////////////////////////////////
-int get_wan_dev_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_dev_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_wanargs.wandevsection, "wan_dev_alias", value);
+	dmuci_get_value_by_section_string(((struct wanargs *)data)->wandevsection, "wan_dev_alias", value);
 	return 0;
 }
 
-int set_wan_dev_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_dev_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_wanargs.wandevsection, "wan_dev_alias", value);
+			dmuci_set_value_by_section(((struct wanargs *)data)->wandevsection, "wan_dev_alias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_wan_con_dev_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_con_dev_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_wancdevargs.wandevsection, "wanalias", value);
+	dmuci_get_value_by_section_string(((struct wanargs *)data)->wancdsection, "wanalias", value);
 	return 0;
 }
 
-int set_wan_con_dev_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_con_dev_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_wancdevargs.wandevsection, "wanalias", value);
+			dmuci_set_value_by_section(((struct wanargs *)data)->wancdsection, "wanalias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_wan_ip_con_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ip_con_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_wancprotoargs.wancprotosection, "conipalias", value);
+	dmuci_get_value_by_section_string(((struct wanargs *)data)->wancprotosection, "conipalias", value);
 	return 0;
 }
 
-int set_wan_ip_con_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ip_con_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_wancprotoargs.wancprotosection, "conipalias", value);
+			dmuci_set_value_by_section(((struct wanargs *)data)->wancprotosection, "conipalias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_wan_ppp_con_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_wan_ppp_con_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 
-	dmuci_get_value_by_section_string(cur_wancprotoargs.wancprotosection, "conpppalias", value);
+	dmuci_get_value_by_section_string(((struct wanargs *)data)->wancprotosection, "conpppalias", value);
 	return 0;
 }
 
-int set_wan_ppp_con_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_wan_ppp_con_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_wancprotoargs.wancprotosection, "conpppalias", value);
+			dmuci_set_value_by_section(((struct wanargs *)data)->wancprotosection, "conpppalias", value);
 			return 0;
 	}
 	return 0;
@@ -2071,25 +2063,16 @@ char *get_wan_connection_device_perm(char *refparam, struct dmctx *dmctx, void *
 {
 
 	int tmp = WAN_IDX_ETH + 1;
-	if (cur_wanargs.instance == tmp )
+	if (((struct wanargs *)data)->instance == tmp )
 		return "0";
 	else
 		return "1";
 }
 
-char *get_wan_protocol_connection_perm(char *refparam, struct dmctx *dmctx, void *data, char *instance)
-{
-	struct wancprotoargs *wancprotoarg = &cur_wancprotoargs;
-	if (strcmp(section_name(wancprotoarg->wancprotosection), default_wan) == 0)
-		return "0";
-	return "1";
-}
-
-
 unsigned char get_wan_protocol_connection_forced_inform(char *refparam, struct dmctx *dmctx, void *data, char *instance)
 {
 	return 1;
-	struct wancprotoargs *wancprotoarg = &cur_wancprotoargs;
+	struct wanargs *wancprotoarg = (struct wanargs *)data;
 	if (strcmp(section_name(wancprotoarg->wancprotosection), default_wan) == 0)
 		return 1;
 	return 0;
@@ -2097,8 +2080,8 @@ unsigned char get_wan_protocol_connection_forced_inform(char *refparam, struct d
 
 bool check_wan_is_ethernet(struct dmctx *dmctx, void *data)
 {
-	struct wanargs *wandargs = &cur_wanargs;
-	if(wandargs->instance == WAN_IDX_ETH)
+	struct wanargs *wanargs = (struct wanargs *)data;
+	if(wanargs->instance == WAN_IDX_ETH)
 		return true;
 	else
 		return false;
@@ -2106,8 +2089,8 @@ bool check_wan_is_ethernet(struct dmctx *dmctx, void *data)
 
 bool check_wan_is_atm(struct dmctx *dmctx, void *data)
 {
-	struct wanargs *wandargs = &cur_wanargs;
-	if(wandargs->instance == WAN_IDX_ATM + 1)
+	struct wanargs *wanargs = (struct wanargs *)data;
+	if(wanargs->instance == WAN_IDX_ATM + 1)
 		return true;
 	else
 		return false;
@@ -2115,76 +2098,54 @@ bool check_wan_is_atm(struct dmctx *dmctx, void *data)
 
 char *get_wan_connection_device_notif(char *refparam, struct dmctx *dmctx, void *data, char *instance)
 {
-	struct wancprotoargs *wancprotoarg = &cur_wancprotoargs;
-	if (strcmp(section_name(cur_wancprotoargs.wancprotosection), default_wan) == 0)
+	struct wanargs *wancprotoarg = (struct wanargs *)data;
+	if (strcmp(section_name(wancprotoarg->wancprotosection), default_wan) == 0)
 		return "2";
 	return "0";
 }
 
 struct dm_permession_s DMWANConnectionDevice = {"0", &get_wan_connection_device_perm};
 struct dm_notif_s DMWANConnectionDevicenotif = {NULL, &get_wan_connection_device_notif};
-struct dm_notif_s DMWANConnectionProtocol = {"0", &get_wan_protocol_connection_perm};
 
 struct dm_forced_inform_s DMWANConnectionProtocolinform = {1, get_wan_protocol_connection_forced_inform};
 
-DMLEAF tWANConnectionDeviceParam[] = {
-{"Alias", &DMWRITE, DMT_STRING, get_wan_con_dev_alias, set_wan_con_dev_alias, NULL, NULL},
+/*** WANDevice.{i}. ***/
+DMOBJ tWANDeviceObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+//dynamic
+{"WANConnectionDevice", &DMWANConnectionDevice, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice, NULL, browsewanconnectiondeviceInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionDeviceObj, tWANConnectionDeviceParam, NULL},
+{"WANCommonInterfaceConfig", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANCommonInterfaceConfigParam, NULL},
+{"WANDSLInterfaceConfig", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANDSLInterfaceConfigParam, NULL},
+{"WANEthernetInterfaceConfig", &DMREAD, NULL, NULL, check_wan_is_ethernet, NULL, NULL, NULL, tWANEthernetInterfaceConfigObj, tWANEthernetInterfaceConfigParam, NULL},
 {0}
 };
-
 
 DMLEAF tWANDeviceParam[] = {
 {"Alias", &DMWRITE, DMT_STRING, get_wan_dev_alias, set_wan_dev_alias, NULL, NULL},
 {0}
 };
 
-DMLEAF tWANCommonInterfaceConfigParam[] = {
-{"WANAccessType", &DMREAD, DMT_STRING, get_wan_device_wan_access_type, NULL, NULL, NULL},
+/*** WANDevice.{i}.WANConnectionDevice.{i}. ***/
+DMOBJ tWANConnectionDeviceObj[] = {
+{"WANIPConnection", &DMWRITE, add_wan_wanipconnection, delete_wan_wanipconnectiondevice, NULL, browsewanprotocolconnectionipInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionObj, tWANIPConnectionParam, get_protocol_connection_linker},
+{"WANPPPConnection", &DMWRITE, add_wan_wanpppconnection, delete_wan_wanpppconnectiondevice, NULL, browsewanprotocolconnectionpppInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionObj, tWANPPPConnectionParam, get_protocol_connection_linker},
+//Depend on wandev type
+{"WANDSLLinkConfig", &DMREAD, NULL, NULL, check_wan_is_atm, NULL, NULL, NULL, NULL, tWANDSLLinkConfigParam, NULL},
 {0}
 };
 
-DMLEAF tWANDSLInterfaceConfigParam[] = {
-{"Status", &DMREAD, DMT_STRING, get_wan_device_wan_dsl_interface_config_status, NULL, NULL, NULL},
-{"ModulationType", &DMREAD, DMT_STRING, get_wan_device_wan_dsl_interface_config_modulation_type, NULL, NULL, NULL},
-{"DataPath", &DMREAD, DMT_STRING, get_wan_device_dsl_datapath, NULL, NULL, NULL},
-{"DownstreamCurrRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_downstreamcurrrate, NULL, NULL, NULL},
-{"DownstreamMaxRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_downstreammaxrate, NULL, NULL, NULL},
-{"DownstreamAttenuation", &DMREAD, DMT_INT, get_wan_device_dsl_downstreamattenuation, NULL, NULL, NULL},
-{"DownstreamNoiseMargin", &DMREAD, DMT_INT, get_wan_device_dsl_downstreamnoisemargin, NULL, NULL, NULL},
-{"UpstreamCurrRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_upstreamcurrrate, NULL, NULL, NULL},
-{"UpstreamMaxRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_upstreammaxrate, NULL, NULL, NULL},
-{"UpstreamAttenuation", &DMREAD, DMT_INT, get_wan_device_dsl_upstreamattenuation, NULL, NULL, NULL},
-{"UpstreamNoiseMargin", &DMREAD, DMT_INT, get_wan_device_dsl_upstreamnoisemargin, NULL, NULL, NULL},
-{"X_INTENO_SE_AnnexMEnable", &DMWRITE, DMT_BOOL, get_annexm_status, set_annexm_enable, NULL, NULL},
+DMLEAF tWANConnectionDeviceParam[] = {
+{"Alias", &DMWRITE, DMT_STRING, get_wan_con_dev_alias, set_wan_con_dev_alias, NULL, NULL},
 {0}
 };
 
-DMLEAF tWANEthernetInterfaceConfigParam[] = {
-{"Enable", &DMWRITE, DMT_BOOL, get_wan_eth_intf_enable, set_wan_eth_intf_enable, NULL, NULL},
-{"Status", &DMREAD, DMT_STRING, get_wan_eth_intf_status, NULL, NULL, NULL},
-{"MACAddress", &DMREAD, DMT_STRING, get_wan_eth_intf_mac, NULL, NULL, NULL},
-{0}
-};
-
-DMLEAF tWANEthernetInterfaceConfigStatsParam[] = {
-{"BytesSent", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_tx_bytes, NULL, NULL, NULL},
-{"BytesReceived", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_rx_bytes, NULL, NULL, NULL},
-{"PacketsSent", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_tx_packets, NULL, NULL, NULL},
-{"PacketsReceived", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_rx_packets, NULL, NULL, NULL},
-{0}
-};
-
-DMOBJ tWANEthernetInterfaceConfigObj[] = {
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}. ***/
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}. ***/
+DMOBJ tWANConnectionObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
 //dynamic
-{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANEthernetInterfaceConfigStatsParam, NULL},
-{0}
-};
-
-DMLEAF tWANDSLLinkConfigParam[] = {
-{"Enable", &DMREAD, DMT_BOOL, get_wan_dsl_link_config_enable, NULL, NULL, NULL},
-{"DestinationAddress", &DMWRITE, DMT_STRING, get_wan_dsl_link_config_destination_address, set_wan_dsl_link_config_destination_address, NULL, NULL},
-{"ATMEncapsulation", &DMWRITE, DMT_STRING, get_wan_dsl_link_config_atm_encapsulation, set_wan_dsl_link_config_atm_encapsulation, NULL, NULL},
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANConnectionStatsParam, NULL},
+{"X_INTENO_COM_VLAN", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANConnection_VLANParam, NULL},
 {0}
 };
 
@@ -2205,29 +2166,6 @@ DMLEAF tWANIPConnectionParam[] = {
 {0}
 };
 
-DMLEAF tWANConnectionStatsParam[] = {
-{"EthernetBytesReceived", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_bytes_received, NULL, NULL, NULL},
-{"EthernetBytesSent", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_bytes_sent, NULL, NULL, NULL},
-{"EthernetPacketsReceived", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_pack_received, NULL, NULL, NULL},
-{"EthernetPacketsSent", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_pack_sent, NULL, NULL, NULL},
-{0}
-};
-
-DMLEAF tWANConnection_VLANParam[] = {
-{"VLANID", &DMWRITE, DMT_UNINT, get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, NULL, NULL},
-{"VLANPriority", &DMWRITE, DMT_UNINT, get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, NULL, NULL},
-{"Layer2Interface", &DMWRITE, DMT_STRING, get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, NULL},
-{0}
-};
-
-DMOBJ tWANConnectionObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-//dynamic
-{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANConnectionStatsParam, NULL},
-{"X_INTENO_COM_VLAN", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANConnection_VLANParam, NULL},
-{0}
-};
-
 DMLEAF tWANPPPConnectionParam[] = {
 {"Alias", &DMWRITE, DMT_STRING, get_wan_ppp_con_alias, set_wan_ppp_con_alias, NULL, NULL},
 {"Enable", &DMWRITE, DMT_BOOL, get_interface_enable_wanproto, set_interface_enable_wanproto, NULL, NULL},
@@ -2240,25 +2178,81 @@ DMLEAF tWANPPPConnectionParam[] = {
 {0}
 };
 
-DMOBJ tWANConnectionDeviceObj[] = {
-{"WANIPConnection", &DMWRITE, add_wan_wanipconnection, delete_wan_wanipconnectiondevice, NULL, browsewanprotocolconnectionipInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionObj, tWANIPConnectionParam, get_protocol_connection_linker},
-{"WANPPPConnection", &DMWRITE, add_wan_wanpppconnection, delete_wan_wanpppconnectiondevice, NULL, browsewanprotocolconnectionpppInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionObj, tWANPPPConnectionParam, get_protocol_connection_linker},
-//Depend on wandev type
-{"WANDSLLinkConfig", &DMREAD, NULL, NULL, check_wan_is_atm, NULL, NULL, NULL, NULL, tWANDSLLinkConfigParam, NULL},
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.Stats. ***/
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.Stats. ***/
+DMLEAF tWANConnectionStatsParam[] = {
+{"EthernetBytesReceived", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_bytes_received, NULL, NULL, NULL},
+{"EthernetBytesSent", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_bytes_sent, NULL, NULL, NULL},
+{"EthernetPacketsReceived", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_pack_received, NULL, NULL, NULL},
+{"EthernetPacketsSent", &DMREAD, DMT_UNINT, get_wan_link_connection_eth_pack_sent, NULL, NULL, NULL},
 {0}
 };
 
-DMOBJ tWANDeviceObj[] = {
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANIPConnection.{i}.X_INTENO_COM_VLAN. ***/
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANPPPConnection.{i}.X_INTENO_COM_VLAN. ***/
+DMLEAF tWANConnection_VLANParam[] = {
+{"VLANID", &DMWRITE, DMT_UNINT, get_wan_ip_link_connection_vid, set_wan_ip_link_connection_vid, NULL, NULL},
+{"VLANPriority", &DMWRITE, DMT_UNINT, get_wan_ip_link_connection_vpriority, set_wan_ip_link_connection_vpriority, NULL, NULL},
+{"Layer2Interface", &DMWRITE, DMT_STRING, get_wan_ip_link_connection_layer2_interface, set_wan_ip_link_connection_layer2_interface, NULL, NULL},
+{0}
+};
+
+/*** WANDevice.{i}.WANConnectionDevice.{i}.WANDSLLinkConfig. ***/
+DMLEAF tWANDSLLinkConfigParam[] = {
+{"Enable", &DMREAD, DMT_BOOL, get_wan_dsl_link_config_enable, NULL, NULL, NULL},
+{"DestinationAddress", &DMWRITE, DMT_STRING, get_wan_dsl_link_config_destination_address, set_wan_dsl_link_config_destination_address, NULL, NULL},
+{"ATMEncapsulation", &DMWRITE, DMT_STRING, get_wan_dsl_link_config_atm_encapsulation, set_wan_dsl_link_config_atm_encapsulation, NULL, NULL},
+{0}
+};
+
+/*** WANDevice.{i}.WANCommonInterfaceConfig. ***/
+DMLEAF tWANCommonInterfaceConfigParam[] = {
+{"WANAccessType", &DMREAD, DMT_STRING, get_wan_device_wan_access_type, NULL, NULL, NULL},
+{0}
+};
+
+/*** WANDevice.{i}.WANDSLInterfaceConfig. ***/
+DMLEAF tWANDSLInterfaceConfigParam[] = {
+{"Status", &DMREAD, DMT_STRING, get_wan_device_wan_dsl_interface_config_status, NULL, NULL, NULL},
+{"ModulationType", &DMREAD, DMT_STRING, get_wan_device_wan_dsl_interface_config_modulation_type, NULL, NULL, NULL},
+{"DataPath", &DMREAD, DMT_STRING, get_wan_device_dsl_datapath, NULL, NULL, NULL},
+{"DownstreamCurrRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_downstreamcurrrate, NULL, NULL, NULL},
+{"DownstreamMaxRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_downstreammaxrate, NULL, NULL, NULL},
+{"DownstreamAttenuation", &DMREAD, DMT_INT, get_wan_device_dsl_downstreamattenuation, NULL, NULL, NULL},
+{"DownstreamNoiseMargin", &DMREAD, DMT_INT, get_wan_device_dsl_downstreamnoisemargin, NULL, NULL, NULL},
+{"UpstreamCurrRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_upstreamcurrrate, NULL, NULL, NULL},
+{"UpstreamMaxRate", &DMREAD, DMT_UNINT, get_wan_device_dsl_upstreammaxrate, NULL, NULL, NULL},
+{"UpstreamAttenuation", &DMREAD, DMT_INT, get_wan_device_dsl_upstreamattenuation, NULL, NULL, NULL},
+{"UpstreamNoiseMargin", &DMREAD, DMT_INT, get_wan_device_dsl_upstreamnoisemargin, NULL, NULL, NULL},
+{"X_INTENO_SE_AnnexMEnable", &DMWRITE, DMT_BOOL, get_annexm_status, set_annexm_enable, NULL, NULL},
+{0}
+};
+
+/*** WANDevice.{i}.WANEthernetInterfaceConfig. ***/
+DMOBJ tWANEthernetInterfaceConfigObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
 //dynamic
-{"WANConnectionDevice", &DMWANConnectionDevice, add_wan_wanconnectiondevice, delete_wan_wanconnectiondevice, NULL, browsewanconnectiondeviceInst, &DMFINFRM, &DMWANConnectionDevicenotif, tWANConnectionDeviceObj, tWANConnectionDeviceParam, NULL},
-{"WANCommonInterfaceConfig", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANCommonInterfaceConfigParam, NULL},
-{"WANDSLInterfaceConfig", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANDSLInterfaceConfigParam, NULL},
-{"WANEthernetInterfaceConfig", &DMREAD, NULL, NULL, check_wan_is_ethernet, NULL, NULL, NULL, tWANEthernetInterfaceConfigObj, tWANEthernetInterfaceConfigParam, NULL},
+{"Stats", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tWANEthernetInterfaceConfigStatsParam, NULL},
 {0}
 };
 
-inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+DMLEAF tWANEthernetInterfaceConfigParam[] = {
+{"Enable", &DMWRITE, DMT_BOOL, get_wan_eth_intf_enable, set_wan_eth_intf_enable, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_wan_eth_intf_status, NULL, NULL, NULL},
+{"MACAddress", &DMREAD, DMT_STRING, get_wan_eth_intf_mac, NULL, NULL, NULL},
+{0}
+};
+
+/*** WANDevice.{i}.WANEthernetInterfaceConfig.Stats. ***/
+DMLEAF tWANEthernetInterfaceConfigStatsParam[] = {
+{"BytesSent", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_tx_bytes, NULL, NULL, NULL},
+{"BytesReceived", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_rx_bytes, NULL, NULL, NULL},
+{"PacketsSent", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_tx_packets, NULL, NULL, NULL},
+{"PacketsReceived", &DMREAD, DMT_UNINT, get_wan_eth_intf_stats_rx_packets, NULL, NULL, NULL},
+{0}
+};
+
+int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	int i = 0;
 	bool notif_permission;
@@ -2266,6 +2260,7 @@ inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 	char *defwanproto;
 	struct uci_section *s = NULL;
 	char *dev, *dev_last= NULL;
+	struct wanargs curr_wanargs = {0};
 
 	dmuci_get_option_value_string("cwmp", "cpe", "default_wan_interface", &default_wan);
 	dmuci_get_option_value_string("network", default_wan, "ifname", &default_wan_ifname);
@@ -2279,9 +2274,9 @@ inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 		default_wan_proto = WAN_PROTO_IP;
 	else
 		default_wan_proto = WAN_PROTO_NIL;
-	update_section_list("dmmap","wan_dev", NULL, 3, NULL, NULL, NULL, NULL, NULL);
-	uci_foreach_sections("dmmap", "wan_dev", s) {
-		init_wanargs(dmctx, i+1, wan_devices[i].fdev, s);
+		update_section_list("dmmap","wan_dev", NULL, 3, NULL, NULL, NULL, NULL, NULL);
+		uci_foreach_sections("dmmap", "wan_dev", s) {
+		init_wanargs(&curr_wanargs, i+1, wan_devices[i].fdev, s);
 
 		if (strstr(default_wan_ifname, wan_devices[i].fdev))
 			notif_permission = false;
@@ -2293,15 +2288,14 @@ inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *p
 		else
 			cwritable = "1";
 		dev = handle_update_instance(1, dmctx, &dev_last, update_instance_alias, 3, s, "wan_dev_instance", "wan_dev_alias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, dev) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_wanargs, dev) == DM_STOP)
 			break;
 		i++;
 	}
-	DM_CLEAN_ARGS(cur_wanargs);
 	return 0;
 }
 
-inline int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *s = NULL;
 	char *fwan;
@@ -2312,8 +2306,9 @@ inline int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_nod
 	bool pppn_perm = true;
 	bool notif_permission = true;
 	int i;
+	struct wanargs *curr_wanargs = (struct wanargs *)prev_data;
 
-	i = cur_wanargs.instance - 1;
+	i = curr_wanargs->instance - 1;
 	pack = wan_devices[i].cdev;
 	stype = wan_devices[i].stype;
 	uci_foreach_sections(pack, stype, s) {
@@ -2325,15 +2320,14 @@ inline int browsewanconnectiondeviceInst(struct dmctx *dmctx, DMNODE *parent_nod
 			else if (default_wan_proto == WAN_PROTO_PPP) pppn_perm = false;
 		}
 		iwan = handle_update_instance(2, dmctx, &iwan_last, update_instance_alias, 3, s, "waninstance", "wanalias");
-		init_wancdevargs(dmctx, s, cur_wanargs.instance, fwan, iwan_last, wan_ifname);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iwan) == DM_STOP)
+		init_wancdevargs(curr_wanargs, s, fwan, iwan_last, wan_ifname);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)curr_wanargs, iwan) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_wancdevargs);
 	return 0;
 }
 
-inline int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *ss = NULL;
 	char *pack, *stype, *p, *iconp_ip_last = NULL, *iconp_ppp_last = NULL;
@@ -2342,11 +2336,11 @@ inline int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent
 	bool notif_permission = true;
 	bool forced_inform_eip = false;
 	int forced_notify = UNDEF;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *curr_wanargs = (struct wanargs *)prev_data;
 	char *lan_name;
 
 
-	uci_foreach_option_cont("network", "interface", "ifname", cur_wancdevargs.fwan, ss) {
+	uci_foreach_option_cont("network", "interface", "ifname", curr_wanargs->fwan, ss) {
 		dmuci_get_value_by_section_string(ss, "proto", &p);
 		lan_name = section_name(ss);
 		if (strcmp(p, "dhcp") == 0 || strcmp(p, "static") == 0)
@@ -2358,18 +2352,17 @@ inline int browsewanprotocolconnectionipInst(struct dmctx *dmctx, DMNODE *parent
 			forced_notify = 2;
 			notif_permission = false;
 		}
-		if (check_multiwan_interface(ss, cur_wancdevargs.fwan) != 0)
+		if (check_multiwan_interface(ss, curr_wanargs->fwan) != 0)
 			continue;
-		init_wancprotoargs(dmctx, ss);
+		init_wancprotoargs(curr_wanargs, ss);
 		iconp = handle_update_instance(3, dmctx, &iconp_ip_last, update_instance_alias, 3, ss, "conipinstance", "conipalias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconp) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)curr_wanargs, iconp) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_wancprotoargs);
 	return 0;
 }
 
-inline int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *ss = NULL;
 	char *pack, *stype, *p, *iconp_ip_last = NULL, *iconp_ppp_last = NULL;
@@ -2378,10 +2371,10 @@ inline int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *paren
 	bool notif_permission = true;
 	bool forced_inform_eip = false;
 	int forced_notify = UNDEF;
-	struct wancprotoargs *wandcprotoargs = &cur_wancprotoargs;
+	struct wanargs *curr_wanargs = (struct wanargs *)prev_data;
 	char *lan_name;
 
-	uci_foreach_option_cont("network", "interface", "ifname", cur_wancdevargs.fwan, ss) {
+	uci_foreach_option_cont("network", "interface", "ifname", curr_wanargs->fwan, ss) {
 		dmuci_get_value_by_section_string(ss, "proto", &p);
 		lan_name = section_name(ss);
 		if (strstr(p, "ppp"))
@@ -2393,14 +2386,13 @@ inline int browsewanprotocolconnectionpppInst(struct dmctx *dmctx, DMNODE *paren
 			forced_notify = 2;
 			notif_permission = false;
 		}
-		if (check_multiwan_interface(ss, cur_wancdevargs.fwan) != 0)
+		if (check_multiwan_interface(ss, curr_wanargs->fwan) != 0)
 			continue;
-		init_wancprotoargs(dmctx, ss);
+		init_wancprotoargs(curr_wanargs, ss);
 		iconp = handle_update_instance(3, dmctx, &iconp_ppp_last, update_instance_alias, 3, ss, "conpppinstance", "conpppalias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconp) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)curr_wanargs, iconp) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_wancprotoargs);
 	return 0;
 }
 

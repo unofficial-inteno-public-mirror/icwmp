@@ -19,11 +19,6 @@
 #include "voice_services.h"
 
 #define MAX_ALLOWED_SIP_CODECS 20
-struct service_args cur_service_args = {0};
-struct codec_args cur_codec_args = {0};
-struct sip_args cur_sip_args = {0};
-struct brcm_args cur_brcm_args = {0};
-struct line_codec_args cur_line_codec_args = {0};
 int available_sip_codecs = 0;
 struct allow_sip_codec allowed_sip_codecs[MAX_ALLOWED_SIP_CODECS];
 char *codec_option_array[5] = {"codec0", "codec1", "codec2", "codec3", "codec4"};
@@ -100,11 +95,11 @@ struct rtp_tos list_rtp_tos[] = {
 	{"CS7", "224"}
 };
 
-inline int browseVoiceServiceInst(struct dmctx *ctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseCodecsInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseProfileInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseLineCodecListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseVoiceServiceInst(struct dmctx *ctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseCodecsInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseProfileInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseLineCodecListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 ///////////////////////////////INIT ARGS//////////////////
 void wait_voice_service_up(void)
@@ -118,7 +113,7 @@ void wait_voice_service_up(void)
 	}
 }
 
-inline int init_allowed_sip_codecs()
+static inline int init_allowed_sip_codecs()
 {
 	json_object *res = NULL;
 	char id[8], priority[24], ptime[24];
@@ -146,24 +141,15 @@ inline int init_allowed_sip_codecs()
 	return 0;
 }
 
-inline int init_service_args(struct dmctx *ctx, struct uci_section *section)
+int init_sip_args(struct sip_args *args, struct uci_section *section, char *profile_num)
 {
-	struct service_args *args = &cur_service_args;
-	args->service_section = section;
-	return 0;
-}
-
-inline int init_sip_args(struct dmctx *ctx, struct uci_section *section, char *profile_num)
-{
-	struct sip_args *args = &cur_sip_args;
 	args->sip_section = section;
 	args->profile_num = profile_num;
 	return 0;
 }
 
-inline int init_codec_args(struct dmctx *ctx, char *cdc, char *id, int enumid,  struct uci_section *s)
+int init_codec_args(struct codec_args *args, char *cdc, char *id, int enumid,  struct uci_section *s)
 {
-	struct codec_args *args = &cur_codec_args;
 	args->cdc = dmstrdup(cdc);
 	args->id = dmstrdup(id);
 	args->enumid = enumid;
@@ -171,9 +157,15 @@ inline int init_codec_args(struct dmctx *ctx, char *cdc, char *id, int enumid,  
 	return 0;
 }
 
-inline int init_line_code_args(struct dmctx *ctx, int i, struct uci_section *s, struct uci_section *codec_sec)
+int fini_codec_args(struct codec_args *args)
 {
-	struct line_codec_args *args = &cur_line_codec_args;
+	dmfree(args->cdc);
+	dmfree(args->id);
+	return 0;
+}
+
+int init_line_code_args(struct line_codec_args *args, int i, struct uci_section *s, struct uci_section *codec_sec)
+{
 	args->cdc = allowed_sip_codecs[i].allowed_cdc;
 	args->id = allowed_sip_codecs[i].id;
 	args->sip_section = s;
@@ -184,9 +176,8 @@ inline int init_line_code_args(struct dmctx *ctx, int i, struct uci_section *s, 
 	return 0;
 }
 
-inline int init_brcm_args(struct dmctx *ctx, struct uci_section *section, struct uci_section *section2, char *instance)
+int init_brcm_args(struct brcm_args *args, struct uci_section *section, struct uci_section *section2, char *instance)
 {
-	struct brcm_args *args = &cur_brcm_args;
 	args->brcm_section = section;
 	args->sip_section = section2;
 	args->profile_num = instance;
@@ -209,7 +200,7 @@ int get_cfg_sipidx(void)
 	return (max + 1);
 }
 
-int add_profile_object(struct dmctx *ctx, char **instancepara)
+int add_profile_object(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {
 	char sname[8];
 	char account[16];
@@ -254,11 +245,11 @@ int delete_associated_line_instances(char *sip_id)
 	return 0;
 }
 
-int delete_profile_object(struct dmctx *ctx, unsigned char del_action)
+int delete_profile_object(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	int found = 0;
 	struct uci_section *s, *ss = NULL;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (del_action) {
 		case DEL_INST:
@@ -376,14 +367,14 @@ int add_line(struct uci_section *s, char *s_name)
 	return 0;
 }
 
-int add_line_object(struct dmctx *ctx, char **instancepara)
+int add_line_object(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {	
 	int i;
 	char *value;
 	char instance[4];
 	char call_lines[16] = {0};
 	struct uci_section *s = NULL;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	int last_instance;
 	i = get_line_max_instance(&s);
 	if (i == 0)
@@ -433,20 +424,21 @@ int delete_line(struct uci_section *line_section, struct uci_section *sip_sectio
 	return 0;
 }
 
-int delete_line_object(struct dmctx *ctx, unsigned char del_action)
+int delete_line_object(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	int found = 0;
 	char *s_name;
 	struct uci_section *s;
 	struct sip_args *sipargs;
-	struct brcm_args *bargs = &cur_brcm_args; //profile_num must be added to brcm_args
+	struct brcm_args *bargs; //profile_num must be added to brcm_args
 	
 	switch (del_action) {
 		case DEL_INST:
+			bargs = (struct brcm_args *)data;
 			delete_line(bargs->brcm_section, bargs->sip_section);
 			break;
 		case DEL_ALL:
-			sipargs = &cur_sip_args;
+			sipargs = (struct sip_args *)data;
 			s_name = section_name(sipargs->sip_section);
 			uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", s_name, s) {
 				delete_line(s, sipargs->sip_section);
@@ -457,49 +449,49 @@ int delete_line_object(struct dmctx *ctx, unsigned char del_action)
 	return 0;
 }
 /**************************Function for root entry *************************/
-int get_max_profile_count(char *refparam, struct dmctx *ctx, char **value)
+int get_max_profile_count(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "8";
 	return 0;
 }
 
-int get_max_line_count(char *refparam, struct dmctx *ctx, char **value)
+int get_max_line_count(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "6";
 	return 0;
 }
 
-int get_max_session_per_line(char *refparam, struct dmctx *ctx, char **value)
+int get_max_session_per_line(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "1";
 	return 0;
 }
 
-int get_max_session_count(char *refparam, struct dmctx *ctx, char **value)
+int get_max_session_count(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "6";
 	return 0;
 }
 
-int get_signal_protocols(char *refparam, struct dmctx *ctx, char **value)
+int get_signal_protocols(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "SIP";
 	return 0;
 }
 
-int get_regions(char *refparam, struct dmctx *ctx, char **value)
+int get_regions(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "AU, BE, BR, CL, CN, CZ, DK, FI, FR, DE, HU, IN, IT, JP, NL, NZ, US, ES, SE, CH, NO, TW, GB, AE, ET, T5";
 	return 0;
 }
 
-int get_true_value(char *refparam, struct dmctx *ctx, char **value)
+int get_true_value(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "1";
 	return 0;
 }
 
-int get_false_value(char *refparam, struct dmctx *ctx, char **value)
+int get_false_value(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "0";
 	return 0;
@@ -507,53 +499,53 @@ int get_false_value(char *refparam, struct dmctx *ctx, char **value)
 /*******************end root ***************************/
 
 /**************SIP CAPABILITIES ************************/
-int get_sip_role (char *refparam, struct dmctx *ctx, char **value)
+int get_sip_role (char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "BackToBackUserAgents";
 	return 0;
 }
 
-int get_sip_extension(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_extension(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "INVITE, ACK, CANCEL, OPTIONS, BYE, REFER, SUBSCRIBE, NOTIFY, INFO, PUBLISH";
 	return 0;
 }
 
-int get_sip_transport(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "UDP, TCP, TLS";
 	return 0;
 }
 
-int get_sip_tls_auth_protocols(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_tls_auth_protocols(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "MD5";
 	return 0;
 }
 
-int get_sip_tls_enc_protocols(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_tls_enc_protocols(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "RC4, RC2, DES, 3DES";
 	return 0;
 }
 
-int get_sip_tls_key_protocols(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_tls_key_protocols(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "RSA, DSS";
 	return 0;
 }
 /*******************Capabilities.Codecs.***********************************/
-int get_entry_id(char *refparam, struct dmctx *ctx, char **value)
+int get_entry_id(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct codec_args *codecs = &cur_codec_args;
+	struct codec_args *codecs = (struct codec_args *)data;
 	*value = codecs->id;
 	return 0;
 }
 
-int get_capabilities_sip_codec(char *refparam, struct dmctx *ctx, char **value)
+int get_capabilities_sip_codec(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct codec_args *cdcargs = &cur_codec_args;
+	struct codec_args *cdcargs = (struct codec_args *)data;
 	bool sep = false;
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == cdcargs->enumid) {
@@ -564,10 +556,10 @@ int get_capabilities_sip_codec(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_capabilities_sip_bitrate(char *refparam, struct dmctx *ctx, char **value)
+int get_capabilities_sip_bitrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct codec_args *cdcargs = &cur_codec_args;
+	struct codec_args *cdcargs = (struct codec_args *)data;
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == cdcargs->enumid) {
 			*value = capabilities_sip_codecs[i].c3;
@@ -577,10 +569,10 @@ int get_capabilities_sip_bitrate(char *refparam, struct dmctx *ctx, char **value
 	return 0;
 }
 
-int get_capabilities_sip_pperiod(char *refparam, struct dmctx *ctx, char **value)
+int get_capabilities_sip_pperiod(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct codec_args *cdcargs = &cur_codec_args;
+	struct codec_args *cdcargs = (struct codec_args *)data;
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == cdcargs->enumid) {
 			*value = capabilities_sip_codecs[i].c4;
@@ -611,10 +603,10 @@ int get_voice_service_max_line()
 	return num;
 }
 
-int get_voice_profile_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
-	struct sip_args *sipargs = &cur_sip_args; // This function is used for line enable and sip profile enable
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "enabled", &tmp);
 	
@@ -625,9 +617,9 @@ int get_voice_profile_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_voice_profile_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args; // This function is used for line enable and sip profile enable
+	struct sip_args *sipargs = (struct sip_args *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -641,7 +633,7 @@ int set_voice_profile_enable(char *refparam, struct dmctx *ctx, int action, char
 	return 0;
 }
 
-int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_reset(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	
@@ -661,20 +653,20 @@ int set_voice_profile_reset(char *refparam, struct dmctx *ctx, int action, char 
 	return 0;
 }
 
-int get_voice_profile_name(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	dmuci_get_value_by_section_string(sipargs->sip_section, "name", value);
 	return 0;
 }
 
-int get_voice_profile_signalprotocol(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_signalprotocol(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "SIP";
 	return 0;
 }
 
-int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -684,7 +676,7 @@ int set_voice_profile_signaling_protocol(char *refparam, struct dmctx *ctx, int 
 	}
 	return 0;
 }
-int get_voice_profile_max_sessions(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_max_sessions(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 	char *sub_channel = NULL, *num_lines = NULL;
@@ -696,12 +688,12 @@ int get_voice_profile_max_sessions(char *refparam, struct dmctx *ctx, char **val
 	return 0;
 }
 
-int get_voice_profile_number_of_lines(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_number_of_lines(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int num = 0;
 	json_object *res, *jobj;
 	struct uci_section *b_section = NULL;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 
 	*value = "0";
 	dmubus_call("asterisk", "status", UBUS_ARGS{}, 0, &res);
@@ -716,16 +708,14 @@ int get_voice_profile_number_of_lines(char *refparam, struct dmctx *ctx, char **
 	return 0;
 }
 
-int get_voice_profile_sip_proxyserver(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_sip_proxyserver(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("voice_client", "SIP", "sip_proxy", value);
 	return 0;
 }
 
-int set_voice_profile_sip_proxyserver(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_sip_proxyserver(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
-	
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -736,7 +726,7 @@ int set_voice_profile_sip_proxyserver(char *refparam, struct dmctx *ctx, int act
 	return 0;
 }
 
-int set_sip_proxy_server_port(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_proxy_server_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -748,17 +738,17 @@ int set_sip_proxy_server_port(char *refparam, struct dmctx *ctx, int action, cha
 	return 0;
 }
 
-int get_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 		
 	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", value);
 	return 0;
 }
 
-int set_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -770,17 +760,17 @@ int set_sip_proxy_server_transport(char *refparam, struct dmctx *ctx, int action
 	return 0;
 }
 
-int get_voice_profile_sip_registerserver(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_sip_registerserver(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "host", value);
 	return 0;
 }
 
-int set_voice_profile_sip_registerserver(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_sip_registerserver(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -792,17 +782,17 @@ int set_voice_profile_sip_registerserver(char *refparam, struct dmctx *ctx, int 
 	return 0;
 }
 
-int get_voice_profile_sip_registerserverport(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_sip_registerserverport(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "port", value);
 	return 0;
 }
 
-int set_voice_profile_sip_registerserverport(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_sip_registerserverport(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -814,17 +804,17 @@ int set_voice_profile_sip_registerserverport(char *refparam, struct dmctx *ctx, 
 	return 0;
 }
 
-int get_sip_registrar_server_transport(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_registrar_server_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", value);
 	return 0;
 }
 
-int set_sip_registrar_server_transport(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_registrar_server_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -836,17 +826,17 @@ int set_sip_registrar_server_transport(char *refparam, struct dmctx *ctx, int ac
 	return 0;
 }
 
-int get_sip_user_agent_domain(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_user_agent_domain(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "domain", value);
 	return 0;
 }
 
-int set_sip_user_agent_domain(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_user_agent_domain(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -858,13 +848,13 @@ int set_sip_user_agent_domain(char *refparam, struct dmctx *ctx, int action, cha
 	return 0;
 }
 
-int get_sip_user_agent_port(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_user_agent_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("voice_client", "SIP", "bindport", value);
 	return 0;
 }
 
-int set_sip_user_agent_port(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_user_agent_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -876,11 +866,11 @@ int set_sip_user_agent_port(char *refparam, struct dmctx *ctx, int action, char 
 	return 0;
 }
 
-int get_sip_user_agent_transport(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_user_agent_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	//dmubus_call("asterisk.sip", "dump", UBUS_ARGS{}, 0, &res);
 	char *tmp;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "transport", &tmp);
 	if (tmp[0] == '\0')
@@ -890,7 +880,7 @@ int get_sip_user_agent_transport(char *refparam, struct dmctx *ctx, char **value
 	return 0;
 }
 
-int set_sip_user_agent_transport(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_user_agent_transport(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -902,17 +892,17 @@ int set_sip_user_agent_transport(char *refparam, struct dmctx *ctx, int action, 
 	return 0;
 }
 
-int get_sip_outbound_proxy(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_outbound_proxy(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "outboundproxy", value);
 	return 0;
 }
 
-int set_sip_outbound_proxy(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_outbound_proxy(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -924,17 +914,17 @@ int set_sip_outbound_proxy(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
-int get_sip_outbound_proxy_port(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_outbound_proxy_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "outboundproxyport", value);
 	return 0;
 }
 
-int set_sip_outbound_proxy_port(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_outbound_proxy_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -946,13 +936,13 @@ int set_sip_outbound_proxy_port(char *refparam, struct dmctx *ctx, int action, c
 }
 
 
-int get_sip_registration_period(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_registration_period(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("voice_client", "SIP", "defaultexpiry", value);
 	return 0;
 }
 
-int set_sip_registration_period(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_registration_period(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -965,13 +955,13 @@ int set_sip_registration_period(char *refparam, struct dmctx *ctx, int action, c
 }
 
 
-int get_sip_re_invite_expires(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_re_invite_expires(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("voice_client", "SIP", "registertimeout", value);
 	return 0;
 }
 
-int set_sip_re_invite_expires(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_re_invite_expires(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	switch (action) {
@@ -985,17 +975,17 @@ int set_sip_re_invite_expires(char *refparam, struct dmctx *ctx, int action, cha
 }
 
 
-int get_sip_x_002207_call_lines(char *refparam, struct dmctx *ctx, char **value)
+int get_sip_x_002207_call_lines(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "call_lines", value);
 	return 0;
 }
 
-int set_sip_x_002207_call_lines(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_x_002207_call_lines(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1006,7 +996,7 @@ int set_sip_x_002207_call_lines(char *refparam, struct dmctx *ctx, int action, c
 	}
 }
 
-int get_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
 	
@@ -1022,10 +1012,8 @@ int get_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx,  char **
 	return 0;
 }
 
-int set_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
-
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1041,7 +1029,7 @@ int set_voice_profile_sip_dtmfmethod(char *refparam, struct dmctx *ctx, int acti
 	return 0;
 }
 
-int get_sip_profile_region(char *refparam, struct dmctx *ctx,  char **value)
+int get_sip_profile_region(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
 	
@@ -1055,10 +1043,9 @@ int get_sip_profile_region(char *refparam, struct dmctx *ctx,  char **value)
 	return 0;
 }
 
-int set_sip_profile_region(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_profile_region(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int i;
-	struct sip_args *sipargs = &cur_sip_args;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1075,9 +1062,9 @@ int set_sip_profile_region(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
-int get_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "provider_name", value);
 	if(value[0] == '\0')
@@ -1085,9 +1072,9 @@ int get_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx
 	return 0;
 }
 
-int set_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1099,17 +1086,17 @@ int set_voice_service_serviceproviderinfo_name(char *refparam, struct dmctx *ctx
 	return 0;
 }
 
-int get_sip_fax_t38_enable(char *refparam, struct dmctx *ctx,  char **value)
+int get_sip_fax_t38_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	dmuci_get_value_by_section_string(sipargs->sip_section, "is_fax", value);
 	return 0;
 }
 
-int set_sip_fax_t38_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_sip_fax_t38_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1129,7 +1116,7 @@ int set_sip_fax_t38_enable(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
-int get_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp; 
 	
@@ -1141,10 +1128,9 @@ int get_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx,  char **
 	return 0;
 }
 
-int set_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
-	struct sip_args *sipargs = &cur_sip_args;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1156,7 +1142,7 @@ int set_voice_service_vp_rtp_portmin(char *refparam, struct dmctx *ctx, int acti
 	return 0;
 }
 
-int get_voice_service_vp_rtp_portmax(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_portmax(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
 	
@@ -1168,9 +1154,8 @@ int get_voice_service_vp_rtp_portmax(char *refparam, struct dmctx *ctx,  char **
 	return 0;
 }
 
-int set_voice_profile_rtp_localportmax(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_rtp_localportmax(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1182,7 +1167,7 @@ int set_voice_profile_rtp_localportmax(char *refparam, struct dmctx *ctx, int ac
 	return 0;
 }
 
-int get_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
 	char *tmp;
@@ -1198,10 +1183,9 @@ int get_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx,  char **val
 	return 0;
 }
 
-int set_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int i;
-	struct sip_args *sipargs = &cur_sip_args;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1218,7 +1202,7 @@ int set_voice_service_vp_rtp_dscp(char *refparam, struct dmctx *ctx, int action,
 	return 0;
 }
 
-int get_voice_service_vp_rtp_rtcp_enable(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_rtcp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	pid_t pid; 
 	
@@ -1230,7 +1214,7 @@ int get_voice_service_vp_rtp_rtcp_enable(char *refparam, struct dmctx *ctx,  cha
 	return 0;
 }
 
-int get_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
 	
@@ -1242,10 +1226,8 @@ int get_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx 
 	return 0;
 }
 
-int set_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct sip_args *sipargs = &cur_sip_args;
-
 	switch (action) {
 		case VALUECHECK:
 			return 0;
@@ -1256,10 +1238,10 @@ int set_voice_service_vp_rtp_rtcp_txrepeatinterval(char *refparam, struct dmctx 
 	return 0;
 }
 
-int get_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *tmp;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	dmuci_get_value_by_section_string(sipargs->sip_section, "encryption", &tmp);
 	if(strcasecmp(tmp, "yes") == 0)
@@ -1269,10 +1251,10 @@ int get_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx,  cha
 	return 0;
 }
 
-int set_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1291,17 +1273,47 @@ int set_voice_service_vp_rtp_srtp_enable(char *refparam, struct dmctx *ctx, int 
 }
 
 /*******************LINE **********************************/
-int get_line_directory_number(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_profile_line_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	char *tmp;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
+
+	dmuci_get_value_by_section_string(brcmargs->sip_section, "enabled", &tmp);
+
+	if(strcmp(tmp, "0") == 0)
+		*value = "Disabled";
+	else
+		*value = "Enabled";
+	return 0;
+}
+
+int set_voice_profile_line_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
+{
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
+	switch (action) {
+		case VALUECHECK:
+			return 0;
+		case VALUESET:
+			if(strcmp(value, "Enabled") == 0)
+				dmuci_set_value_by_section(brcmargs->sip_section, "enabled", "1");
+			else
+				dmuci_set_value_by_section(brcmargs->sip_section, "enabled", "0");
+			return 0;
+	}
+	return 0;
+}
+
+int get_line_directory_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
+{
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	dmuci_get_value_by_section_string(brcmargs->brcm_section, "extension", value);
 	return 0;
 }
 
-int set_line_directory_number(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_directory_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1313,12 +1325,12 @@ int set_line_directory_number(char *refparam, struct dmctx *ctx, int action, cha
 	return 0;
 }
 
-int get_voice_profile_line_status(char *refparam, struct dmctx *ctx,  char **value)
+int get_voice_profile_line_status(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *status, *sip_name, *q;
 		json_object *res;
 		char buf[64];
-		struct brcm_args *brcmargs = &cur_brcm_args;
+		struct brcm_args *brcmargs = (struct brcm_args *)data;
 		*value = "Disabled";
 		sip_name = section_name(brcmargs->sip_section);
 		q = buf;
@@ -1346,10 +1358,10 @@ int get_voice_profile_line_status(char *refparam, struct dmctx *ctx,  char **val
 		return 0;
 }
 
-int get_voice_profile_line_callstate(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_line_callstate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {	
 	char *tmp, *line_name;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	line_name = section_name(brcmargs->brcm_section);
 	dmuci_get_varstate_string("chan_brcm", line_name, "subchannel_0", &tmp);
@@ -1368,20 +1380,20 @@ int get_voice_profile_line_callstate(char *refparam, struct dmctx *ctx, char **v
 	return 0;
 }
 
-int get_line_x_002207_line_profile(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_x_002207_line_profile(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	*value = brcmargs->profile_num;
 	return 0;
 }
 
-int set_line_x_002207_line_profile(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_x_002207_line_profile(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char call_lines[32];
 	char *str;
 	struct uci_section *sip_s;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 			
 	switch (action) {
 		case VALUECHECK:
@@ -1412,22 +1424,22 @@ int set_line_x_002207_line_profile(char *refparam, struct dmctx *ctx, int action
 	return 0;
 }
 
-int get_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *line_name;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	line_name = section_name(brcmargs->brcm_section);
 	*value = dmstrdup(line_name + sizeof("brcm") - 1); //  MEM WILL BE FREED IN DMMEMCLEAN
 	return 0;
 }
 
-int set_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int error;
 	char bname[8], *stype = NULL, *sipaccount = NULL;
 	char *lineinstance = NULL;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1454,17 +1466,17 @@ int set_line_x_002207_brcm_line(char *refparam, struct dmctx *ctx, int action, c
 	return 0;
 }
 
-int get_line_calling_features_caller_id_name(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_calling_features_caller_id_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	dmuci_get_value_by_section_string(brcmargs->sip_section, "displayname", value);
 	return 0;
 }
 
-int set_line_calling_features_caller_id_name(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_calling_features_caller_id_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1476,9 +1488,9 @@ int set_line_calling_features_caller_id_name(char *refparam, struct dmctx *ctx, 
 	return 0;
 }
 
-int get_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	dmuci_get_value_by_section_string(brcmargs->brcm_section, "callwaiting", value);
 	if((*value)[0] == '\0')
@@ -1486,10 +1498,10 @@ int get_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx,  ch
 	return 0;
 }
 
-int set_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	switch (action) {
 		case VALUECHECK:
@@ -1507,17 +1519,17 @@ int set_line_calling_features_callwaiting(char *refparam, struct dmctx *ctx, int
 	return 0;
 }
 
-int get_line_sip_auth_username(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_sip_auth_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
 	dmuci_get_value_by_section_string(brcmargs->sip_section, "authuser", value);
 	return 0;
 }
 
-int set_line_sip_auth_username(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_sip_auth_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
   switch (action) {
 		case VALUECHECK:
@@ -1529,9 +1541,9 @@ int set_line_sip_auth_username(char *refparam, struct dmctx *ctx, int action, ch
 	return 0;
 }
 
-int set_line_sip_auth_password(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_sip_auth_password(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1543,10 +1555,10 @@ int set_line_sip_auth_password(char *refparam, struct dmctx *ctx, int action, ch
 	return 0;
 }
 
-int get_line_sip_uri(char *refparam, struct dmctx *ctx,  char **value)
+int get_line_sip_uri(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *domain = NULL, *user = NULL;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 
 	dmuci_get_value_by_section_string(brcmargs->sip_section, "domain", &domain);
 	dmuci_get_value_by_section_string(brcmargs->sip_section, "user", &user);
@@ -1557,10 +1569,10 @@ int get_line_sip_uri(char *refparam, struct dmctx *ctx,  char **value)
   return 0;
 }
 
-int set_line_sip_uri(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_sip_uri(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *pch, *spch, *str1;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)data;
 	
   switch (action) {
 		case VALUECHECK:
@@ -1663,18 +1675,18 @@ void codec_priority_update(struct uci_section *sip_section)
 	codec_priority_sort(sip_section, NULL);
 }
 
-int get_codec_entry_id(char *refparam, struct dmctx *ctx, char **value)
+int get_codec_entry_id(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	
 	*value = line_codecargs->id;
 	return 0;
 }
 
-int capabilities_sip_codecs_get_codec(char *refparam, struct dmctx *ctx, char **value)
+int capabilities_sip_codecs_get_codec(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == line_codecargs->enumid) {
@@ -1685,10 +1697,10 @@ int capabilities_sip_codecs_get_codec(char *refparam, struct dmctx *ctx, char **
 	return 0;
 }
 
-int capabilities_sip_codecs_get_bitrate(char *refparam, struct dmctx *ctx, char **value)
+int capabilities_sip_codecs_get_bitrate(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	
 	for (i = 0; i < ARRAY_SIZE(capabilities_sip_codecs); i++) {
 		if(capabilities_sip_codecs[i].enumid == line_codecargs->enumid) {
@@ -1699,10 +1711,10 @@ int capabilities_sip_codecs_get_bitrate(char *refparam, struct dmctx *ctx, char 
 	return 0;
 }
 
-int get_capabilities_sip_codecs_pperiod(char *refparam, struct dmctx *ctx, char **value)
+int get_capabilities_sip_codecs_pperiod(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	dmuci_get_value_by_section_string(line_codecargs->sip_section, line_codecargs->ptime_cdc, value);
 	if ((*value)[0] != '\0')
 		return 0;
@@ -1715,11 +1727,11 @@ int get_capabilities_sip_codecs_pperiod(char *refparam, struct dmctx *ctx, char 
 	return 0;
 }
 
-int get_line_codec_list_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_line_codec_list_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	int i;
 	char *val;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	
 	for (i =0; i < ARRAY_SIZE(codec_option_array); i++) {
 		dmuci_get_value_by_section_string(line_codecargs->sip_section, codec_option_array[i], &val);
@@ -1732,16 +1744,16 @@ int get_line_codec_list_enable(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_line_codec_list_priority(char *refparam, struct dmctx *ctx, char **value)
+int get_line_codec_list_priority(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	dmuci_get_value_by_section_string(line_codecargs->sip_section, line_codecargs->priority_cdc, value);
 	return 0;
 }
 
-int set_line_codec_list_packetization(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_codec_list_packetization(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1753,12 +1765,12 @@ int set_line_codec_list_packetization(char *refparam, struct dmctx *ctx, int act
 	return 0;
 }
 
-int set_line_codec_list_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_codec_list_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	int j;
 	char *codec;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 	int error = string_to_bool(value, &b);
 
 	switch (action) {
@@ -1789,11 +1801,11 @@ int set_line_codec_list_enable(char *refparam, struct dmctx *ctx, int action, ch
 	return 0;
 }
 
-int set_line_codec_list_priority(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_codec_list_priority(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int i;
 	char *val;
-	struct line_codec_args *line_codecargs = &cur_line_codec_args;
+	struct line_codec_args *line_codecargs = (struct line_codec_args *)data;
 
 	switch (action) {
 		case VALUECHECK:
@@ -1845,108 +1857,132 @@ void codec_update_id()
 	}
 }
 ////////////////////////SET AND GET ALIAS/////////////////////////////////
-int get_service_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_service_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_service_args.service_section, "vsalias", value);
+	struct uci_section *service_section = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(service_section, "vsalias", value);
 	return 0;
 }
 
-int set_service_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_service_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
+	struct uci_section *service_section = (struct uci_section *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_service_args.service_section, "vsalias", value);
+			dmuci_set_value_by_section(service_section, "vsalias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_cap_codec_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_cap_codec_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_codec_args.codec_section, "codecalias", value);
+	struct codec_args *cur_codec_args = (struct codec_args *)data;
+	dmuci_get_value_by_section_string(cur_codec_args->codec_section, "codecalias", value);
 	return 0;
 }
 
-int set_cap_codec_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_cap_codec_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
+	struct codec_args *cur_codec_args = (struct codec_args *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_codec_args.codec_section, "codecalias", value);
+			dmuci_set_value_by_section(cur_codec_args->codec_section, "codecalias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_voice_profile_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_voice_profile_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_sip_args.sip_section, "profilealias", value);
+	struct sip_args *sipargs = (struct sip_args *)data;
+	dmuci_get_value_by_section_string(sipargs->sip_section, "profilealias", value);
 	return 0;
 }
 
-int set_voice_profile_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_voice_profile_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
+	struct sip_args *sipargs = (struct sip_args *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_sip_args.sip_section, "profilealias", value);
+			dmuci_set_value_by_section(sipargs->sip_section, "profilealias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_line_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_line_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_brcm_args.brcm_section, "linealias", value);
+	struct brcm_args *brcmarg = (struct brcm_args *)data;
+	dmuci_get_value_by_section_string(brcmarg->brcm_section, "linealias", value);
 	return 0;
 }
 
-int set_line_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
+	struct brcm_args *brcmarg = (struct brcm_args *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_brcm_args.brcm_section, "linealias", value);
+			dmuci_set_value_by_section(brcmarg->brcm_section, "linealias", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_line_codec_list_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_line_codec_list_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_line_codec_args.codec_sec, "codecalias", value);
+	dmuci_get_value_by_section_string(((struct line_codec_args *)data)->codec_sec, "codecalias", value);
 	return 0;
 }
 
-int set_line_codec_list_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_line_codec_list_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_line_codec_args.codec_sec, "codecalias", value);
+			dmuci_set_value_by_section(((struct line_codec_args *)data)->codec_sec, "codecalias", value);
 			return 0;
 	}
 	return 0;
 }
 ///////////////////////////////////////
 
-DMLEAF tSIPParams[] = {
+/*** DMROOT.Services. ****/
+DMOBJ tServiceObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"VoiceService", &DMREAD, NULL, NULL, NULL, browseVoiceServiceInst, NULL, NULL, tVoiceServiceObj, tVoiceServiceParam, NULL},
+{0}
+};
+
+/*** VoiceService.{i}. ****/
+DMOBJ tVoiceServiceObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+//{"Capabilities", &DMREAD, NULL, NULL, NULL, NULL, NULL, tCapabilitiesParams, NULL},
+{"Capabilities", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tCapabilitiesObj, tCapabilitiesParams, NULL},
+{"VoiceProfile", &DMWRITE, add_profile_object, delete_profile_object, NULL, browseProfileInst, NULL, NULL, tProfileObj, tProfileParam, NULL},
+{0}
+};
+
+DMLEAF tVoiceServiceParam[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Role", &DMREAD, DMT_STRING, get_sip_role, NULL, NULL, NULL},
-{"Extensions", &DMREAD, DMT_STRING, get_sip_extension, NULL, NULL, NULL},
-{"Transports", &DMREAD, DMT_STRING, get_sip_transport, NULL, NULL, NULL},
-{"URISchemes", &DMREAD, DMT_STRING, get_empty, NULL, NULL, NULL},
-{"EventSubscription", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
-{"ResponseMap", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
-{"TLSAuthenticationProtocols", &DMREAD, DMT_STRING, get_sip_tls_auth_protocols, NULL, NULL, NULL},
-{"TLSEncryptionProtocols", &DMREAD, DMT_STRING, get_sip_tls_enc_protocols, NULL, NULL, NULL},
-{"TLSKeyExchangeProtocols", &DMREAD, DMT_STRING, get_sip_tls_key_protocols, NULL, NULL, NULL},
+{"Alias", &DMWRITE, DMT_STRING, get_service_alias, set_service_alias, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.Capabilities. ****/
+DMOBJ tCapabilitiesObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"SIP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tSIPParams, NULL},
+{"Codecs", &DMREAD, NULL, NULL, NULL, browseCodecsInst, NULL, NULL, NULL, tCodecsParams, NULL},
 {0}
 };
 
@@ -1983,6 +2019,22 @@ DMLEAF tCapabilitiesParams[] = {
 {0}
 };
 
+/*** VoiceService.{i}.Capabilities.SIP. ****/
+DMLEAF tSIPParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Role", &DMREAD, DMT_STRING, get_sip_role, NULL, NULL, NULL},
+{"Extensions", &DMREAD, DMT_STRING, get_sip_extension, NULL, NULL, NULL},
+{"Transports", &DMREAD, DMT_STRING, get_sip_transport, NULL, NULL, NULL},
+{"URISchemes", &DMREAD, DMT_STRING, get_empty, NULL, NULL, NULL},
+{"EventSubscription", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
+{"ResponseMap", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
+{"TLSAuthenticationProtocols", &DMREAD, DMT_STRING, get_sip_tls_auth_protocols, NULL, NULL, NULL},
+{"TLSEncryptionProtocols", &DMREAD, DMT_STRING, get_sip_tls_enc_protocols, NULL, NULL, NULL},
+{"TLSKeyExchangeProtocols", &DMREAD, DMT_STRING, get_sip_tls_key_protocols, NULL, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.Capabilities.Codecs.{i}. ****/
 DMLEAF tCodecsParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
 {"Alias", &DMWRITE, DMT_STRING, get_cap_codec_alias, set_cap_codec_alias, NULL, NULL},
@@ -1994,128 +2046,7 @@ DMLEAF tCodecsParams[] = {
 {0}
 };
 
-DMOBJ tCapabilitiesObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"SIP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tSIPParams, NULL},
-{"Codecs", &DMREAD, NULL, NULL, NULL, browseCodecsInst, NULL, NULL, NULL, tCodecsParams, NULL},
-{0}
-};
-
-DMLEAF tServiceProviderInfoParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Name", &DMWRITE, DMT_STRING, get_voice_service_serviceproviderinfo_name, set_voice_service_serviceproviderinfo_name, NULL, NULL},
-{0}
-};
-
-DMLEAF tProfileSIPParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"ProxyServer", &DMWRITE, DMT_STRING, get_voice_profile_sip_proxyserver, set_voice_profile_sip_proxyserver, NULL, NULL},
-{"ProxyServerPort", &DMWRITE, DMT_UNINT, get_empty, set_sip_proxy_server_port, NULL, NULL},
-{"ProxyServerTransport", &DMWRITE, DMT_STRING, get_sip_proxy_server_transport, set_sip_proxy_server_transport, NULL, NULL},
-{"RegistrarServer", &DMWRITE, DMT_STRING, get_voice_profile_sip_registerserver, set_voice_profile_sip_registerserver, NULL, NULL},
-{"RegistrarServerPort", &DMWRITE, DMT_UNINT, get_voice_profile_sip_registerserverport, set_voice_profile_sip_registerserverport, NULL, NULL},
-{"RegistrarServerTransport", &DMWRITE, DMT_STRING, get_sip_registrar_server_transport, set_sip_registrar_server_transport, NULL, NULL},
-{"UserAgentDomain", &DMWRITE, DMT_STRING, get_sip_user_agent_domain, set_sip_user_agent_domain, NULL, NULL},
-{"UserAgentPort", &DMWRITE, DMT_UNINT, get_sip_user_agent_port, set_sip_user_agent_port, NULL, NULL},
-{"UserAgentTransport", &DMWRITE, DMT_STRING, get_sip_user_agent_transport, set_sip_user_agent_transport, NULL, NULL},
-{"OutboundProxy", &DMWRITE, DMT_STRING, get_sip_outbound_proxy, set_sip_outbound_proxy, NULL, NULL},
-{"OutboundProxyPort", &DMWRITE, DMT_UNINT, get_sip_outbound_proxy_port, set_sip_outbound_proxy_port, NULL, NULL},
-{"RegistrationPeriod", &DMWRITE, DMT_UNINT, get_sip_registration_period, set_sip_registration_period, NULL, NULL},
-{"ReInviteExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
-{"RegisterExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
-{"RegisterRetryInterval", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
-{"X_002207_CallLines", &DMWRITE, DMT_STRING, get_sip_x_002207_call_lines, set_sip_x_002207_call_lines, NULL, NULL},
-{0}
-};
-
-DMLEAF tFaxT38Params[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Enable", &DMWRITE, DMT_BOOL, get_sip_fax_t38_enable, set_sip_fax_t38_enable, NULL, NULL},
-{0}
-};
-
-DMLEAF tRTCPParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Enable", &DMREAD, DMT_BOOL, get_voice_service_vp_rtp_rtcp_enable, NULL, NULL, NULL},
-{"TxRepeatInterval", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_rtcp_txrepeatinterval, set_voice_service_vp_rtp_rtcp_txrepeatinterval, NULL, NULL},
-{0}
-};
-
-DMLEAF tSRTPParam[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Enable", &DMWRITE, DMT_BOOL, get_voice_service_vp_rtp_srtp_enable, set_voice_service_vp_rtp_srtp_enable, NULL, NULL},
-{0}
-};
-
-DMOBJ tRTPObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"RTCP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tRTCPParams, NULL},
-{"SRTP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tSRTPParam, NULL},
-{0}
-};
-
-DMLEAF tRTPParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"LocalPortMin", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_portmin, set_voice_service_vp_rtp_portmin, NULL, NULL},
-{"LocalPortMax", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_portmax, set_voice_profile_rtp_localportmax, NULL, NULL},
-{"DSCPMark", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_dscp, set_voice_service_vp_rtp_dscp, NULL, NULL},
-{0}
-};
-
-DMLEAF tLineParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Alias", &DMWRITE, DMT_STRING, get_line_alias, set_line_alias, NULL, NULL},
-{"Enable", &DMWRITE, DMT_STRING, get_voice_profile_enable, set_voice_profile_enable, NULL, NULL},
-{"DirectoryNumber", &DMWRITE, DMT_STRING, get_line_directory_number, set_line_directory_number, NULL, NULL},
-{"Status", &DMREAD, DMT_STRING, get_voice_profile_line_status, set_line_alias, NULL, NULL},
-{"CallState", &DMREAD, DMT_STRING, get_voice_profile_line_callstate, set_line_alias, NULL, NULL},
-{"X_002207_LineProfile", &DMWRITE, DMT_STRING, get_line_x_002207_line_profile, set_line_x_002207_line_profile, NULL, NULL},
-{"X_002207_BRCMLine", &DMWRITE, DMT_STRING, get_line_x_002207_brcm_line, set_line_x_002207_brcm_line, NULL, NULL},
-{0}
-};
-
-DMLEAF tCallingFeaturesParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"CallerIDName", &DMWRITE, DMT_STRING, get_line_calling_features_caller_id_name, set_line_calling_features_caller_id_name, NULL, NULL},
-{"CallWaitingEnable", &DMWRITE, DMT_BOOL, get_line_calling_features_callwaiting, set_line_calling_features_callwaiting, NULL, NULL},
-{0}
-};
-
-DMLEAF tLineSIPParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"AuthUserName", &DMWRITE, DMT_STRING, get_line_sip_auth_username, set_line_sip_auth_username, NULL, NULL},
-{"AuthPassword", &DMWRITE, DMT_STRING, get_empty, set_line_sip_auth_password, NULL, NULL},
-{"URI", &DMWRITE, DMT_STRING, get_line_sip_uri, set_line_sip_uri, NULL, NULL},
-{0}
-};
-
-DMLEAF tLineCodecListParams[] = {
-/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Alias", &DMWRITE, DMT_STRING, get_line_codec_list_alias, set_line_codec_list_alias, NULL, NULL},
-{"EntryID", &DMREAD, DMT_UNINT, get_codec_entry_id, NULL, NULL, NULL},
-{"Codec", &DMREAD, DMT_STRING, capabilities_sip_codecs_get_codec, NULL, NULL, NULL},
-{"BitRate", &DMREAD, DMT_UNINT, capabilities_sip_codecs_get_bitrate, NULL, NULL, NULL},
-{"PacketizationPeriod", &DMWRITE, DMT_STRING, get_capabilities_sip_codecs_pperiod, set_line_codec_list_packetization, NULL, NULL},
-{"SilenceSuppression", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
-{"Enable", &DMWRITE, DMT_BOOL, get_line_codec_list_enable, set_line_codec_list_enable, NULL, NULL},
-{"Priority", &DMWRITE, DMT_UNINT, get_line_codec_list_priority, set_line_codec_list_priority, NULL, NULL},
-{0}
-};
-
-DMOBJ tLineCodecObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"List", &DMREAD, NULL, NULL, NULL, browseLineCodecListInst, NULL, NULL, NULL, tLineCodecListParams, NULL},
-{0}
-};
-
-DMOBJ tLineObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"CallingFeatures", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tCallingFeaturesParams, NULL},
-{"SIP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tLineSIPParams, NULL},
-{"Codec", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tLineCodecObj, NULL, NULL},
-{0}
-};
-
+/*** VoiceService.{i}.VoiceProfile.{i}. ****/
 DMOBJ tProfileObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
 {"SIP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tProfileSIPParams, NULL},
@@ -2140,23 +2071,129 @@ DMLEAF tProfileParam[] = {
 {0}
 };
 
-DMOBJ tVoiceServiceObj[] = {
-/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-//{"Capabilities", &DMREAD, NULL, NULL, NULL, NULL, NULL, tCapabilitiesParams, NULL},
-{"Capabilities", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tCapabilitiesObj, tCapabilitiesParams, NULL},
-{"VoiceProfile", &DMWRITE, add_profile_object, delete_profile_object, NULL, browseProfileInst, NULL, NULL, tProfileObj, tProfileParam, NULL},
-{0}
-};
-
-DMLEAF tVoiceServiceParam[] = {
+/*** VoiceService.{i}.VoiceProfile.{i}.SIP. ***/
+DMLEAF tProfileSIPParams[] = {
 /* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
-{"Alias", &DMWRITE, DMT_STRING, get_service_alias, set_service_alias, NULL, NULL},
+{"ProxyServer", &DMWRITE, DMT_STRING, get_voice_profile_sip_proxyserver, set_voice_profile_sip_proxyserver, NULL, NULL},
+{"ProxyServerPort", &DMWRITE, DMT_UNINT, get_empty, set_sip_proxy_server_port, NULL, NULL},
+{"ProxyServerTransport", &DMWRITE, DMT_STRING, get_sip_proxy_server_transport, set_sip_proxy_server_transport, NULL, NULL},
+{"RegistrarServer", &DMWRITE, DMT_STRING, get_voice_profile_sip_registerserver, set_voice_profile_sip_registerserver, NULL, NULL},
+{"RegistrarServerPort", &DMWRITE, DMT_UNINT, get_voice_profile_sip_registerserverport, set_voice_profile_sip_registerserverport, NULL, NULL},
+{"RegistrarServerTransport", &DMWRITE, DMT_STRING, get_sip_registrar_server_transport, set_sip_registrar_server_transport, NULL, NULL},
+{"UserAgentDomain", &DMWRITE, DMT_STRING, get_sip_user_agent_domain, set_sip_user_agent_domain, NULL, NULL},
+{"UserAgentPort", &DMWRITE, DMT_UNINT, get_sip_user_agent_port, set_sip_user_agent_port, NULL, NULL},
+{"UserAgentTransport", &DMWRITE, DMT_STRING, get_sip_user_agent_transport, set_sip_user_agent_transport, NULL, NULL},
+{"OutboundProxy", &DMWRITE, DMT_STRING, get_sip_outbound_proxy, set_sip_outbound_proxy, NULL, NULL},
+{"OutboundProxyPort", &DMWRITE, DMT_UNINT, get_sip_outbound_proxy_port, set_sip_outbound_proxy_port, NULL, NULL},
+{"RegistrationPeriod", &DMWRITE, DMT_UNINT, get_sip_registration_period, set_sip_registration_period, NULL, NULL},
+{"ReInviteExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
+{"RegisterExpires", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
+{"RegisterRetryInterval", &DMWRITE, DMT_UNINT, get_sip_re_invite_expires, set_sip_re_invite_expires, NULL, NULL},
+{"X_002207_CallLines", &DMWRITE, DMT_STRING, get_sip_x_002207_call_lines, set_sip_x_002207_call_lines, NULL, NULL},
 {0}
 };
 
-DMOBJ tServiceObj[] = {
+/*** VoiceService.{i}.VoiceProfile.{i}.ServiceProviderInfo. ***/
+DMLEAF tServiceProviderInfoParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Name", &DMWRITE, DMT_STRING, get_voice_service_serviceproviderinfo_name, set_voice_service_serviceproviderinfo_name, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.FaxT38. ***/
+DMLEAF tFaxT38Params[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Enable", &DMWRITE, DMT_BOOL, get_sip_fax_t38_enable, set_sip_fax_t38_enable, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.RTP. ***/
+DMOBJ tRTPObj[] = {
 /* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
-{"VoiceService", &DMREAD, NULL, NULL, NULL, browseVoiceServiceInst, NULL, NULL, tVoiceServiceObj, tVoiceServiceParam, NULL},
+{"RTCP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tRTCPParams, NULL},
+{"SRTP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tSRTPParam, NULL},
+{0}
+};
+
+DMLEAF tRTPParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"LocalPortMin", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_portmin, set_voice_service_vp_rtp_portmin, NULL, NULL},
+{"LocalPortMax", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_portmax, set_voice_profile_rtp_localportmax, NULL, NULL},
+{"DSCPMark", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_dscp, set_voice_service_vp_rtp_dscp, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.RTP.RTCP. ***/
+DMLEAF tRTCPParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Enable", &DMREAD, DMT_BOOL, get_voice_service_vp_rtp_rtcp_enable, NULL, NULL, NULL},
+{"TxRepeatInterval", &DMWRITE, DMT_UNINT, get_voice_service_vp_rtp_rtcp_txrepeatinterval, set_voice_service_vp_rtp_rtcp_txrepeatinterval, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.RTP.SRTP. ***/
+DMLEAF tSRTPParam[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Enable", &DMWRITE, DMT_BOOL, get_voice_service_vp_rtp_srtp_enable, set_voice_service_vp_rtp_srtp_enable, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.Line.{i}. ***/
+DMOBJ tLineObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"CallingFeatures", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tCallingFeaturesParams, NULL},
+{"SIP", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, NULL, tLineSIPParams, NULL},
+{"Codec", &DMREAD, NULL, NULL, NULL, NULL, NULL, NULL, tLineCodecObj, NULL, NULL},
+{0}
+};
+
+DMLEAF tLineParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Alias", &DMWRITE, DMT_STRING, get_line_alias, set_line_alias, NULL, NULL},
+{"Enable", &DMWRITE, DMT_STRING, get_voice_profile_line_enable, set_voice_profile_line_enable, NULL, NULL},
+{"DirectoryNumber", &DMWRITE, DMT_STRING, get_line_directory_number, set_line_directory_number, NULL, NULL},
+{"Status", &DMREAD, DMT_STRING, get_voice_profile_line_status, set_line_alias, NULL, NULL},
+{"CallState", &DMREAD, DMT_STRING, get_voice_profile_line_callstate, set_line_alias, NULL, NULL},
+{"X_002207_LineProfile", &DMWRITE, DMT_STRING, get_line_x_002207_line_profile, set_line_x_002207_line_profile, NULL, NULL},
+{"X_002207_BRCMLine", &DMWRITE, DMT_STRING, get_line_x_002207_brcm_line, set_line_x_002207_brcm_line, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.Line.{i}.CallingFeatures. ***/
+DMLEAF tCallingFeaturesParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"CallerIDName", &DMWRITE, DMT_STRING, get_line_calling_features_caller_id_name, set_line_calling_features_caller_id_name, NULL, NULL},
+{"CallWaitingEnable", &DMWRITE, DMT_BOOL, get_line_calling_features_callwaiting, set_line_calling_features_callwaiting, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.Line.{i}.SIP. ***/
+DMLEAF tLineSIPParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"AuthUserName", &DMWRITE, DMT_STRING, get_line_sip_auth_username, set_line_sip_auth_username, NULL, NULL},
+{"AuthPassword", &DMWRITE, DMT_STRING, get_empty, set_line_sip_auth_password, NULL, NULL},
+{"URI", &DMWRITE, DMT_STRING, get_line_sip_uri, set_line_sip_uri, NULL, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.Line.{i}.Codec. ***/
+DMOBJ tLineCodecObj[] = {
+/* OBJ, permission, addobj, delobj, browseinstobj, finform, notification, nextobj, leaf*/
+{"List", &DMREAD, NULL, NULL, NULL, browseLineCodecListInst, NULL, NULL, NULL, tLineCodecListParams, NULL},
+{0}
+};
+
+/*** VoiceService.{i}.VoiceProfile.{i}.Line.{i}.Codec.List.{i}. ***/
+DMLEAF tLineCodecListParams[] = {
+/* PARAM, permission, type, getvlue, setvalue, forced_inform, notification , linker*/
+{"Alias", &DMWRITE, DMT_STRING, get_line_codec_list_alias, set_line_codec_list_alias, NULL, NULL},
+{"EntryID", &DMREAD, DMT_UNINT, get_codec_entry_id, NULL, NULL, NULL},
+{"Codec", &DMREAD, DMT_STRING, capabilities_sip_codecs_get_codec, NULL, NULL, NULL},
+{"BitRate", &DMREAD, DMT_UNINT, capabilities_sip_codecs_get_bitrate, NULL, NULL, NULL},
+{"PacketizationPeriod", &DMWRITE, DMT_STRING, get_capabilities_sip_codecs_pperiod, set_line_codec_list_packetization, NULL, NULL},
+{"SilenceSuppression", &DMREAD, DMT_BOOL, get_false_value, NULL, NULL, NULL},
+{"Enable", &DMWRITE, DMT_BOOL, get_line_codec_list_enable, set_line_codec_list_enable, NULL, NULL},
+{"Priority", &DMWRITE, DMT_UNINT, get_line_codec_list_priority, set_line_codec_list_priority, NULL, NULL},
 {0}
 };
 
@@ -2167,86 +2204,88 @@ int browseVoiceServiceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_
 
 	update_section_list("dmmap","voice_service", NULL, 1, NULL, NULL, NULL, NULL, NULL);
 	uci_foreach_sections("dmmap", "voice_service", s) {
-		init_service_args(dmctx, s);
 		vs = handle_update_instance(1, dmctx, &vs_last, update_instance_alias, 3, s, "vsinstance", "vsalias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vs) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, vs) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_service_args);
 	return 0;
 }
 
-inline int browseCodecsInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseCodecsInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	int i = 0;
 	char *id, *id_last = NULL;
 	struct uci_section *code_sec;
+	struct codec_args curr_codec_args = {0};
 
 	init_allowed_sip_codecs();
 	codec_update_id();
 	uci_foreach_sections("dmmap", "codec_id", code_sec) {
-		init_codec_args(dmctx, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, allowed_sip_codecs[i].enumid, code_sec);
+		init_codec_args(&curr_codec_args, allowed_sip_codecs[i].allowed_cdc, allowed_sip_codecs[i].id, allowed_sip_codecs[i].enumid, code_sec);
 		id = handle_update_instance(2, dmctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, id) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_codec_args, id) == DM_STOP) {
+			fini_codec_args(&curr_codec_args);
 			break;
+		}
+		fini_codec_args(&curr_codec_args);
+		i++;
 	}
-	DM_CLEAN_ARGS(cur_codec_args);
 	return 0;
 }
 
-inline int browseProfileInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseProfileInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	struct uci_section *sip_section;
 	char *profile_num = NULL, *profile_num_last = NULL;
+	struct sip_args curr_sip_args = {0};
 
 	wait_voice_service_up();
 	uci_foreach_sections("voice_client", "sip_service_provider", sip_section) {
 		profile_num = handle_update_instance(2, dmctx, &profile_num_last, update_instance_alias, 3, sip_section, "profileinstance", "profilealias");
-		init_sip_args(dmctx, sip_section, profile_num_last);
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, profile_num) == DM_STOP)
+		init_sip_args(&curr_sip_args, sip_section, profile_num_last);
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_sip_args, profile_num) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_sip_args);
 	return 0;
 }
 
-inline int browseLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	int maxLine, line_id = 0;
 	char *line_num = NULL, *last_inst = NULL;
 	struct uci_section *b_section = NULL;
 	json_object *res, *jobj;
-	struct sip_args *sipargs = &cur_sip_args;
+	struct sip_args *sipargs = (struct sip_args *)prev_data;
+	struct brcm_args curr_brcm_args = {0};
 	maxLine = get_voice_service_max_line();
 	uci_foreach_option_eq("voice_client", "brcm_line", "sip_account", section_name(sipargs->sip_section), b_section) {
 		line_id = atoi(section_name(b_section) + sizeof("brcm") - 1);
 		if ( line_id >= maxLine )
 			continue;
 		line_num = handle_update_instance(3, dmctx, &last_inst, update_vp_line_instance_alias, 2, b_section, section_name(sipargs->sip_section));
-		init_brcm_args(dmctx, b_section, sipargs->sip_section, sipargs->profile_num); //check difference between sipargs->profile_num and profile_num
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, line_num) == DM_STOP)
+		init_brcm_args(&curr_brcm_args, b_section, sipargs->sip_section, sipargs->profile_num); //check difference between sipargs->profile_num and profile_num
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_brcm_args, line_num) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_brcm_args);
 	return 0;
 }
 
-inline int browseLineCodecListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
+int browseLineCodecListInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance)
 {
 	int i = 0;
 	char *id = NULL , *id_last = NULL;
-	struct brcm_args *brcmargs = &cur_brcm_args;
+	struct brcm_args *brcmargs = (struct brcm_args *)prev_data;
 	struct uci_section *code_sec = NULL;
+	struct line_codec_args curr_line_codec_args = {0};
 
 	codec_update_id();
 	codec_priority_update(brcmargs->sip_section);
 	uci_foreach_sections("dmmap", "codec_id", code_sec) {
-		init_line_code_args(dmctx, i, brcmargs->sip_section, code_sec);
+		init_line_code_args(&curr_line_codec_args, i, brcmargs->sip_section, code_sec);
 		id = handle_update_instance(4, dmctx, &id_last, update_instance_alias, 3, code_sec, "codecinstance", "codecalias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, id) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)&curr_line_codec_args, id) == DM_STOP)
 			break;
 		i++;
 	}
-	DM_CLEAN_ARGS(cur_line_codec_args);
 	return 0;
 }

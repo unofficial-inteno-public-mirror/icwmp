@@ -18,13 +18,13 @@
 #include "dmcommon.h"
 #include "managementserver.h"
 
-int get_management_server_url(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_varstate_string("cwmp", "acs", "url", value);
 	return 0;	
 }
 
-int set_management_server_url(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -38,13 +38,13 @@ int set_management_server_url(char *refparam, struct dmctx *ctx, int action, cha
 	return 0;
 }
 
-int get_management_server_username(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "userid", value);
 	return 0;	
 }
 
-int set_management_server_username(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -57,7 +57,7 @@ int set_management_server_username(char *refparam, struct dmctx *ctx, int action
 	return 0;	
 }
 
-int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_passwd(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -70,19 +70,19 @@ int set_management_server_passwd(char *refparam, struct dmctx *ctx, int action, 
 	return 0;	
 }
 
-int get_management_server_key(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_key(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "ParameterKey", value);
 	return 0;	
 }
 
-int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_enable", value);
 	return 0;	
 }
 
-int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 
@@ -103,13 +103,13 @@ int set_management_server_periodic_inform_enable(char *refparam, struct dmctx *c
 	return 0;	
 }
 
-int get_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "periodic_inform_interval", value);
 	return 0;
 }
 
-int set_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_periodic_inform_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -122,7 +122,7 @@ int set_management_server_periodic_inform_interval(char *refparam, struct dmctx 
 	return 0;
 }
 
-int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	time_t time_value;
 	
@@ -139,7 +139,7 @@ int get_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 	return 0;	
 }
 
-int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	struct tm tm;
 	char *p, buf[16];
@@ -158,7 +158,7 @@ int set_management_server_periodic_inform_time(char *refparam, struct dmctx *ctx
 	return 0;	
 }
 
-int get_management_server_connection_request_url(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_connection_request_url(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *ip, *port, *iface;
 
@@ -174,13 +174,13 @@ int get_management_server_connection_request_url(char *refparam, struct dmctx *c
 	return 0;
 }
 
-int get_management_server_connection_request_username(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_connection_request_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "userid", value);
 	return 0;
 }
 
-int set_management_server_connection_request_username(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_connection_request_username(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:			
@@ -193,7 +193,7 @@ int set_management_server_connection_request_username(char *refparam, struct dmc
 	return 0;
 }
 
-int set_management_server_connection_request_passwd(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_connection_request_passwd(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -206,13 +206,13 @@ int set_management_server_connection_request_passwd(char *refparam, struct dmctx
 	return 0;
 }
 
-int get_lwn_protocol_supported(char *refparam, struct dmctx *ctx, char **value)
+int get_lwn_protocol_supported(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "UDP";
 	return 0;
 }
 
-int get_lwn_protocol_used(char *refparam, struct dmctx *ctx, char **value)
+int get_lwn_protocol_used(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	bool b;
 	char *tmp;
@@ -226,7 +226,7 @@ int get_lwn_protocol_used(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -245,13 +245,13 @@ int set_lwn_protocol_used(char *refparam, struct dmctx *ctx, int action, char *v
 	return 0;
 }
 
-int get_lwn_host(char *refparam, struct dmctx *ctx, char **value)
+int get_lwn_host(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {	
 	dmuci_get_option_value_string("cwmp", "lwn", "hostname", value);
 	return 0;
 }
 
-int set_lwn_host(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_lwn_host(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -264,13 +264,13 @@ int set_lwn_host(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 
-int get_lwn_port(char *refparam, struct dmctx *ctx, char **value)
+int get_lwn_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "lwn", "port", value);
 	return 0;
 }
 
-int set_lwn_port(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_lwn_port(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -283,19 +283,19 @@ int set_lwn_port(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 
-int get_management_server_http_compression_supportted(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_http_compression_supportted(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "GZIP,Deflate";
 	return 0;
 }
 
-int get_management_server_http_compression(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_http_compression(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "compression", value);
 	return 0;
 }
 
-int set_management_server_http_compression(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_http_compression(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -311,13 +311,13 @@ int set_management_server_http_compression(char *refparam, struct dmctx *ctx, in
 	return 0;
 }
 
-int get_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "retry_min_wait_interval", value);
 	return 0;
 }
 
-int set_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_retry_min_wait_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int a;
 	switch (action) {
@@ -335,13 +335,13 @@ int set_management_server_retry_min_wait_interval(char *refparam, struct dmctx *
 	return 0;
 }
 
-int get_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, char **value)
+int get_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "acs", "retry_interval_multiplier", value);
 	return 0;
 }
 
-int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	int a;
 	switch (action) {
@@ -359,7 +359,7 @@ int set_management_server_retry_interval_multiplier(char *refparam, struct dmctx
 	return 0;
 }
 
-int get_alias_based_addressing(char *refparam, struct dmctx *ctx, char **value)
+int get_alias_based_addressing(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "amd_version", value);
 	if((*value)[0] == '\0'|| atoi(*value) <= AMD_4) {
@@ -371,13 +371,13 @@ int get_alias_based_addressing(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_instance_mode(char *refparam, struct dmctx *ctx, char **value)
+int get_instance_mode(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "instance_mode", value);
 	return 0;
 }
 
-int set_instance_mode(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_instance_mode(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:

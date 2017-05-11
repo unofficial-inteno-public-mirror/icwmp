@@ -10,10 +10,6 @@
 #ifndef __SOFTWARE_MODULE_H
 #define __SOFTWARE_MODULE_H
 
-struct software_module
-{
-	struct uci_section *softsection;
-};
 int update_softwaremodules_url(char *uuid, char *url);
 char *get_softwaremodules_uuid(char *url);
 char *get_softwaremodules_username(char *uuid);

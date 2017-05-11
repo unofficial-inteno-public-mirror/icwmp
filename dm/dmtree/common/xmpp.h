@@ -1,11 +1,6 @@
 #ifndef __XMPP_H
 #define __XMPP_H
 
-struct connectionargs
-{
-	struct uci_section *connsection;
-};
-
 char *get_xmpp_server_enable(char *instance);
 char *get_xmpp_username(char *instance);
 char *get_xmpp_password(char *instance);

@@ -17,15 +17,7 @@
 #include "dmcommon.h"
 #include "xmpp.h"
 
-struct connectionargs cur_connectionargs = {0};
-inline int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-
-inline int init_args_connection_entry(struct dmctx *ctx, struct uci_section *s)
-{
-	struct connectionargs *args = &cur_connectionargs;
-	args->connsection = s;
-	return 0;
-}
+int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 char *get_xmpp_server_enable(char *instance)
 {
@@ -147,7 +139,7 @@ char *get_xmpp_connect_retry_max_interval(char *instance)
 	return v;
 }
 
-int add_xmpp_connection(struct dmctx *ctx, char **instancepara)
+int add_xmpp_connection(char *refparam, struct dmctx *ctx, void *data, char **instancepara)
 {
 	struct uci_section *s;
 	char *value, *name;
@@ -157,16 +149,16 @@ int add_xmpp_connection(struct dmctx *ctx, char **instancepara)
 	return 0;
 }
 
-int delete_xmpp_connection(struct dmctx *ctx, unsigned char del_action)
+int delete_xmpp_connection(char *refparam, struct dmctx *ctx, void *data, char *instance, unsigned char del_action)
 {
 	int found = 0;
 	struct uci_section *s, *ss = NULL;
 	struct connectionargs *connargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	
 	switch (del_action) {
 		case DEL_INST:
-			connargs = &cur_connectionargs;
-			dmuci_delete_by_section(connargs->connsection, NULL, NULL);
+			dmuci_delete_by_section(connsection, NULL, NULL);
 			return 0;
 		case DEL_ALL:
 			uci_foreach_sections("cwmp", "xmpp_connection", s) {
@@ -184,7 +176,7 @@ int delete_xmpp_connection(struct dmctx *ctx, unsigned char del_action)
 	return 0;
 }
 
-int get_xmpp_connection_nbr_entry(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_nbr_entry(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	struct uci_section *s;
 	int cnt = 0;
@@ -196,17 +188,17 @@ int get_xmpp_connection_nbr_entry(char *refparam, struct dmctx *ctx, char **valu
 	return 0;
 }
 
-int get_connection_enable(char *refparam, struct dmctx *ctx, char **value)
+int get_connection_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "enable", value);
+	dmuci_get_value_by_section_string(connsection, "enable", value);
 	return 0;
 }
 
-int set_connection_enable(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_connection_enable(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
@@ -215,230 +207,230 @@ int set_connection_enable(char *refparam, struct dmctx *ctx, int action, char *v
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "enable", value);
+			dmuci_set_value_by_section(connsection, "enable", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_password(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_password(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "password", value);
+	dmuci_get_value_by_section_string(connsection, "password", value);
 	return 0;
 }
 
-int set_xmpp_connection_password(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_password(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "password", value);
+			dmuci_set_value_by_section(connsection, "password", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_domain(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_domain(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "password", value);
+	dmuci_get_value_by_section_string(connsection, "password", value);
 	return 0;
 }
 
-int set_xmpp_connection_domain(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_domain(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "password", value);
+			dmuci_set_value_by_section(connsection, "password", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_resource(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_resource(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "resource", value);
+	dmuci_get_value_by_section_string(connsection, "resource", value);
 	return 0;
 }
 
-int set_xmpp_connection_resource(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_resource(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "resource", value);
+			dmuci_set_value_by_section(connsection, "resource", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "serveralgorithm", value);
+	dmuci_get_value_by_section_string(connsection, "serveralgorithm", value);
 	return 0;
 }
 
-int set_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_server_connect_algorithm(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "serveralgorithm", value);
+			dmuci_set_value_by_section(connsection, "serveralgorithm", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "interval", value);
+	dmuci_get_value_by_section_string(connsection, "interval", value);
 	return 0;
 }
 
-int set_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_keepalive_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "interval", value);
+			dmuci_set_value_by_section(connsection, "interval", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "attempt", value);
+	dmuci_get_value_by_section_string(connsection, "attempt", value);
 	return 0;
 }
 
-int set_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_server_attempts(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "attempt", value);
+			dmuci_set_value_by_section(connsection, "attempt", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "initial_retry_interval", value);
+	dmuci_get_value_by_section_string(connsection, "initial_retry_interval", value);
 	return 0;
 }
 
-int set_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_retry_initial_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "initial_retry_interval", value);
+			dmuci_set_value_by_section(connsection, "initial_retry_interval", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "retry_interval_multiplier", value);
+	dmuci_get_value_by_section_string(connsection, "retry_interval_multiplier", value);
 	return 0;
 }
 
-int set_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_retry_interval_multiplier(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "retry_interval_multiplier", value);
+			dmuci_set_value_by_section(connsection, "retry_interval_multiplier", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "retry_max_interval", value);
+	dmuci_get_value_by_section_string(connsection, "retry_max_interval", value);
 	return 0;
 }
 
-int set_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_retry_max_interval(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "retry_max_interval", value);
+			dmuci_set_value_by_section(connsection, "retry_max_interval", value);
 			return 0;
 	}
 	return 0;
 }
 
-int get_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, char **value)
+int get_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	dmuci_get_value_by_section_string(connargs->connsection, "usetls", value);
+	dmuci_get_value_by_section_string(connsection, "usetls", value);
 	return 0;
 }
 
-int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int action, char *value) 
+int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action) 
 {
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 	bool b;
 
 	switch (action) {
@@ -447,7 +439,7 @@ int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int act
 				return FAULT_9007;
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(connargs->connsection, "usetls", value);
+			dmuci_set_value_by_section(connsection, "usetls", value);
 			return 0;
 	}
 	return 0;
@@ -459,11 +451,11 @@ int set_xmpp_connection_server_usetls(char *refparam, struct dmctx *ctx, int act
 int  get_xmpp_connection_linker(char *refparam, struct dmctx *dmctx, void *data, char *instance, char **linker) {
 	char *linker;
 	char *conn_instance;
-	struct connectionargs *connargs = &cur_connectionargs;
+	struct uci_section *connsection = (struct uci_section *)data;
 
-	if (connargs->connsection)
+	if (connsection)
 	{
-	dmuci_get_value_by_section_string(connargs->connsection, "connection_instance", &conn_instance);
+		dmuci_get_value_by_section_string(connsection, "connection_instance", &conn_instance);
 		dmasprintf(linker,"xmppc:%s", conn_instance);
 		return 0;
 	}
@@ -510,11 +502,9 @@ int browsexmpp_connectionInst(struct dmctx *dmctx, DMNODE *parent_node, void *pr
 	struct uci_section *s = NULL;
 
 	uci_foreach_sections("cwmp", "xmpp_connection", s) {
-		init_args_connection_entry(dmctx, s);
 		iconnection = handle_update_instance(1, dmctx, &iconnection_last, update_instance_alias, 3, s, "connection_instance", "connection_instance_alias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, iconnection) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, iconnection) == DM_STOP)
 			break;
 	}
-	DM_CLEAN_ARGS(cur_connectionargs);
 	return 0;
 }

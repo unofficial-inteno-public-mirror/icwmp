@@ -20,15 +20,6 @@
 #include "dmcommon.h"
 #include "deviceinfo.h"
 
-struct dev_vcf cur_dev_vcf = {0};
-
-inline int init_args_vcf(struct dmctx *ctx, struct uci_section *s)
-{
-	struct dev_vcf *args = &cur_dev_vcf;
-	args->vcf_sec = s;
-	return 0;
-}
-
 char *get_deviceid_manufacturer()
 {
 	char *v;
@@ -91,13 +82,13 @@ char *get_softwareversion()
 	return val;
 }
 
-int get_device_manufacturer(char *refparam, struct dmctx *ctx, char **value)
+int get_device_manufacturer(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = get_deviceid_manufacturer();
 	return 0;
 }
 
-int get_device_manufactureroui(char *refparam, struct dmctx *ctx, char **value)
+int get_device_manufactureroui(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "override_oui", value);
 	if (*value[0] == '\0')
@@ -105,37 +96,37 @@ int get_device_manufactureroui(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_device_productclass(char *refparam, struct dmctx *ctx, char **value)
+int get_device_productclass(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = get_deviceid_productclass();
 	return 0;
 }
 
-int get_device_serialnumber(char *refparam, struct dmctx *ctx, char **value)
+int get_device_serialnumber(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = get_deviceid_serialnumber();
 	return 0;
 }
 
-int get_device_softwareversion(char *refparam, struct dmctx *ctx, char **value)
+int get_device_softwareversion(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = get_softwareversion();
 	return 0;
 }
 
-int get_device_hardwareversion(char *refparam, struct dmctx *ctx, char **value)
+int get_device_hardwareversion(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	db_get_value_string("hw", "board", "hardwareVersion", value);
 	return 0;
 }
 
-int get_device_routermodel(char *refparam, struct dmctx *ctx, char **value)
+int get_device_routermodel(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	db_get_value_string("hw", "board", "routerModel", value);
 	return 0;
 }
 
-int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
+int get_device_info_uptime(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	FILE* fp = NULL;
 	char *pch, *spch;
@@ -153,7 +144,7 @@ int get_device_info_uptime(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
+int get_device_devicelog(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "";
 	int i = 0, nbrlines = 4;
@@ -186,19 +177,19 @@ int get_device_devicelog(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_device_specversion(char *refparam, struct dmctx *ctx, char **value)
+int get_device_specversion(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = "1.0";
 	return 0;
 }
 
-int get_device_provisioningcode(char *refparam, struct dmctx *ctx, char **value)
+int get_device_provisioningcode(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_option_value_string("cwmp", "cpe", "provisioning_code", value);
 	return 0;
 }
 
-int set_device_provisioningcode(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_device_provisioningcode(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	switch (action) {
@@ -212,7 +203,7 @@ int set_device_provisioningcode(char *refparam, struct dmctx *ctx, int action, c
 }
 
 
-int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
+int get_base_mac_addr(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {	
 	json_object *res;
 	
@@ -222,7 +213,7 @@ int get_base_mac_addr(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_device_memory_bank(char *refparam, struct dmctx *ctx, char **value)
+int get_device_memory_bank(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 
@@ -232,7 +223,7 @@ int get_device_memory_bank(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int set_device_memory_bank(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_device_memory_bank(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	switch (action) {
 		case VALUECHECK:
@@ -243,7 +234,7 @@ int set_device_memory_bank(char *refparam, struct dmctx *ctx, int action, char *
 	}
 	return 0;
 }
-int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
+int get_catv_enabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	char *catv;
 	dmuci_get_option_value_string("catv", "catv", "enable", &catv);
@@ -255,7 +246,7 @@ int get_catv_enabled(char *refparam, struct dmctx *ctx, char **value)
 	return 0;	
 }
 
-int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_device_catvenabled(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	bool b;
 	char *stat;
@@ -276,7 +267,7 @@ int set_device_catvenabled(char *refparam, struct dmctx *ctx, int action, char *
 	return 0;
 }
 
-int get_catv_optical_input_level(char *refparam, struct dmctx *ctx, char **value)
+int get_catv_optical_input_level(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 	char *str;
@@ -288,7 +279,7 @@ int get_catv_optical_input_level(char *refparam, struct dmctx *ctx, char **value
 	return 0;
 }
 
-int get_catv_rf_output_level(char *refparam, struct dmctx *ctx, char **value)
+int get_catv_rf_output_level(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 	char *str;
@@ -300,7 +291,7 @@ int get_catv_rf_output_level(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_catv_temperature(char *refparam, struct dmctx *ctx, char **value)
+int get_catv_temperature(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 	char *str;
@@ -312,7 +303,7 @@ int get_catv_temperature(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_catv_voltage(char *refparam, struct dmctx *ctx, char **value)
+int get_catv_voltage(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	json_object *res;
 	char *str;
@@ -324,27 +315,30 @@ int get_catv_voltage(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_vcf_name(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_name(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "name", value);
+	struct uci_section *vcf_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(vcf_sec, "name", value);
 	return 0;
 }
 
-int get_vcf_version(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_version(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "version", value);
+	struct uci_section *vcf_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(vcf_sec, "version", value);
 	return 0;
 }
 
-int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_date(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	DIR *dir;
 	struct dirent *d_file;
 	struct stat attr;
 	char path[128];
 	char date[sizeof "AAAA-MM-JJTHH:MM:SS.000Z"];
+	struct uci_section *vcf_sec = (struct uci_section *)data;
 	*value = "";
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "name", value);
+	dmuci_get_value_by_section_string(vcf_sec, "name", value);
 	if ((dir = opendir (DEFAULT_CONFIG_DIR)) != NULL) {
 		while ((d_file = readdir (dir)) != NULL) {
 			if(strcmp(*value, d_file->d_name) == 0) {
@@ -359,31 +353,35 @@ int get_vcf_date(char *refparam, struct dmctx *ctx, char **value)
 	return 0;
 }
 
-int get_vcf_backup_restore(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_backup_restore(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "backup_restore", value);
+	struct uci_section *vcf_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(vcf_sec, "backup_restore", value);
 	return 0;
 }
 
-int get_vcf_desc(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_desc(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "description", value);
+	struct uci_section *vcf_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(vcf_sec, "description", value);
 	return 0;
 }
 
-int get_vcf_alias(char *refparam, struct dmctx *ctx, char **value)
+int get_vcf_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
-	dmuci_get_value_by_section_string(cur_dev_vcf.vcf_sec, "vcf_alias", value);
+	struct uci_section *vcf_sec = (struct uci_section *)data;
+	dmuci_get_value_by_section_string(vcf_sec, "vcf_alias", value);
 	return 0;
 }
 
-int set_vcf_alias(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_vcf_alias(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
+	struct uci_section *vcf_sec = (struct uci_section *)data;
 	switch (action) {
 		case VALUECHECK:
 			return 0;
 		case VALUESET:
-			dmuci_set_value_by_section(cur_dev_vcf.vcf_sec, "vcf_alias", value);
+			dmuci_set_value_by_section(vcf_sec, "vcf_alias", value);
 			return 0;
 	}
 	return 0;
@@ -489,14 +487,12 @@ int browseVcfInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, cha
 			del_sec = s;
 			continue;
 		}
-		init_args_vcf(dmctx, s);
 		vcf = handle_update_instance(1, dmctx, &vcf_last, update_instance_alias, 3, s, "vcf_instance", "vcf_alias");
-		if (DM_LINK_INST_OBJ(dmctx, parent_node, NULL, vcf) == DM_STOP)
+		if (DM_LINK_INST_OBJ(dmctx, parent_node, (void *)s, vcf) == DM_STOP)
 			break;
 	}
 	if(del_sec)
 		dmuci_delete_by_section(del_sec, NULL, NULL);
 
-	DM_CLEAN_ARGS(cur_dev_vcf);
 	return 0;
 }

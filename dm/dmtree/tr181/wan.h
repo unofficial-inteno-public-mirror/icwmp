@@ -18,11 +18,6 @@ struct dsl_line_args
 	char *type;
 };
 
-struct dsl_channel_args
-{
-	struct uci_section *chanel_sec;
-};
-
 struct atm_args
 {
 	struct uci_section *atm_sec;
@@ -46,9 +41,9 @@ extern DMLEAF tAtmLinkStatsParams[] ;
 extern DMLEAF tPtmLinkStatsParams[];
 extern DMLEAF tPtmLineParams[];
 
-inline int browseDslLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseDslChannelInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browseAtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
-inline int browsePtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseDslLineInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseDslChannelInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseAtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browsePtmLinkInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 
 #endif

@@ -4,14 +4,13 @@
 struct linterfargs
 {
 	char *linterf;
-	char *eths[16];
-	int eths_size;
 	struct uci_section *port_sec;
 };
 
-struct wifaceargs
+struct ethrnet_ifaces_s
 {
-	struct uci_section *wiface_sec;
+	char *eths[16];
+	int eths_size;
 };
 
 bool check_laninterfaces(struct dmctx *dmctx, void *data);

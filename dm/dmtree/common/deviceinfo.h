@@ -21,10 +21,6 @@ extern DMLEAF tDeviceInfoParams[];
 extern DMLEAF tCatTvParams[];
 extern DMLEAF tVcfParams[];
 extern DMOBJ tDeviceInfoObj[];
-struct dev_vcf
-{
-	struct uci_section *vcf_sec;
-};
 
 char *get_deviceid_manufacturer();
 char *get_deviceid_manufactureroui();

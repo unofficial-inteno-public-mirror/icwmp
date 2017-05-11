@@ -14,34 +14,37 @@
 #include <libubox/blobmsg_json.h>
 #include <json-c/json.h>
 
-
-struct wancprotoargs
-{
-	struct uci_section *wancprotosection;
-	struct uci_ptr *ptr;
-};
-
-struct wancdevargs
-{
-	struct uci_section *wandevsection;
-	int index;
-	char *fwan;
-	char *iwan;
-	char *wan_ifname;
-};
-
 struct wanargs
 {
+/* WANDevice */
 	struct uci_section *wandevsection;
 	int instance;
 	char *fdev;
+/* WANConnectionDevice */
+	struct uci_section *wancdsection;
+	char *fwan;
+	char *iwan;
+	char *wan_ifname;
+/* WAN###Connection */
+	struct uci_section *wancprotosection;
 };
+
 extern struct dm_notif_s DMWANConnectionDevicenotif;
-extern DMLEAF tWANDeviceParam[];
 extern DMOBJ tWANDeviceObj[];
+extern DMLEAF tWANDeviceParam[];
+extern DMOBJ tWANConnectionDeviceObj[];
+extern DMLEAF tWANConnectionDeviceParam[];
 extern DMOBJ tWANConnectionObj[];
-extern DMLEAF tWANConnection_VLANParam[];
+extern DMLEAF tWANIPConnectionParam[];
+extern DMLEAF tWANPPPConnectionParam[];
 extern DMLEAF tWANConnectionStatsParam[];
-inline int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+extern DMLEAF tWANConnection_VLANParam[];
+extern DMLEAF tWANDSLLinkConfigParam[];
+extern DMLEAF tWANCommonInterfaceConfigParam[];
+extern DMLEAF tWANDSLInterfaceConfigParam[];
+extern DMOBJ tWANEthernetInterfaceConfigObj[];
+extern DMLEAF tWANEthernetInterfaceConfigParam[];
+extern DMLEAF tWANEthernetInterfaceConfigStatsParam[];
+int browsewandeviceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 unsigned char get_wan_protocol_connection_forced_inform(char *refparam, struct dmctx *dmctx, void *data, char *instance);
 #endif

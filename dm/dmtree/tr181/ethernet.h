@@ -20,5 +20,5 @@ extern DMOBJ tEthernetObj[];
 extern DMOBJ tEthernetStatObj[];
 extern DMLEAF tEthernetParams[];
 extern DMLEAF tEthernetStatParams[];
-inline int browseEthIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
+int browseEthIfaceInst(struct dmctx *dmctx, DMNODE *parent_node, void *prev_data, char *prev_instance);
 #endif

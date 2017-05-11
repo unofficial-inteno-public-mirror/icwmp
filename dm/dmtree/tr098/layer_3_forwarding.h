@@ -26,7 +26,7 @@ struct routefwdargs
 	int type;
 };
 
-extern DMLEAF tForwardingParam[];
 extern DMLEAF tForwardingInstParam[];
 extern DMOBJ tLayer3ForwardingObj[];
+extern DMLEAF tLayer3ForwardingParam[];
 #endif

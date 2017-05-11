@@ -27,13 +27,13 @@ static inline char *ipping_get(char *option, char *def)
 	else
 		return tmp;
 }
-int get_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("DiagnosticState", "None");
 	return 0;
 }
 
-int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *tmp;
 	struct uci_section *curr_section = NULL;
@@ -56,13 +56,13 @@ int set_ipping_diagnostics_state(char *refparam, struct dmctx *ctx, int action, 
 	return 0;
 }
 
-int get_ipping_interface(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	dmuci_get_varstate_string("cwmp", "@ippingdiagnostic[0]", "interface", value);	
 	return 0;
 }
 
-int set_ipping_interface(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_interface(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *tmp;
 	struct uci_section *curr_section = NULL;
@@ -82,14 +82,14 @@ int set_ipping_interface(char *refparam, struct dmctx *ctx, int action, char *va
 	return 0;
 }
 
-int get_ipping_host(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_host(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 
 	dmuci_get_varstate_string("cwmp", "@ippingdiagnostic[0]", "Host", value);
 	return 0;
 }
 
-int set_ipping_host(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_host(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *tmp;
 	struct uci_section *curr_section = NULL;
@@ -109,13 +109,13 @@ int set_ipping_host(char *refparam, struct dmctx *ctx, int action, char *value)
 	return 0;
 }
 
-int get_ipping_repetition_number(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_repetition_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("NumberOfRepetitions", "3");
 	return 0;
 }
 
-int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *tmp;
 	struct uci_section *curr_section = NULL;
@@ -136,14 +136,14 @@ int set_ipping_repetition_number(char *refparam, struct dmctx *ctx, int action, 
 	return 0;
 }
 
-int get_ipping_timeout(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_timeout(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	
 	*value = ipping_get("Timeout", "1000");	
 	return 0;
 }
 
-int set_ipping_timeout(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_timeout(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	struct uci_section *curr_section = NULL;
 	char *tmp;
@@ -164,14 +164,14 @@ int set_ipping_timeout(char *refparam, struct dmctx *ctx, int action, char *valu
 	return 0;
 }
 
-int get_ipping_block_size(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_block_size(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("DataBlockSize", "64");
 	
 	return 0;
 }
 
-int set_ipping_block_size(char *refparam, struct dmctx *ctx, int action, char *value)
+int set_ipping_block_size(char *refparam, struct dmctx *ctx, void *data, char *instance, char *value, int action)
 {
 	char *tmp;
 	struct uci_section *curr_section = NULL;
@@ -190,34 +190,34 @@ int set_ipping_block_size(char *refparam, struct dmctx *ctx, int action, char *v
 	return 0;
 }
 
-int get_ipping_success_count(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_success_count(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("SuccessCount", "0");
 	
 	return 0;
 }
 
-int get_ipping_failure_count(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_failure_count(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("FailureCount", "0");
 	
 	return 0;
 }
 
-int get_ipping_average_response_time(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_average_response_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("AverageResponseTime", "0");
 	return 0;
 }
 
-int get_ipping_min_response_time(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_min_response_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("MinimumResponseTime", "0");
 	
 	return 0;
 }
 
-int get_ipping_max_response_time(char *refparam, struct dmctx *ctx, char **value)
+int get_ipping_max_response_time(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	*value = ipping_get("MaximumResponseTime", "0");	
 	
