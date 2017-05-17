@@ -402,7 +402,7 @@ DMLEAF tManagementServerParams[] = {
 {"PeriodicInformEnable", &DMWRITE, DMT_BOOL, get_management_server_periodic_inform_enable, set_management_server_periodic_inform_enable,  NULL, NULL},
 {"PeriodicInformInterval", &DMWRITE, DMT_UNINT, get_management_server_periodic_inform_interval, set_management_server_periodic_inform_interval, NULL, NULL},
 {"PeriodicInformTime", &DMWRITE, DMT_TIME, get_management_server_periodic_inform_time, set_management_server_periodic_inform_time, NULL, NULL},
-{"ConnectionRequestURL", &DMREAD, DMT_UNINT, get_management_server_connection_request_url, NULL, &DMFINFRM, &DMACTIVE},
+{"ConnectionRequestURL", &DMREAD, DMT_STRING, get_management_server_connection_request_url, NULL, &DMFINFRM, &DMACTIVE},
 {"ConnectionRequestUsername", &DMWRITE, DMT_STRING, get_management_server_connection_request_username, set_management_server_connection_request_username, NULL, NULL},
 {"ConnectionRequestPassword", &DMWRITE, DMT_STRING, get_empty, set_management_server_connection_request_passwd,  NULL, NULL},
 {"HTTPCompressionSupported", &DMREAD, DMT_STRING, get_management_server_http_compression_supportted, NULL, NULL, NULL},

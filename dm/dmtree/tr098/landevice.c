@@ -3075,7 +3075,7 @@ DMLEAF tlandevice_hostsParam[] = {
 DMLEAF tlandevice_hostParam[] = {
 {"IPAddress", &DMREAD, DMT_STRING, get_lan_host_ipaddress, NULL, NULL, &DMNONE},
 {"HostName", &DMREAD, DMT_STRING, get_lan_host_hostname, NULL, NULL, &DMNONE},
-{"Active", &DMREAD, DMT_BOOL, get_lan_host_ipaddress, NULL, NULL, &DMNONE},
+{"Active", &DMREAD, DMT_BOOL, get_lan_host_active, NULL, NULL, &DMNONE},
 {"MACAddress", &DMREAD, DMT_STRING, get_lan_host_macaddress, NULL, NULL, &DMNONE},
 {"InterfaceType", &DMREAD, DMT_STRING, get_lan_host_interfacetype, NULL, NULL, &DMNONE},
 {"AddressSource", &DMREAD, DMT_STRING, get_lan_host_addresssource, NULL, NULL, &DMNONE},
