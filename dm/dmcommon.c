@@ -326,7 +326,13 @@ int dmcmd(char *cmd, int n, ...)
 	close(dmcmd_pfds[1]);
 
 	int status;
-	while (waitpid(pid, &status, 0) != pid);
+	while (waitpid(pid, &status, 0) != pid)
+	{
+		kill(pid, 0);
+		if (errno == ESRCH) {
+			return dmcmd_pfds[0];
+		}
+	}
 
 	return dmcmd_pfds[0];
 }
