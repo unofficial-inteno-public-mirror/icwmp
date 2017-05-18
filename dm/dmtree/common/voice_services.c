@@ -538,7 +538,7 @@ int get_sip_tls_key_protocols(char *refparam, struct dmctx *ctx, void *data, cha
 int get_entry_id(char *refparam, struct dmctx *ctx, void *data, char *instance, char **value)
 {
 	struct codec_args *codecs = (struct codec_args *)data;
-	*value = codecs->id;
+	*value = dmstrdup(codecs->id);
 	return 0;
 }
 
